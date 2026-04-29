@@ -39,11 +39,18 @@ export default function LoginPage() {
   const [pass, setPass]       = useState("");
   const [loading, setLoading] = useState(false);
   const [showPass, setShowPass] = useState(false);
+  const [role, setRole]       = useState<"admin" | "employee">("admin");
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
-    setTimeout(() => router.push("/dashboard"), 1400);
+    setTimeout(() => {
+      if (role === "admin") {
+        router.push("/admin/dashboard");
+      } else {
+        router.push("/employee/dashboard");
+      }
+    }, 1400);
   }
 
   return (
@@ -105,9 +112,35 @@ export default function LoginPage() {
 
         <div className="w-full max-w-[360px] animate-slide-up">
           {/* Header */}
-          <div className="mb-8">
+          <div className="mb-6">
             <h2 className="text-[28px] font-bold text-[#1a1c1d] tracking-tight">Welcome back</h2>
             <p className="text-[14px] text-[#72787c] mt-1">Sign in to the Backoffice Portal</p>
+          </div>
+
+          {/* Role Selector (Demo purpose) */}
+          <div className="flex p-1 bg-[#f4f3f5] rounded-xl mb-6">
+            <button
+              type="button"
+              onClick={() => setRole("admin")}
+              className={`flex-1 py-2 text-[12px] font-bold rounded-lg transition-all ${
+                role === "admin"
+                  ? "bg-white text-[#023143] shadow-sm"
+                  : "text-[#72787c] hover:text-[#1a1c1d]"
+              }`}
+            >
+              Administrador
+            </button>
+            <button
+              type="button"
+              onClick={() => setRole("employee")}
+              className={`flex-1 py-2 text-[12px] font-bold rounded-lg transition-all ${
+                role === "employee"
+                  ? "bg-white text-[#023143] shadow-sm"
+                  : "text-[#72787c] hover:text-[#1a1c1d]"
+              }`}
+            >
+              Empleado
+            </button>
           </div>
 
           {/* Form */}
