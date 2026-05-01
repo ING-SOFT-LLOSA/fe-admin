@@ -17,35 +17,35 @@ type NavGroup = {
 
 const groups: NavGroup[] = [
   {
-    label: "Main",
+    label: "Principal",
     items: [
       { href: "/admin/dashboard",   icon: "dashboard",      label: "Dashboard"  },
-      { href: "/clients",     icon: "group",          label: "Clients"    },
-      { href: "/properties",  icon: "domain",         label: "Properties" },
+      { href: "/clients",     icon: "group",          label: "Clientes"    },
+      { href: "/properties",  icon: "domain",         label: "Propiedades" },
     ],
   },
   {
-    label: "Operations",
+    label: "Operaciones",
     items: [
-      { href: "/contracts",   icon: "description",    label: "Contracts"  },
-      { href: "/projects",    icon: "architecture",   label: "Projects"   },
-      { href: "/schedule",    icon: "calendar_today", label: "Schedule"   },
-      { href: "/templates",   icon: "article",        label: "Templates"  },
-      { href: "/progress",    icon: "photo_library",  label: "Progress"   },
+      { href: "/contracts",   icon: "description",    label: "Contratos"  },
+      { href: "/projects",    icon: "architecture",   label: "Proyectos"   },
+      { href: "/schedule",    icon: "calendar_today", label: "Cronograma"   },
+      { href: "/templates",   icon: "article",        label: "Plantillas"  },
+      { href: "/progress",    icon: "photo_library",  label: "Avances de Obra"   },
     ],
   },
   {
-    label: "Intelligence",
+    label: "Inteligencia",
     items: [
-      { href: "/tracking",    icon: "analytics",      label: "Tracking",  badge: "12" },
+      { href: "/tracking",    icon: "analytics",      label: "Seguimiento",  badge: "12" },
     ],
   },
   {
-    label: "Admin",
+    label: "Administración",
     items: [
-      { href: "/employees",   icon: "badge",          label: "Employees"  },
-      { href: "/permissions", icon: "lock_person",    label: "Permissions"},
-      { href: "/settings",    icon: "settings",       label: "Settings"   },
+      { href: "/employees",   icon: "badge",          label: "Empleados"  },
+      { href: "/permissions", icon: "lock_person",    label: "Permisos"},
+      { href: "/settings",    icon: "settings",       label: "Configuración"   },
     ],
   },
 ];
@@ -68,7 +68,7 @@ export default function SideNav() {
           </div>
           <div>
             <h1 className="text-[13px] font-bold text-white leading-tight tracking-tight">Llosa Edificaciones</h1>
-            <p className="text-[10px] text-white/50 font-semibold uppercase tracking-widest mt-0.5">Corporate Admin</p>
+            <p className="text-[10px] text-white/50 font-semibold uppercase tracking-widest mt-0.5">Admin. Corporativo</p>
           </div>
         </div>
       </div>
@@ -120,8 +120,8 @@ export default function SideNav() {
             />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-[12px] font-semibold text-white truncate">Admin User</p>
-            <p className="text-[10px] text-white/40 truncate">Global Admin</p>
+            <p className="text-[12px] font-semibold text-white truncate">Usuario Admin</p>
+            <p className="text-[10px] text-white/40 truncate">Admin Global</p>
           </div>
         </div>
 
@@ -133,7 +133,7 @@ export default function SideNav() {
           <span className="material-symbols-outlined text-[18px] group-hover:scale-110 transition-transform">
             logout
           </span>
-          <span className="text-[13px] font-medium">Sign out</span>
+          <span className="text-[13px] font-medium">Cerrar Sesión</span>
         </button>
       </div>
     </aside>

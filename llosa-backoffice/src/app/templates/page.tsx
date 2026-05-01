@@ -2,20 +2,20 @@
 import { useState } from "react";
 import AdminLayout from "@/components/AdminLayout";
 
-const categories = ["All", "Contracts", "Emails", "Receipts", "Documents"] as const;
+const categories = ["Todos", "Contratos", "Correos", "Recibos", "Documentos"] as const;
 type Cat = typeof categories[number];
 
 const templates = [
-  { id: 1, cat: "Contracts",  icon: "description",   title: "Purchase Agreement",       desc: "Standard property purchase contract template.",   updated: "2 days ago",   uses: 148, color: "#023143", bg: "#c2e8ff" },
-  { id: 2, cat: "Contracts",  icon: "description",   title: "Separation Agreement",     desc: "Unit reservation and separation deposit contract.", updated: "5 days ago",   uses: 92,  color: "#023143", bg: "#c2e8ff" },
-  { id: 3, cat: "Contracts",  icon: "description",   title: "Lease Agreement",          desc: "Residential lease template with legal clauses.",    updated: "1 week ago",   uses: 34,  color: "#023143", bg: "#c2e8ff" },
-  { id: 4, cat: "Emails",     icon: "mail",          title: "Welcome Email",            desc: "Onboarding email sent to new clients on sign-up.",  updated: "Today",        uses: 215, color: "#1565C0", bg: "#E3F2FD" },
-  { id: 5, cat: "Emails",     icon: "mail",          title: "Document Request",         desc: "Request pending documents from the client.",        updated: "3 days ago",   uses: 77,  color: "#1565C0", bg: "#E3F2FD" },
-  { id: 6, cat: "Emails",     icon: "mail",          title: "Payment Reminder",         desc: "Automated reminder for upcoming installments.",     updated: "1 week ago",   uses: 183, color: "#1565C0", bg: "#E3F2FD" },
-  { id: 7, cat: "Receipts",   icon: "receipt_long",  title: "Separation Receipt",       desc: "Official receipt for separation payment.",          updated: "Yesterday",    uses: 91,  color: "#E65100", bg: "#FFF3E0" },
-  { id: 8, cat: "Receipts",   icon: "receipt_long",  title: "Payment Confirmation",     desc: "Installment payment confirmation receipt.",         updated: "4 days ago",   uses: 64,  color: "#E65100", bg: "#FFF3E0" },
-  { id: 9, cat: "Documents",  icon: "folder",        title: "Client Profile Sheet",     desc: "Standard client information and KYC document.",     updated: "2 weeks ago",  uses: 29,  color: "#4b4546", bg: "#e9e0e1" },
-  { id: 10, cat: "Documents", icon: "folder",        title: "Project Progress Report",  desc: "Weekly project milestone and progress report.",     updated: "3 days ago",   uses: 41,  color: "#4b4546", bg: "#e9e0e1" },
+  { id: 1, cat: "Contratos",  icon: "description",   title: "Acuerdo de Compra",       desc: "Plantilla de contrato estándar para compra de inmueble.",   updated: "hace 2 días",   uses: 148, color: "#023143", bg: "#c2e8ff" },
+  { id: 2, cat: "Contratos",  icon: "description",   title: "Acuerdo de Separación",     desc: "Contrato de reserva de unidad y depósito de separación.", updated: "hace 5 días",   uses: 92,  color: "#023143", bg: "#c2e8ff" },
+  { id: 3, cat: "Contratos",  icon: "description",   title: "Contrato de Arrendamiento",          desc: "Plantilla de arrendamiento residencial con cláusulas legales.",    updated: "hace 1 semana",   uses: 34,  color: "#023143", bg: "#c2e8ff" },
+  { id: 4, cat: "Correos",     icon: "mail",          title: "Correo de Bienvenida",            desc: "Correo de integración enviado a nuevos clientes.",  updated: "Hoy",        uses: 215, color: "#1565C0", bg: "#E3F2FD" },
+  { id: 5, cat: "Correos",     icon: "mail",          title: "Solicitud de Documento",         desc: "Solicitar documentos pendientes al cliente.",        updated: "hace 3 días",   uses: 77,  color: "#1565C0", bg: "#E3F2FD" },
+  { id: 6, cat: "Correos",     icon: "mail",          title: "Recordatorio de Pago",         desc: "Recordatorio automático para próximas cuotas.",     updated: "hace 1 semana",   uses: 183, color: "#1565C0", bg: "#E3F2FD" },
+  { id: 7, cat: "Recibos",   icon: "receipt_long",  title: "Recibo de Separación",       desc: "Recibo oficial por pago de separación.",          updated: "Ayer",    uses: 91,  color: "#E65100", bg: "#FFF3E0" },
+  { id: 8, cat: "Recibos",   icon: "receipt_long",  title: "Confirmación de Pago",     desc: "Recibo de confirmación de pago de cuota.",         updated: "hace 4 días",   uses: 64,  color: "#E65100", bg: "#FFF3E0" },
+  { id: 9, cat: "Documentos",  icon: "folder",        title: "Hoja de Perfil del Cliente",     desc: "Información estándar del cliente y documento KYC.",     updated: "hace 2 semanas",  uses: 29,  color: "#4b4546", bg: "#e9e0e1" },
+  { id: 10, cat: "Documentos", icon: "folder",        title: "Informe de Progreso de Obra",  desc: "Informe semanal de progreso e hitos de obra.",     updated: "hace 3 días",   uses: 41,  color: "#4b4546", bg: "#e9e0e1" },
 ];
 
 export default function TemplatesPage() {
@@ -24,7 +24,7 @@ export default function TemplatesPage() {
   const [previewId, setPreviewId] = useState<number | null>(null);
 
   const filtered = templates.filter(t =>
-    (active === "All" || t.cat === active) &&
+    (active === "Todos" || t.cat === active) &&
     (search === "" || t.title.toLowerCase().includes(search.toLowerCase()) || t.desc.toLowerCase().includes(search.toLowerCase()))
   );
 
@@ -35,11 +35,11 @@ export default function TemplatesPage() {
       {/* Header */}
       <div className="flex justify-between items-start animate-slide-up">
         <div>
-          <h2 className="text-[30px] font-bold tracking-tight text-[#1a1c1d]">Templates</h2>
-          <p className="text-[14px] text-[#41484c] mt-1">Manage and use document templates across contracts, emails, and receipts.</p>
+          <h2 className="text-[30px] font-bold tracking-tight text-[#1a1c1d]">Plantillas</h2>
+          <p className="text-[14px] text-[#41484c] mt-1">Administra y usa plantillas de documentos para contratos, correos y recibos.</p>
         </div>
         <button className="flex items-center gap-2 px-5 py-2.5 bg-[#023143] text-white rounded-xl text-[13px] font-semibold hover:bg-[#001b27] transition-colors shadow-sm">
-          <span className="material-symbols-outlined text-[17px]">add</span>New Template
+          <span className="material-symbols-outlined text-[17px]">add</span>Nueva Plantilla
         </button>
       </div>
 
@@ -63,11 +63,11 @@ export default function TemplatesPage() {
           <input
             value={search}
             onChange={e => setSearch(e.target.value)}
-            placeholder="Search templates..."
+            placeholder="Buscar plantillas..."
             className="w-full bg-white border border-[#e2e2e4] rounded-xl pl-9 pr-4 py-2 text-[13px] focus:outline-none focus:border-[#023143] transition-colors"
           />
         </div>
-        <span className="ml-auto text-[12px] text-[#72787c] font-semibold">{filtered.length} templates</span>
+        <span className="ml-auto text-[12px] text-[#72787c] font-semibold">{filtered.length} plantillas</span>
       </div>
 
       {/* Grid + Preview */}
@@ -77,7 +77,7 @@ export default function TemplatesPage() {
           {filtered.length === 0 && (
             <div className="col-span-3 py-16 text-center">
               <span className="material-symbols-outlined text-[48px] text-[#c1c7cc]">search_off</span>
-              <p className="text-[14px] font-semibold text-[#72787c] mt-3">No templates found</p>
+              <p className="text-[14px] font-semibold text-[#72787c] mt-3">No se encontraron plantillas</p>
             </div>
           )}
           {filtered.map(t => (
@@ -101,7 +101,7 @@ export default function TemplatesPage() {
                 </div>
                 <div className="flex items-center gap-1 text-[11px] text-[#72787c]">
                   <span className="material-symbols-outlined text-[13px]">bolt</span>
-                  {t.uses} uses
+                  {t.uses} usos
                 </div>
                 <div className="flex gap-1">
                   <button onClick={e => { e.stopPropagation(); }} className="p-1.5 rounded-lg text-[#72787c] hover:text-[#023143] hover:bg-[#c2e8ff] transition-colors">
@@ -120,7 +120,7 @@ export default function TemplatesPage() {
         {preview && (
           <div className="w-72 shrink-0 card p-6 animate-slide-in-r self-start sticky top-20">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-[13px] font-bold text-[#1a1c1d]">Preview</h3>
+              <h3 className="text-[13px] font-bold text-[#1a1c1d]">Vista Previa</h3>
               <button onClick={() => setPreviewId(null)} className="w-6 h-6 flex items-center justify-center rounded-md text-[#72787c] hover:bg-[#e2e2e4] transition-colors">
                 <span className="material-symbols-outlined text-[16px]">close</span>
               </button>
@@ -132,8 +132,8 @@ export default function TemplatesPage() {
             <span className="inline-block text-[10px] font-semibold px-2 py-0.5 rounded-full mb-3" style={{ background: preview.bg, color: preview.color }}>{preview.cat}</span>
             <p className="text-[12px] text-[#41484c] leading-relaxed mb-4">{preview.desc}</p>
             <div className="space-y-2 text-[11px] text-[#72787c] mb-5">
-              <div className="flex justify-between"><span>Last updated</span><span className="font-semibold text-[#1a1c1d]">{preview.updated}</span></div>
-              <div className="flex justify-between"><span>Total uses</span><span className="font-semibold text-[#1a1c1d]">{preview.uses}</span></div>
+              <div className="flex justify-between"><span>Última actualización</span><span className="font-semibold text-[#1a1c1d]">{preview.updated}</span></div>
+              <div className="flex justify-between"><span>Usos totales</span><span className="font-semibold text-[#1a1c1d]">{preview.uses}</span></div>
             </div>
             {/* Document mockup */}
             <div className="bg-[#f9f9fb] border border-[#e2e2e4] rounded-lg p-3 mb-4 space-y-2">
@@ -142,7 +142,7 @@ export default function TemplatesPage() {
               ))}
             </div>
             <button className="w-full py-2.5 bg-[#023143] text-white rounded-xl text-[13px] font-semibold hover:bg-[#001b27] transition-colors">
-              Use Template
+              Usar Plantilla
             </button>
           </div>
         )}

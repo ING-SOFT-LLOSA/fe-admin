@@ -31,25 +31,25 @@ function Counter({ target }: { target: number }) {
 
 /* ── Data ───────────────────────────────────────────── */
 const kpis = [
-  { label: "Active Clients",    val: 1248, trend: "+12%", up: true,  icon: "group",          bg: "#c2e8ff", ic: "#001e2b", spark: [40,55,50,70,65,80,75] },
-  { label: "Separations",       val: 42,   trend: "+5%",  up: true,  icon: "real_estate_agent", bg: "#ffdcbf", ic: "#2d1600", spark: [30,45,40,60,55,65,70] },
-  { label: "Pending Contracts", val: 18,   trend: "high", up: false, icon: "pending_actions",  bg: "#ffdad6", ic: "#93000a", spark: [60,50,65,70,55,75,80] },
-  { label: "Signed Contracts",  val: 315,  trend: "+8%",  up: true,  icon: "verified",         bg: "#e9e0e1", ic: "#4b4546", spark: [50,60,55,75,70,80,85] },
-  { label: "Active Projects",   val: 6,    trend: "stable", up: true, icon: "architecture",   bg: "#d1fae5", ic: "#065f46", spark: [60,60,65,60,65,65,65] },
+  { label: "Clientes Activos",    val: 1248, trend: "+12%", up: true,  icon: "group",          bg: "#c2e8ff", ic: "#001e2b", spark: [40,55,50,70,65,80,75] },
+  { label: "Separaciones",       val: 42,   trend: "+5%",  up: true,  icon: "real_estate_agent", bg: "#ffdcbf", ic: "#2d1600", spark: [30,45,40,60,55,65,70] },
+  { label: "Contratos Ptes.", val: 18,   trend: "alto", up: false, icon: "pending_actions",  bg: "#ffdad6", ic: "#93000a", spark: [60,50,65,70,55,75,80] },
+  { label: "Contratos Firmados",  val: 315,  trend: "+8%",  up: true,  icon: "verified",         bg: "#e9e0e1", ic: "#4b4546", spark: [50,60,55,75,70,80,85] },
+  { label: "Proyectos Activos",   val: 6,    trend: "estable", up: true, icon: "architecture",   bg: "#d1fae5", ic: "#065f46", spark: [60,60,65,60,65,65,65] },
 ];
 
 const alerts = [
-  { icon: "warning",            color: "#ba1a1a", bg: "#ffdad6", title: "3 separations expiring in 48h",     action: "Review now", priority: "Critical" },
-  { icon: "payments",           color: "#E65100", bg: "#FFF3E0", title: "Client JD missed 2nd installment",   action: "Follow up",  priority: "High"     },
-  { icon: "record_voice_over",  color: "#1565C0", bg: "#E3F2FD", title: "7 VIP clients untouched for 30 days", action: "Contact",   priority: "Medium"   },
+  { icon: "warning",            color: "#ba1a1a", bg: "#ffdad6", title: "3 separaciones expiran en 48h",     action: "Revisar", priority: "Crítico" },
+  { icon: "payments",           color: "#E65100", bg: "#FFF3E0", title: "Cliente JD no pagó 2da cuota",   action: "Seguimiento",  priority: "Alto"     },
+  { icon: "record_voice_over",  color: "#1565C0", bg: "#E3F2FD", title: "7 clientes VIP sin contactar 30 días", action: "Contactar",   priority: "Medio"   },
 ];
 
 const activity = [
-  { icon: "contract",       color: "#023143", bg: "#c2e8ff", text: "Contract signed — Torre A Apt 402",    who: "Juan Doe",      time: "10:30 AM" },
-  { icon: "payments",       color: "#2E7D32", bg: "#E8F5E9", text: "Separation paid — Los Pinos Lote 12", who: "Maria Smith",   time: "Yesterday" },
-  { icon: "description",    color: "#E65100", bg: "#FFF3E0", text: "Documents missing — Edificio Of. 205", who: "Carlos Ruiz",   time: "Oct 24" },
-  { icon: "event_available",color: "#023143", bg: "#e9e0e1", text: "Meeting confirmed — Signing Lote 12",  who: "Admin",         time: "Oct 23" },
-  { icon: "person_add",     color: "#4b4546", bg: "#e2e2e4", text: "New client registered — Elena Vargas", who: "Sales team",    time: "Oct 22" },
+  { icon: "contract",       color: "#023143", bg: "#c2e8ff", text: "Contrato firmado — Torre A Apt 402",    who: "Juan Doe",      time: "10:30 AM" },
+  { icon: "payments",       color: "#2E7D32", bg: "#E8F5E9", text: "Separación pagada — Los Pinos Lote 12", who: "Maria Smith",   time: "Ayer" },
+  { icon: "description",    color: "#E65100", bg: "#FFF3E0", text: "Faltan documentos — Edificio Of. 205", who: "Carlos Ruiz",   time: "24 Oct" },
+  { icon: "event_available",color: "#023143", bg: "#e9e0e1", text: "Reunión confirmada — Firma Lote 12",  who: "Admin",         time: "23 Oct" },
+  { icon: "person_add",     color: "#4b4546", bg: "#e2e2e4", text: "Nuevo cliente registrado — Elena Vargas", who: "Equipo Ventas",    time: "22 Oct" },
 ];
 
 const projects = [
@@ -66,17 +66,17 @@ export default function DashboardPage() {
       <div className="flex justify-between items-start animate-slide-up">
         <div>
           <p className="text-[12px] font-semibold text-[#72787c] uppercase tracking-widest mb-1">
-            {new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" })}
+            {new Date().toLocaleDateString("es-ES", { weekday: "long", month: "long", day: "numeric", year: "numeric" })}
           </p>
-          <h2 className="text-[30px] font-bold tracking-tight text-[#1a1c1d]">Dashboard Overview</h2>
-          <p className="text-[14px] text-[#41484c] mt-1">Here&apos;s your administrative summary for today.</p>
+          <h2 className="text-[30px] font-bold tracking-tight text-[#1a1c1d]">Resumen del Dashboard</h2>
+          <p className="text-[14px] text-[#41484c] mt-1">Aquí tienes el resumen administrativo de hoy.</p>
         </div>
         <div className="flex gap-3">
           <button className="flex items-center gap-2 px-4 py-2 border border-[#e2e2e4] rounded-xl text-[13px] font-semibold text-[#41484c] hover:bg-[#f4f3f5] transition-colors">
-            <span className="material-symbols-outlined text-[17px]">download</span>Export
+            <span className="material-symbols-outlined text-[17px]">download</span>Exportar
           </button>
           <button className="flex items-center gap-2 px-4 py-2 bg-[#023143] text-white rounded-xl text-[13px] font-semibold hover:bg-[#001b27] transition-colors shadow-sm">
-            <span className="material-symbols-outlined text-[17px]">add</span>New Entry
+            <span className="material-symbols-outlined text-[17px]">add</span>Nuevo
           </button>
         </div>
       </div>
@@ -106,8 +106,8 @@ export default function DashboardPage() {
       <div className="bg-[#001b27] rounded-2xl p-5 animate-slide-up delay-200">
         <div className="flex items-center gap-2 mb-4">
           <span className="material-symbols-outlined text-[#c2e8ff] text-[18px]">psychology</span>
-          <span className="text-[11px] font-bold text-[#c2e8ff] uppercase tracking-widest">Intelligence Alerts</span>
-          <span className="ml-auto text-[10px] bg-[#ba1a1a] text-white font-bold px-2 py-0.5 rounded-full animate-pulse-soft">3 active</span>
+          <span className="text-[11px] font-bold text-[#c2e8ff] uppercase tracking-widest">Alertas de Inteligencia</span>
+          <span className="ml-auto text-[10px] bg-[#ba1a1a] text-white font-bold px-2 py-0.5 rounded-full animate-pulse-soft">3 activas</span>
         </div>
         <div className="grid grid-cols-3 gap-3">
           {alerts.map((a) => (
@@ -134,8 +134,8 @@ export default function DashboardPage() {
         {/* Activity timeline */}
         <div className="col-span-2 card p-6">
           <div className="flex items-center justify-between mb-5">
-            <h3 className="text-[16px] font-bold text-[#1a1c1d]">Recent Activity</h3>
-            <button className="text-[12px] font-semibold text-[#3d6377] hover:text-[#023143] transition-colors">View all →</button>
+            <h3 className="text-[16px] font-bold text-[#1a1c1d]">Actividad Reciente</h3>
+            <button className="text-[12px] font-semibold text-[#3d6377] hover:text-[#023143] transition-colors">Ver todo →</button>
           </div>
           <div className="space-y-4">
             {activity.map((a, i) => (
@@ -156,8 +156,8 @@ export default function DashboardPage() {
         {/* Project health */}
         <div className="card p-6">
           <div className="flex items-center justify-between mb-5">
-            <h3 className="text-[16px] font-bold text-[#1a1c1d]">Project Health</h3>
-            <span className="text-[11px] font-semibold text-[#72787c]">{projects.length} active</span>
+            <h3 className="text-[16px] font-bold text-[#1a1c1d]">Salud de Proyectos</h3>
+            <span className="text-[11px] font-semibold text-[#72787c]">{projects.length} activos</span>
           </div>
           <div className="space-y-5">
             {projects.map((p) => (
@@ -179,15 +179,15 @@ export default function DashboardPage() {
             <div className="flex items-center justify-between">
               <div className="text-center">
                 <p className="text-[22px] font-bold text-[#023143]">6</p>
-                <p className="text-[10px] text-[#72787c] font-semibold">Active</p>
+                <p className="text-[10px] text-[#72787c] font-semibold">Activos</p>
               </div>
               <div className="text-center">
                 <p className="text-[22px] font-bold text-[#2E7D32]">4</p>
-                <p className="text-[10px] text-[#72787c] font-semibold">Delivered</p>
+                <p className="text-[10px] text-[#72787c] font-semibold">Entregados</p>
               </div>
               <div className="text-center">
                 <p className="text-[22px] font-bold text-[#E65100]">2</p>
-                <p className="text-[10px] text-[#72787c] font-semibold">At risk</p>
+                <p className="text-[10px] text-[#72787c] font-semibold">En riesgo</p>
               </div>
             </div>
           </div>

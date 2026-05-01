@@ -17,14 +17,14 @@ type NavGroup = {
 
 const groups: NavGroup[] = [
   {
-    label: "Main",
+    label: "Principal",
     items: [
       { href: "/employee/dashboard", icon: "dashboard",      label: "Mi Dashboard"  },
       { href: "/employee/clients",   icon: "group",          label: "Mis Clientes"    },
     ],
   },
   {
-    label: "Operations",
+    label: "Operaciones",
     items: [
       { href: "/employee/contracts", icon: "description",    label: "Mis Contratos"  },
       { href: "/employee/schedule",  icon: "calendar_today", label: "Cronograma"   },
@@ -32,7 +32,7 @@ const groups: NavGroup[] = [
     ],
   },
   {
-    label: "Intelligence",
+    label: "Inteligencia",
     items: [
       { href: "/employee/tracking",  icon: "analytics",      label: "Seguimiento",  badge: "3" },
     ],

@@ -3,16 +3,16 @@ import { usePathname } from "next/navigation";
 
 const crumbs: Record<string, string> = {
   dashboard:   "Dashboard",
-  clients:     "Clients",
-  properties:  "Properties",
-  contracts:   "Contracts",
-  projects:    "Projects",
-  schedule:    "Schedule",
-  templates:   "Templates",
-  tracking:    "Tracking & Alerts",
-  employees:   "Employees",
-  permissions: "Permissions",
-  settings:    "Settings",
+  clients:     "Clientes",
+  properties:  "Propiedades",
+  contracts:   "Contratos",
+  projects:    "Proyectos",
+  schedule:    "Cronograma",
+  templates:   "Plantillas",
+  tracking:    "Seguimiento y Alertas",
+  employees:   "Empleados",
+  permissions: "Permisos",
+  settings:    "Configuración",
 };
 
 export default function TopNav() {
@@ -35,7 +35,7 @@ export default function TopNav() {
           <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[#72787c] text-[17px]">search</span>
           <input
             type="text"
-            placeholder="Search anything..."
+            placeholder="Buscar cualquier cosa..."
             className="w-full bg-[#f4f3f5] border border-transparent hover:border-[#c1c7cc] focus:border-[#023143] focus:bg-white rounded-lg pl-9 pr-12 py-2 text-[13px] text-[#1a1c1d] placeholder:text-[#72787c] outline-none transition-all duration-200"
           />
           <kbd className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-[#72787c] font-semibold bg-[#e2e2e4] px-1.5 py-0.5 rounded">⌘K</kbd>
@@ -62,7 +62,7 @@ export default function TopNav() {
           </div>
           <div className="hidden lg:block">
             <p className="text-[12px] font-semibold text-[#1a1c1d] leading-none">Admin</p>
-            <p className="text-[10px] text-[#72787c] mt-0.5">Global Admin</p>
+            <p className="text-[10px] text-[#72787c] mt-0.5">Admin Global</p>
           </div>
         </div>
       </div>

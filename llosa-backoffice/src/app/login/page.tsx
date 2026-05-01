@@ -84,12 +84,12 @@ export default function LoginPage() {
 
           {/* Tagline */}
           <p className="text-white/40 text-[13px] font-semibold uppercase tracking-[0.2em]">
-            Real Estate Management Platform
+            Plataforma de Gestión Inmobiliaria
           </p>
 
           {/* Feature pills */}
           <div className="flex gap-3 mt-10">
-            {["Contracts", "Projects", "Clients", "Analytics"].map(f => (
+            {["Contratos", "Proyectos", "Clientes", "Analítica"].map(f => (
               <span key={f} className="text-[11px] font-semibold text-white/30 border border-white/10 px-3 py-1 rounded-full">
                 {f}
               </span>
@@ -113,8 +113,8 @@ export default function LoginPage() {
         <div className="w-full max-w-[360px] animate-slide-up">
           {/* Header */}
           <div className="mb-6">
-            <h2 className="text-[28px] font-bold text-[#1a1c1d] tracking-tight">Welcome back</h2>
-            <p className="text-[14px] text-[#72787c] mt-1">Sign in to the Backoffice Portal</p>
+            <h2 className="text-[28px] font-bold text-[#1a1c1d] tracking-tight">Bienvenido</h2>
+            <p className="text-[14px] text-[#72787c] mt-1">Inicia sesión en el Portal Backoffice</p>
           </div>
 
           {/* Role Selector (Demo purpose) */}
@@ -148,7 +148,7 @@ export default function LoginPage() {
             {/* Email */}
             <div>
               <label className="block text-[12px] font-bold text-[#41484c] uppercase tracking-wider mb-1.5">
-                Email address
+                Correo Electrónico
               </label>
               <div className="relative">
                 <span className="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-[#72787c] text-[18px]">mail</span>
@@ -157,7 +157,7 @@ export default function LoginPage() {
                   required
                   value={email}
                   onChange={e => setEmail(e.target.value)}
-                  placeholder="you@llosa.com"
+                  placeholder="tu@llosa.com"
                   className="w-full pl-10 pr-4 py-3 border border-[#e2e2e4] rounded-xl text-[14px] text-[#1a1c1d] placeholder:text-[#c1c7cc] focus:outline-none focus:border-[#023143] focus:ring-2 focus:ring-[#023143]/10 transition-all"
                 />
               </div>
@@ -167,10 +167,10 @@ export default function LoginPage() {
             <div>
               <div className="flex justify-between items-center mb-1.5">
                 <label className="block text-[12px] font-bold text-[#41484c] uppercase tracking-wider">
-                  Password
+                  Contraseña
                 </label>
                 <button type="button" className="text-[12px] font-semibold text-[#023143] hover:underline">
-                  Forgot password?
+                  ¿Olvidaste tu contraseña?
                 </button>
               </div>
               <div className="relative">
@@ -205,11 +205,11 @@ export default function LoginPage() {
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
                   </svg>
-                  Signing in…
+                  Iniciando sesión…
                 </>
               ) : (
                 <>
-                  Sign in
+                  Ingresar
                   <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
                 </>
               )}
@@ -218,7 +218,7 @@ export default function LoginPage() {
 
           {/* Footer */}
           <p className="text-center text-[11px] text-[#c1c7cc] mt-10">
-            Protected by Llosa Edificaciones security policy
+            Protegido por la política de seguridad de Llosa Edificaciones
           </p>
         </div>
       </div>

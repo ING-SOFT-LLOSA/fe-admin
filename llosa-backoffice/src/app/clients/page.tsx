@@ -6,15 +6,15 @@ export default function ClientsPage() {
       {/* Page Header */}
       <div className="flex justify-between items-end mb-4">
         <div>
-          <h2 className="text-[36px] leading-[44px] font-bold tracking-[-0.02em] text-[#1a1c1d]">Customer Management</h2>
-          <p className="text-base text-[#41484c] mt-2">Manage client records, contacts, and purchase history.</p>
+          <h2 className="text-[36px] leading-[44px] font-bold tracking-[-0.02em] text-[#1a1c1d]">Gestión de Clientes</h2>
+          <p className="text-base text-[#41484c] mt-2">Administra registros de clientes, contactos y su historial de compras.</p>
         </div>
         <div className="flex gap-3">
           <button className="px-4 py-2 border border-[#e2e2e4] rounded-xl text-[#1a1c1d] text-xs font-semibold hover:bg-[#eeeeef] transition-colors flex items-center gap-2">
-            <span className="material-symbols-outlined text-[18px]">download</span>Export List
+            <span className="material-symbols-outlined text-[18px]">download</span>Exportar Lista
           </button>
           <button className="px-4 py-2 bg-[#023143] text-white rounded-xl text-xs font-semibold hover:bg-[#001b27] transition-colors flex items-center gap-2 shadow-sm">
-            <span className="material-symbols-outlined text-[18px]">add</span>New Client
+            <span className="material-symbols-outlined text-[18px]">add</span>Nuevo Cliente
           </button>
         </div>
       </div>
@@ -22,31 +22,31 @@ export default function ClientsPage() {
       {/* Filters */}
       <div className="bg-white rounded-xl border border-[#e2e2e4] p-4 flex gap-4 items-end shadow-[0_4px_20px_rgba(2,49,67,0.02)]">
         <div className="flex-1">
-          <label className="text-[12px] font-semibold text-[#41484c] mb-1 block">Search</label>
+          <label className="text-[12px] font-semibold text-[#41484c] mb-1 block">Buscar</label>
           <div className="relative">
             <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[#72787c] text-sm">search</span>
-            <input type="text" placeholder="Search clients..." className="w-full pl-9 pr-4 py-2 bg-[#f9f9fb] border border-[#e2e2e4] rounded-xl text-sm focus:outline-none focus:border-[#023143]" />
+            <input type="text" placeholder="Buscar clientes..." className="w-full pl-9 pr-4 py-2 bg-[#f9f9fb] border border-[#e2e2e4] rounded-xl text-sm focus:outline-none focus:border-[#023143]" />
           </div>
         </div>
         <div className="flex-1">
-          <label className="text-[12px] font-semibold text-[#41484c] mb-1 block">Status</label>
+          <label className="text-[12px] font-semibold text-[#41484c] mb-1 block">Estado</label>
           <select className="w-full h-10 bg-[#f9f9fb] border border-[#e2e2e4] rounded-xl text-sm px-3 focus:outline-none focus:border-[#023143]">
-            <option>All Statuses</option>
-            <option>Active</option>
-            <option>Inactive</option>
+            <option>Todos los Estados</option>
+            <option>Activo</option>
+            <option>Inactivo</option>
             <option>VIP</option>
           </select>
         </div>
         <div className="flex-1">
-          <label className="text-[12px] font-semibold text-[#41484c] mb-1 block">Project</label>
+          <label className="text-[12px] font-semibold text-[#41484c] mb-1 block">Proyecto</label>
           <select className="w-full h-10 bg-[#f9f9fb] border border-[#e2e2e4] rounded-xl text-sm px-3 focus:outline-none focus:border-[#023143]">
-            <option>All Projects</option>
+            <option>Todos los Proyectos</option>
             <option>Torre Aviana</option>
             <option>Parque Sur</option>
             <option>Vistas del Golf</option>
           </select>
         </div>
-        <button className="h-10 px-4 text-[#023143] text-xs font-semibold hover:bg-[#eeeeef] rounded-xl transition-colors">Clear</button>
+        <button className="h-10 px-4 text-[#023143] text-xs font-semibold hover:bg-[#eeeeef] rounded-xl transition-colors">Limpiar</button>
       </div>
 
       {/* Table */}
@@ -55,7 +55,7 @@ export default function ClientsPage() {
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="border-b border-[#e2e2e4] bg-[#f9f9fb]">
-                {["Client","DNI / RUC","Email","Phone","Project","Status","Actions"].map(h => (
+                {["Cliente","DNI / RUC","Email","Teléfono","Proyecto","Estado","Acciones"].map(h => (
                   <th key={h} className="py-4 px-6 text-[12px] font-semibold text-[#023143] uppercase tracking-wider">{h}</th>
                 ))}
               </tr>
@@ -92,7 +92,7 @@ export default function ClientsPage() {
           </table>
         </div>
         <div className="px-6 py-4 border-t border-[#e2e2e4] bg-[#f9f9fb] flex items-center justify-between mt-auto">
-          <span className="text-xs text-[#41484c]">Showing 1 to 4 of 248 clients</span>
+          <span className="text-xs text-[#41484c]">Mostrando 1 a 4 de 248 clientes</span>
           <div className="flex gap-1">
             <button className="w-8 h-8 flex items-center justify-center rounded border border-[#e2e2e4] text-[#41484c] hover:bg-[#eeeeef] disabled:opacity-50" disabled>
               <span className="material-symbols-outlined text-[18px]">chevron_left</span>

@@ -1,22 +1,22 @@
 import AdminLayout from "@/components/AdminLayout";
 
 const steps = [
-  { label: "Separation", date: "Oct 12", done: true },
-  { label: "Receipt Generated", date: "Oct 14", done: true },
-  { label: "Contract Review", date: "In Progress", active: true },
-  { label: "Contract Generated", date: "", done: false },
-  { label: "Signed", date: "", done: false },
-  { label: "Legalized", date: "", done: false },
-  { label: "Digitalized", date: "", done: false },
-  { label: "Sent", date: "", done: false },
+  { label: "Separación", date: "12 Oct", done: true },
+  { label: "Recibo Generado", date: "14 Oct", done: true },
+  { label: "Revisión de Contrato", date: "En Progreso", active: true },
+  { label: "Contrato Generado", date: "", done: false },
+  { label: "Firmado", date: "", done: false },
+  { label: "Legalizado", date: "", done: false },
+  { label: "Digitalizado", date: "", done: false },
+  { label: "Enviado", date: "", done: false },
 ];
 
 const contracts = [
-  { unit: "Torre Aviana - 1402", client: "Carlos Mendoza", id: "CTR-2023-0842", badge: "Review", badgeBg: "bg-[#c2e8ff] text-[#001e2b]", active: true },
-  { unit: "Parque Sur - 501", client: "Maria Fernanda Rojas", id: "CTR-2023-0839", badge: "Legalized", badgeBg: "bg-[#e2e2e4] text-[#41484c]" },
-  { unit: "Vistas del Golf - 202", client: "Inversiones Altamira SAC", id: "CTR-2023-0835", badge: "Signed", badgeBg: "bg-[#ffdcbf] text-[#2d1600]" },
-  { unit: "Torre Aviana - 1104", client: "Luis Delgado", id: "CTR-2023-0831", badge: "Review", badgeBg: "bg-[#c2e8ff] text-[#001e2b]" },
-  { unit: "Parque Sur - 802", client: "Elena Vargas", id: "CTR-2023-0828", badge: "Sent", badgeBg: "bg-[#d1fae5] text-[#065f46]" },
+  { unit: "Torre Aviana - 1402", client: "Carlos Mendoza", id: "CTR-2023-0842", badge: "Revisión", badgeBg: "bg-[#c2e8ff] text-[#001e2b]", active: true },
+  { unit: "Parque Sur - 501", client: "Maria Fernanda Rojas", id: "CTR-2023-0839", badge: "Legalizado", badgeBg: "bg-[#e2e2e4] text-[#41484c]" },
+  { unit: "Vistas del Golf - 202", client: "Inversiones Altamira SAC", id: "CTR-2023-0835", badge: "Firmado", badgeBg: "bg-[#ffdcbf] text-[#2d1600]" },
+  { unit: "Torre Aviana - 1104", client: "Luis Delgado", id: "CTR-2023-0831", badge: "Revisión", badgeBg: "bg-[#c2e8ff] text-[#001e2b]" },
+  { unit: "Parque Sur - 802", client: "Elena Vargas", id: "CTR-2023-0828", badge: "Enviado", badgeBg: "bg-[#d1fae5] text-[#065f46]" },
 ];
 
 export default function ContractsPage() {
@@ -25,15 +25,15 @@ export default function ContractsPage() {
       {/* Page Header */}
       <div className="flex justify-between items-end mb-4">
         <div>
-          <h1 className="text-[36px] leading-[44px] font-bold tracking-[-0.02em] text-[#001b27]">Contract Tracking</h1>
-          <p className="text-base text-[#41484c] mt-2">Manage and track the lifecycle of property contracts.</p>
+          <h1 className="text-[36px] leading-[44px] font-bold tracking-[-0.02em] text-[#001b27]">Seguimiento de Contratos</h1>
+          <p className="text-base text-[#41484c] mt-2">Administra y realiza seguimiento al ciclo de vida de contratos inmobiliarios.</p>
         </div>
         <div className="flex gap-4">
           <button className="px-4 py-2 rounded border border-[#E5E7EB] bg-white text-[#1a1c1d] text-xs font-semibold hover:bg-[#f4f3f5] transition-colors flex items-center gap-2">
-            <span className="material-symbols-outlined text-[18px]">filter_list</span>Filter
+            <span className="material-symbols-outlined text-[18px]">filter_list</span>Filtrar
           </button>
           <button className="px-4 py-2 rounded bg-[#023143] text-white text-xs font-semibold hover:bg-[#001b27] transition-colors flex items-center gap-2">
-            <span className="material-symbols-outlined text-[18px]">add</span>New Contract
+            <span className="material-symbols-outlined text-[18px]">add</span>Nuevo Contrato
           </button>
         </div>
       </div>
@@ -46,11 +46,11 @@ export default function ContractsPage() {
             <div className="flex justify-between items-start mb-8">
               <div>
                 <div className="flex items-center gap-3 mb-1">
-                  <span className="px-2 py-1 bg-[#c2e8ff] text-[#001e2b] text-[12px] font-semibold rounded uppercase">Contract Review</span>
+                  <span className="px-2 py-1 bg-[#c2e8ff] text-[#001e2b] text-[12px] font-semibold rounded uppercase">Revisión de Contrato</span>
                   <span className="text-[12px] font-semibold text-[#72787c]">ID: CTR-2023-0842</span>
                 </div>
-                <h3 className="text-[28px] leading-[36px] font-semibold text-[#001b27]">Torre Aviana - Unit 1402</h3>
-                <p className="text-sm text-[#41484c]">Client: Carlos Mendoza</p>
+                <h3 className="text-[28px] leading-[36px] font-semibold text-[#001b27]">Torre Aviana - Unidad 1402</h3>
+                <p className="text-sm text-[#41484c]">Cliente: Carlos Mendoza</p>
               </div>
               <div className="flex gap-2">
                 {["download","edit"].map(icon => (
@@ -90,13 +90,13 @@ export default function ContractsPage() {
 
             <div className="mt-8 pt-6 border-t border-[#E5E7EB] flex gap-4">
               <button className="px-6 py-2 rounded bg-[#023143] text-white text-xs font-semibold hover:bg-[#001b27] transition-colors flex items-center gap-2">
-                <span className="material-symbols-outlined text-[18px]">visibility</span>View Contract
+                <span className="material-symbols-outlined text-[18px]">visibility</span>Ver Contrato
               </button>
               <button className="px-6 py-2 rounded border border-[#E5E7EB] bg-white text-[#1a1c1d] text-xs font-semibold hover:bg-[#f4f3f5] transition-colors flex items-center gap-2">
-                <span className="material-symbols-outlined text-[18px]">upload_file</span>Upload Document
+                <span className="material-symbols-outlined text-[18px]">upload_file</span>Subir Documento
               </button>
               <button className="px-6 py-2 rounded border border-[#E5E7EB] bg-white text-[#1a1c1d] text-xs font-semibold hover:bg-[#f4f3f5] transition-colors flex items-center gap-2 ml-auto">
-                <span className="material-symbols-outlined text-[18px]">mail</span>Send by Email
+                <span className="material-symbols-outlined text-[18px]">mail</span>Enviar por Correo
               </button>
             </div>
           </div>
@@ -105,10 +105,10 @@ export default function ContractsPage() {
           <div className="grid grid-cols-2 gap-6">
             <div className="bg-white rounded-xl border border-[#E5E7EB] p-6 shadow-[0_4px_20px_rgba(2,49,67,0.05)]">
               <h4 className="text-[20px] font-semibold text-[#001b27] mb-4 flex items-center gap-2">
-                <span className="material-symbols-outlined text-[#3d6377]">person</span>Client Information
+                <span className="material-symbols-outlined text-[#3d6377]">person</span>Información del Cliente
               </h4>
               <div className="space-y-4">
-                {[["Full Name","Carlos Eduardo Mendoza Silva"],["Document (DNI)","45892103"],["Email","c.mendoza@example.com"],["Phone","+51 987 654 321"]].map(([label,val]) => (
+                {[["Nombre Completo","Carlos Eduardo Mendoza Silva"],["Documento (DNI)","45892103"],["Email","c.mendoza@example.com"],["Teléfono","+51 987 654 321"]].map(([label,val]) => (
                   <div key={label}>
                     <p className="text-[12px] font-semibold text-[#72787c] uppercase tracking-wider mb-1">{label}</p>
                     <p className="text-sm text-[#1a1c1d]">{val}</p>
@@ -118,10 +118,10 @@ export default function ContractsPage() {
             </div>
             <div className="bg-white rounded-xl border border-[#E5E7EB] p-6 shadow-[0_4px_20px_rgba(2,49,67,0.05)]">
               <h4 className="text-[20px] font-semibold text-[#001b27] mb-4 flex items-center gap-2">
-                <span className="material-symbols-outlined text-[#3d6377]">domain</span>Property Details
+                <span className="material-symbols-outlined text-[#3d6377]">domain</span>Detalles de la Propiedad
               </h4>
               <div className="space-y-4">
-                {[["Project","Torre Aviana Residencial"],["Unit / Type","1402 / 3-Bedroom Flat"],["Total Value","$ 245,000.00"],["Separation Amount","$ 5,000.00 (Paid Oct 12)"]].map(([label,val]) => (
+                {[["Proyecto","Torre Aviana Residencial"],["Unidad / Tipo","1402 / Flat 3 Dorm."],["Valor Total","$ 245,000.00"],["Monto de Separación","$ 5,000.00 (Pagado 12 Oct)"]].map(([label,val]) => (
                   <div key={label}>
                     <p className="text-[12px] font-semibold text-[#72787c] uppercase tracking-wider mb-1">{label}</p>
                     <p className="text-sm text-[#1a1c1d]">{val}</p>
@@ -136,10 +136,10 @@ export default function ContractsPage() {
         <div className="col-span-12 xl:col-span-4">
           <div className="bg-white rounded-xl border border-[#E5E7EB] flex flex-col h-[800px] shadow-[0_4px_20px_rgba(2,49,67,0.05)]">
             <div className="p-6 border-b border-[#E5E7EB]">
-              <h3 className="text-[20px] font-semibold text-[#001b27]">Recent Contracts</h3>
+              <h3 className="text-[20px] font-semibold text-[#001b27]">Contratos Recientes</h3>
               <div className="mt-4 relative">
                 <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[#72787c] text-[18px]">search</span>
-                <input type="text" placeholder="Search list..." className="w-full bg-[#f9f9fb] border border-[#E5E7EB] rounded pl-9 pr-3 py-1.5 text-sm focus:outline-none focus:border-[#023143] transition-colors" />
+                <input type="text" placeholder="Buscar en lista..." className="w-full bg-[#f9f9fb] border border-[#E5E7EB] rounded pl-9 pr-3 py-1.5 text-sm focus:outline-none focus:border-[#023143] transition-colors" />
               </div>
             </div>
             <div className="flex-1 overflow-y-auto">
@@ -155,7 +155,7 @@ export default function ContractsPage() {
               ))}
             </div>
             <div className="p-4 border-t border-[#E5E7EB] bg-[#f4f3f5] text-center">
-              <button className="text-[12px] font-semibold text-[#3d6377] hover:text-[#001b27] transition-colors">Load More</button>
+              <button className="text-[12px] font-semibold text-[#3d6377] hover:text-[#001b27] transition-colors">Cargar Más</button>
             </div>
           </div>
         </div>
