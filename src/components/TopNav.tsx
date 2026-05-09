@@ -2,23 +2,18 @@
 import { usePathname } from "next/navigation";
 
 const crumbs: Record<string, string> = {
-  dashboard:   "Dashboard",
-  clients:     "Clientes",
-  properties:  "Propiedades",
-  contracts:   "Contratos",
-  projects:    "Proyectos",
-  schedule:    "Cronograma",
-  templates:   "Plantillas",
-  tracking:    "Seguimiento y Alertas",
-  employees:   "Empleados",
-  permissions: "Permisos",
-  settings:    "Configuración",
+  proyectos: "Proyectos y Gestión de Obra",
+  clientes: "Gestión Comercial y Ventas",
+  finanzas: "Pagos y Cobranzas",
+  legal: "Gestión Documental y Legal",
+  agenda: "Calendario Corporativo",
+  configuracion: "Administración del Sistema",
 };
 
 export default function TopNav() {
   const pathname = usePathname();
   const segment = pathname.split("/").filter(Boolean)[0] ?? "dashboard";
-  const label   = crumbs[segment] ?? segment;
+  const label = crumbs[segment] ?? segment;
 
   return (
     <header className="sticky top-0 z-30 h-14 flex items-center justify-between px-8 bg-white/90 backdrop-blur-sm border-b border-[#e2e2e4] shadow-[0_1px_0_rgba(0,0,0,.04)]">

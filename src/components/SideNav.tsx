@@ -16,37 +16,29 @@ type NavGroup = {
 
 const groups: NavGroup[] = [
   {
+    label: "Módulos Principales",
+    items: [
+      { href: "/proyectos", icon: "architecture", label: "Gestión de Obra" },
+      { href: "/clientes", icon: "group", label: "Gestión Comercial" },
+      { href: "/finanzas", icon: "payments", label: "Pagos y Cobranzas" },
+      { href: "/legal", icon: "gavel", label: "Gestión Documental" },
+      { href: "/agenda", icon: "calendar_today", label: "Calendario" },
+    ],
+  },
+  {
     label: "Administración",
     items: [
-      { href: "/employees",   icon: "badge",          label: "Empleados"  },
-      { href: "/permissions", icon: "lock_person",    label: "Permisos"},
-      { href: "/settings",    icon: "settings",       label: "Configuración"   },
-    ],
-  },
-  {
-    label: "Principal",
-    items: [
-      { href: "/admin/dashboard",   icon: "dashboard",      label: "Dashboard"  },
-      { href: "/clients",     icon: "group",          label: "Clientes"    },
-      { href: "/properties",  icon: "domain",         label: "Propiedades" },
-    ],
-  },
-  {
-    label: "Operaciones",
-    items: [
-      { href: "/projects",    icon: "architecture",   label: "Proyectos"   },
-      { href: "/schedule",    icon: "calendar_today", label: "Cronograma"   },
-      { href: "/progress",    icon: "photo_library",  label: "Avances de Obra"   },
+      { href: "/configuracion", icon: "settings", label: "Ajustes del Sistema" },
     ],
   },
 ];
 
 export default function SideNav() {
   const pathname = usePathname();
-  const router   = useRouter();
+  const router = useRouter();
 
   function handleLogout() {
-    router.push("/login");
+    router.push("/login-empresa");
   }
 
   return (
@@ -76,11 +68,10 @@ export default function SideNav() {
                   <Link
                     key={href}
                     href={href}
-                    className={`group flex items-center gap-3 px-3 py-2.5 rounded-lg text-[13px] font-medium transition-all duration-150 ${
-                      active
+                    className={`group flex items-center gap-3 px-3 py-2.5 rounded-lg text-[13px] font-medium transition-all duration-150 ${active
                         ? "bg-white/12 text-white border-l-[3px] border-white pl-[9px]"
                         : "text-white/60 hover:text-white hover:bg-white/6 border-l-[3px] border-transparent pl-[9px]"
-                    }`}
+                      }`}
                   >
                     <span className={`material-symbols-outlined text-[19px] transition-all ${active ? "fill" : "group-hover:scale-110"}`}>
                       {icon}
