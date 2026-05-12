@@ -8,12 +8,55 @@ type Status = "draft"|"ready"|"sent"|"viewed";
 
 const PROJECTS = ["Torre Aviana Residencial","Parque Sur","Edificio Central","Condominio Vista Mar"];
 const STAGES   = ["Cimentación","Estructura","Fachadas","Acabados Interiores","Entrega"];
-const FLOORS  = [
-  { id:"p01", name:"Piso 01",       email:"proyecto-central@llosa.com",  initials:"01", color:"bg-[#023143] text-white"         },
-  { id:"p02", name:"Piso 02",       email:"proyecto-central@llosa.com",  initials:"02", color:"bg-[#442605] text-[#ffdcbf]"    },
-  { id:"p03", name:"Piso 03",       email:"proyecto-central@llosa.com",  initials:"03", color:"bg-[#c2e8ff] text-[#001b27]"    },
-  { id:"p04", name:"Piso 04",       email:"proyecto-central@llosa.com",  initials:"04", color:"bg-[#e9e0e1] text-[#635d5e]"   },
-];
+const MOCK_DATA_BY_PROJECT: Record<string, { floorName: string; clients: any[] }[]> = {
+  "Torre Aviana Residencial": [
+    {
+      floorName: "Piso 01",
+      clients: [
+        { id: "ta-c1", name: "Juan Pérez", email: "juan.perez@example.com", initials: "JP", color: "bg-[#023143] text-white" },
+        { id: "ta-c2", name: "Ana Silva", email: "ana.silva@example.com", initials: "AS", color: "bg-[#442605] text-[#ffdcbf]" },
+      ]
+    },
+    {
+      floorName: "Piso 02",
+      clients: [
+        { id: "ta-c3", name: "Carlos Gómez", email: "carlos.gomez@example.com", initials: "CG", color: "bg-[#c2e8ff] text-[#001b27]" }
+      ]
+    }
+  ],
+  "Parque Sur": [
+    {
+      floorName: "Piso 01",
+      clients: [
+        { id: "ps-c1", name: "Elena Rojas", email: "elena.rojas@ejemplo.com", initials: "ER", color: "bg-[#e9e0e1] text-[#635d5e]" }
+      ]
+    },
+    {
+      floorName: "Piso 05",
+      clients: [
+        { id: "ps-c2", name: "Luis Torres", email: "luis.torres@ejemplo.com", initials: "LT", color: "bg-[#023143] text-white" },
+        { id: "ps-c3", name: "María López", email: "maria.lopez@ejemplo.com", initials: "ML", color: "bg-[#442605] text-[#ffdcbf]" }
+      ]
+    }
+  ],
+  "Edificio Central": [
+    {
+      floorName: "Nivel 10",
+      clients: [
+        { id: "ec-c1", name: "Jorge Mendoza", email: "jorge.mendoza@correo.com", initials: "JM", color: "bg-[#c2e8ff] text-[#001b27]" }
+      ]
+    }
+  ],
+  "Condominio Vista Mar": [
+    {
+      floorName: "Torre A - Piso 2",
+      clients: [
+        { id: "cvm-c1", name: "Sofía Castro", email: "sofia.castro@mail.com", initials: "SC", color: "bg-[#e9e0e1] text-[#635d5e]" },
+        { id: "cvm-c2", name: "Pedro Soto", email: "pedro.soto@mail.com", initials: "PS", color: "bg-[#023143] text-white" }
+      ]
+    }
+  ]
+};
 const HISTORY: {id:number;title:string;project:string;status:Status;photos:number;vids:number;date:string}[] = [
   { id:1, title:"Torre Aviana – Semana 14",      project:"Torre Aviana",   status:"viewed", photos:3, vids:0, date:"20 Oct" },
   { id:2, title:"Parque Sur – Acabado Piso 5", project:"Parque Sur",     status:"sent",   photos:5, vids:1, date:"18 Oct" },
@@ -76,6 +119,9 @@ export default function ProgressPage() {
     });
   }
 
+  const currentClientsByFloor = project ? MOCK_DATA_BY_PROJECT[project] || [] : [];
+  const currentAllClientIds = currentClientsByFloor.flatMap(f => f.clients.map(c => c.id));
+
   const photos = files.filter(f=>f.type==="photo");
   const videos = files.filter(f=>f.type==="video");
   const shown  = tab==="all"?files:files.filter(f=>f.type===tab);
@@ -90,7 +136,7 @@ export default function ProgressPage() {
               <span className="material-symbols-outlined text-[44px] text-[#2E7D32]">check_circle</span>
             </div>
             <h2 className="text-[24px] font-bold text-[#1a1c1d] mb-2">¡Actualización Enviada!</h2>
-            <p className="text-[13px] text-[#41484c] mb-1"><strong>"{title}"</strong> fue entregada a {clients.length} piso(s).</p>
+            <p className="text-[13px] text-[#41484c] mb-1"><strong>"{title}"</strong> fue entregada a {clients.length} persona(s).</p>
             <p className="text-[12px] text-[#72787c] mb-8">{sendEmail?"Notificación por correo enviada.":"No se envió correo."}</p>
             <div className="flex gap-3 justify-center">
               <button onClick={()=>{setSent(false);setFiles([]);setTitle("");setDesc("");setProject("");setStage("");setClients([]);}}
@@ -171,19 +217,28 @@ export default function ProgressPage() {
             <textarea value={desc} onChange={e=>setDesc(e.target.value)} rows={2} placeholder="Breve descripción de esta actualización de progreso..."
               className="w-full border border-[#e2e2e4] rounded-xl px-4 py-2.5 text-[13px] focus:outline-none focus:border-[#023143] focus:ring-2 focus:ring-[#023143]/10 transition-all resize-none"/>
             <div className="grid grid-cols-2 gap-3">
-              {[[project,setProject,PROJECTS,"Proyecto *"],[stage,setStage,STAGES,"Etapa / Hito"]].map(([val,setter,opts,label])=>(
-                <div key={label as string}>
-                  <label className="text-[10px] font-bold text-[#72787c] uppercase tracking-wider block mb-1">{label as string}</label>
-                  <div className="relative">
-                    <select value={val as string} onChange={e=>(setter as (v:string)=>void)(e.target.value)}
-                      className="w-full appearance-none border border-[#e2e2e4] rounded-xl px-3 py-2.5 pr-8 text-[13px] bg-white focus:outline-none focus:border-[#023143]">
-                      <option value="">Seleccionar...</option>
-                      {(opts as string[]).map(o=><option key={o}>{o}</option>)}
-                    </select>
-                    <span className="material-symbols-outlined absolute right-2.5 top-1/2 -translate-y-1/2 text-[#72787c] text-[16px] pointer-events-none">expand_more</span>
-                  </div>
+              <div>
+                <label className="text-[10px] font-bold text-[#72787c] uppercase tracking-wider block mb-1">Proyecto *</label>
+                <div className="relative">
+                  <select value={project} onChange={e=>{setProject(e.target.value);setClients([]);}}
+                    className="w-full appearance-none border border-[#e2e2e4] rounded-xl px-3 py-2.5 pr-8 text-[13px] bg-white focus:outline-none focus:border-[#023143]">
+                    <option value="">Seleccionar...</option>
+                    {PROJECTS.map(o=><option key={o}>{o}</option>)}
+                  </select>
+                  <span className="material-symbols-outlined absolute right-2.5 top-1/2 -translate-y-1/2 text-[#72787c] text-[16px] pointer-events-none">expand_more</span>
                 </div>
-              ))}
+              </div>
+              <div>
+                <label className="text-[10px] font-bold text-[#72787c] uppercase tracking-wider block mb-1">Etapa / Hito</label>
+                <div className="relative">
+                  <select value={stage} onChange={e=>setStage(e.target.value)}
+                    className="w-full appearance-none border border-[#e2e2e4] rounded-xl px-3 py-2.5 pr-8 text-[13px] bg-white focus:outline-none focus:border-[#023143]">
+                    <option value="">Seleccionar...</option>
+                    {STAGES.map(o=><option key={o}>{o}</option>)}
+                  </select>
+                  <span className="material-symbols-outlined absolute right-2.5 top-1/2 -translate-y-1/2 text-[#72787c] text-[16px] pointer-events-none">expand_more</span>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -254,28 +309,61 @@ export default function ProgressPage() {
         <div className="col-span-3 space-y-4">
           <div className="card p-5 space-y-3">
             <h3 className="text-[13px] font-bold text-[#1a1c1d] flex items-center gap-2">
-              <span className="material-symbols-outlined text-[16px] text-[#3d6377]">apartment</span>Unidades destinatarias *
+              <span className="material-symbols-outlined text-[16px] text-[#3d6377]">groups</span>Personas destinatarias *
             </h3>
-            <button
-              onClick={() => setClients(clients.length === FLOORS.length ? [] : FLOORS.map((f) => f.id))}
-              className="w-full text-left px-3 py-2 rounded-lg border border-[#c1c7cc] text-[11px] font-semibold text-[#023143] hover:bg-[#f4f3f5]"
-            >
-              Seleccionar todo
-            </button>
-            {FLOORS.map(c=>(
-              <button key={c.id} onClick={()=>setClients(prev=>prev.includes(c.id)?prev.filter(x=>x!==c.id):[...prev,c.id])}
-                className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl border transition-all ${clients.includes(c.id)?"border-[#023143] bg-[#c2e8ff]/20":"border-[#e2e2e4] hover:border-[#023143]/30"}`}>
-                <div className={`w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 ${c.color}`}>{c.initials}</div>
-                <div className="text-left flex-1 min-w-0">
-                  <p className="text-[11px] font-semibold text-[#1a1c1d] truncate">{c.name}</p>
-                  <p className="text-[10px] text-[#72787c] truncate">{c.email}</p>
+            
+            {!project ? (
+              <div className="p-4 border border-[#e2e2e4] border-dashed rounded-xl text-center bg-[#f9f9fb]">
+                <p className="text-[12px] text-[#72787c]">Selecciona un proyecto para ver sus destinatarios.</p>
+              </div>
+            ) : (
+              <>
+                <button
+                  onClick={() => setClients(clients.length === currentAllClientIds.length ? [] : currentAllClientIds)}
+                  className="w-full text-left px-3 py-2 rounded-lg border border-[#c1c7cc] text-[11px] font-semibold text-[#023143] hover:bg-[#f4f3f5]"
+                >
+                  Seleccionar todo
+                </button>
+                <div className="max-h-[400px] overflow-y-auto space-y-4 pr-1">
+                  {currentClientsByFloor.map(floor => (
+                    <div key={floor.floorName} className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <p className="text-[11px] font-bold text-[#72787c] uppercase tracking-wider">{floor.floorName}</p>
+                        <button 
+                          onClick={() => {
+                            const floorIds = floor.clients.map(c => c.id);
+                            const allSelected = floorIds.every(id => clients.includes(id));
+                            if (allSelected) {
+                              setClients(prev => prev.filter(id => !floorIds.includes(id)));
+                            } else {
+                              const newClients = new Set([...clients, ...floorIds]);
+                              setClients(Array.from(newClients));
+                            }
+                          }}
+                          className="text-[10px] text-[#023143] font-semibold hover:underline"
+                        >
+                          {floor.clients.every(c => clients.includes(c.id)) ? "Deseleccionar piso" : "Seleccionar piso"}
+                        </button>
+                      </div>
+                      {floor.clients.map(c => (
+                        <button key={c.id} onClick={()=>setClients(prev=>prev.includes(c.id)?prev.filter(x=>x!==c.id):[...prev,c.id])}
+                          className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl border transition-all ${clients.includes(c.id)?"border-[#023143] bg-[#c2e8ff]/20":"border-[#e2e2e4] hover:border-[#023143]/30"}`}>
+                          <div className={`w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 ${c.color}`}>{c.initials}</div>
+                          <div className="text-left flex-1 min-w-0">
+                            <p className="text-[11px] font-semibold text-[#1a1c1d] truncate">{c.name}</p>
+                            <p className="text-[10px] text-[#72787c] truncate">{c.email}</p>
+                          </div>
+                          <div className={`w-4 h-4 rounded border-2 flex items-center justify-center shrink-0 transition-all ${clients.includes(c.id)?"border-[#023143] bg-[#023143]":"border-[#c1c7cc]"}`}>
+                            {clients.includes(c.id) && <span className="material-symbols-outlined text-white text-[11px]">check</span>}
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  ))}
                 </div>
-                <div className={`w-4 h-4 rounded border-2 flex items-center justify-center shrink-0 transition-all ${clients.includes(c.id)?"border-[#023143] bg-[#023143]":"border-[#c1c7cc]"}`}>
-                  {clients.includes(c.id) && <span className="material-symbols-outlined text-white text-[11px]">check</span>}
-                </div>
-              </button>
-            ))}
-            {clients.length>0 && <p className="text-[11px] text-[#3d6377] font-semibold pt-1">{clients.length} piso(s) seleccionado(s)</p>}
+                {clients.length>0 && <p className="text-[11px] text-[#3d6377] font-semibold pt-1">{clients.length} persona(s) seleccionada(s)</p>}
+              </>
+            )}
           </div>
 
           {/* Email toggle */}
@@ -287,7 +375,7 @@ export default function ProgressPage() {
               </div>
               <Toggle on={sendEmail} onChange={()=>setSendEmail(!sendEmail)}/>
             </div>
-            <p className="text-[11px] text-[#72787c]">{sendEmail?"Se enviará un correo al equipo del proyecto por cada piso seleccionado.":"No se enviará ningún correo."}</p>
+            <p className="text-[11px] text-[#72787c]">{sendEmail?"Se enviará un correo a cada persona seleccionada.":"No se enviará ningún correo."}</p>
           </div>
 
           {/* Summary */}
@@ -361,7 +449,7 @@ export default function ProgressPage() {
             </div>
             <h3 className="text-[18px] font-bold text-[#1a1c1d] text-center mb-1">¿Enviar Actualización?</h3>
             <p className="text-[13px] text-[#41484c] text-center mb-5">
-              <strong>"{title}"</strong> será enviada a <strong>{clients.length}</strong> piso(s).
+              <strong>"{title}"</strong> será enviada a <strong>{clients.length}</strong> persona(s).
               {sendEmail?" También se enviará una notificación por correo.":""}
             </p>
             <div className="flex gap-3">
