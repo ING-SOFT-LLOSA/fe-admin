@@ -163,11 +163,11 @@ export default function SchedulePage() {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h2 className="text-[36px] leading-[44px] font-bold tracking-[-0.02em] text-[#001b27]">Agendamiento y Citas</h2>
-          <p className="text-base text-[#41484c] mt-2">Centraliza tu calendario y formaliza reuniones operativas y entregas. (Integrado con Google Calendar)</p>
+          <h2 className="text-[36px] leading-[44px] font-bold tracking-[-0.02em] text-[#001b27]">Agenda y Citas</h2>
+          <p className="text-base text-[#41484c] mt-2">Programa reuniones, firmas, entregas y eventos importantes con clientes.</p>
         </div>
         <button onClick={handleOpenModal} className="bg-[#023143] text-white text-[13px] font-bold px-6 py-2.5 rounded-lg flex items-center gap-2 hover:bg-[#001b27] transition-all shadow-md">
-          <span className="material-symbols-outlined text-[18px]">event_available</span>Nueva Cita
+          <span className="material-symbols-outlined text-[18px]">event_available</span>Nueva cita
         </button>
       </div>
 
@@ -219,7 +219,7 @@ export default function SchedulePage() {
         <div className="lg:col-span-3 flex flex-col gap-6">
           <div className="bg-white border border-[#E5E7EB] rounded-xl p-6 shadow-[0_4px_20px_rgba(2,49,67,0.05)]">
             <div className="flex justify-between items-center mb-6 border-b border-[#E5E7EB] pb-4">
-              <h3 className="text-[18px] font-bold text-[#1a1c1d]">Simulaciones UX</h3>
+            <h3 className="text-[18px] font-bold text-[#1a1c1d]">Estado de sincronización</h3>
               <span className="material-symbols-outlined text-[#72787c]">science</span>
             </div>
 
@@ -228,8 +228,8 @@ export default function SchedulePage() {
                 <input type="checkbox" className="w-4 h-4 accent-[#023143]" checked={simulateGoogleFail} onChange={e => setSimulateGoogleFail(e.target.checked)} />
               </div>
               <div>
-                <p className="text-[13px] font-bold text-[#001b27] leading-tight">Forzar Error API Google</p>
-                <p className="text-[11px] text-[#41484c] mt-1 pr-2">Simula un Timeout o caída de red con la API de Google, forzando al portal a encolar la tarea como fallback (CU012 Flujo Alternativo).</p>
+                <p className="text-[13px] font-bold text-[#001b27] leading-tight">Simular fallo de Google Calendar</p>
+                <p className="text-[11px] text-[#41484c] mt-1 pr-2">Si ocurre un fallo, la cita igual se guarda y se muestra una advertencia de reintento automático.</p>
               </div>
             </label>
           </div>
@@ -256,7 +256,7 @@ export default function SchedulePage() {
               <>
                 <div className="px-6 py-5 border-b border-[#E5E7EB] bg-[#f9f9fb] flex justify-between items-center">
                   <h2 className="text-[20px] font-bold text-[#1a1c1d] flex items-center gap-2">
-                    <span className="material-symbols-outlined text-[#023143]">edit_calendar</span> Agendar Cita
+                    <span className="material-symbols-outlined text-[#023143]">edit_calendar</span> Agendar cita
                   </h2>
                   <button type="button" onClick={() => setModalOpen(false)} disabled={isSaving} className="text-[#72787c] hover:text-[#ba1a1a]">
                     <span className="material-symbols-outlined">close</span>
@@ -320,7 +320,7 @@ export default function SchedulePage() {
                     Cancelar
                   </button>
                   <button type="submit" disabled={isSaving} className="px-6 py-2 bg-[#023143] text-white rounded-lg text-[13px] font-bold hover:bg-[#001b27] transition-all flex items-center gap-2 shadow-sm">
-                    {isSaving ? "Guardando..." : "Agendar y Sincronizar"}
+                    {isSaving ? "Guardando..." : "Guardar y sincronizar calendario"}
                   </button>
                 </div>
               </>
@@ -335,7 +335,7 @@ export default function SchedulePage() {
                   <span className="material-symbols-outlined text-[64px] text-[#e65100] mb-4">sync_problem</span>
                 )}
                 <h3 className={`text-[18px] font-bold mb-2 ${successMsg ? "text-[#1c663b]" : "text-[#e65100]"}`}>
-                  {successMsg ? "¡Agendado Exitosamente!" : "Aviso de Sincronización"}
+                  {successMsg ? "Cita agendada y notificada" : "Aviso de sincronización"}
                 </h3>
                 <p className="text-[14px] text-[#41484c]">{successMsg || warningMsg}</p>
               </div>

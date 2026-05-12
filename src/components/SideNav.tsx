@@ -18,17 +18,18 @@ const groups: NavGroup[] = [
   {
     label: "Módulos Principales",
     items: [
-      { href: "/proyectos", icon: "architecture", label: "Gestión de Obra" },
-      { href: "/clientes", icon: "group", label: "Gestión Comercial" },
-      { href: "/finanzas", icon: "payments", label: "Pagos y Cobranzas" },
-      { href: "/legal", icon: "gavel", label: "Gestión Documental" },
-      { href: "/agenda", icon: "calendar_today", label: "Calendario" },
+      { href: "/proyectos", icon: "architecture", label: "Proyectos e Inventario" },
+      { href: "/clientes", icon: "group", label: "Clientes y Asignaciones" },
+      { href: "/finanzas", icon: "payments", label: "Pagos y Cronogramas" },
+      { href: "/legal", icon: "gavel", label: "Expedientes Legales" },
+      { href: "/agenda", icon: "calendar_today", label: "Agenda y Citas" },
+      { href: "/progress", icon: "perm_media", label: "Avances Multimedia" },
     ],
   },
   {
     label: "Administración",
     items: [
-      { href: "/configuracion", icon: "settings", label: "Ajustes del Sistema" },
+      { href: "/configuracion", icon: "settings", label: "Gestión de Empleados" },
     ],
   },
 ];

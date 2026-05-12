@@ -42,7 +42,7 @@ const INITIAL_USERS: UserData[] = [
     id: "U002",
     name: "Juan Pérez",
     email: "jperez@llosaedificaciones.com",
-    baseRole: "Ventas",
+    baseRole: "Administración de Ventas",
     status: "Activo",
     permissions: { proyectos: false, clientes: true, finanzas: false, legal: false, agenda: true, configuracion: false },
   },
@@ -50,20 +50,20 @@ const INITIAL_USERS: UserData[] = [
     id: "U003",
     name: "Ana Gómez",
     email: "agomez@llosaedificaciones.com",
-    baseRole: "Finanzas",
+    baseRole: "Líder de Proyecto",
     status: "Activo",
     permissions: { proyectos: false, clientes: false, finanzas: true, legal: true, agenda: true, configuracion: false },
   },
 ];
 
-const ROLES = ["Superadmin", "Ventas", "Finanzas", "Legal", "Operaciones", "Gerencia"];
+const ROLES = ["Superadmin", "Administración de Ventas", "Líder de Proyecto", "Marketing", "Postventa"];
 const PERM_LABELS: Record<keyof Permissions, string> = {
-  proyectos: "Gestión de Obra y Proyectos",
-  clientes: "Comercial y Clientes",
-  finanzas: "Pagos y Finanzas",
-  legal: "Gestión Documental",
-  agenda: "Calendario Corporativo",
-  configuracion: "Ajustes del Sistema",
+  proyectos: "Proyectos e Inventario",
+  clientes: "Clientes y Asignaciones",
+  finanzas: "Pagos y Cronogramas",
+  legal: "Expedientes Legales",
+  agenda: "Agenda y Citas",
+  configuracion: "Gestión de Empleados",
 };
 
 export default function UsersConfigurationPage() {
@@ -78,7 +78,7 @@ export default function UsersConfigurationPage() {
   const [formData, setFormData] = useState({
     name: "",
     email: "",
-    baseRole: "Ventas",
+    baseRole: "Administración de Ventas",
   });
   const [perms, setPerms] = useState<Permissions>(DEFAULT_PERMISSIONS);
 
@@ -95,7 +95,7 @@ export default function UsersConfigurationPage() {
     setErrorMsg("");
     setSuccessMsg("");
     setEditingId(null);
-    setFormData({ name: "", email: "", baseRole: "Ventas" });
+    setFormData({ name: "", email: "", baseRole: "Administración de Ventas" });
     setPerms(DEFAULT_PERMISSIONS);
     setIsModalOpen(true);
   }
@@ -125,7 +125,7 @@ export default function UsersConfigurationPage() {
 
     setLoading(true);
 
-    // Simulate backend call to Módulo-Seguridad & Firebase Auth
+    // Simulate backend call to auth + employee directory
     setTimeout(() => {
       if (editingId) {
         setUsers((prev) =>
@@ -162,7 +162,7 @@ export default function UsersConfigurationPage() {
     setFormData({ ...formData, baseRole: newRole });
     if (newRole === "Superadmin") {
       setPerms({ proyectos: true, clientes: true, finanzas: true, legal: true, agenda: true, configuracion: true });
-    } else if (newRole === "Ventas") {
+    } else if (newRole === "Administración de Ventas") {
       setPerms({ proyectos: false, clientes: true, finanzas: false, legal: false, agenda: true, configuracion: false });
     }
   }
@@ -201,15 +201,15 @@ export default function UsersConfigurationPage() {
     <AdminLayout>
       <div className="flex justify-between items-end mb-6">
         <div>
-          <h1 className="text-[36px] leading-[44px] font-bold tracking-[-0.02em] text-[#1a1c1d]">Gestión de Usuarios</h1>
-          <p className="text-base text-[#41484c] mt-2">Administración integral de cuentas del personal, roles base y permisos dinámicos.</p>
+          <h1 className="text-[36px] leading-[44px] font-bold tracking-[-0.02em] text-[#1a1c1d]">Gestión de Empleados</h1>
+          <p className="text-base text-[#41484c] mt-2">Administra usuarios internos, roles y permisos de acceso.</p>
         </div>
         <button
           onClick={handleOpenCreate}
           className="flex items-center gap-2 px-5 py-2.5 bg-[#023143] text-white rounded-lg text-sm font-bold hover:bg-[#001b27] transition-all shadow-[0_4px_14px_rgba(2,49,67,0.25)] hover:shadow-[0_6px_20px_rgba(2,49,67,0.35)]"
         >
           <span className="material-symbols-outlined text-[18px]">person_add</span>
-          Crear Nuevo Usuario
+          Crear usuario interno
         </button>
       </div>
 
@@ -270,7 +270,7 @@ export default function UsersConfigurationPage() {
                       onClick={() => confirmRevoke(u)}
                       disabled={u.status === "Inactivo"}
                       className="p-1.5 text-[#ba1a1a] bg-[#ffdad6]/50 hover:bg-[#ffdad6] rounded-md transition-all flex items-center justify-center"
-                      title="Desactivar en Firebase/PostgreSQL"
+                      title="Desactivar usuario"
                     >
                       <span className="material-symbols-outlined text-[18px]">person_off</span>
                     </button>
@@ -323,7 +323,7 @@ export default function UsersConfigurationPage() {
                 </div>
                 <div className="col-span-2">
                   <label className="block text-[12px] font-bold text-[#41484c] mb-1.5">
-                    Correo Corporativo <span className="text-[#c1c7cc] font-normal">(Firebase Auth)</span>
+                    Correo corporativo <span className="text-[#c1c7cc] font-normal">(acceso institucional)</span>
                   </label>
                   <input
                     type="email"
@@ -339,7 +339,7 @@ export default function UsersConfigurationPage() {
               {/* Dynamic Permissions */}
               <div>
                 <h3 className="text-[14px] font-bold text-[#1a1c1d] mb-4 border-b border-[#e2e2e4] pb-2">
-                  Permisos Dinámicos y Acceso a Módulos
+                  Permisos dinámicos por módulo
                 </h3>
                 <div className="grid grid-cols-2 gap-y-4 gap-x-8">
                   {(Object.keys(DEFAULT_PERMISSIONS) as Array<keyof Permissions>).map((key) => (
@@ -418,10 +418,9 @@ export default function UsersConfigurationPage() {
             <div className="w-16 h-16 rounded-full bg-[#ffdad6] flex items-center justify-center mx-auto mb-4">
               <span className="material-symbols-outlined text-[#ba1a1a] text-[32px]">warning</span>
             </div>
-            <h3 className="text-[18px] font-bold text-[#1a1c1d] mb-2">¿Revocar Acceso?</h3>
+            <h3 className="text-[18px] font-bold text-[#1a1c1d] mb-2">¿Desactivar usuario?</h3>
             <p className="text-[13px] text-[#41484c] mb-6">
-              Estás a punto de deshabilitar a <b>{targetUser.name}</b>. Esto lo marcará como inactivo en PostgreSQL y deshabilitará su
-              identidad en Firebase perdiendo acceso al sistema al instante.
+              Estás a punto de deshabilitar a <b>{targetUser.name}</b>. El usuario quedará inactivo y perderá acceso al sistema al instante.
             </p>
             <div className="flex gap-3">
               <button

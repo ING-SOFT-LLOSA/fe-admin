@@ -279,11 +279,11 @@ export default function ProjectsPage() {
             <span className="material-symbols-outlined">arrow_back</span>
           </button>
           <div>
-            <h1 className="text-[28px] leading-[36px] font-bold tracking-[-0.02em] text-[#1a1c1d]">Seguimiento de Obra</h1>
+          <h1 className="text-[28px] leading-[36px] font-bold tracking-[-0.02em] text-[#1a1c1d]">Proyectos e Inventario</h1>
             <div className="flex items-center gap-2 mt-1">
               <span className="text-[14px] text-[#023143] font-bold">{activeProject.name}</span>
               <span className="text-[#c1c7cc] material-symbols-outlined text-[16px]">chevron_right</span>
-              <span className="text-[13px] text-[#72787c]">Inventario y Avance Físico</span>
+              <span className="text-[13px] text-[#72787c]">Vista jerárquica: Proyecto - Torre - Unidad</span>
             </div>
           </div>
           <div className="ml-auto flex gap-3">
@@ -293,7 +293,7 @@ export default function ProjectsPage() {
               className="px-4 py-2.5 bg-white border border-[#c1c7cc] text-[#023143] hover:bg-[#e2e2e4] rounded-lg text-sm font-bold transition-all disabled:opacity-50 flex items-center gap-2"
             >
               <span className="material-symbols-outlined text-[18px]">perm_media</span>
-              {selectedUnitIds.length > 1 ? "Carga Multimedia Masiva" : "Cargar Multimedia"}
+              {selectedUnitIds.length > 1 ? "Publicar multimedia masiva" : "Publicar multimedia"}
             </button>
             <button
               onClick={openTrackingEditor}
@@ -301,14 +301,14 @@ export default function ProjectsPage() {
               className="px-5 py-2.5 bg-[#023143] text-white rounded-lg text-sm font-bold disabled:opacity-50 flex items-center gap-2 shadow-[0_4px_14px_rgba(2,49,67,0.25)]"
             >
               <span className="material-symbols-outlined text-[18px]">update</span>
-              Actualizar Selección ({selectedUnitIds.length})
+              Actualizar hitos ({selectedUnitIds.length})
             </button>
           </div>
         </div>
 
         <div className="bg-white border border-[#c1c7cc] rounded-xl overflow-hidden shadow-[0_4px_20px_rgba(2,49,67,0.02)] p-6">
           <div className="flex items-center justify-between mb-6 pb-4 border-b border-[#e2e2e4]">
-            <h3 className="text-[16px] font-bold text-[#1a1c1d]">Estructura Lineal del Proyecto</h3>
+            <h3 className="text-[16px] font-bold text-[#1a1c1d]">Estructura del proyecto</h3>
             <button onClick={selectAll} className="text-sm font-bold text-[#023143] hover:underline">
               {selectedUnitIds.length === projUnits.length ? "Deseleccionar TODO" : "Seleccionar TODO"}
             </button>
@@ -378,11 +378,11 @@ export default function ProjectsPage() {
     <AdminLayout>
       <div className="flex justify-between items-end mb-6 animate-fade-in">
         <div>
-          <h1 className="text-[36px] leading-[44px] font-bold tracking-[-0.02em] text-[#1a1c1d]">Gestionar Proyectos (CU003)</h1>
-          <p className="text-base text-[#41484c] mt-2">Crea estructuralmente proyectos, inyecta su inventario base y supervisa sus avances consolidados.</p>
+          <h1 className="text-[36px] leading-[44px] font-bold tracking-[-0.02em] text-[#1a1c1d]">Proyectos e Inventario</h1>
+          <p className="text-base text-[#41484c] mt-2">Administra proyectos inmobiliarios, torres, unidades e hitos de avance.</p>
         </div>
         <button onClick={openBuilder} className="bg-[#023143] text-white text-[13px] font-bold px-6 py-2.5 rounded-lg flex items-center gap-2 hover:bg-[#001b27] transition-all shadow-md">
-          <span className="material-symbols-outlined text-[18px]">add_business</span>Nuevo Proyecto
+          <span className="material-symbols-outlined text-[18px]">add_business</span>Crear nuevo proyecto
         </button>
       </div>
 
@@ -415,7 +415,7 @@ export default function ProjectsPage() {
                 </td>
                 <td className="py-4 px-6">
                   <button onClick={() => handleProjectEnter(p)} className="flex items-center gap-2 px-4 py-2 bg-[#f4f3f5] text-[#023143] rounded-lg text-xs font-bold hover:bg-[#c2e8ff] transition-colors border border-[#e2e2e4]">
-                    Supervisar Hitos <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
+                    Ver detalle del proyecto <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
                   </button>
                 </td>
               </tr>
@@ -432,9 +432,9 @@ export default function ProjectsPage() {
             <div className="px-8 py-5 border-b border-[#E5E7EB] flex justify-between items-center bg-[#f9f9fb] shrink-0">
               <div>
                 <h2 className="text-[20px] font-bold text-[#1a1c1d] flex items-center gap-2">
-                  <span className="material-symbols-outlined text-[#023143]">add_business</span> Constructor de Proyectos
+                  <span className="material-symbols-outlined text-[#023143]">add_business</span> Crear proyecto inmobiliario
                 </h2>
-                <p className="text-[12px] text-[#41484c] mt-1">Paso {builderStep} de 3 - Configuración Base</p>
+                <p className="text-[12px] text-[#41484c] mt-1">Paso {builderStep} de 3 - Configuración base</p>
               </div>
               <button onClick={() => setBuilderModal(false)} disabled={buildLoading} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-[#e2e2e4] text-[#72787c] transition-colors">
                 <span className="material-symbols-outlined">close</span>
@@ -537,8 +537,8 @@ export default function ProjectsPage() {
               {builderStep === 3 && (
                 <div className="w-full max-w-2xl animate-fade-in flex flex-col gap-6">
                   <div>
-                    <h3 className="text-[24px] font-bold text-[#1a1c1d] mb-1">Inyección de Hitos (Templates)</h3>
-                    <p className="text-[13px] text-[#72787c]">Asigna la ruta constructiva base. Todas las unidades heredarán el estado 'Pendiente' de dichos hitos automáticamente (PostgreSQL Trigger).</p>
+                    <h3 className="text-[24px] font-bold text-[#1a1c1d] mb-1">Plantillas de hitos</h3>
+                    <p className="text-[13px] text-[#72787c]">Asigna una plantilla de hitos o configura los hitos manualmente por unidad.</p>
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
@@ -585,7 +585,7 @@ export default function ProjectsPage() {
               </button>
               <button onClick={builderStep === 3 ? createProjectFinish : builderNext} disabled={buildLoading} className="px-8 py-2.5 bg-[#023143] text-white rounded-lg text-[14px] font-bold hover:bg-[#001b27] transition-all flex items-center gap-2 shadow-sm disabled:opacity-50">
                 {buildLoading ? <span className="material-symbols-outlined text-[18px] animate-spin">refresh</span> : null}
-                {builderStep === 3 ? (buildLoading ? "Sincronizando PostgreSQL..." : "Guardar e Inicializar Inventario") : "Continuar Paso"}
+                {builderStep === 3 ? (buildLoading ? "Guardando proyecto..." : "Guardar e inicializar inventario") : "Continuar"}
               </button>
             </div>
 
@@ -597,8 +597,8 @@ export default function ProjectsPage() {
       {trackingModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#050a0e]/60 backdrop-blur-sm p-4 animate-fade-in">
           <div className="bg-white rounded-2xl shadow-2xl p-8 flex flex-col text-center">
-            <h2 className="text-[20px] font-bold text-[#1a1c1d] mb-4">Gestor de Hitos</h2>
-            <p className="text-sm text-[#41484c] mb-6">Esta vista es idéntica a la detallada previamente en Seguimiento de Obra para editar las unidades marcadas.</p>
+            <h2 className="text-[20px] font-bold text-[#1a1c1d] mb-4">Editor de hitos</h2>
+            <p className="text-sm text-[#41484c] mb-6">Edita el avance por unidad con una secuencia guiada de hitos.</p>
             <div className="flex justify-end gap-2">
               <button onClick={() => setTrackingModal(false)} className="px-4 py-2 border border-[#E5E7EB] rounded font-bold">Cerrar Modal</button>
             </div>
@@ -610,8 +610,8 @@ export default function ProjectsPage() {
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-[#050a0e]/60 backdrop-blur-sm p-4 animate-fade-in">
           <div className="bg-white rounded-2xl shadow-2xl p-8 flex flex-col items-center text-center max-w-sm">
             <span className="material-symbols-outlined text-[#023143] text-[48px] mb-4">cloud_upload</span>
-            <h2 className="text-[20px] font-bold text-[#1a1c1d] mb-4">Módulo de Carga Multimedia C008 Activo</h2>
-            <p className="text-[13px] text-[#41484c] mb-6">Esta terminal permite la transferencia de assets directas y masivas hacia AWS S3.</p>
+            <h2 className="text-[20px] font-bold text-[#1a1c1d] mb-4">Avances Multimedia</h2>
+            <p className="text-[13px] text-[#41484c] mb-6">Publica fotos y videos de obra para el portal del cliente en modo solo lectura.</p>
             <button onClick={() => setMultimediaModal(false)} className="px-4 py-2 bg-[#023143] text-white rounded font-bold">Listo</button>
           </div>
         </div>

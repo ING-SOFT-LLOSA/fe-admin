@@ -3,7 +3,7 @@ import React, { useState } from "react";
 import AdminLayout from "@/components/AdminLayout";
 
 // --- Mock Data ---
-type UnitStatus = "Disponible" | "Reservado" | "Vendido";
+type UnitStatus = "Disponible" | "Reservado" | "Vendido" | "Bloqueado";
 type Unit = { id: string; project: string; name: string; status: UnitStatus; type: string };
 
 const MOCK_PROJECTS = ["Torre Aviana", "Parque Sur", "Vistas del Golf"];
@@ -22,10 +22,10 @@ const INITIAL_UNITS: Unit[] = [
 ];
 
 const INITIAL_CLIENTS = [
-  { initials: "CM", name: "Carlos Eduardo Mendoza", dni: "45892103", email: "c.mendoza@example.com", phone: "+51 987 654 321", project: "Torre Aviana - 1402", status: "Active", statusBg: "bg-[#E8F5E9] text-[#2E7D32]" },
-  { initials: "MR", name: "Maria Fernanda Rojas", dni: "38471922", email: "m.rojas@example.com", phone: "+51 965 432 109", project: "Parque Sur - 501", status: "VIP", statusBg: "bg-[#c2e8ff] text-[#001e2b]" },
-  { initials: "LD", name: "Luis Delgado Torres", dni: "52013847", email: "l.delgado@example.com", phone: "+51 941 238 765", project: "Torre Aviana - 1104", status: "Active", statusBg: "bg-[#E8F5E9] text-[#2E7D32]" },
-  { initials: "EV", name: "Elena Vargas Castro", dni: "61204837", email: "e.vargas@example.com", phone: "+51 912 345 678", project: "Parque Sur - 802", status: "Inactive", statusBg: "bg-[#eeeeef] text-[#41484c]" },
+  { initials: "CM", name: "Carlos Eduardo Mendoza", dni: "45892103", email: "c.mendoza@example.com", phone: "+51 987 654 321", project: "Torre Aviana - 1402", status: "Con contrato activo", statusBg: "bg-[#E8F5E9] text-[#2E7D32]" },
+  { initials: "MR", name: "Maria Fernanda Rojas", dni: "38471922", email: "m.rojas@example.com", phone: "+51 965 432 109", project: "Parque Sur - 501", status: "Con propiedad reservada", statusBg: "bg-[#c2e8ff] text-[#001e2b]" },
+  { initials: "LD", name: "Luis Delgado Torres", dni: "52013847", email: "l.delgado@example.com", phone: "+51 941 238 765", project: "Torre Aviana - 1104", status: "Registrado", statusBg: "bg-[#E8F5E9] text-[#2E7D32]" },
+  { initials: "EV", name: "Elena Vargas Castro", dni: "61204837", email: "e.vargas@example.com", phone: "+51 912 345 678", project: "Parque Sur - 802", status: "Inactivo", statusBg: "bg-[#eeeeef] text-[#41484c]" },
 ];
 
 export default function ClientsPage() {
@@ -90,7 +90,7 @@ export default function ClientsPage() {
         setSearchedClient(found);
       } else {
         setSearchedClient(null);
-        setSearchError("El cliente no existe en Modulo-Seguridad, proceda a registrarlo primero.");
+        setSearchError("No encontramos al cliente. Regístralo primero para continuar con la asignación.");
       }
     }, 600);
   }
@@ -110,7 +110,7 @@ export default function ClientsPage() {
     setTimeout(() => {
       if (forceConflict) {
         setLoading(false);
-        setErrorMsg("Colisión Concurrente: La unidad seleccionada ya se encuentra asignada a otro usuario.");
+        setErrorMsg("La unidad seleccionada ya fue vinculada por otro usuario. Actualiza inventario e intenta nuevamente.");
         setTimeout(() => {
           setUnits(units.map(u => selectedUnitIds.includes(u.id) ? { ...u, status: "Reservado" } : u));
           setSelectedUnitIds([]);
@@ -124,10 +124,10 @@ export default function ClientsPage() {
       const assignedNames = units.filter(u => selectedUnitIds.includes(u.id)).map(u => u.name).join(", ");
 
       // Update logic to either modify existing active client or add new to state if necessary (simplified mock)
-      setClients(clients.map(c => c.dni === searchedClient.dni ? { ...c, project: c.project && c.project !== "Sin asignar" ? `${c.project}, ${selectedProject} - ${assignedNames}` : `${selectedProject} - ${assignedNames}`, status: "Active" } : c));
+      setClients(clients.map(c => c.dni === searchedClient.dni ? { ...c, project: c.project && c.project !== "Sin asignar" ? `${c.project}, ${selectedProject} - ${assignedNames}` : `${selectedProject} - ${assignedNames}`, status: "Con propiedad reservada" } : c));
 
       setLoading(false);
-      setSuccessMsg("Propiedad vinculada correctamente. El estado se actualizó a 'Reservado' y los hitos previos fueron completados.");
+      setSuccessMsg("Propiedad vinculada correctamente. El cliente queda con estado 'Con propiedad reservada'.");
 
       setTimeout(() => {
         setIsModalOpen(false);
@@ -169,7 +169,7 @@ export default function ClientsPage() {
       // Update Client table
       setClients(clients.map(c =>
         c.dni === clientToRevoke.dni
-          ? { ...c, project: newProjectStr, status: isInactive ? "Inactive" : c.status, statusBg: isInactive ? "bg-[#eeeeef] text-[#41484c]" : c.statusBg }
+          ? { ...c, project: newProjectStr, status: isInactive ? "Inactivo" : "En seguimiento", statusBg: isInactive ? "bg-[#eeeeef] text-[#41484c]" : "bg-[#fff3e0] text-[#e65100]" }
           : c
       ));
 
@@ -195,18 +195,18 @@ export default function ClientsPage() {
       {/* Page Header */}
       <div className="flex justify-between items-end mb-4">
         <div>
-          <h2 className="text-[36px] leading-[44px] font-bold tracking-[-0.02em] text-[#1a1c1d]">Gestión de Comercial y Ventas</h2>
-          <p className="text-base text-[#41484c] mt-2">Administra registros de clientes, contactos y vinculaciones con propiedades.</p>
+          <h2 className="text-[36px] leading-[44px] font-bold tracking-[-0.02em] text-[#1a1c1d]">Clientes y Asignaciones</h2>
+          <p className="text-base text-[#41484c] mt-2">Registra clientes, gestiona sus datos y vincula propiedades a su perfil.</p>
         </div>
         <div className="flex gap-3">
           <button className="px-4 py-2 border border-[#e2e2e4] rounded-xl text-[#1a1c1d] text-xs font-semibold hover:bg-[#eeeeef] transition-colors flex items-center gap-2">
-            <span className="material-symbols-outlined text-[18px]">person_add</span>Nuevo Cliente
+            <span className="material-symbols-outlined text-[18px]">person_add</span>Crear cliente
           </button>
           <button
             onClick={openWizard}
             className="px-4 py-2 bg-[#023143] text-white rounded-xl text-xs font-semibold hover:bg-[#001b27] transition-all flex items-center gap-2 shadow-[0_4px_14px_rgba(2,49,67,0.25)] hover:shadow-[0_6px_20px_rgba(2,49,67,0.35)]"
           >
-            <span className="material-symbols-outlined text-[18px]">key</span>Asignar Propiedad
+            <span className="material-symbols-outlined text-[18px]">key</span>Asignar propiedad
           </button>
         </div>
       </div>
@@ -289,7 +289,7 @@ export default function ClientsPage() {
                   <span className="material-symbols-outlined text-[#023143]">key</span>
                 </div>
                 <div>
-                  <h2 className="text-[20px] font-bold text-[#1a1c1d]">Asignación de Propiedades a Clientes</h2>
+                  <h2 className="text-[20px] font-bold text-[#1a1c1d]">Flujo guiado de asignación</h2>
                   <p className="text-[12px] text-[#41484c] font-medium mt-0.5">Paso {step} de 3</p>
                 </div>
               </div>
@@ -310,7 +310,7 @@ export default function ClientsPage() {
               {step === 1 && (
                 <div className="space-y-6 animate-fade-in">
                   <div>
-                    <h3 className="text-[18px] font-bold text-[#1a1c1d]">Selecciona Proyecto e Inventario</h3>
+                    <h3 className="text-[18px] font-bold text-[#1a1c1d]">Seleccionar proyecto y unidad</h3>
                     <p className="text-[13px] text-[#72787c]">Elige un proyecto para consultar unidades disponibles que el cliente adquirirá.</p>
                   </div>
 
@@ -368,8 +368,8 @@ export default function ClientsPage() {
               {step === 2 && (
                 <div className="space-y-6 animate-fade-in">
                   <div>
-                    <h3 className="text-[18px] font-bold text-[#1a1c1d]">Asignar Cliente</h3>
-                    <p className="text-[13px] text-[#72787c]">Localiza al cliente en nuestra base de Módulo-Seguridad ingresando su DNI o Nombre.</p>
+                    <h3 className="text-[18px] font-bold text-[#1a1c1d]">Confirmar cliente</h3>
+                    <p className="text-[13px] text-[#72787c]">Busca por nombre, documento o correo para continuar con la asignación.</p>
                   </div>
 
                   <div>
@@ -423,8 +423,8 @@ export default function ClientsPage() {
                 <div className="space-y-6 animate-fade-in">
                   <div className="text-center mb-8">
                     <span className="material-symbols-outlined text-[48px] text-[#023143]">handshake</span>
-                    <h3 className="text-[20px] font-bold text-[#1a1c1d] mt-2">Confirmar Reserva y Asignación</h3>
-                    <p className="text-[13px] text-[#72787c] mt-1">Revisa los datos antes de persistir los cambios en la base de datos central y notificar a los sistemas.</p>
+                    <h3 className="text-[20px] font-bold text-[#1a1c1d] mt-2">Confirmar asignación</h3>
+                    <p className="text-[13px] text-[#72787c] mt-1">Revisa los datos finales antes de registrar la propiedad en el perfil del cliente.</p>
                   </div>
 
                   <div className="bg-[#f9f9fb] border border-[#e2e2e4] rounded-xl p-6 grid grid-cols-2 gap-8 relative overflow-hidden">
@@ -455,8 +455,8 @@ export default function ClientsPage() {
                   {/* Alterations simulator for demo */}
                   <div className="flex items-center justify-between p-4 border border-[#e2e2e4] rounded-lg mt-8">
                     <div>
-                      <h4 className="text-[13px] font-bold text-[#1a1c1d]">Simulador de Concurrencia</h4>
-                      <p className="text-[11px] text-[#72787c]">Obliga a fallar el proceso indicando que otro agente la asignó simultaneamente.</p>
+                      <h4 className="text-[13px] font-bold text-[#1a1c1d]">Simular conflicto de asignación</h4>
+                      <p className="text-[11px] text-[#72787c]">Usa esta opción para probar el mensaje cuando una unidad deja de estar disponible.</p>
                     </div>
                     <label className="relative inline-flex items-center cursor-pointer">
                       <input type="checkbox" className="sr-only peer" checked={forceConflict} onChange={e => setForceConflict(e.target.checked)} />
@@ -518,11 +518,11 @@ export default function ClientsPage() {
                       <svg className="animate-spin w-4 h-4 text-white" viewBox="0 0 24 24" fill="none">
                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
-                      </svg> Validando Inventario...
+                      </svg> Validando inventario...
                     </>
                   ) : successMsg ? "Asignado" : (
                     <>
-                      Confirmar Asignación <span className="material-symbols-outlined text-[18px]">assignment_turned_in</span>
+                      Confirmar asignación <span className="material-symbols-outlined text-[18px]">assignment_turned_in</span>
                     </>
                   )}
                 </button>
@@ -552,7 +552,7 @@ export default function ClientsPage() {
                 </div>
               </div>
 
-              <h3 className="text-[22px] font-bold text-[#1a1c1d] mb-2 leading-tight">Resolver Contrato</h3>
+              <h3 className="text-[22px] font-bold text-[#1a1c1d] mb-2 leading-tight">Desvincular propiedad</h3>
               <p className="text-[14px] text-[#41484c] mb-6">
                 El cliente <b>{clientToRevoke.name}</b> cuenta con las siguientes propiedades: <br />
                 <span className="text-[#ba1a1a] font-bold mt-2 inline-block border border-[#ba1a1a]/20 bg-[#ffdad6]/20 px-3 py-1 rounded-lg">

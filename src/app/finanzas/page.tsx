@@ -38,6 +38,7 @@ const INITIAL_CLIENTS: ClientFinance[] = [
 export default function FinancePage() {
   const [clients, setClients] = useState<ClientFinance[]>(INITIAL_CLIENTS);
   const [activeClient, setActiveClient] = useState<ClientFinance | null>(null);
+  const [activeTab, setActiveTab] = useState<"SCHEDULE" | "CONCILIATION">("SCHEDULE");
 
   // CU010: Schedule Editor
   const [editingSchedule, setEditingSchedule] = useState<Cuota[]>([]);
@@ -190,7 +191,7 @@ export default function FinancePage() {
       setActiveClient({ ...activeClient, schedule: newSchedule });
       setEditingSchedule(newSchedule);
 
-      setConciliationSuccess(`¡Pago conciliado! Se procesó un ${isPartial ? "Pago Parcial" : "Pago Total"}. Comprobante cargado a S3 y Cliente Notificado vía Email automatizado.`);
+      setConciliationSuccess(`Pago conciliado y voucher cargado exitosamente. Estado aplicado: ${isPartial ? "Pago parcial" : "Pagado"}.`);
 
       setTimeout(() => {
         setConciliationModal(false);
@@ -202,9 +203,24 @@ export default function FinancePage() {
     <AdminLayout>
       <div className="flex justify-between items-end mb-6">
         <div>
-          <h1 className="text-[36px] leading-[44px] font-bold tracking-[-0.02em] text-[#001b27]">Finanzas y Cronogramas</h1>
-          <p className="text-base text-[#41484c] mt-2">Gestiona el flujo de caja, estructura de pagos y conciliación bancaria obligatoria de cuotas (RN-006).</p>
+          <h1 className="text-[36px] leading-[44px] font-bold tracking-[-0.02em] text-[#001b27]">Pagos y Cronogramas</h1>
+          <p className="text-base text-[#41484c] mt-2">Configura cuotas, registra pagos validados y sincroniza recordatorios financieros.</p>
         </div>
+      </div>
+
+      <div className="mb-5 inline-flex rounded-xl border border-[#e2e2e4] bg-white p-1">
+        <button
+          onClick={() => setActiveTab("SCHEDULE")}
+          className={`px-4 py-2 rounded-lg text-sm font-bold transition-colors ${activeTab === "SCHEDULE" ? "bg-[#023143] text-white" : "text-[#41484c] hover:bg-[#f4f3f5]"}`}
+        >
+          Cronograma de Pago
+        </button>
+        <button
+          onClick={() => setActiveTab("CONCILIATION")}
+          className={`px-4 py-2 rounded-lg text-sm font-bold transition-colors ${activeTab === "CONCILIATION" ? "bg-[#023143] text-white" : "text-[#41484c] hover:bg-[#f4f3f5]"}`}
+        >
+          Conciliación de Pagos
+        </button>
       </div>
 
       <div className="grid grid-cols-12 gap-6">
@@ -248,24 +264,24 @@ export default function FinancePage() {
               <div className="p-6 border-b border-[#E5E7EB] bg-white z-10">
                 <div className="flex justify-between items-start">
                   <div>
-                    <h2 className="text-[20px] font-bold text-[#001b27] mb-1">Cronograma Autorizado</h2>
+                    <h2 className="text-[20px] font-bold text-[#001b27] mb-1">{activeTab === "SCHEDULE" ? "Cronograma de Pago" : "Conciliación de Pagos"}</h2>
                     <h3 className="text-[14px] text-[#41484c]">{activeClient.name} • {fmt(activeClient.totalValue)}</h3>
                   </div>
                   <div className="flex flex-col items-end gap-2">
                     {activeClient.finalActSigned && (
                       <div className="flex items-center gap-1.5 px-3 py-1.5 bg-[#f4f3f5] text-[#1a1c1d] border border-[#E5E7EB] rounded-lg text-xs font-bold font-mono">
                         <span className="material-symbols-outlined text-[16px]">lock</span>
-                        Cronograma Histórico (Sólo Lectura)
+                        Cronograma bloqueado por acta de entrega final firmada
                       </div>
                     )}
                     {!activeClient.finalActSigned && (
                       <div className="flex gap-2">
                         <button onClick={addCuota} className="px-4 py-2 border border-[#E5E7EB] bg-white text-[#1a1c1d] rounded-lg text-xs font-bold hover:bg-[#f4f3f5] flex items-center gap-2">
-                          <span className="material-symbols-outlined text-[16px]">add</span> Añadir Cuota
+                          <span className="material-symbols-outlined text-[16px]">add</span> Agregar cuota
                         </button>
-                        <button onClick={saveSchedule} disabled={scheduleLoading} className="px-4 py-2 bg-[#023143] text-white rounded-lg text-xs font-bold hover:bg-[#001b27] flex items-center gap-2 shadow-sm">
+                        <button onClick={saveSchedule} disabled={scheduleLoading || activeTab !== "SCHEDULE"} className="px-4 py-2 bg-[#023143] text-white rounded-lg text-xs font-bold hover:bg-[#001b27] flex items-center gap-2 shadow-sm disabled:opacity-50">
                           {scheduleLoading ? <span className="material-symbols-outlined text-[16px] animate-spin">refresh</span> : <span className="material-symbols-outlined text-[16px]">calendar_add_on</span>}
-                          Guardar y Sync Calendar
+                          Guardar y sincronizar calendario
                         </button>
                       </div>
                     )}
@@ -285,6 +301,9 @@ export default function FinancePage() {
                     <p className="text-[12px] font-bold">{scheduleSuccess}</p>
                   </div>
                 )}
+                <div className="mt-4 p-3 rounded-lg border border-[#e2e2e4] bg-[#f9f9fb] text-[12px] text-[#41484c]">
+                  El cliente no puede modificar este cronograma ni registrar pagos. Solo puede visualizarlo desde su portal.
+                </div>
               </div>
 
               {/* Table Flow */}
@@ -327,7 +346,7 @@ export default function FinancePage() {
                           </div>
                         </td>
                         <td className="px-4 py-4 border-y border-[#E5E7EB] w-32">
-                          <span className={`inline-flex items-center justify-center px-2 py-1 w-full rounded text-[10px] font-bold uppercase ${q.status === "Pagado" ? "bg-[#d6f0e0] text-[#1c663b]" :
+                          <span title={q.status === "Mora" ? "Pago vencido pendiente de regularización." : ""} className={`inline-flex items-center justify-center px-2 py-1 w-full rounded text-[10px] font-bold uppercase ${q.status === "Pagado" ? "bg-[#d6f0e0] text-[#1c663b]" :
                               q.status === "Mora" ? "bg-[#ffdad6] text-[#ba1a1a]" :
                                 q.status === "Pago Parcial" ? "bg-[#fff3e0] text-[#e65100]" :
                                   "bg-[#e2e2e4] text-[#41484c]"
@@ -348,18 +367,18 @@ export default function FinancePage() {
                             )}
 
                             {/* CU011 Trigger */}
-                            {(!activeClient.finalActSigned && (q.status === "Pendiente" || q.status === "Mora" || q.status === "Pago Parcial")) && (
+                            {(!activeClient.finalActSigned && activeTab === "CONCILIATION" && (q.status === "Pendiente" || q.status === "Mora" || q.status === "Pago Parcial")) && (
                               <button
                                 onClick={() => openConciliate(q)}
                                 className="px-3 py-1.5 flex items-center gap-1 rounded bg-[#27a85e] text-white text-[11px] font-bold hover:bg-[#1c663b] transition-colors shadow-sm"
                               >
-                                <span className="material-symbols-outlined text-[14px]">price_check</span> Conciliar Pago
+                                <span className="material-symbols-outlined text-[14px]">price_check</span> Registrar pago validado
                               </button>
                             )}
 
                             {q.status === "Pagado" && (
                               <button className="px-3 py-1.5 flex items-center gap-1 rounded border border-[#E5E7EB] bg-white text-[#023143] text-[11px] font-bold hover:bg-[#f4f3f5] transition-colors shadow-sm">
-                                <span className="material-symbols-outlined text-[14px]">receipt_long</span> Ver Voucher
+                                <span className="material-symbols-outlined text-[14px]">receipt_long</span> Ver comprobante
                               </button>
                             )}
                           </div>
@@ -391,8 +410,8 @@ export default function FinancePage() {
               <div className="w-16 h-16 bg-[#f9f9fb] rounded-full flex items-center justify-center mb-4">
                 <span className="material-symbols-outlined text-[#72787c] text-[32px]">price_change</span>
               </div>
-              <h3 className="text-[18px] font-bold text-[#1a1c1d]">Gestión Financiera Vacia</h3>
-              <p className="text-[14px] text-[#41484c] mt-2 max-w-md">Selecciona un cliente de la lista para gestionar su cronograma, recalcular moras o conciliar sus depósitos.</p>
+              <h3 className="text-[18px] font-bold text-[#1a1c1d]">Selecciona un cliente para empezar</h3>
+              <p className="text-[14px] text-[#41484c] mt-2 max-w-md">Verás su resumen financiero, cronograma y acciones de conciliación en un solo flujo.</p>
             </div>
           )}
         </div>
@@ -406,7 +425,7 @@ export default function FinancePage() {
             {!conciliationSuccess && (
               <div className="px-6 py-5 border-b border-[#E5E7EB] bg-[#f9f9fb] flex justify-between items-center">
                 <div>
-                  <h2 className="text-[20px] font-bold text-[#1a1c1d]">Conciliar Pago</h2>
+                  <h2 className="text-[20px] font-bold text-[#1a1c1d]">Conciliar pago</h2>
                   <p className="text-[12px] text-[#41484c]">
                     Cuota Nro {conciliateCuota.num} - Vence: {conciliateCuota.date}
                     <span className="font-bold ml-1 text-[#ba1a1a]">({fmt(conciliateCuota.amount)})</span>
@@ -522,7 +541,7 @@ export default function FinancePage() {
                   disabled={Object.values({ paymentAmount, paymentDate, paymentBank, paymentOp, voucherFile }).some(x => !x) || isUploading}
                   className="px-6 py-2 bg-[#27a85e] text-white rounded-lg text-[13px] font-bold hover:bg-[#1c663b] disabled:opacity-50 transition-colors shadow-sm flex items-center gap-2"
                 >
-                  <span className="material-symbols-outlined text-[16px]">how_to_reg</span> Aplicar Conciliación
+                  <span className="material-symbols-outlined text-[16px]">how_to_reg</span> Conciliar pago
                 </button>
               </div>
             )}

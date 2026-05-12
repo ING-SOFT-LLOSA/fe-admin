@@ -2,12 +2,13 @@
 import { usePathname } from "next/navigation";
 
 const crumbs: Record<string, string> = {
-  proyectos: "Proyectos y Gestión de Obra",
-  clientes: "Gestión Comercial y Ventas",
-  finanzas: "Pagos y Cobranzas",
-  legal: "Gestión Documental y Legal",
-  agenda: "Calendario Corporativo",
-  configuracion: "Administración del Sistema",
+  proyectos: "Proyectos e Inventario",
+  clientes: "Clientes y Asignaciones",
+  finanzas: "Pagos y Cronogramas",
+  legal: "Expedientes Legales",
+  agenda: "Agenda y Citas",
+  progress: "Avances Multimedia",
+  configuracion: "Gestión de Empleados",
 };
 
 export default function TopNav() {

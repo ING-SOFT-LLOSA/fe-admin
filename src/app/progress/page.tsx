@@ -113,8 +113,8 @@ export default function ProgressPage() {
       <div className="flex justify-between items-start animate-slide-up">
         <div className="flex items-center gap-4">
           <div>
-            <h2 className="text-[28px] font-bold tracking-tight text-[#1a1c1d]">Actualización Visual de Progreso por Piso</h2>
-            <p className="text-[13px] text-[#41484c] mt-0.5">Crea un reporte de obra y envíalo por proyecto y por piso.</p>
+            <h2 className="text-[28px] font-bold tracking-tight text-[#1a1c1d]">Avances Multimedia</h2>
+            <p className="text-[13px] text-[#41484c] mt-0.5">Publica fotos y videos de obra para que los clientes sigan el avance de su propiedad.</p>
           </div>
           {ready && <span className="px-2.5 py-1 bg-[#FFF3E0] text-[#E65100] text-[10px] font-bold rounded-full uppercase tracking-wider animate-scale-in">Listo para enviar</span>}
         </div>
@@ -129,7 +129,7 @@ export default function ProgressPage() {
           )}
           <button onClick={()=>ready&&setShowConfirm(true)} disabled={!ready}
             className="px-5 py-2 bg-[#023143] text-white rounded-xl text-[13px] font-semibold disabled:opacity-40 hover:bg-[#001b27] transition-colors flex items-center gap-1.5 shadow-sm">
-            <span className="material-symbols-outlined text-[17px]">send</span>Enviar por piso
+            <span className="material-symbols-outlined text-[17px]">send</span>Publicar contenido
           </button>
         </div>
       </div>
@@ -254,13 +254,13 @@ export default function ProgressPage() {
         <div className="col-span-3 space-y-4">
           <div className="card p-5 space-y-3">
             <h3 className="text-[13px] font-bold text-[#1a1c1d] flex items-center gap-2">
-              <span className="material-symbols-outlined text-[16px] text-[#3d6377]">apartment</span>Pisos destinatarios *
+              <span className="material-symbols-outlined text-[16px] text-[#3d6377]">apartment</span>Unidades destinatarias *
             </h3>
             <button
               onClick={() => setClients(clients.length === FLOORS.length ? [] : FLOORS.map((f) => f.id))}
               className="w-full text-left px-3 py-2 rounded-lg border border-[#c1c7cc] text-[11px] font-semibold text-[#023143] hover:bg-[#f4f3f5]"
             >
-              Marcar todos
+              Seleccionar todo
             </button>
             {FLOORS.map(c=>(
               <button key={c.id} onClick={()=>setClients(prev=>prev.includes(c.id)?prev.filter(x=>x!==c.id):[...prev,c.id])}

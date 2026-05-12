@@ -58,7 +58,7 @@ export default function ContractsPage() {
         size: (file.size / (1024 * 1024)).toFixed(1) + " MB"
       };
       setDocs([newDoc, ...docs]);
-      setUploadSuccess("Documento legal cargado y vinculado exitosamente al contenedor privado (S3).");
+      setUploadSuccess("Documento legal cargado y vinculado exitosamente.");
 
       setTimeout(() => setUploadSuccess(""), 4000);
     }, 2000);
@@ -96,7 +96,7 @@ export default function ContractsPage() {
       <div className="flex justify-between items-end mb-6">
         <div>
           <h1 className="text-[36px] leading-[44px] font-bold tracking-[-0.02em] text-[#001b27]">Expedientes Legales</h1>
-          <p className="text-base text-[#41484c] mt-2">Centraliza y custodia documentos jurídicos. El acceso y descarga están protegidos por URLs firmadas.</p>
+          <p className="text-base text-[#41484c] mt-2">Centraliza documentos legales privados vinculados a cada unidad inmobiliaria.</p>
         </div>
       </div>
 
@@ -220,7 +220,7 @@ export default function ContractsPage() {
                                   onClick={() => simulateViewSignedUrl(d)}
                                   className="px-3 py-1.5 bg-[#c2e8ff] text-[#023143] rounded font-bold text-[12px] hover:bg-[#a6d8f5] transition-colors flex items-center gap-1"
                                 >
-                                  <span className="material-symbols-outlined text-[14px]">visibility</span> Ver
+                                  <span className="material-symbols-outlined text-[14px]">visibility</span> Ver documento
                                 </button>
                                 <button
                                   onClick={() => openDeleteSafe(d)}
@@ -245,10 +245,10 @@ export default function ContractsPage() {
           <div className="col-span-12 xl:col-span-4">
             <div className="bg-white rounded-xl border border-[#E5E7EB] p-6 shadow-[0_4px_20px_rgba(2,49,67,0.05)] mb-6 sticky top-6">
               <h4 className="text-[16px] font-semibold text-[#001b27] mb-4 flex items-center gap-2 pb-4 border-b border-[#E5E7EB]">
-                <span className="material-symbols-outlined text-[#3d6377]">security</span> Privacidad S3 Strict
+                <span className="material-symbols-outlined text-[#3d6377]">security</span> Seguridad documental
               </h4>
               <p className="text-[13px] text-[#41484c] leading-relaxed mb-4">
-                Los documentos nunca exponen URLs públicas. Cuando un cliente solicita un documento, el backend de Node.js se comunica con AWS STS para generar una <b>Signed URL limit-time</b>.
+                Los documentos legales nunca son públicos. El acceso se genera mediante enlaces temporales autorizados.
               </p>
               <div className="p-3 bg-[#f9f9fb] rounded-lg border border-[#E5E7EB] flex items-start gap-2">
                 <span className="material-symbols-outlined text-[16px] text-[#72787c] mt-0.5">timer</span>
@@ -275,9 +275,9 @@ export default function ContractsPage() {
               <div className="w-14 h-14 bg-[#ffdad6] rounded-full flex items-center justify-center mb-4 text-[#ba1a1a]">
                 <span className="material-symbols-outlined text-[28px]">warning</span>
               </div>
-              <h3 className="text-[18px] font-bold text-[#1a1c1d] mb-2">¿Eliminar Documento?</h3>
+              <h3 className="text-[18px] font-bold text-[#1a1c1d] mb-2">¿Eliminar documento?</h3>
               <p className="text-[13px] text-[#41484c] mb-6">
-                Esta acción erradicará el archivo <b>"{docToDelete.name}"</b> irreversiblemente del bucket S3 de Amazon.
+                Esta acción eliminará el archivo <b>"{docToDelete.name}"</b> de forma permanente.
               </p>
 
               <div className="flex gap-3 w-full">
@@ -298,7 +298,7 @@ export default function ContractsPage() {
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
                     </svg>
-                  ) : "Sí, destruir"}
+                  ) : "Sí, eliminar"}
                 </button>
               </div>
             </div>
@@ -314,7 +314,7 @@ export default function ContractsPage() {
               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
               <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
             </svg>
-            <span className="text-[14px] font-bold text-[#001b27]">Generando Signed URL desde AWS...</span>
+            <span className="text-[14px] font-bold text-[#001b27]">Generando enlace temporal de acceso...</span>
           </div>
         </div>
       )}
