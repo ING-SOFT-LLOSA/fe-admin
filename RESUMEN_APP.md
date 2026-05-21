@@ -121,29 +121,19 @@ Estado actual: mock funcional local.
 - Mensajería de éxito o warning de reintento.
 - No hay persistencia real ni integración real con Google Calendar.
 
-### `/legal`
+### /clientes/[id]/expediente
 
-Estado actual: mock funcional local con soporte de query params.
+Estado actual: mock funcional local integrado con store de backoffice.
 
-- Lee `project`, `unit` y `view` desde query string.
-- Maneja dos vistas:
-  - documentos de obra
-  - documentos por cliente/unidad
-- Requiere contexto mínimo antes de mostrar el expediente.
-- Lista documentos mock agrupados por etapa:
-  - Separación
-  - Contrato
-  - Pagos y Financiamiento
-  - Avance del Proyecto
-  - Entrega
-  - Saneamiento
-- Validación de carga de PDF:
-  - solo PDF
-  - máximo 10 MB
-- Subida simulada con tagging por etapa.
-- Visualización simulada mediante signed URL temporal de S3.
-- Eliminación de documento solo en estado local.
-- No hay backend real para documentos.
+- Ruta dinámica basada en el `id` del cliente.
+- Carga el cliente desde el backend (`fetchUsuarios`) y busca sus unidades asignadas en el workspace local.
+- Maneja la visualización administrativa de:
+  - Resumen contractual editable (área techada, precio total, fechas de entrega/desembolso).
+  - Pipeline de procesos (estado de venta a crédito, firmas, etc.).
+  - Documentos heredados del proyecto.
+  - Gestión de documentos agrupados por módulo/etapa (Separación, Contrato, Pagos y Financiamiento, etc.).
+- Validación y carga simulada de archivos (PDF/Imágenes) con persistencia local en estado.
+- No hay integración real con S3 o un backend de documentos.
 
 ### `/configuracion`
 
@@ -208,7 +198,6 @@ Estado actual general: vistas mock/estáticas.
   - proyectos
   - clientes
   - finanzas
-  - legal
   - agenda
   - configuración
 - Sidebar empleado con acceso a dashboard, clientes, contratos, cronograma, avances y seguimiento.
@@ -235,7 +224,7 @@ Estado actual general: vistas mock/estáticas.
 - Finanzas y cronogramas.
 - Conciliación y vouchers.
 - Agenda/calendario.
-- Expedientes legales.
+- Expedientes de clientes y gestión documental.
 - Gestión de empleados internos.
 - Todo el portal de empleado.
 

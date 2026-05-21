@@ -1,3 +1,16 @@
+export interface Funcion {
+  idFuncion: number;
+  nombreCodigo: string;
+  descripcion: string;
+}
+
+export interface Rol {
+  idRol: number;
+  nombre: string;
+  descripcion: string;
+  funciones?: Funcion[];
+}
+
 export interface Usuario {
   id: number;
   nombre: string;
@@ -17,6 +30,14 @@ export interface CrearClientePayload {
   telefono?: string;
   documentoIdentidad?: string;
   tipoUsuario: "CLIENTE";
+}
+
+export interface CrearEmpleadoPayload {
+  nombre: string;
+  apellidos: string;
+  email: string;
+  tipoUsuario: "EMPLEADO";
+  idRol: number;
 }
 
 export interface ClienteRow {

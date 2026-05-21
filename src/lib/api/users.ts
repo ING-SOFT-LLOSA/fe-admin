@@ -1,5 +1,5 @@
 import { apiFetch } from "@/lib/api/http";
-import type { ClienteRow, CrearClientePayload, Usuario } from "@/types/user";
+import type { ClienteRow, CrearClientePayload, CrearEmpleadoPayload, Usuario, Rol } from "@/types/user";
 
 export function fetchUsuarios(): Promise<Usuario[]> {
   return apiFetch<Usuario[]>("/api/users");
@@ -11,6 +11,26 @@ export function registerCliente(payload: CrearClientePayload): Promise<Usuario> 
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
   });
+}
+
+export function registerEmpleado(payload: CrearEmpleadoPayload): Promise<Usuario> {
+  return apiFetch<Usuario>("/api/users/register", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+}
+
+export function asignarRol(idUsuario: number, idRol: number): Promise<Usuario> {
+  return apiFetch<Usuario>(`/api/users/${idUsuario}/role`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ idRol }),
+  });
+}
+
+export function fetchRoles(): Promise<Rol[]> {
+  return apiFetch<Rol[]>("/api/roles");
 }
 
 /** Desactiva usuario (revoca acceso Firebase, mantiene registro en BD). */
