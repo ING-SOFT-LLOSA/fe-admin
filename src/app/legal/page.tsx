@@ -1,65 +1,82 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import AdminLayout from "@/components/AdminLayout";
 
-const INITIAL_DOCS = [
-  { id: "doc_1", name: "Minuta de Compraventa", type: "Minuta", date: "12 Oct 2023", size: "2.4 MB" },
-  { id: "doc_2", name: "Recibo Adelanto", type: "Recibo", date: "14 Oct 2023", size: "1.1 MB" },
-];
+function LegalContent() {
+  const searchParams = useSearchParams();
+  const urlProject = searchParams.get("project");
+  const urlUnit = searchParams.get("unit");
+  const urlView = searchParams.get("view");
 
-export default function ContractsPage() {
-  // Navigation / Search State
-  const [selectedUnit, setSelectedUnit] = useState<string | null>(null);
+  const [selectedProject, setSelectedProject] = useState(urlProject || "");
+  const [legalView, setLegalView] = useState<"obra" | "cliente">(urlView === "obra" ? "obra" : "cliente");
+  const [selectedUnit, setSelectedUnit] = useState(urlUnit || "");
 
-  // Docs State
-  const [docs, setDocs] = useState(INITIAL_DOCS);
+  const STAGES = [
+    "Separación",
+    "Contrato",
+    "Pagos y Financiamiento",
+    "Avance del Proyecto",
+    "Entrega",
+    "Saneamiento"
+  ];
 
-  // Upload State
+  const [docs, setDocs] = useState([
+    { id: "doc_1", name: "Licencia de Construcción", type: "Separación", date: "12 Oct 2023", size: "2.4 MB", scope: "obra" },
+    { id: "doc_2", name: "Minuta de Compraventa", type: "Contrato", date: "14 Oct 2023", size: "1.1 MB", scope: "cliente" },
+  ]);
+
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState("");
   const [uploadSuccess, setUploadSuccess] = useState("");
+  const [pendingFile, setPendingFile] = useState<File | null>(null);
+  const [pendingTag, setPendingTag] = useState(STAGES[0]);
 
-  // Viewing State (Signed URL Simulation)
   const [isViewing, setIsViewing] = useState(false);
   const [viewingDoc, setViewingDoc] = useState<any>(null);
-
-  // Deleting State
   const [isDeleting, setIsDeleting] = useState(false);
   const [docToDelete, setDocToDelete] = useState<any>(null);
+
+  useEffect(() => {
+    if (urlProject) setSelectedProject(urlProject);
+    if (urlUnit) setSelectedUnit(urlUnit);
+    if (urlView === "obra" || urlView === "cliente") setLegalView(urlView);
+  }, [urlProject, urlUnit, urlView]);
 
   function handleFileSelection(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
-
     setUploadError("");
     setUploadSuccess("");
-
-    // Validation 1: Format
     if (file.type !== "application/pdf") {
       setUploadError("Error: Solo se permiten documentos en formato PDF para expedientes legales.");
       return;
     }
-
-    // Validation 2: Size (Max 10MB)
     if (file.size > 10 * 1024 * 1024) {
-      setUploadError("Error: El archivo excede el límite permitido de 10MB para almacenamiento S3.");
+      setUploadError("Error: El archivo excede el límite permitido de 10MB.");
       return;
     }
+    setPendingFile(file);
+    setPendingTag(STAGES[0]);
+  }
 
-    // Validation passed -> Simulate S3 upload
+  function confirmUpload() {
+    if (!pendingFile) return;
     setIsUploading(true);
     setTimeout(() => {
       setIsUploading(false);
       const newDoc = {
         id: `doc_${Date.now()}`,
-        name: file.name,
-        type: "Documento Legal",
+        name: pendingFile.name,
+        type: pendingTag,
         date: new Date().toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' }),
-        size: (file.size / (1024 * 1024)).toFixed(1) + " MB"
+        size: (pendingFile.size / (1024 * 1024)).toFixed(1) + " MB",
+        scope: legalView
       };
       setDocs([newDoc, ...docs]);
-      setUploadSuccess("Documento legal cargado y vinculado exitosamente.");
-
+      setPendingFile(null);
+      setUploadSuccess("Documento legal cargado exitosamente.");
       setTimeout(() => setUploadSuccess(""), 4000);
     }, 2000);
   }
@@ -67,19 +84,14 @@ export default function ContractsPage() {
   function simulateViewSignedUrl(doc: any) {
     setViewingDoc(doc);
     setIsViewing(true);
-
-    // Simulate API fetch delay to get Signed URL
     setTimeout(() => {
       setIsViewing(false);
       setViewingDoc(null);
-      // In a real app we would open a new tab with the URL here.
       alert(`Simulación: Se abrió en una nueva pestaña usando la Signed URL segura de Amazon S3.\n\nDocumento: ${doc.name}\nExpira en: 5 minutos.`);
     }, 1500);
   }
 
-  function openDeleteSafe(doc: any) {
-    setDocToDelete(doc);
-  }
+  function openDeleteSafe(doc: any) { setDocToDelete(doc); }
 
   function confirmDelete() {
     setIsDeleting(true);
@@ -90,65 +102,93 @@ export default function ContractsPage() {
     }, 1000);
   }
 
+  const hasContext = selectedProject && (legalView === "obra" || (legalView === "cliente" && selectedUnit));
+  const filteredDocs = docs.filter(d => d.scope === legalView);
+
   return (
     <AdminLayout>
-      {/* CU009 Page Header */}
       <div className="flex justify-between items-end mb-6">
         <div>
           <h1 className="text-[36px] leading-[44px] font-bold tracking-[-0.02em] text-[#001b27]">Expedientes Legales</h1>
-          <p className="text-base text-[#41484c] mt-2">Centraliza documentos legales privados vinculados a cada unidad inmobiliaria.</p>
+          <p className="text-base text-[#41484c] mt-2">Centraliza documentos legales privados vinculados a cada unidad inmobiliaria y a nivel proyecto.</p>
         </div>
       </div>
 
       <div className="bg-white rounded-xl border border-[#E5E7EB] p-4 shadow-[0_4px_20px_rgba(2,49,67,0.05)] mb-6">
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-3 gap-4 items-end">
           <div>
             <label className="text-[11px] font-bold text-[#72787c] uppercase tracking-wider block mb-1">Proyecto</label>
-            <select className="w-full border border-[#E5E7EB] rounded-lg px-3 py-2 text-[13px] bg-[#f9f9fb] focus:outline-none focus:border-[#023143]">
-              <option>Torre Aviana Residencial</option>
-              <option>Parque Sur</option>
+            <select 
+              value={selectedProject} 
+              onChange={e => setSelectedProject(e.target.value)}
+              className="w-full border border-[#E5E7EB] rounded-lg px-3 py-2 text-[13px] bg-[#f9f9fb] focus:outline-none focus:border-[#023143]"
+            >
+              <option value="">Seleccionar...</option>
+              <option value="Torre Aviana">Torre Aviana Residencial</option>
+              <option value="Parque Sur">Parque Sur</option>
+              <option value="Edificio Central">Edificio Central</option>
+              <option value="Condominio Vista Mar">Condominio Vista Mar</option>
             </select>
           </div>
+          
           <div>
-            <label className="text-[11px] font-bold text-[#72787c] uppercase tracking-wider block mb-1">Buscar Número de Unidad</label>
-            <div className="flex gap-2">
-              <input
-                type="text"
-                placeholder="Ej. 1402"
-                className="w-full border border-[#E5E7EB] rounded-lg px-3 py-2 text-[13px] focus:outline-none focus:border-[#023143]"
-              />
+            <label className="text-[11px] font-bold text-[#72787c] uppercase tracking-wider block mb-1">Nivel de Documentos</label>
+            <div className="flex bg-[#f9f9fb] border border-[#E5E7EB] rounded-lg p-1">
               <button
-                onClick={() => setSelectedUnit("1402")}
-                className="px-4 bg-[#023143] text-white rounded-lg text-sm font-bold hover:bg-[#001b27] transition-all"
+                onClick={() => setLegalView("obra")}
+                className={`flex-1 text-[13px] font-bold rounded-md py-1.5 transition-colors ${legalView === "obra" ? "bg-white shadow-sm border border-[#E5E7EB] text-[#023143]" : "text-[#72787c] hover:text-[#023143]"}`}
               >
-                Buscar
+                Obra (Compartidos)
+              </button>
+              <button
+                onClick={() => setLegalView("cliente")}
+                className={`flex-1 text-[13px] font-bold rounded-md py-1.5 transition-colors ${legalView === "cliente" ? "bg-white shadow-sm border border-[#E5E7EB] text-[#023143]" : "text-[#72787c] hover:text-[#023143]"}`}
+              >
+                Cliente (Individual)
               </button>
             </div>
           </div>
+
+          {legalView === "cliente" && (
+            <div>
+              <label className="text-[11px] font-bold text-[#72787c] uppercase tracking-wider block mb-1">Buscar Número de Unidad</label>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={selectedUnit}
+                  onChange={e => setSelectedUnit(e.target.value)}
+                  placeholder="Ej. Dpto 101"
+                  className="w-full border border-[#E5E7EB] rounded-lg px-3 py-2 text-[13px] focus:outline-none focus:border-[#023143]"
+                />
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
-      {selectedUnit ? (
+      {hasContext ? (
         <div className="grid grid-cols-12 gap-6 animate-fade-in">
-          {/* Main Detail Panel */}
           <div className="col-span-12 xl:col-span-8 flex flex-col gap-6">
             <div className="bg-white rounded-xl border border-[#E5E7EB] p-6 shadow-[0_4px_20px_rgba(2,49,67,0.05)]">
               <div className="flex justify-between items-start mb-6 pb-6 border-b border-[#E5E7EB]">
                 <div>
                   <div className="flex items-center gap-3 mb-1">
-                    <span className="px-2 py-1 bg-[#c2e8ff] text-[#001e2b] text-[12px] font-semibold rounded uppercase">Activo</span>
-                    <span className="text-[12px] font-semibold text-[#72787c]">ID: CTR-2023-0842</span>
+                    <span className="px-2 py-1 bg-[#c2e8ff] text-[#001e2b] text-[12px] font-semibold rounded uppercase">
+                      {legalView === "obra" ? "Proyecto" : "Unidad"}
+                    </span>
                   </div>
-                  <h3 className="text-[28px] leading-[36px] font-semibold text-[#001b27]">Torre Aviana - Unidad {selectedUnit}</h3>
-                  <p className="text-sm text-[#41484c]">Cliente asociado: Carlos Mendoza</p>
+                  <h3 className="text-[28px] leading-[36px] font-semibold text-[#001b27]">
+                    {selectedProject} {legalView === "cliente" && `- ${selectedUnit}`}
+                  </h3>
+                  <p className="text-sm text-[#41484c]">
+                    {legalView === "obra" ? "Documentos compartidos visibles para todos los clientes." : "Documentos personales visibles solo para el cliente de esta unidad."}
+                  </p>
                 </div>
               </div>
 
-              {/* Uploader Section */}
               <div className="mb-8">
                 <h4 className="text-[16px] font-bold text-[#1a1c1d] mb-4">Subir Nuevo Documento</h4>
 
-                {/* Feedback States */}
                 {uploadError && (
                   <div className="p-4 mb-4 bg-[#ffdad6] border border-[#ba1a1a]/20 rounded-xl flex items-center gap-3 text-[#ba1a1a] animate-fade-in">
                     <span className="material-symbols-outlined">error</span>
@@ -170,6 +210,39 @@ export default function ContractsPage() {
                     </svg>
                     <p className="text-[13px] font-bold text-[#1a1c1d]">Validando PDF y cifrando hacia Amazon S3...</p>
                   </div>
+                ) : pendingFile ? (
+                  <div className="p-5 border border-[#e2e2e4] rounded-xl bg-[#f9f9fb] animate-fade-in">
+                    <div className="flex items-center gap-3 mb-4 pb-4 border-b border-[#e2e2e4]">
+                      <span className="material-symbols-outlined text-[#cf222e] text-[28px]">picture_as_pdf</span>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[13px] font-bold text-[#1a1c1d] truncate">{pendingFile.name}</p>
+                        <p className="text-[11px] text-[#72787c]">{(pendingFile.size / (1024 * 1024)).toFixed(1)} MB</p>
+                      </div>
+                      <button onClick={() => setPendingFile(null)} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-[#e2e2e4] text-[#72787c] transition-colors">
+                        <span className="material-symbols-outlined text-[18px]">close</span>
+                      </button>
+                    </div>
+                    
+                    <div className="mb-4">
+                      <label className="text-[11px] font-bold text-[#72787c] uppercase tracking-wider block mb-1">Etapa del Proceso *</label>
+                      <select 
+                        value={pendingTag} 
+                        onChange={e => setPendingTag(e.target.value)}
+                        className="w-full border border-[#e2e2e4] rounded-lg px-3 py-2 text-[13px] bg-white focus:outline-none focus:border-[#023143]"
+                      >
+                        {STAGES.map(s => <option key={s} value={s}>{s}</option>)}
+                      </select>
+                    </div>
+                    
+                    <div className="flex gap-3 justify-end">
+                      <button onClick={() => setPendingFile(null)} className="px-4 py-2 border border-[#e2e2e4] text-[#41484c] text-[13px] font-bold rounded-lg hover:bg-[#e2e2e4] transition-colors">
+                        Cancelar
+                      </button>
+                      <button onClick={confirmUpload} className="px-5 py-2 bg-[#023143] text-white text-[13px] font-bold rounded-lg hover:bg-[#001b27] transition-colors flex items-center gap-2">
+                        <span className="material-symbols-outlined text-[16px]">upload</span> Subir y Guardar
+                      </button>
+                    </div>
+                  </div>
                 ) : (
                   <div className="flex gap-4 items-center">
                     <label className="flex-1 border-2 border-dashed border-[#c1c7cc] bg-[#f9f9fb] hover:bg-[#e2e2e4] transition-colors rounded-xl p-4 flex flex-col items-center justify-center cursor-pointer">
@@ -184,64 +257,54 @@ export default function ContractsPage() {
                 )}
               </div>
 
-              {/* Documents Table */}
               <div>
-                <h4 className="text-[16px] font-bold text-[#1a1c1d] mb-4">Expedientes Almacenados</h4>
-                {docs.length === 0 ? (
-                  <p className="text-[13px] text-[#72787c] italic text-center py-6">No hay documentos cargados en esta unidad.</p>
-                ) : (
-                  <div className="border border-[#E5E7EB] rounded-xl overflow-hidden">
-                    <table className="w-full text-left">
-                      <thead className="bg-[#f9f9fb] border-b border-[#E5E7EB]">
-                        <tr>
-                          <th className="px-4 py-3 text-[11px] font-bold text-[#72787c] uppercase">Documento</th>
-                          <th className="px-4 py-3 text-[11px] font-bold text-[#72787c] uppercase">Fecha de Carga</th>
-                          <th className="px-4 py-3 text-[11px] font-bold text-[#72787c] uppercase">Peso</th>
-                          <th className="px-4 py-3 text-[11px] font-bold text-[#72787c] uppercase text-right">Acciones</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-[#E5E7EB]">
-                        {docs.map(d => (
-                          <tr key={d.id} className="hover:bg-[#f9f9fb] transition-colors">
-                            <td className="px-4 py-3">
-                              <div className="flex items-center gap-3">
-                                <span className="material-symbols-outlined text-[#cf222e]">picture_as_pdf</span>
-                                <div>
-                                  <p className="text-[13px] font-semibold text-[#1a1c1d]">{d.name}</p>
-                                  <p className="text-[11px] text-[#72787c]">{d.type}</p>
-                                </div>
-                              </div>
-                            </td>
-                            <td className="px-4 py-3 text-[13px] text-[#41484c]">{d.date}</td>
-                            <td className="px-4 py-3 text-[13px] text-[#41484c]">{d.size}</td>
-                            <td className="px-4 py-3 text-right">
-                              <div className="flex justify-end gap-2">
-                                <button
-                                  onClick={() => simulateViewSignedUrl(d)}
-                                  className="px-3 py-1.5 bg-[#c2e8ff] text-[#023143] rounded font-bold text-[12px] hover:bg-[#a6d8f5] transition-colors flex items-center gap-1"
-                                >
-                                  <span className="material-symbols-outlined text-[14px]">visibility</span> Ver documento
-                                </button>
-                                <button
-                                  onClick={() => openDeleteSafe(d)}
-                                  className="px-3 py-1.5 border border-[#E5E7EB] text-[#ba1a1a] rounded font-bold text-[12px] hover:bg-[#ffdad6] transition-colors flex items-center gap-1"
-                                >
-                                  <span className="material-symbols-outlined text-[14px]">delete</span> Eliminar
-                                </button>
-                              </div>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
+                <h4 className="text-[16px] font-bold text-[#1a1c1d] mb-4">Expedientes Organizados por Etapa</h4>
+                <div className="space-y-4">
+                  {STAGES.map(stage => {
+                    const stageDocs = filteredDocs.filter(d => d.type === stage);
+                    if (stageDocs.length === 0) return null;
+                    return (
+                      <div key={stage} className="border border-[#E5E7EB] rounded-xl overflow-hidden">
+                        <div className="bg-[#f9f9fb] px-4 py-3 border-b border-[#E5E7EB]">
+                          <h4 className="text-[14px] font-bold text-[#001b27] uppercase tracking-wide">{stage}</h4>
+                        </div>
+                        <table className="w-full text-left">
+                          <tbody className="divide-y divide-[#E5E7EB]">
+                            {stageDocs.map(d => (
+                              <tr key={d.id} className="hover:bg-[#f9f9fb] transition-colors">
+                                <td className="px-4 py-3 w-1/2">
+                                  <div className="flex items-center gap-3">
+                                    <span className="material-symbols-outlined text-[#cf222e]">picture_as_pdf</span>
+                                    <p className="text-[13px] font-semibold text-[#1a1c1d]">{d.name}</p>
+                                  </div>
+                                </td>
+                                <td className="px-4 py-3 text-[13px] text-[#41484c]">{d.date}</td>
+                                <td className="px-4 py-3 text-[13px] text-[#41484c]">{d.size}</td>
+                                <td className="px-4 py-3 text-right">
+                                  <div className="flex justify-end gap-2">
+                                    <button onClick={() => simulateViewSignedUrl(d)} className="px-3 py-1.5 bg-[#c2e8ff] text-[#023143] rounded font-bold text-[12px] hover:bg-[#a6d8f5] transition-colors">
+                                      Ver
+                                    </button>
+                                    <button onClick={() => openDeleteSafe(d)} className="px-3 py-1.5 border border-[#E5E7EB] text-[#ba1a1a] rounded font-bold text-[12px] hover:bg-[#ffdad6] transition-colors">
+                                      Eliminar
+                                    </button>
+                                  </div>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    );
+                  })}
+                  {filteredDocs.length === 0 && (
+                    <p className="text-[13px] text-[#72787c] italic text-center py-6">No hay documentos cargados en esta vista.</p>
+                  )}
+                </div>
               </div>
-
             </div>
           </div>
 
-          {/* Info Side Panel */}
           <div className="col-span-12 xl:col-span-4">
             <div className="bg-white rounded-xl border border-[#E5E7EB] p-6 shadow-[0_4px_20px_rgba(2,49,67,0.05)] mb-6 sticky top-6">
               <h4 className="text-[16px] font-semibold text-[#001b27] mb-4 flex items-center gap-2 pb-4 border-b border-[#E5E7EB]">
@@ -262,12 +325,11 @@ export default function ContractsPage() {
           <div className="w-16 h-16 bg-[#f9f9fb] rounded-full flex items-center justify-center mb-4">
             <span className="material-symbols-outlined text-[#72787c] text-[32px]">folder_open</span>
           </div>
-          <h3 className="text-[18px] font-bold text-[#1a1c1d]">No hay unidad seleccionada</h3>
-          <p className="text-[14px] text-[#41484c] mt-2 max-w-md">Utiliza el buscador superior para encontrar un proyecto y localizar un piso/departamento, luego podrás visualizar y gestionar sus PDFs.</p>
+          <h3 className="text-[18px] font-bold text-[#1a1c1d]">Selecciona contexto</h3>
+          <p className="text-[14px] text-[#41484c] mt-2 max-w-md">Para gestionar documentos, elige un proyecto y el nivel de acceso (Obra o Cliente).</p>
         </div>
       )}
 
-      {/* Delete Confirmation Modal */}
       {docToDelete && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-[#050a0e]/60 backdrop-blur-sm p-4 animate-fade-in">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6 relative overflow-hidden">
@@ -306,7 +368,6 @@ export default function ContractsPage() {
         </div>
       )}
 
-      {/* Loading S3 Modal overlay */}
       {isViewing && (
         <div className="fixed inset-0 z-[70] flex items-center justify-center bg-white/70 backdrop-blur-sm">
           <div className="bg-white px-6 py-4 rounded-xl shadow-lg border border-[#E5E7EB] flex items-center gap-3">
@@ -318,7 +379,14 @@ export default function ContractsPage() {
           </div>
         </div>
       )}
-
     </AdminLayout>
   );
+}
+
+export default function ContractsPage() {
+  return (
+    <Suspense fallback={<AdminLayout><div>Cargando...</div></AdminLayout>}>
+      <LegalContent />
+    </Suspense>
+  )
 }

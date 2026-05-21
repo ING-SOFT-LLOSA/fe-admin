@@ -2,6 +2,8 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 
+import { useAuth } from "@/contexts/AuthContext";
+
 /* Explicit types — badge is optional ────────────────── */
 type NavItem = {
   href: string;
@@ -10,20 +12,18 @@ type NavItem = {
 };
 
 type NavGroup = {
-  label: string;
+  label?: string;
   items: NavItem[];
 };
 
 const groups: NavGroup[] = [
   {
-    label: "Módulos Principales",
     items: [
-      { href: "/proyectos", icon: "architecture", label: "Proyectos e Inventario" },
+      { href: "/projects", icon: "architecture", label: "Proyectos e Inventario" },
       { href: "/clientes", icon: "group", label: "Clientes y Asignaciones" },
       { href: "/finanzas", icon: "payments", label: "Pagos y Cronogramas" },
       { href: "/legal", icon: "gavel", label: "Expedientes Legales" },
       { href: "/agenda", icon: "calendar_today", label: "Agenda y Citas" },
-      { href: "/progress", icon: "perm_media", label: "Avances Multimedia" },
     ],
   },
   {
@@ -37,13 +37,15 @@ const groups: NavGroup[] = [
 export default function SideNav() {
   const pathname = usePathname();
   const router = useRouter();
+  const { logout, perfil } = useAuth();
 
-  function handleLogout() {
+  async function handleLogout() {
+    await logout();
     router.push("/login-empresa");
   }
 
   return (
-    <aside className="fixed left-0 top-0 h-screen w-64 z-40 bg-[#023143] flex flex-col border-r border-white/8 shadow-2xl">
+    <aside className="fixed left-0 top-0 h-screen w-64 z-40 bg-[#3A3A3A] flex flex-col border-r border-white/8 shadow-2xl">
       {/* Brand */}
       <div className="px-5 pt-6 pb-5 border-b border-white/8">
         <div className="flex items-center gap-3">
@@ -59,9 +61,11 @@ export default function SideNav() {
 
       {/* Nav */}
       <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-5">
-        {groups.map(({ label, items }) => (
-          <div key={label}>
-            <p className="px-3 mb-1.5 text-[10px] font-bold text-white/30 uppercase tracking-widest">{label}</p>
+        {groups.map(({ label, items }, i) => (
+          <div key={label ?? `group-${i}`}>
+            {label && (
+              <p className="px-3 mb-1.5 text-[10px] font-bold text-white/30 uppercase tracking-widest">{label}</p>
+            )}
             <div className="space-y-0.5">
               {items.map(({ href, icon, label: lbl }) => {
                 const active = pathname.startsWith(href);
@@ -70,7 +74,7 @@ export default function SideNav() {
                     key={href}
                     href={href}
                     className={`group flex items-center gap-3 px-3 py-2.5 rounded-lg text-[13px] font-medium transition-all duration-150 ${active
-                        ? "bg-white/12 text-white border-l-[3px] border-white pl-[9px]"
+                        ? "bg-white/12 text-white border-l-[3px] border-[#BE9F62] pl-[9px]"
                         : "text-white/60 hover:text-white hover:bg-white/6 border-l-[3px] border-transparent pl-[9px]"
                       }`}
                   >
@@ -90,7 +94,7 @@ export default function SideNav() {
       <div className="px-3 pb-5 pt-3 border-t border-white/8 space-y-1">
         {/* Profile row */}
         <div className="flex items-center gap-3 px-3 py-2.5 rounded-lg">
-          <div className="w-8 h-8 rounded-full bg-[#c2e8ff]/20 border border-white/20 overflow-hidden shrink-0">
+          <div className="w-8 h-8 rounded-full bg-[#BE9F62]/20 border border-white/20 overflow-hidden shrink-0">
             <img
               src="https://lh3.googleusercontent.com/aida-public/AB6AXuCzQCxfrU0eUzvhEwSM5jiDBDTDs8OlnbNicpfojqEXMvPlgUWxYx6kZncBR3is4w_OcsIPB5JeJ0U3MuS8tPRp5rDqMhKE-Nw3LESpFtluKqGB38mMNUfncBHAqi8twEUCc1NeZ1ttVPvO0MTuURHoQvDa8ZdVTw_Rcarcv1mjiJ_JAH8Em2ygMmGSf3GBaCaKQAzVBAPm7o6XpT7Qxpzh24qOtJt_dykIni7yyxUOvvWkrE0i8hGvceYrFupC1AzGhDN347MZkgYr"
               alt="Admin"
@@ -98,8 +102,10 @@ export default function SideNav() {
             />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-[12px] font-semibold text-white truncate">Usuario Admin</p>
-            <p className="text-[10px] text-white/40 truncate">Admin Global</p>
+            <p className="text-[12px] font-semibold text-white truncate">
+              {perfil?.nombre ?? "Usuario"}
+            </p>
+            <p className="text-[10px] text-white/40 truncate">{perfil?.rol ?? "—"}</p>
           </div>
         </div>
 

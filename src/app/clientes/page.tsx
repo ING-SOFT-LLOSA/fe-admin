@@ -1,6 +1,12 @@
 "use client";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import AdminLayout from "@/components/AdminLayout";
+import CreateClienteModal from "@/components/clientes/CreateClienteModal";
+import DeleteUsuarioModal from "@/components/clientes/DeleteUsuarioModal";
+import { useAuth } from "@/contexts/AuthContext";
+import { canEliminarUsuario } from "@/lib/auth/permissions";
+import { fetchUsuarios, mapUsuarioToClienteRow } from "@/lib/api/users";
+import type { ClienteRow } from "@/types/user";
 
 // --- Mock Data ---
 type UnitStatus = "Disponible" | "Reservado" | "Vendido" | "Bloqueado";
@@ -21,15 +27,14 @@ const INITIAL_UNITS: Unit[] = [
   { id: "V901", project: "Vistas del Golf", name: "Penthouse 901", status: "Disponible", type: "Departamento" },
 ];
 
-const INITIAL_CLIENTS = [
-  { initials: "CM", name: "Carlos Eduardo Mendoza", dni: "45892103", email: "c.mendoza@example.com", phone: "+51 987 654 321", project: "Torre Aviana - 1402", status: "Con contrato activo", statusBg: "bg-[#E8F5E9] text-[#2E7D32]" },
-  { initials: "MR", name: "Maria Fernanda Rojas", dni: "38471922", email: "m.rojas@example.com", phone: "+51 965 432 109", project: "Parque Sur - 501", status: "Con propiedad reservada", statusBg: "bg-[#c2e8ff] text-[#001e2b]" },
-  { initials: "LD", name: "Luis Delgado Torres", dni: "52013847", email: "l.delgado@example.com", phone: "+51 941 238 765", project: "Torre Aviana - 1104", status: "Registrado", statusBg: "bg-[#E8F5E9] text-[#2E7D32]" },
-  { initials: "EV", name: "Elena Vargas Castro", dni: "61204837", email: "e.vargas@example.com", phone: "+51 912 345 678", project: "Parque Sur - 802", status: "Inactivo", statusBg: "bg-[#eeeeef] text-[#41484c]" },
-];
-
 export default function ClientsPage() {
-  const [clients, setClients] = useState(INITIAL_CLIENTS);
+  const { perfil } = useAuth();
+  const [clients, setClients] = useState<ClienteRow[]>([]);
+  const [listLoading, setListLoading] = useState(true);
+  const [listError, setListError] = useState<string | null>(null);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [userToDelete, setUserToDelete] = useState<ClienteRow | null>(null);
   const [units, setUnits] = useState(INITIAL_UNITS);
 
   // Modal Wizard State
@@ -46,7 +51,7 @@ export default function ClientsPage() {
 
   // Step 2: Client Selection
   const [searchQuery, setSearchQuery] = useState("");
-  const [searchedClient, setSearchedClient] = useState<any>(null);
+  const [searchedClient, setSearchedClient] = useState<ClienteRow | null>(null);
   const [searchError, setSearchError] = useState("");
 
   // Revoke / Resolve Contract States (CU006)
@@ -56,6 +61,23 @@ export default function ClientsPage() {
 
   // Helpers
   const availableUnitsForProject = units.filter(u => u.project === selectedProject && u.status === "Disponible");
+
+  async function reloadClients(showSpinner = true) {
+    if (showSpinner) setListLoading(true);
+    setListError(null);
+    try {
+      const usuarios = await fetchUsuarios();
+      setClients(usuarios.map(mapUsuarioToClienteRow));
+    } catch (err) {
+      setListError(err instanceof Error ? err.message : "No se pudieron cargar los usuarios.");
+    } finally {
+      if (showSpinner) setListLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    reloadClients();
+  }, []);
 
   function openWizard() {
     setStep(1);
@@ -85,7 +107,15 @@ export default function ClientsPage() {
     setSearchError("");
     setTimeout(() => {
       setLoading(false);
-      const found = clients.find(c => c.dni.includes(searchQuery) || c.name.toLowerCase().includes(searchQuery.toLowerCase()));
+      const q = searchQuery.trim().toLowerCase();
+      const found = clients
+        .filter((c) => c.tipoUsuario === "CLIENTE")
+        .find(
+          (c) =>
+            c.name.toLowerCase().includes(q) ||
+            c.email.toLowerCase().includes(q) ||
+            (c.dni !== "—" && c.dni.includes(searchQuery.trim())),
+        );
       if (found) {
         setSearchedClient(found);
       } else {
@@ -124,7 +154,8 @@ export default function ClientsPage() {
       const assignedNames = units.filter(u => selectedUnitIds.includes(u.id)).map(u => u.name).join(", ");
 
       // Update logic to either modify existing active client or add new to state if necessary (simplified mock)
-      setClients(clients.map(c => c.dni === searchedClient.dni ? { ...c, project: c.project && c.project !== "Sin asignar" ? `${c.project}, ${selectedProject} - ${assignedNames}` : `${selectedProject} - ${assignedNames}`, status: "Con propiedad reservada" } : c));
+      if (!searchedClient) return;
+      setClients(clients.map(c => c.id === searchedClient.id ? { ...c, project: c.project && c.project !== "Sin asignar" ? `${c.project}, ${selectedProject} - ${assignedNames}` : `${selectedProject} - ${assignedNames}`, status: "Con propiedad reservada", statusBg: "bg-[#c2e8ff] text-[#001e2b]" } : c));
 
       setLoading(false);
       setSuccessMsg("Propiedad vinculada correctamente. El cliente queda con estado 'Con propiedad reservada'.");
@@ -137,7 +168,12 @@ export default function ClientsPage() {
   }
 
   // --- CU006 ---
-  function openRevokeModal(client: any) {
+  function openDeleteModal(client: ClienteRow) {
+    setUserToDelete(client);
+    setDeleteOpen(true);
+  }
+
+  function openRevokeModal(client: ClienteRow) {
     setClientToRevoke({ ...client });
     setRevokeReason("Desistimiento");
     setRevokeOpen(true);
@@ -168,7 +204,7 @@ export default function ClientsPage() {
 
       // Update Client table
       setClients(clients.map(c =>
-        c.dni === clientToRevoke.dni
+        c.id === clientToRevoke.id
           ? { ...c, project: newProjectStr, status: isInactive ? "Inactivo" : "En seguimiento", statusBg: isInactive ? "bg-[#eeeeef] text-[#41484c]" : "bg-[#fff3e0] text-[#e65100]" }
           : c
       ));
@@ -199,7 +235,11 @@ export default function ClientsPage() {
           <p className="text-base text-[#41484c] mt-2">Registra clientes, gestiona sus datos y vincula propiedades a su perfil.</p>
         </div>
         <div className="flex gap-3">
-          <button className="px-4 py-2 border border-[#e2e2e4] rounded-xl text-[#1a1c1d] text-xs font-semibold hover:bg-[#eeeeef] transition-colors flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setCreateOpen(true)}
+            className="px-4 py-2 border border-[#e2e2e4] rounded-xl text-[#1a1c1d] text-xs font-semibold hover:bg-[#eeeeef] transition-colors flex items-center gap-2"
+          >
             <span className="material-symbols-outlined text-[18px]">person_add</span>Crear cliente
           </button>
           <button
@@ -215,7 +255,9 @@ export default function ClientsPage() {
       <div className="grid grid-cols-4 gap-4 mb-6">
         <div className="bg-white rounded-xl border border-[#e2e2e4] p-5 shadow-[0_4px_20px_rgba(2,49,67,0.02)]">
           <h4 className="text-[12px] font-bold text-[#72787c] uppercase">Clientes Totales</h4>
-          <div className="text-[24px] font-bold text-[#1a1c1d] mt-1">{clients.length}</div>
+          <div className="text-[24px] font-bold text-[#1a1c1d] mt-1">
+            {clients.filter((c) => c.tipoUsuario === "CLIENTE").length}
+          </div>
         </div>
         <div className="bg-white rounded-xl border border-[#e2e2e4] p-5 shadow-[0_4px_20px_rgba(2,49,67,0.02)]">
           <h4 className="text-[12px] font-bold text-[#72787c] uppercase">Unidades Disponibles</h4>
@@ -226,6 +268,12 @@ export default function ClientsPage() {
           <div className="text-[24px] font-bold text-[#e18b1d] mt-1">{units.filter(u => u.status === "Reservado").length}</div>
         </div>
       </div>
+
+      {listError && (
+        <div className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-[13px] text-red-800">
+          {listError}
+        </div>
+      )}
 
       {/* Table */}
       <div className="bg-white rounded-xl border border-[#e2e2e4] shadow-[0_4px_20px_rgba(2,49,67,0.03)] overflow-hidden flex-1 flex flex-col">
@@ -239,12 +287,39 @@ export default function ClientsPage() {
               </tr>
             </thead>
             <tbody className="text-sm text-[#1a1c1d]">
-              {clients.map((c) => (
-                <tr key={c.dni} className="border-b border-[#e2e2e4] hover:bg-[#f4f3f5]/50 transition-colors group">
+              {listLoading && (
+                <tr>
+                  <td colSpan={7} className="py-12 text-center text-[#72787c]">
+                    <span className="inline-flex items-center gap-2">
+                      <svg className="animate-spin w-5 h-5" viewBox="0 0 24 24" fill="none">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+                      </svg>
+                      Cargando usuarios…
+                    </span>
+                  </td>
+                </tr>
+              )}
+              {!listLoading && !listError && clients.length === 0 && (
+                <tr>
+                  <td colSpan={7} className="py-12 text-center text-[#72787c]">
+                    No hay usuarios registrados. Crea clientes con POST /api/users/register.
+                  </td>
+                </tr>
+              )}
+              {!listLoading && clients.map((c) => (
+                <tr key={c.id} className="border-b border-[#e2e2e4] hover:bg-[#f4f3f5]/50 transition-colors group">
                   <td className="py-4 px-6">
                     <div className="flex items-center gap-3">
                       <div className="w-9 h-9 rounded-full bg-[#f4f3f5] flex items-center justify-center text-[#023143] text-xs font-bold">{c.initials}</div>
-                      <span className="font-semibold text-[#1a1c1d]">{c.name}</span>
+                      <div>
+                        <span className="font-semibold text-[#1a1c1d]">{c.name}</span>
+                        {c.tipoUsuario === "EMPLEADO" && (
+                          <span className="ml-2 text-[10px] font-bold uppercase text-[#72787c]">
+                            {c.rol ?? "Empleado"}
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </td>
                   <td className="py-4 px-6 text-[#41484c]">{c.dni}</td>
@@ -258,6 +333,7 @@ export default function ClientsPage() {
                     <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                       {c.project && c.project !== "Sin asignar" && (
                         <button
+                          type="button"
                           onClick={() => openRevokeModal(c)}
                           className="text-[#ba1a1a] hover:bg-[#ffdad6] p-1.5 rounded-md transition-colors"
                           title="Resolver Contrato / Desvincular"
@@ -265,9 +341,16 @@ export default function ClientsPage() {
                           <span className="material-symbols-outlined text-[18px]">person_remove</span>
                         </button>
                       )}
-                      <button className="text-[#41484c] hover:text-[#023143] hover:bg-[#f4f3f5] transition-colors p-1.5 rounded-md">
-                        <span className="material-symbols-outlined text-[18px]">more_vert</span>
-                      </button>
+                      {canEliminarUsuario(perfil, c) && (
+                        <button
+                          type="button"
+                          onClick={() => openDeleteModal(c)}
+                          className="text-[#ba1a1a] hover:bg-[#ffdad6] p-1.5 rounded-md transition-colors"
+                          title="Eliminar usuario"
+                        >
+                          <span className="material-symbols-outlined text-[18px]">delete</span>
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>
@@ -620,6 +703,22 @@ export default function ClientsPage() {
           </div>
         </div>
       )}
+
+      <CreateClienteModal
+        open={createOpen}
+        onClose={() => setCreateOpen(false)}
+        onCreated={() => reloadClients(false)}
+      />
+
+      <DeleteUsuarioModal
+        open={deleteOpen}
+        usuario={userToDelete}
+        onClose={() => {
+          setDeleteOpen(false);
+          setUserToDelete(null);
+        }}
+        onDeleted={() => reloadClients(false)}
+      />
     </AdminLayout>
   );
 }

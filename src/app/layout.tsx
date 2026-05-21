@@ -1,4 +1,8 @@
 import type { Metadata } from "next";
+
+import AuthGuard from "@/components/auth/AuthGuard";
+import { AuthProvider } from "@/contexts/AuthContext";
+
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -25,7 +29,11 @@ export default function RootLayout({
           rel="stylesheet"
         />
       </head>
-      <body>{children}</body>
+      <body>
+        <AuthProvider>
+          <AuthGuard>{children}</AuthGuard>
+        </AuthProvider>
+      </body>
     </html>
   );
 }
