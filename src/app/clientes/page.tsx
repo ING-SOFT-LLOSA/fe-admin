@@ -1,4 +1,5 @@
 "use client";
+import Link from "next/link";
 import React, { useEffect, useState } from "react";
 import AdminLayout from "@/components/AdminLayout";
 import CreateClienteModal from "@/components/clientes/CreateClienteModal";
@@ -56,7 +57,7 @@ export default function ClientsPage() {
 
   // Revoke / Resolve Contract States (CU006)
   const [revokeOpen, setRevokeOpen] = useState(false);
-  const [clientToRevoke, setClientToRevoke] = useState<any>(null);
+  const [clientToRevoke, setClientToRevoke] = useState<ClienteRow | null>(null);
   const [revokeReason, setRevokeReason] = useState("Desistimiento");
 
   // Helpers
@@ -76,7 +77,9 @@ export default function ClientsPage() {
   }
 
   useEffect(() => {
-    reloadClients();
+    queueMicrotask(() => {
+      void reloadClients();
+    });
   }, []);
 
   function openWizard() {
@@ -182,19 +185,20 @@ export default function ClientsPage() {
   }
 
   function handleRevokeContract() {
+    if (!clientToRevoke) return;
     setLoading(true);
     setSuccessMsg("");
 
     setTimeout(() => {
+      const activeClient = clientToRevoke;
       // 1. Parse client's properties and count them
-      const properties = clientToRevoke.project.split(", ").filter(Boolean);
+      const properties = activeClient.project.split(", ").filter(Boolean);
 
       // 2. Logic: If multiple, remove only the first one found. (Mock simulation)
       let newProjectStr = "";
       let isInactive = false;
 
       if (properties.length > 1) {
-        const removed = properties[0];
         const remaining = properties.slice(1).join(", ");
         newProjectStr = remaining;
       } else {
@@ -204,7 +208,7 @@ export default function ClientsPage() {
 
       // Update Client table
       setClients(clients.map(c =>
-        c.id === clientToRevoke.id
+        c.id === activeClient.id
           ? { ...c, project: newProjectStr, status: isInactive ? "Inactivo" : "En seguimiento", statusBg: isInactive ? "bg-[#eeeeef] text-[#41484c]" : "bg-[#fff3e0] text-[#e65100]" }
           : c
       ));
@@ -331,6 +335,15 @@ export default function ClientsPage() {
                   </td>
                   <td className="py-4 px-6 text-right">
                     <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      {c.project && c.project !== "Sin asignar" && (
+                        <Link
+                          href={`/clientes/${c.id}/expediente`}
+                          className="text-[#023143] hover:bg-[#c2e8ff] p-1.5 rounded-md transition-colors"
+                          title="Ver expediente"
+                        >
+                          <span className="material-symbols-outlined text-[18px]">folder_managed</span>
+                        </Link>
+                      )}
                       {c.project && c.project !== "Sin asignar" && (
                         <button
                           type="button"
@@ -573,7 +586,7 @@ export default function ClientsPage() {
                 disabled={loading || successMsg !== ""}
                 onClick={() => {
                   if (step === 1) setIsModalOpen(false);
-                  else setStep(prev => (prev - 1) as any);
+                  else setStep((prev) => (prev === 3 ? 2 : 1));
                 }}
                 className="px-5 py-2.5 text-sm font-bold text-[#41484c] hover:text-[#1a1c1d] transition-colors"
               >

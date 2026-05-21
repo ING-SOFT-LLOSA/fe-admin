@@ -22,7 +22,6 @@ const groups: NavGroup[] = [
       { href: "/projects", icon: "architecture", label: "Proyectos e Inventario" },
       { href: "/clientes", icon: "group", label: "Clientes y Asignaciones" },
       { href: "/finanzas", icon: "payments", label: "Pagos y Cronogramas" },
-      { href: "/legal", icon: "gavel", label: "Expedientes Legales" },
       { href: "/agenda", icon: "calendar_today", label: "Agenda y Citas" },
     ],
   },

@@ -27,6 +27,12 @@ export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> 
     } catch {
       /* no JSON */
     }
+    if (res.status === 403) {
+      throw new Error(
+        message ||
+          "No tienes permisos para ejecutar esta acción. El borrado definitivo requiere autorización del backend.",
+      );
+    }
     throw new Error(message || `Error ${res.status} en ${path}`);
   }
 
@@ -34,5 +40,10 @@ export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> 
     return undefined as T;
   }
 
-  return res.json() as Promise<T>;
+  const text = await res.text();
+  if (!text) {
+    return undefined as T;
+  }
+
+  return JSON.parse(text) as T;
 }

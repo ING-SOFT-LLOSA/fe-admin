@@ -2,6 +2,7 @@
 import { usePathname } from "next/navigation";
 
 const crumbs: Record<string, string> = {
+  projects: "Proyectos e Inventario",
   proyectos: "Proyectos e Inventario",
   clientes: "Clientes y Asignaciones",
   finanzas: "Pagos y Cronogramas",

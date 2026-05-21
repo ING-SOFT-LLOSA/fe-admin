@@ -151,6 +151,33 @@ export default function ProjectDetailView({ projectId }: ProjectDetailViewProps)
                   {successMessage}
                 </div>
               ) : null}
+
+              <div className="mt-6 grid gap-3 md:grid-cols-2">
+                <Link
+                  href={`/projects/${project.slug}/obra`}
+                  className="rounded-xl border border-[#e2e2e4] bg-[#f9f9fb] px-4 py-4 transition-colors hover:border-[#023143] hover:bg-white"
+                >
+                  <p className="text-[11px] font-bold uppercase tracking-wider text-[#72787c]">
+                    Modulo A
+                  </p>
+                  <h3 className="mt-2 text-base font-bold text-[#1a1c1d]">Gestion de obra</h3>
+                  <p className="mt-1 text-sm text-[#41484c]">
+                    Licencias, etapas constructivas y documentos compartidos.
+                  </p>
+                </Link>
+                <Link
+                  href={`/projects/${project.slug}/unidades`}
+                  className="rounded-xl border border-[#e2e2e4] bg-[#f9f9fb] px-4 py-4 transition-colors hover:border-[#023143] hover:bg-white"
+                >
+                  <p className="text-[11px] font-bold uppercase tracking-wider text-[#72787c]">
+                    Modulo B
+                  </p>
+                  <h3 className="mt-2 text-base font-bold text-[#1a1c1d]">Gestion de unidades</h3>
+                  <p className="mt-1 text-sm text-[#41484c]">
+                    Unidades, cliente asignado y pipeline de compra.
+                  </p>
+                </Link>
+              </div>
             </header>
 
             <ProjectForm
