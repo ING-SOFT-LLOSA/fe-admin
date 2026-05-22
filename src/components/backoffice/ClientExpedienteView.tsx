@@ -94,9 +94,9 @@ export default function ClientExpedienteView({ clientId }: ClientExpedienteViewP
 
   if (!selectedUnit || !selectedProject) {
     return (
-      <div className="rounded-xl border border-dashed border-[#c1c7cc] bg-white px-6 py-12 text-center">
-        <h1 className="text-lg font-bold text-[#1a1c1d]">Cliente sin unidad asociada</h1>
-        <p className="mt-2 text-sm text-[#41484c]">
+      <div className="rounded-xl border border-dashed border-slate-300 bg-white px-6 py-12 text-center">
+        <h1 className="text-lg font-bold text-build-main">Cliente sin unidad asociada</h1>
+        <p className="mt-2 text-sm text-slate-500">
           Todavia no hay una unidad del workspace local vinculada a este cliente.
         </p>
       </div>
@@ -113,24 +113,24 @@ export default function ClientExpedienteView({ clientId }: ClientExpedienteViewP
       <div>
         <Link
           href="/clientes"
-          className="inline-flex items-center gap-2 text-sm font-bold text-[#023143] hover:text-[#001b27]"
+          className="inline-flex items-center gap-2 text-sm font-bold text-slate-500 hover:text-build-main"
         >
           <span className="material-symbols-outlined text-[18px]">arrow_back</span>
           Volver a clientes
         </Link>
-        <h1 className="mt-3 text-[34px] font-bold tracking-[-0.02em] text-[#1a1c1d]">
+        <h1 className="mt-3 text-[34px] font-bold tracking-[-0.02em] text-build-main">
           Expediente de cliente
         </h1>
-        <p className="mt-2 text-sm text-[#41484c]">
+        <p className="mt-2 text-sm text-slate-500">
           Vista administrativa completa por unidad, proceso y documentos visibles al comprador.
         </p>
       </div>
 
-      <section className="rounded-xl border border-[#e2e2e4] bg-white p-6 shadow-[0_4px_20px_rgba(2,49,67,0.03)]">
+      <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
         <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_280px]">
           <div>
-            <h2 className="text-[20px] font-bold text-[#1a1c1d]">{identityName || "Cliente"}</h2>
-            <p className="mt-1 text-sm text-[#41484c]">
+            <h2 className="text-[20px] font-bold text-build-main">{identityName || "Cliente"}</h2>
+            <p className="mt-1 text-sm text-slate-500">
               {client?.email ?? clientIdentity?.email ?? "Sin correo"} ·{" "}
               {clientIdentity?.phone ?? "Sin telefono"}
             </p>
@@ -139,13 +139,13 @@ export default function ClientExpedienteView({ clientId }: ClientExpedienteViewP
             ) : null}
           </div>
           <div>
-            <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-[#72787c]">
+            <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-slate-500">
               Unidad seleccionada
             </label>
             <select
               value={activeSelectedUnitId}
               onChange={(event) => setSelectedUnitId(event.target.value)}
-              className="w-full rounded-lg border border-[#c1c7cc] px-3 py-2 text-sm outline-none focus:border-[#023143]"
+              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none transition-all focus:border-build-accent focus:ring-1 focus:ring-build-accent"
             >
               {assignedUnits.map((entry) => (
                 <option key={entry.unit.id} value={entry.unit.id}>
@@ -171,11 +171,11 @@ export default function ClientExpedienteView({ clientId }: ClientExpedienteViewP
             }
           />
 
-          <section className="rounded-xl border border-[#e2e2e4] bg-white p-6 shadow-[0_4px_20px_rgba(2,49,67,0.03)]">
-            <h2 className="text-[20px] font-bold text-[#1a1c1d]">Resumen contractual editable</h2>
+          <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+            <h2 className="text-[20px] font-bold text-build-main">Resumen contractual editable</h2>
             <div className="mt-5 grid gap-4 md:grid-cols-2">
               <div>
-                <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-[#72787c]">
+                <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-slate-500">
                   Area techada
                 </label>
                 <input
@@ -190,11 +190,11 @@ export default function ClientExpedienteView({ clientId }: ClientExpedienteViewP
                       },
                     }))
                   }
-                  className="w-full rounded-lg border border-[#c1c7cc] px-3 py-2 text-sm outline-none focus:border-[#023143]"
+                  className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none transition-all focus:border-build-accent focus:ring-1 focus:ring-build-accent"
                 />
               </div>
               <div>
-                <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-[#72787c]">
+                <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-slate-500">
                   Area libre
                 </label>
                 <input
@@ -209,11 +209,11 @@ export default function ClientExpedienteView({ clientId }: ClientExpedienteViewP
                       },
                     }))
                   }
-                  className="w-full rounded-lg border border-[#c1c7cc] px-3 py-2 text-sm outline-none focus:border-[#023143]"
+                  className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none transition-all focus:border-build-accent focus:ring-1 focus:ring-build-accent"
                 />
               </div>
               <div>
-                <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-[#72787c]">
+                <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-slate-500">
                   Area total
                 </label>
                 <input
@@ -228,11 +228,11 @@ export default function ClientExpedienteView({ clientId }: ClientExpedienteViewP
                       },
                     }))
                   }
-                  className="w-full rounded-lg border border-[#c1c7cc] px-3 py-2 text-sm outline-none focus:border-[#023143]"
+                  className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none transition-all focus:border-build-accent focus:ring-1 focus:ring-build-accent"
                 />
               </div>
               <div>
-                <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-[#72787c]">
+                <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-slate-500">
                   Precio total de venta
                 </label>
                 <input
@@ -247,11 +247,11 @@ export default function ClientExpedienteView({ clientId }: ClientExpedienteViewP
                       },
                     }))
                   }
-                  className="w-full rounded-lg border border-[#c1c7cc] px-3 py-2 text-sm outline-none focus:border-[#023143]"
+                  className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none transition-all focus:border-build-accent focus:ring-1 focus:ring-build-accent"
                 />
               </div>
               <div>
-                <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-[#72787c]">
+                <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-slate-500">
                   Fecha de entrega pactada
                 </label>
                 <input
@@ -266,11 +266,11 @@ export default function ClientExpedienteView({ clientId }: ClientExpedienteViewP
                       },
                     }))
                   }
-                  className="w-full rounded-lg border border-[#c1c7cc] px-3 py-2 text-sm outline-none focus:border-[#023143]"
+                  className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none transition-all focus:border-build-accent focus:ring-1 focus:ring-build-accent"
                 />
               </div>
               <div>
-                <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-[#72787c]">
+                <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-slate-500">
                   Fecha de desembolso
                 </label>
                 <input
@@ -285,11 +285,11 @@ export default function ClientExpedienteView({ clientId }: ClientExpedienteViewP
                       },
                     }))
                   }
-                  className="w-full rounded-lg border border-[#c1c7cc] px-3 py-2 text-sm outline-none focus:border-[#023143]"
+                  className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none transition-all focus:border-build-accent focus:ring-1 focus:ring-build-accent"
                 />
               </div>
               <div className="md:col-span-2">
-                <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-[#72787c]">
+                <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-slate-500">
                   Comentarios contractuales
                 </label>
                 <textarea
@@ -304,7 +304,7 @@ export default function ClientExpedienteView({ clientId }: ClientExpedienteViewP
                       },
                     }))
                   }
-                  className="w-full rounded-lg border border-[#c1c7cc] px-3 py-2 text-sm outline-none focus:border-[#023143]"
+                  className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none transition-all focus:border-build-accent focus:ring-1 focus:ring-build-accent"
                 />
               </div>
             </div>
@@ -312,13 +312,13 @@ export default function ClientExpedienteView({ clientId }: ClientExpedienteViewP
         </div>
 
         <div className="space-y-4">
-          <section className="rounded-xl border border-[#e2e2e4] bg-white p-6 shadow-[0_4px_20px_rgba(2,49,67,0.03)]">
-            <h2 className="text-[20px] font-bold text-[#1a1c1d]">Documentos heredados del proyecto</h2>
+          <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+            <h2 className="text-[20px] font-bold text-build-main">Documentos heredados del proyecto</h2>
             <div className="mt-4 space-y-3">
               {inheritedProjectDocs.map((document) => (
-                <div key={document.id} className="rounded-lg border border-[#e2e2e4] bg-[#f9f9fb] p-3">
-                  <p className="text-sm font-bold text-[#1a1c1d]">{document.title}</p>
-                  <p className="mt-1 text-[12px] text-[#72787c]">
+                <div key={document.id} className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                  <p className="text-sm font-bold text-build-main">{document.title}</p>
+                  <p className="mt-1 text-[12px] text-slate-500">
                     {document.file?.fileName ?? document.externalUrl ?? "Sin archivo"}
                   </p>
                 </div>
@@ -330,9 +330,9 @@ export default function ClientExpedienteView({ clientId }: ClientExpedienteViewP
             <details
               key={moduleKey}
               open={moduleKey === "contrato"}
-              className="rounded-xl border border-[#e2e2e4] bg-white p-4 shadow-[0_4px_20px_rgba(2,49,67,0.03)]"
+              className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm"
             >
-              <summary className="cursor-pointer list-none text-[16px] font-bold text-[#1a1c1d]">
+              <summary className="cursor-pointer list-none text-[16px] font-bold text-build-main">
                 {PROCESS_MODULE_LABELS[moduleKey]}
               </summary>
               <div className="mt-4">

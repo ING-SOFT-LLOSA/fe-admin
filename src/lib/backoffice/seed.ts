@@ -1,4 +1,4 @@
-import { getMockProjects } from "@/app/projects/_data/mock-projects";
+import { getMockProjects } from "@/app/(admin)/projects/_data/mock-projects";
 import {
   CONSTRUCTION_STAGE_ORDER,
   CONSTRUCTION_STAGE_LABELS,

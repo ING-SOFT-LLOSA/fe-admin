@@ -40,15 +40,15 @@ function getPaymentStatusLabel(status: PaymentStatus) {
 function getPaymentStatusClass(status: PaymentStatus) {
   switch (status) {
     case "pagado":
-      return "bg-[#d6f0e0] text-[#1c663b]";
+      return "bg-green-100 text-green-800";
     case "pendiente":
-      return "bg-[#eeeeef] text-[#41484c]";
+      return "bg-slate-100 text-slate-500";
     case "por_vencer":
-      return "bg-[#fff3e0] text-[#e65100]";
+      return "bg-orange-100 text-orange-800";
     case "en_mora":
-      return "bg-[#ffdad6] text-[#ba1a1a]";
+      return "bg-red-100 text-red-800";
     case "parcial":
-      return "bg-[#c2e8ff] text-[#001e2b]";
+      return "bg-build-main/10 text-build-main";
   }
 }
 
@@ -141,17 +141,17 @@ export default function FinancePaymentScheduleView({
     return (
       <section className="space-y-6">
         <div>
-          <h1 className="text-[36px] leading-[44px] font-bold tracking-[-0.02em] text-[#001b27]">
+          <h2 className="text-2xl md:text-3xl font-bold tracking-[-0.01em] text-build-main">
             Pagos y Cronogramas
-          </h1>
-          <p className="mt-2 text-base text-[#41484c]">
+          </h2>
+          <p className="mt-2 text-base text-slate-600">
             Gestion centralizada de pagos por proyecto y unidad.
           </p>
         </div>
 
-        <div className="rounded-xl border border-dashed border-[#c1c7cc] bg-white px-6 py-12 text-center">
-          <h2 className="text-lg font-bold text-[#1a1c1d]">No hay cronogramas cargados</h2>
-          <p className="mt-2 text-sm text-[#41484c]">
+        <div className="rounded-2xl border border-dashed border-slate-300 bg-white px-6 py-12 text-center">
+          <h2 className="text-lg font-bold text-build-main">No hay cronogramas cargados</h2>
+          <p className="mt-2 text-sm text-slate-500">
             Aun no existen unidades con cliente y cronograma de pagos en el workspace local.
           </p>
         </div>
@@ -164,18 +164,18 @@ export default function FinancePaymentScheduleView({
   return (
     <section className="space-y-6">
       <div>
-        <h1 className="text-[36px] leading-[44px] font-bold tracking-[-0.02em] text-[#001b27]">
+        <h2 className="text-2xl md:text-3xl font-bold tracking-[-0.01em] text-build-main">
           Pagos y Cronogramas
-        </h1>
-        <p className="mt-2 text-base text-[#41484c]">
+        </h2>
+        <p className="mt-2 text-base text-slate-600">
           Gestion centralizada por proyecto, unidad, pagos registrados, vouchers y riesgo de cobranza.
         </p>
       </div>
 
-      <section className="rounded-xl border border-[#e2e2e4] bg-white p-6 shadow-[0_4px_20px_rgba(2,49,67,0.03)]">
+      <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
         <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_260px_220px_220px]">
           <div>
-            <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-[#72787c]">
+            <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-slate-500">
               Proyecto
             </label>
             <select
@@ -184,7 +184,7 @@ export default function FinancePaymentScheduleView({
                 setSelectedProjectId(event.target.value);
                 setSelectedUnitId("");
               }}
-              className="w-full rounded-lg border border-[#c1c7cc] px-3 py-2 text-sm outline-none focus:border-[#023143]"
+              className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm text-build-main outline-none focus:border-build-accent focus:ring-1 focus:ring-build-accent"
             >
               {workspace.projects.map((entry) => (
                 <option key={entry.id} value={entry.id}>
@@ -195,13 +195,13 @@ export default function FinancePaymentScheduleView({
           </div>
 
           <div>
-            <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-[#72787c]">
+            <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-slate-500">
               Unidad
             </label>
             <select
               value={activeSelectedUnitId}
               onChange={(event) => setSelectedUnitId(event.target.value)}
-              className="w-full rounded-lg border border-[#c1c7cc] px-3 py-2 text-sm outline-none focus:border-[#023143]"
+              className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm text-build-main outline-none focus:border-build-accent focus:ring-1 focus:ring-build-accent"
             >
               {financedUnits.map((entry) => (
                 <option key={entry.id} value={entry.id}>
@@ -211,46 +211,48 @@ export default function FinancePaymentScheduleView({
             </select>
           </div>
 
-          <div className="rounded-xl border border-[#e2e2e4] bg-[#f9f9fb] px-4 py-3">
-            <p className="text-[11px] font-bold uppercase tracking-wider text-[#72787c]">
+          <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+            <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
               Modalidad
             </p>
-            <p className="mt-2 text-sm font-semibold text-[#1a1c1d]">
+            <p className="mt-2 text-sm font-semibold text-build-main">
               {unit.client?.paymentMode === "credito_hipotecario"
                 ? "Credito hipotecario"
                 : "Credito directo"}
             </p>
           </div>
 
-          <div className="rounded-xl border border-[#e2e2e4] bg-[#f9f9fb] px-4 py-3">
-            <p className="text-[11px] font-bold uppercase tracking-wider text-[#72787c]">
+          <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+            <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
               Indicador global
             </p>
-            <p className="mt-2 text-sm font-semibold text-[#1a1c1d]">
+            <p className="mt-2 text-sm font-semibold text-build-main">
               {getIndicatorLabel(indicator)}
             </p>
           </div>
 
-          <button
-            type="button"
-            onClick={() => buildStateBlob(unit, project)}
-            className="rounded-lg bg-[#023143] px-4 py-2.5 text-sm font-bold text-white hover:bg-[#001b27]"
-          >
-            Descargar estado de cuenta
-          </button>
+          <div className="flex items-end">
+            <button
+              type="button"
+              onClick={() => buildStateBlob(unit, project)}
+              className="w-full rounded-xl bg-build-main px-4 py-2.5 text-sm font-bold text-white hover:bg-build-main/90 shadow-sm transition-colors"
+            >
+              Descargar estado de cuenta
+            </button>
+          </div>
         </div>
       </section>
 
-      <section className="rounded-xl border border-[#e2e2e4] bg-white shadow-[0_4px_20px_rgba(2,49,67,0.03)]">
+      <section className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full border-collapse text-left">
             <thead>
-              <tr className="bg-[#f9f9fb]">
+              <tr className="border-b border-slate-200 bg-white">
                 {["#", "Concepto", "Fecha vencimiento", "Monto", "Estado", "Acciones"].map(
                   (header) => (
                     <th
                       key={header}
-                      className="px-6 py-3 text-[11px] font-bold uppercase tracking-wider text-[#72787c]"
+                      className="px-6 py-4 text-[12px] font-semibold uppercase tracking-wider text-slate-500"
                     >
                       {header}
                     </th>
@@ -258,11 +260,11 @@ export default function FinancePaymentScheduleView({
                 )}
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#e2e2e4]">
+            <tbody>
               {unit.paymentSchedule.map((entry, index) => (
-                <tr key={entry.id} className="hover:bg-[#f9f9fb]">
-                  <td className="px-6 py-4 text-sm font-bold text-[#1a1c1d]">{index}</td>
-                  <td className="px-6 py-4 text-sm text-[#1a1c1d]">{entry.concept}</td>
+                <tr key={entry.id} className="border-b border-slate-200 hover:bg-slate-50 transition-colors group">
+                  <td className="px-6 py-4 text-sm font-semibold text-build-main">{index}</td>
+                  <td className="px-6 py-4 text-sm font-semibold text-build-main">{entry.concept}</td>
                   <td className="px-6 py-4">
                     <input
                       type="date"
@@ -278,7 +280,7 @@ export default function FinancePaymentScheduleView({
                           ),
                         }))
                       }
-                      className="rounded-lg border border-[#c1c7cc] bg-white px-3 py-2 text-sm outline-none focus:border-[#023143] disabled:opacity-60"
+                      className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-build-accent focus:ring-1 focus:ring-build-accent disabled:bg-slate-50 disabled:text-slate-400"
                     />
                   </td>
                   <td className="px-6 py-4">
@@ -296,7 +298,7 @@ export default function FinancePaymentScheduleView({
                           ),
                         }))
                       }
-                      className="rounded-lg border border-[#c1c7cc] bg-white px-3 py-2 text-sm outline-none focus:border-[#023143] disabled:opacity-60"
+                      className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-build-accent focus:ring-1 focus:ring-build-accent disabled:bg-slate-50 disabled:text-slate-400"
                     />
                   </td>
                   <td className="px-6 py-4">
@@ -312,7 +314,7 @@ export default function FinancePaymentScheduleView({
                         <button
                           type="button"
                           onClick={() => buildStateBlob(unit, project)}
-                          className="rounded-lg border border-[#e2e2e4] px-3 py-1.5 text-[12px] font-bold text-[#023143] hover:bg-[#f4f3f5]"
+                          className="rounded-lg border border-slate-200 px-3 py-1.5 text-[12px] font-bold text-build-main hover:bg-slate-100 transition-colors"
                         >
                           Ver boleta
                         </button>
@@ -329,7 +331,7 @@ export default function FinancePaymentScheduleView({
                               fileName: "",
                             })
                           }
-                          className="rounded-lg bg-[#27a85e] px-3 py-1.5 text-[12px] font-bold text-white hover:bg-[#1c663b]"
+                          className="rounded-lg bg-build-main px-3 py-1.5 text-[12px] font-bold text-white hover:bg-build-main/90 transition-colors shadow-sm"
                         >
                           Registrar pago
                         </button>
@@ -344,12 +346,12 @@ export default function FinancePaymentScheduleView({
       </section>
 
       {modal ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#050a0e]/60 p-4 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4 backdrop-blur-sm">
           <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl">
-            <h2 className="text-[20px] font-bold text-[#1a1c1d]">Registrar pago</h2>
+            <h2 className="text-[20px] font-bold text-build-main">Registrar pago</h2>
             <div className="mt-5 grid gap-4 md:grid-cols-2">
               <div>
-                <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-[#72787c]">
+                <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-slate-500">
                   Monto
                 </label>
                 <input
@@ -360,11 +362,11 @@ export default function FinancePaymentScheduleView({
                       current ? { ...current, amount: Number(event.target.value) } : current,
                     )
                   }
-                  className="w-full rounded-lg border border-[#c1c7cc] px-3 py-2 text-sm outline-none focus:border-[#023143]"
+                  className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-build-accent focus:ring-1 focus:ring-build-accent text-build-main"
                 />
               </div>
               <div>
-                <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-[#72787c]">
+                <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-slate-500">
                   Fecha de pago
                 </label>
                 <input
@@ -375,11 +377,11 @@ export default function FinancePaymentScheduleView({
                       current ? { ...current, paymentDate: event.target.value } : current,
                     )
                   }
-                  className="w-full rounded-lg border border-[#c1c7cc] px-3 py-2 text-sm outline-none focus:border-[#023143]"
+                  className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-build-accent focus:ring-1 focus:ring-build-accent text-build-main"
                 />
               </div>
               <div>
-                <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-[#72787c]">
+                <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-slate-500">
                   Tipo de pago
                 </label>
                 <input
@@ -389,11 +391,11 @@ export default function FinancePaymentScheduleView({
                       current ? { ...current, paymentType: event.target.value } : current,
                     )
                   }
-                  className="w-full rounded-lg border border-[#c1c7cc] px-3 py-2 text-sm outline-none focus:border-[#023143]"
+                  className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-build-accent focus:ring-1 focus:ring-build-accent text-build-main"
                 />
               </div>
-              <label className="rounded-lg border border-dashed border-[#c1c7cc] px-3 py-3 text-center hover:border-[#023143]">
-                <span className="text-[12px] font-bold text-[#1a1c1d]">
+              <label className="rounded-xl border border-dashed border-slate-300 px-3 py-3 text-center hover:border-build-accent cursor-pointer transition-colors">
+                <span className="text-[12px] font-bold text-slate-500">
                   {modal.fileName || "Adjuntar voucher"}
                 </span>
                 <input
@@ -409,11 +411,11 @@ export default function FinancePaymentScheduleView({
               </label>
             </div>
 
-            <div className="mt-5 flex justify-end gap-3">
+            <div className="mt-6 flex justify-end gap-3">
               <button
                 type="button"
                 onClick={() => setModal(null)}
-                className="rounded-lg border border-[#e2e2e4] px-4 py-2.5 text-sm font-bold text-[#41484c] hover:bg-[#f4f3f5]"
+                className="rounded-xl border border-slate-200 px-5 py-2.5 text-sm font-bold text-slate-500 hover:bg-slate-50 hover:text-build-main transition-colors"
               >
                 Cancelar
               </button>
@@ -470,7 +472,7 @@ export default function FinancePaymentScheduleView({
 
                   setModal(null);
                 }}
-                className="rounded-lg bg-[#023143] px-4 py-2.5 text-sm font-bold text-white hover:bg-[#001b27]"
+                className="rounded-xl bg-build-main px-6 py-2.5 text-sm font-bold text-white hover:bg-build-main/90 shadow-sm transition-colors"
               >
                 Guardar pago
               </button>

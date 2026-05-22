@@ -37,7 +37,7 @@ function makeFileSizeLabel(bytes: number) {
 
 function openMockDocument(document: DocumentRecord) {
   const lines = [
-    `<h1 style="font-family:Manrope,Arial,sans-serif;">${document.title}</h1>`,
+    `<h1 style="font-family:Outfit,Arial,sans-serif;">${document.title}</h1>`,
     `<p>Tipo: ${document.type}</p>`,
     `<p>Version: ${document.version}</p>`,
     `<p>Fecha: ${document.date || "Sin fecha"}</p>`,
@@ -167,23 +167,23 @@ export default function DocumentManager({
   }
 
   return (
-    <section className="rounded-xl border border-[#e2e2e4] bg-white p-6 shadow-[0_4px_20px_rgba(2,49,67,0.03)]">
-      <div className="flex flex-col gap-2 border-b border-[#e2e2e4] pb-4">
-        <h3 className="text-[18px] font-bold text-[#1a1c1d]">{title}</h3>
-        {description ? <p className="text-sm text-[#41484c]">{description}</p> : null}
+    <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+      <div className="flex flex-col gap-2 border-b border-slate-200 pb-4">
+        <h3 className="text-[18px] font-bold text-build-main">{title}</h3>
+        {description ? <p className="text-sm text-slate-500">{description}</p> : null}
       </div>
 
       <div className="mt-5 grid gap-6 xl:grid-cols-[360px_minmax(0,1fr)]">
-        <div className="rounded-xl border border-[#e2e2e4] bg-[#f9f9fb] p-4">
+        <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
           <div className="space-y-4">
             <div>
-              <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-[#72787c]">
+              <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-slate-500">
                 Tipo de documento
               </label>
               <select
                 value={selectedType}
                 onChange={(event) => setSelectedType(event.target.value)}
-                className="w-full rounded-lg border border-[#c1c7cc] bg-white px-3 py-2 text-sm outline-none focus:border-[#023143]"
+                className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm outline-none transition-all focus:border-build-accent focus:ring-1 focus:ring-build-accent"
               >
                 {definitions.map((definition) => (
                   <option key={definition.type} value={definition.type}>
@@ -194,14 +194,14 @@ export default function DocumentManager({
             </div>
 
             <div>
-              <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-[#72787c]">
+              <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-slate-500">
                 Fecha del documento
               </label>
               <input
                 type="date"
                 value={date}
                 onChange={(event) => setDate(event.target.value)}
-                className="w-full rounded-lg border border-[#c1c7cc] bg-white px-3 py-2 text-sm outline-none focus:border-[#023143]"
+                className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm outline-none transition-all focus:border-build-accent focus:ring-1 focus:ring-build-accent"
               />
             </div>
 
@@ -210,17 +210,17 @@ export default function DocumentManager({
                 htmlFor={inputId}
                 onDrop={handleDrop}
                 onDragOver={(event) => event.preventDefault()}
-                className="flex min-h-36 cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-[#c1c7cc] bg-white px-4 py-5 text-center transition-colors hover:border-[#023143] hover:bg-[#f4f3f5]"
+                className="flex min-h-36 cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-slate-300 bg-white px-4 py-5 text-center transition-colors transition-colors hover:border-build-accent hover:bg-slate-100"
               >
-                <span className="material-symbols-outlined text-[28px] text-[#023143]">
+                <span className="material-symbols-outlined text-[28px] text-build-main">
                   upload_file
                 </span>
-                <p className="mt-2 text-sm font-bold text-[#1a1c1d]">
+                <p className="mt-2 text-sm font-bold text-build-main">
                   Arrastra un PDF o haz click para adjuntarlo
                 </p>
-                <p className="mt-1 text-[11px] text-[#72787c]">Maximo 10 MB</p>
+                <p className="mt-1 text-[11px] text-slate-500">Maximo 10 MB</p>
                 {pendingFile ? (
-                  <p className="mt-3 text-[12px] font-semibold text-[#023143]">
+                  <p className="mt-3 text-[12px] font-semibold text-build-main">
                     {pendingFile.name} · {makeFileSizeLabel(pendingFile.size)}
                   </p>
                 ) : null}
@@ -234,7 +234,7 @@ export default function DocumentManager({
               </label>
             ) : (
               <div>
-                <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-[#72787c]">
+                <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-slate-500">
                   URL externa
                 </label>
                 <input
@@ -242,28 +242,28 @@ export default function DocumentManager({
                   value={pendingUrl}
                   onChange={(event) => setPendingUrl(event.target.value)}
                   placeholder="https://..."
-                  className="w-full rounded-lg border border-[#c1c7cc] bg-white px-3 py-2 text-sm outline-none focus:border-[#023143]"
+                  className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm outline-none transition-all focus:border-build-accent focus:ring-1 focus:ring-build-accent"
                 />
               </div>
             )}
 
             <div>
-              <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-[#72787c]">
+              <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-slate-500">
                 Nota interna
               </label>
               <textarea
                 rows={3}
                 value={notes}
                 onChange={(event) => setNotes(event.target.value)}
-                className="w-full rounded-lg border border-[#c1c7cc] bg-white px-3 py-2 text-sm outline-none focus:border-[#023143]"
+                className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm outline-none transition-all focus:border-build-accent focus:ring-1 focus:ring-build-accent"
                 placeholder="Observaciones para el equipo Llosa"
               />
             </div>
 
-            <label className="flex items-center justify-between rounded-lg border border-[#e2e2e4] bg-white px-3 py-2.5">
+            <label className="flex items-center justify-between rounded-xl border border-slate-200 bg-white px-3 py-2.5">
               <div>
-                <p className="text-sm font-semibold text-[#1a1c1d]">Visible para cliente</p>
-                <p className="text-[11px] text-[#72787c]">
+                <p className="text-sm font-semibold text-build-main">Visible para cliente</p>
+                <p className="text-[11px] text-slate-500">
                   Si se apaga, solo sera visible en backoffice
                 </p>
               </div>
@@ -271,12 +271,12 @@ export default function DocumentManager({
                 type="checkbox"
                 checked={visibleToClient}
                 onChange={(event) => setVisibleToClient(event.target.checked)}
-                className="h-4 w-4 accent-[#023143]"
+                className="h-4 w-4 accent-build-accent"
               />
             </label>
 
             {error ? (
-              <div className="rounded-lg border border-[#ba1a1a]/20 bg-[#ffdad6]/60 px-3 py-2 text-[12px] font-bold text-[#ba1a1a]">
+              <div className="rounded-xl border border-[#ba1a1a]/20 bg-[#ffdad6]/60 px-3 py-2 text-[12px] font-bold text-[#ba1a1a]">
                 {error}
               </div>
             ) : null}
@@ -285,7 +285,7 @@ export default function DocumentManager({
               <button
                 type="button"
                 onClick={saveDocument}
-                className="flex-1 rounded-lg bg-[#023143] px-4 py-2.5 text-sm font-bold text-white transition-colors hover:bg-[#001b27]"
+                className="flex-1 rounded-xl bg-build-main px-4 py-2.5 text-sm font-bold text-white transition-colors hover:bg-build-main/90"
               >
                 {editingId ? "Reemplazar version" : "Guardar documento"}
               </button>
@@ -293,7 +293,7 @@ export default function DocumentManager({
                 <button
                   type="button"
                   onClick={resetForm}
-                  className="rounded-lg border border-[#e2e2e4] px-4 py-2.5 text-sm font-bold text-[#41484c] transition-colors hover:bg-white"
+                  className="rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-bold text-slate-500 transition-colors hover:bg-white"
                 >
                   Cancelar
                 </button>
@@ -302,31 +302,31 @@ export default function DocumentManager({
           </div>
         </div>
 
-        <div className="overflow-hidden rounded-xl border border-[#e2e2e4]">
+        <div className="overflow-hidden rounded-xl border border-slate-200">
           <table className="w-full border-collapse text-left">
             <thead>
-              <tr className="bg-[#f9f9fb]">
-                <th className="px-4 py-3 text-[11px] font-bold uppercase tracking-wider text-[#72787c]">
+              <tr className="bg-slate-50">
+                <th className="px-4 py-3 text-[11px] font-bold uppercase tracking-wider text-slate-500">
                   Documento
                 </th>
-                <th className="px-4 py-3 text-[11px] font-bold uppercase tracking-wider text-[#72787c]">
+                <th className="px-4 py-3 text-[11px] font-bold uppercase tracking-wider text-slate-500">
                   Fecha
                 </th>
-                <th className="px-4 py-3 text-[11px] font-bold uppercase tracking-wider text-[#72787c]">
+                <th className="px-4 py-3 text-[11px] font-bold uppercase tracking-wider text-slate-500">
                   Version
                 </th>
-                <th className="px-4 py-3 text-[11px] font-bold uppercase tracking-wider text-[#72787c]">
+                <th className="px-4 py-3 text-[11px] font-bold uppercase tracking-wider text-slate-500">
                   Visibilidad
                 </th>
-                <th className="px-4 py-3 text-[11px] font-bold uppercase tracking-wider text-[#72787c] text-right">
+                <th className="px-4 py-3 text-[11px] font-bold uppercase tracking-wider text-slate-500 text-right">
                   Acciones
                 </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#e2e2e4] bg-white">
+            <tbody className="divide-y divide-slate-200 bg-white">
               {documents.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="px-4 py-8 text-center text-sm text-[#72787c]">
+                  <td colSpan={5} className="px-4 py-8 text-center text-sm text-slate-500">
                     Aun no hay documentos cargados en esta seccion.
                   </td>
                 </tr>
@@ -335,17 +335,17 @@ export default function DocumentManager({
                   <tr key={document.id} className="align-top">
                     <td className="px-4 py-4">
                       <div className="flex flex-col gap-1">
-                        <span className="text-sm font-bold text-[#1a1c1d]">{document.title}</span>
-                        <span className="text-[12px] text-[#72787c]">
+                        <span className="text-sm font-bold text-build-main">{document.title}</span>
+                        <span className="text-[12px] text-slate-500">
                           {document.file?.fileName ?? document.externalUrl ?? "Sin archivo"}
                         </span>
                         {document.notes ? (
-                          <span className="text-[12px] text-[#41484c]">{document.notes}</span>
+                          <span className="text-[12px] text-slate-500">{document.notes}</span>
                         ) : null}
                       </div>
                     </td>
-                    <td className="px-4 py-4 text-sm text-[#41484c]">{formatDate(document.date)}</td>
-                    <td className="px-4 py-4 text-sm font-semibold text-[#023143]">v{document.version}</td>
+                    <td className="px-4 py-4 text-sm text-slate-500">{formatDate(document.date)}</td>
+                    <td className="px-4 py-4 text-sm font-semibold text-build-main">v{document.version}</td>
                     <td className="px-4 py-4">
                       <button
                         type="button"
@@ -361,7 +361,7 @@ export default function DocumentManager({
                         className={`rounded-full px-3 py-1 text-[11px] font-bold uppercase ${
                           document.visibleToClient
                             ? "bg-[#d6f0e0] text-[#1c663b]"
-                            : "bg-[#eeeeef] text-[#41484c]"
+                            : "bg-[#eeeeef] text-slate-500"
                         }`}
                       >
                         {document.visibleToClient ? "Visible" : "Oculto"}
@@ -372,14 +372,14 @@ export default function DocumentManager({
                         <button
                           type="button"
                           onClick={() => openMockDocument(document)}
-                          className="rounded-lg border border-[#e2e2e4] px-3 py-1.5 text-[12px] font-bold text-[#023143] hover:bg-[#f4f3f5]"
+                          className="rounded-xl border border-slate-200 px-3 py-1.5 text-[12px] font-bold text-build-main hover:bg-slate-100"
                         >
                           Ver
                         </button>
                         <button
                           type="button"
                           onClick={() => handleReplace(document)}
-                          className="rounded-lg border border-[#e2e2e4] px-3 py-1.5 text-[12px] font-bold text-[#41484c] hover:bg-[#f4f3f5]"
+                          className="rounded-xl border border-slate-200 px-3 py-1.5 text-[12px] font-bold text-slate-500 hover:bg-slate-100"
                         >
                           Reemplazar
                         </button>

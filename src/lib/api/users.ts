@@ -13,6 +13,26 @@ export function registerCliente(payload: CrearClientePayload): Promise<Usuario> 
   });
 }
 
+export async function updateCliente(id: number, payload: Partial<CrearClientePayload>): Promise<Usuario> {
+  // Simulación temporal ya que el endpoint PUT /api/users/{id} aún no existe
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      resolve({
+        id,
+        nombre: payload.nombre ?? "",
+        apellidos: payload.apellidos ?? "",
+        email: payload.email ?? "",
+        telefono: payload.telefono,
+        documentoIdentidad: payload.documentoIdentidad,
+        tipoUsuario: "CLIENTE",
+        rol: null,
+        activo: true,
+        funciones: [],
+      });
+    }, 1200);
+  });
+}
+
 export function registerEmpleado(payload: CrearEmpleadoPayload): Promise<Usuario> {
   return apiFetch<Usuario>("/api/users/register", {
     method: "POST",
@@ -68,9 +88,9 @@ export function mapUsuarioToClienteRow(u: Usuario): ClienteRow {
     id: u.id,
     initials: getInitials(u.nombre, u.apellidos),
     name: [u.nombre, u.apellidos].filter(Boolean).join(" "),
-    dni: "—",
+    dni: u.documentoIdentidad || "—",
     email: u.email,
-    phone: "—",
+    phone: u.telefono || "—",
     project: "Sin asignar",
     status,
     statusBg,

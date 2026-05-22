@@ -15,141 +15,7 @@ type UnitDetailViewProps = {
   unitId: string;
 };
 
-const EMPTY_CLIENT: UnitClientAssignment = {
-  clientId: -1,
-  fullName: "",
-  dni: "",
-  email: "",
-  phone: "",
-  separationDate: "",
-  paymentMode: "credito_directo",
-};
-
-type ClientAssignmentFormProps = {
-  unit: BackofficeUnit;
-  onSave: (client: UnitClientAssignment) => void;
-  onUnlink: () => void;
-};
-
-function ClientAssignmentForm({ unit, onSave, onUnlink }: ClientAssignmentFormProps) {
-  const [draftClient, setDraftClient] = useState<UnitClientAssignment>(
-    unit.client ?? EMPTY_CLIENT,
-  );
-
-  return (
-    <div className="space-y-4">
-      <div>
-        <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-[#72787c]">
-          Nombre completo
-        </label>
-        <input
-          value={draftClient.fullName}
-          onChange={(event) =>
-            setDraftClient((current) => ({ ...current, fullName: event.target.value }))
-          }
-          className="w-full rounded-lg border border-[#c1c7cc] px-3 py-2 text-sm outline-none focus:border-[#023143]"
-        />
-      </div>
-
-      <div className="grid gap-4 md:grid-cols-2">
-        <div>
-          <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-[#72787c]">
-            DNI
-          </label>
-          <input
-            value={draftClient.dni}
-            onChange={(event) =>
-              setDraftClient((current) => ({ ...current, dni: event.target.value }))
-            }
-            className="w-full rounded-lg border border-[#c1c7cc] px-3 py-2 text-sm outline-none focus:border-[#023143]"
-          />
-        </div>
-        <div>
-          <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-[#72787c]">
-            Fecha de separacion
-          </label>
-          <input
-            type="date"
-            value={draftClient.separationDate}
-            onChange={(event) =>
-              setDraftClient((current) => ({
-                ...current,
-                separationDate: event.target.value,
-              }))
-            }
-            className="w-full rounded-lg border border-[#c1c7cc] px-3 py-2 text-sm outline-none focus:border-[#023143]"
-          />
-        </div>
-      </div>
-
-      <div className="grid gap-4 md:grid-cols-2">
-        <div>
-          <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-[#72787c]">
-            Correo
-          </label>
-          <input
-            type="email"
-            value={draftClient.email}
-            onChange={(event) =>
-              setDraftClient((current) => ({ ...current, email: event.target.value }))
-            }
-            className="w-full rounded-lg border border-[#c1c7cc] px-3 py-2 text-sm outline-none focus:border-[#023143]"
-          />
-        </div>
-        <div>
-          <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-[#72787c]">
-            Telefono
-          </label>
-          <input
-            value={draftClient.phone}
-            onChange={(event) =>
-              setDraftClient((current) => ({ ...current, phone: event.target.value }))
-            }
-            className="w-full rounded-lg border border-[#c1c7cc] px-3 py-2 text-sm outline-none focus:border-[#023143]"
-          />
-        </div>
-      </div>
-
-      <div>
-        <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-[#72787c]">
-          Modalidad de pago
-        </label>
-        <select
-          value={draftClient.paymentMode}
-          onChange={(event) =>
-            setDraftClient((current) => ({
-              ...current,
-              paymentMode: event.target.value as UnitClientAssignment["paymentMode"],
-            }))
-          }
-          className="w-full rounded-lg border border-[#c1c7cc] px-3 py-2 text-sm outline-none focus:border-[#023143]"
-        >
-          <option value="credito_directo">Credito directo</option>
-          <option value="credito_hipotecario">Credito hipotecario</option>
-        </select>
-      </div>
-
-      <div className="flex gap-3">
-        <button
-          type="button"
-          onClick={() => onSave(draftClient)}
-          className="flex-1 rounded-lg bg-[#023143] px-4 py-2.5 text-sm font-bold text-white hover:bg-[#001b27]"
-        >
-          Guardar cliente
-        </button>
-        {unit.client ? (
-          <button
-            type="button"
-            onClick={onUnlink}
-            className="rounded-lg border border-[#ba1a1a]/20 px-4 py-2.5 text-sm font-bold text-[#ba1a1a] hover:bg-[#ffdad6]/40"
-          >
-            Desvincular
-          </button>
-        ) : null}
-      </div>
-    </div>
-  );
-}
+import ClientAssignmentForm from "@/components/backoffice/ClientAssignmentForm";
 
 function updateProjectUnit(
   projects: BackofficeProject[],
@@ -196,8 +62,8 @@ export default function UnitDetailView({ projectId, unitId }: UnitDetailViewProp
 
   if (!project || !unit) {
     return (
-      <div className="rounded-xl border border-dashed border-[#c1c7cc] bg-white px-6 py-12 text-center">
-        <h1 className="text-lg font-bold text-[#1a1c1d]">Unidad no encontrada</h1>
+      <div className="rounded-xl border border-dashed border-slate-300 bg-white px-6 py-12 text-center">
+        <h1 className="text-lg font-bold text-build-main">Unidad no encontrada</h1>
       </div>
     );
   }
@@ -210,15 +76,15 @@ export default function UnitDetailView({ projectId, unitId }: UnitDetailViewProp
       <div>
         <Link
           href={`/projects/${projectId}/unidades`}
-          className="inline-flex items-center gap-2 text-sm font-bold text-[#023143] hover:text-[#001b27]"
+          className="inline-flex items-center gap-2 text-sm font-bold text-build-main hover:text-build-main"
         >
           <span className="material-symbols-outlined text-[18px]">arrow_back</span>
           Volver a unidades
         </Link>
-        <h1 className="mt-3 text-[34px] font-bold tracking-[-0.02em] text-[#1a1c1d]">
+        <h1 className="mt-3 text-[34px] font-bold tracking-[-0.02em] text-build-main">
           Unidad {unit.number}
         </h1>
-        <p className="mt-2 text-sm text-[#41484c]">
+        <p className="mt-2 text-sm text-slate-500">
           Gestion administrativa completa por unidad, cliente y documentos del proceso.
         </p>
       </div>
@@ -226,15 +92,15 @@ export default function UnitDetailView({ projectId, unitId }: UnitDetailViewProp
       <ProjectSectionNav projectId={projectId} />
 
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1.3fr)_420px]">
-        <section className="rounded-xl border border-[#e2e2e4] bg-white p-6 shadow-[0_4px_20px_rgba(2,49,67,0.03)]">
+        <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
           <div className="mb-5 flex items-start justify-between gap-4">
             <div>
-              <h2 className="text-[20px] font-bold text-[#1a1c1d]">Datos de la unidad</h2>
-              <p className="mt-1 text-sm text-[#41484c]">
+              <h2 className="text-[20px] font-bold text-build-main">Datos de la unidad</h2>
+              <p className="mt-1 text-sm text-slate-500">
                 Proyecto, torre, metraje, tipologia y precio comercial.
               </p>
             </div>
-            <span className="rounded-full bg-[#c2e8ff] px-3 py-1 text-[12px] font-bold text-[#001e2b]">
+            <span className="rounded-full bg-build-main/10 px-3 py-1 text-[12px] font-bold text-build-main">
               {currentStageLabel}
             </span>
           </div>
@@ -251,20 +117,20 @@ export default function UnitDetailView({ projectId, unitId }: UnitDetailViewProp
               { label: "Tipologia", value: unit.typology },
               { label: "Precio", value: `S/ ${unit.salePrice.toLocaleString("es-PE")}` },
             ].map((item) => (
-              <div key={item.label} className="rounded-xl border border-[#e2e2e4] bg-[#f9f9fb] p-4">
-                <p className="text-[11px] font-bold uppercase tracking-wider text-[#72787c]">
+              <div key={item.label} className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
                   {item.label}
                 </p>
-                <p className="mt-2 text-sm font-semibold text-[#1a1c1d]">{item.value}</p>
+                <p className="mt-2 text-sm font-semibold text-build-main">{item.value}</p>
               </div>
             ))}
           </div>
         </section>
 
-        <section className="rounded-xl border border-[#e2e2e4] bg-white p-6 shadow-[0_4px_20px_rgba(2,49,67,0.03)]">
+        <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
           <div className="mb-5">
-            <h2 className="text-[20px] font-bold text-[#1a1c1d]">Cliente asignado</h2>
-            <p className="mt-1 text-sm text-[#41484c]">
+            <h2 className="text-[20px] font-bold text-build-main">Cliente asignado</h2>
+            <p className="mt-1 text-sm text-slate-500">
               Reasigna o desvincula la unidad sin salir de la vista.
             </p>
           </div>
@@ -306,8 +172,8 @@ export default function UnitDetailView({ projectId, unitId }: UnitDetailViewProp
       />
 
       <section className="grid gap-4 xl:grid-cols-2">
-        <div className="rounded-xl border border-[#e2e2e4] bg-white p-6 shadow-[0_4px_20px_rgba(2,49,67,0.03)]">
-          <h2 className="text-[20px] font-bold text-[#1a1c1d]">Datos clave del contrato</h2>
+        <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+          <h2 className="text-[20px] font-bold text-build-main">Datos clave del contrato</h2>
           <div className="mt-5 grid gap-4 md:grid-cols-2">
             {[
               { key: "areaTechada", label: "Area techada" },
@@ -316,7 +182,7 @@ export default function UnitDetailView({ projectId, unitId }: UnitDetailViewProp
               { key: "totalSalePrice", label: "Precio total de venta" },
             ].map((field) => (
               <div key={field.key}>
-                <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-[#72787c]">
+                <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-slate-500">
                   {field.label}
                 </label>
                 <input
@@ -331,12 +197,12 @@ export default function UnitDetailView({ projectId, unitId }: UnitDetailViewProp
                       },
                     }))
                   }
-                  className="w-full rounded-lg border border-[#c1c7cc] px-3 py-2 text-sm outline-none focus:border-[#023143]"
+                  className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm outline-none transition-all focus:border-build-accent focus:ring-1 focus:ring-build-accent"
                 />
               </div>
             ))}
             <div>
-              <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-[#72787c]">
+              <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-slate-500">
                 Fecha de entrega pactada
               </label>
               <input
@@ -351,11 +217,11 @@ export default function UnitDetailView({ projectId, unitId }: UnitDetailViewProp
                     },
                   }))
                 }
-                className="w-full rounded-lg border border-[#c1c7cc] px-3 py-2 text-sm outline-none focus:border-[#023143]"
+                className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm outline-none transition-all focus:border-build-accent focus:ring-1 focus:ring-build-accent"
               />
             </div>
             <div>
-              <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-[#72787c]">
+              <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-slate-500">
                 Fecha de desembolso
               </label>
               <input
@@ -370,11 +236,11 @@ export default function UnitDetailView({ projectId, unitId }: UnitDetailViewProp
                     },
                   }))
                 }
-                className="w-full rounded-lg border border-[#c1c7cc] px-3 py-2 text-sm outline-none focus:border-[#023143]"
+                className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm outline-none transition-all focus:border-build-accent focus:ring-1 focus:ring-build-accent"
               />
             </div>
             <div className="md:col-span-2">
-              <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-[#72787c]">
+              <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-slate-500">
                 Particularidades del contrato
               </label>
               <textarea
@@ -389,14 +255,14 @@ export default function UnitDetailView({ projectId, unitId }: UnitDetailViewProp
                     },
                   }))
                 }
-                className="w-full rounded-lg border border-[#c1c7cc] px-3 py-2 text-sm outline-none focus:border-[#023143]"
+                className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm outline-none transition-all focus:border-build-accent focus:ring-1 focus:ring-build-accent"
               />
             </div>
           </div>
         </div>
 
-        <div className="rounded-xl border border-[#e2e2e4] bg-white p-6 shadow-[0_4px_20px_rgba(2,49,67,0.03)]">
-          <h2 className="text-[20px] font-bold text-[#1a1c1d]">Carta de aprobacion bancaria</h2>
+        <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+          <h2 className="text-[20px] font-bold text-build-main">Carta de aprobacion bancaria</h2>
           <div className="mt-5 grid gap-4 md:grid-cols-2">
             {[
               { key: "amountApproved", label: "Monto aprobado" },
@@ -409,7 +275,7 @@ export default function UnitDetailView({ projectId, unitId }: UnitDetailViewProp
               },
             ].map((field) => (
               <div key={field.key} className={field.key === "amountApproved" ? "md:col-span-2" : ""}>
-                <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-[#72787c]">
+                <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-slate-500">
                   {field.label}
                 </label>
                 <input
@@ -427,12 +293,12 @@ export default function UnitDetailView({ projectId, unitId }: UnitDetailViewProp
                       },
                     }))
                   }
-                  className="w-full rounded-lg border border-[#c1c7cc] px-3 py-2 text-sm outline-none focus:border-[#023143]"
+                  className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm outline-none transition-all focus:border-build-accent focus:ring-1 focus:ring-build-accent"
                 />
               </div>
             ))}
             <div className="md:col-span-2">
-              <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-[#72787c]">
+              <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-slate-500">
                 Comentarios
               </label>
               <textarea
@@ -447,20 +313,20 @@ export default function UnitDetailView({ projectId, unitId }: UnitDetailViewProp
                     },
                   }))
                 }
-                className="w-full rounded-lg border border-[#c1c7cc] px-3 py-2 text-sm outline-none focus:border-[#023143]"
+                className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm outline-none transition-all focus:border-build-accent focus:ring-1 focus:ring-build-accent"
               />
             </div>
           </div>
         </div>
       </section>
 
-      <section className="rounded-xl border border-[#e2e2e4] bg-white p-6 shadow-[0_4px_20px_rgba(2,49,67,0.03)]">
-        <h2 className="text-[20px] font-bold text-[#1a1c1d]">Documentos heredados del proyecto</h2>
+      <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+        <h2 className="text-[20px] font-bold text-build-main">Documentos heredados del proyecto</h2>
         <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
           {inheritedProjectDocs.map((document) => (
-            <div key={document.id} className="rounded-xl border border-[#e2e2e4] bg-[#f9f9fb] p-4">
-              <p className="text-sm font-bold text-[#1a1c1d]">{document.title}</p>
-              <p className="mt-1 text-[12px] text-[#72787c]">
+            <div key={document.id} className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+              <p className="text-sm font-bold text-build-main">{document.title}</p>
+              <p className="mt-1 text-[12px] text-slate-500">
                 {document.file?.fileName ?? document.externalUrl ?? "Sin archivo"}
               </p>
             </div>
@@ -472,9 +338,9 @@ export default function UnitDetailView({ projectId, unitId }: UnitDetailViewProp
         <details
           key={moduleKey}
           open={moduleKey === "contrato"}
-          className="rounded-xl border border-[#e2e2e4] bg-white p-4 shadow-[0_4px_20px_rgba(2,49,67,0.03)]"
+          className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm"
         >
-          <summary className="cursor-pointer list-none text-[16px] font-bold text-[#1a1c1d]">
+          <summary className="cursor-pointer list-none text-[16px] font-bold text-build-main">
             {PROCESS_MODULE_LABELS[moduleKey]}
           </summary>
           <div className="mt-4">

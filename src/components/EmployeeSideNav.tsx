@@ -2,12 +2,15 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 
+import { useAuth } from "@/contexts/AuthContext";
+
 /* Explicit types — badge is optional ────────────────── */
 type NavItem = {
   href: string;
   icon: string;
   label: string;
-  badge?: string; // ← optional: only "Tracking" has one
+  badge?: string;
+  requiredFuncs?: string[];
 };
 
 type NavGroup = {
@@ -26,9 +29,9 @@ const groups: NavGroup[] = [
   {
     label: "Operaciones",
     items: [
-      { href: "/employee/contracts", icon: "description",    label: "Mis Contratos"  },
+      { href: "/employee/contracts", icon: "description",    label: "Mis Contratos", requiredFuncs: ["CONTRATO_VER"] },
       { href: "/employee/schedule",  icon: "calendar_today", label: "Cronograma"   },
-      { href: "/employee/progress",  icon: "photo_library",  label: "Avances de Obra"   },
+      { href: "/employee/progress",  icon: "photo_library",  label: "Avances de Obra", requiredFuncs: ["OBRA_VER"] },
     ],
   },
   {
@@ -42,6 +45,7 @@ const groups: NavGroup[] = [
 export default function EmployeeSideNav() {
   const pathname = usePathname();
   const router   = useRouter();
+  const { perfil } = useAuth();
 
   function handleLogout() {
     router.push("/login");
@@ -64,37 +68,47 @@ export default function EmployeeSideNav() {
 
       {/* Nav */}
       <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-5">
-        {groups.map(({ label, items }) => (
-          <div key={label}>
-            <p className="px-3 mb-1.5 text-[10px] font-bold text-white/30 uppercase tracking-widest">{label}</p>
-            <div className="space-y-0.5">
-              {items.map(({ href, icon, label: lbl, badge }) => {
-                const active = pathname.startsWith(href);
-                return (
-                  <Link
-                    key={href}
-                    href={href}
-                    className={`group flex items-center gap-3 px-3 py-2.5 rounded-lg text-[13px] font-medium transition-all duration-150 ${
-                      active
-                        ? "bg-white/12 text-white border-l-[3px] border-white pl-[9px]"
-                        : "text-white/60 hover:text-white hover:bg-white/6 border-l-[3px] border-transparent pl-[9px]"
-                    }`}
-                  >
-                    <span className={`material-symbols-outlined text-[19px] transition-all ${active ? "fill" : "group-hover:scale-110"}`}>
-                      {icon}
-                    </span>
-                    <span className="flex-1">{lbl}</span>
-                    {badge && (
-                      <span className="text-[10px] font-bold bg-[#ba1a1a] text-white rounded-full px-1.5 py-0.5 animate-pulse-soft">
-                        {badge}
+        {groups.map(({ label, items }) => {
+          const visibleItems = items.filter(
+            (item) =>
+              !item.requiredFuncs ||
+              item.requiredFuncs.some((func) => perfil?.funciones?.includes(func))
+          );
+
+          if (visibleItems.length === 0) return null;
+
+          return (
+            <div key={label}>
+              <p className="px-3 mb-1.5 text-[10px] font-bold text-white/30 uppercase tracking-widest">{label}</p>
+              <div className="space-y-0.5">
+                {visibleItems.map(({ href, icon, label: lbl, badge }) => {
+                  const active = pathname.startsWith(href);
+                  return (
+                    <Link
+                      key={href}
+                      href={href}
+                      className={`group flex items-center gap-3 px-3 py-2.5 rounded-lg text-[13px] font-medium transition-all duration-150 ${
+                        active
+                          ? "bg-white/12 text-white border-l-[3px] border-white pl-[9px]"
+                          : "text-white/60 hover:text-white hover:bg-white/6 border-l-[3px] border-transparent pl-[9px]"
+                      }`}
+                    >
+                      <span className={`material-symbols-outlined text-[19px] transition-all ${active ? "fill" : "group-hover:scale-110"}`}>
+                        {icon}
                       </span>
-                    )}
-                  </Link>
-                );
-              })}
+                      <span className="flex-1">{lbl}</span>
+                      {badge && (
+                        <span className="text-[10px] font-bold bg-[#ba1a1a] text-white rounded-full px-1.5 py-0.5 animate-pulse-soft">
+                          {badge}
+                        </span>
+                      )}
+                    </Link>
+                  );
+                })}
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </nav>
 
       {/* User profile + logout */}

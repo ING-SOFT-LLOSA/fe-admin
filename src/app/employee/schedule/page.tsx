@@ -1,7 +1,5 @@
 "use client";
 import { useState } from "react";
-import EmployeeLayout from "@/components/EmployeeLayout";
-
 type EventType = "meeting" | "signature" | "payment" | "construction" | "task";
 
 const events: { id: number; title: string; time: string; type: EventType; client: string; completed?: boolean }[] = [
@@ -28,7 +26,7 @@ export default function EmployeeSchedulePage() {
   };
 
   return (
-    <EmployeeLayout>
+    <>
       <div className="flex justify-between items-start animate-slide-up">
         <div>
           <h2 className="text-[28px] font-bold tracking-tight text-[#1a1c1d]">Cronograma</h2>
@@ -106,6 +104,6 @@ export default function EmployeeSchedulePage() {
           ))}
         </div>
       </div>
-    </EmployeeLayout>
+    </>
   );
 }

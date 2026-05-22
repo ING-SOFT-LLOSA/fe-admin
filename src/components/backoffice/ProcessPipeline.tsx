@@ -33,9 +33,9 @@ function getStageStatus(steps: StepProgress[]) {
 }
 
 function getStageBadgeClass(status: string) {
-  if (status === "completado") return "bg-[#d6f0e0] text-[#1c663b]";
-  if (status === "activo") return "bg-[#c2e8ff] text-[#001e2b]";
-  return "bg-[#eeeeef] text-[#41484c]";
+  if (status === "completado") return "bg-green-100 text-green-800";
+  if (status === "activo") return "bg-build-main/10 text-build-main";
+  return "bg-slate-100 text-slate-500";
 }
 
 function syncCurrentModule(process: PurchaseProcessState) {
@@ -107,10 +107,10 @@ export default function ProcessPipeline({
   }
 
   return (
-    <section className="rounded-xl border border-[#e2e2e4] bg-white p-6 shadow-[0_4px_20px_rgba(2,49,67,0.03)]">
+    <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
       <div className="mb-5">
-        <h2 className="text-[20px] font-bold text-[#1a1c1d]">Estado del proceso de compra</h2>
-        <p className="mt-1 text-sm text-[#41484c]">
+        <h2 className="text-[20px] font-bold text-build-main">Estado del proceso de compra</h2>
+        <p className="mt-1 text-sm text-slate-500">
           Administra etapas, sub-pasos, fechas y notas internas por unidad.
         </p>
       </div>
@@ -127,12 +127,12 @@ export default function ProcessPipeline({
               onClick={() => setSelectedModule(moduleKey)}
               className={`rounded-xl border p-4 text-left transition-all ${
                 selectedModule === moduleKey
-                  ? "border-[#023143] bg-[#023143]/5 shadow-[0_8px_24px_rgba(2,49,67,0.08)]"
-                  : "border-[#e2e2e4] bg-white hover:border-[#c1c7cc]"
+                  ? "border-build-main bg-build-main/5 shadow-md"
+                  : "border-slate-200 bg-white hover:border-slate-300"
               }`}
             >
               <div className="flex items-center justify-between gap-3">
-                <span className="text-[11px] font-bold uppercase tracking-wider text-[#72787c]">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
                   Etapa {index + 1}
                 </span>
                 <span
@@ -141,10 +141,10 @@ export default function ProcessPipeline({
                   {status}
                 </span>
               </div>
-              <h3 className="mt-3 text-sm font-bold text-[#1a1c1d]">
+              <h3 className="mt-3 text-sm font-bold text-build-main">
                 {PROCESS_MODULE_LABELS[moduleKey]}
               </h3>
-              <p className="mt-2 text-[12px] text-[#41484c]">
+              <p className="mt-2 text-[12px] text-slate-500">
                 {completedCount}/{stage.steps.length} sub-pasos completados
               </p>
             </button>
@@ -152,29 +152,29 @@ export default function ProcessPipeline({
         })}
       </div>
 
-      <div className="mt-6 rounded-xl border border-[#e2e2e4] bg-[#f9f9fb] p-5">
+      <div className="mt-6 rounded-xl border border-slate-200 bg-slate-50 p-5">
         <div className="mb-4 flex items-center justify-between gap-3">
           <div>
-            <h3 className="text-[18px] font-bold text-[#1a1c1d]">
+            <h3 className="text-[18px] font-bold text-build-main">
               {PROCESS_MODULE_LABELS[selectedModule]}
             </h3>
-            <p className="mt-1 text-sm text-[#41484c]">
+            <p className="mt-1 text-sm text-slate-500">
               {selectedModule === "avance"
                 ? "Esta etapa hereda el avance global configurado desde Obra."
                 : "Marca cada sub-paso, agrega fecha y deja notas internas si es necesario."}
             </p>
           </div>
-          <span className="rounded-full bg-white px-3 py-1 text-[12px] font-bold text-[#023143]">
+          <span className="rounded-full bg-white px-3 py-1 text-[12px] font-bold text-build-main">
             {currentStage.steps.filter((step) => step.completed).length}/{currentStage.steps.length}
           </span>
         </div>
 
         {selectedModule === "avance" ? (
-          <div className="rounded-xl border border-[#c1c7cc] bg-white p-4">
-            <p className="text-sm font-semibold text-[#1a1c1d]">
+          <div className="rounded-xl border border-slate-300 bg-white p-4">
+            <p className="text-sm font-semibold text-build-main">
               Avance global vigente del proyecto: {projectPercent}%
             </p>
-            <p className="mt-1 text-[12px] text-[#72787c]">
+            <p className="mt-1 text-[12px] text-slate-500">
               El admin debe ajustar esta informacion desde la ruta de Obra. Aqui solo se refleja
               para la unidad y el expediente del cliente.
             </p>
@@ -192,7 +192,7 @@ export default function ProcessPipeline({
               return (
                 <div
                   key={step.id}
-                  className="grid gap-4 rounded-xl border border-[#e2e2e4] bg-white p-4 xl:grid-cols-[minmax(0,1fr)_180px_minmax(0,1fr)]"
+                  className="grid gap-4 rounded-xl border border-slate-200 bg-white p-4 xl:grid-cols-[minmax(0,1fr)_180px_minmax(0,1fr)]"
                 >
                   <label className="flex items-start gap-3">
                     <input
@@ -214,18 +214,18 @@ export default function ProcessPipeline({
                           ),
                         )
                       }
-                      className="mt-0.5 h-4 w-4 accent-[#023143]"
+                      className="mt-0.5 h-4 w-4 accent-build-accent"
                     />
                     <div>
-                      <p className="text-sm font-bold text-[#1a1c1d]">{step.label}</p>
-                      <p className="mt-1 text-[12px] text-[#72787c]">
+                      <p className="text-sm font-bold text-build-main">{step.label}</p>
+                      <p className="mt-1 text-[12px] text-slate-500">
                         {step.completed ? "Sub-paso completado" : "Pendiente"}
                       </p>
                     </div>
                   </label>
 
                   <div>
-                    <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-[#72787c]">
+                    <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-slate-500">
                       Fecha
                     </label>
                     <input
@@ -240,12 +240,12 @@ export default function ProcessPipeline({
                           ),
                         )
                       }
-                      className="w-full rounded-lg border border-[#c1c7cc] bg-white px-3 py-2 text-sm outline-none focus:border-[#023143]"
+                      className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm outline-none transition-all focus:border-build-accent focus:ring-1 focus:ring-build-accent"
                     />
                   </div>
 
                   <div>
-                    <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-[#72787c]">
+                    <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-slate-500">
                       Nota del sub-paso
                     </label>
                     <textarea
@@ -260,7 +260,7 @@ export default function ProcessPipeline({
                           ),
                         )
                       }
-                      className="w-full rounded-lg border border-[#c1c7cc] bg-white px-3 py-2 text-sm outline-none focus:border-[#023143]"
+                      className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm outline-none transition-all focus:border-build-accent focus:ring-1 focus:ring-build-accent"
                     />
                   </div>
                 </div>
@@ -270,14 +270,14 @@ export default function ProcessPipeline({
         )}
 
         <div className="mt-4">
-          <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-[#72787c]">
+          <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-slate-500">
             Nota general de la etapa
           </label>
           <textarea
             rows={3}
             value={currentStage.internalNote}
             onChange={(event) => updateModuleNote(selectedModule, event.target.value)}
-            className="w-full rounded-lg border border-[#c1c7cc] bg-white px-3 py-2 text-sm outline-none focus:border-[#023143]"
+            className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm outline-none transition-all focus:border-build-accent focus:ring-1 focus:ring-build-accent"
             placeholder="Comentarios internos para el equipo comercial, legal o postventa"
           />
         </div>

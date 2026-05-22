@@ -63,9 +63,9 @@ export default function ConstructionProgressView({ projectId }: ConstructionProg
 
   if (!project) {
     return (
-      <div className="rounded-xl border border-dashed border-[#c1c7cc] bg-white px-6 py-12 text-center">
-        <h1 className="text-lg font-bold text-[#1a1c1d]">Proyecto no encontrado</h1>
-        <p className="mt-2 text-sm text-[#41484c]">
+      <div className="rounded-xl border border-dashed border-slate-300 bg-white px-6 py-12 text-center">
+        <h1 className="text-lg font-bold text-build-main">Proyecto no encontrado</h1>
+        <p className="mt-2 text-sm text-slate-500">
           La ruta de obra no tiene un proyecto asociado en el workspace local.
         </p>
       </div>
@@ -80,22 +80,22 @@ export default function ConstructionProgressView({ projectId }: ConstructionProg
         <div>
           <Link
             href={`/projects/${projectId}`}
-            className="inline-flex items-center gap-2 text-sm font-bold text-[#023143] hover:text-[#001b27]"
+            className="inline-flex items-center gap-2 text-sm font-bold text-build-main hover:text-build-main"
           >
             <span className="material-symbols-outlined text-[18px]">arrow_back</span>
             Volver al proyecto
           </Link>
-          <h1 className="mt-3 text-[34px] font-bold tracking-[-0.02em] text-[#1a1c1d]">
+          <h1 className="mt-3 text-[34px] font-bold tracking-[-0.02em] text-build-main">
             Obra · {project.name}
           </h1>
-          <p className="mt-2 text-sm text-[#41484c]">
+          <p className="mt-2 text-sm text-slate-500">
             Configura licencias, etapas constructivas, porcentaje global y documentos compartidos.
           </p>
         </div>
         <button
           type="button"
           onClick={resetWorkspace}
-          className="rounded-lg border border-[#e2e2e4] px-4 py-2.5 text-sm font-bold text-[#41484c] hover:bg-white"
+          className="rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-bold text-slate-500 hover:bg-white"
         >
           Resetear demo local
         </button>
@@ -104,10 +104,10 @@ export default function ConstructionProgressView({ projectId }: ConstructionProg
       <ProjectSectionNav projectId={projectId} />
 
       <section className="grid gap-4 xl:grid-cols-[minmax(0,1.8fr)_360px]">
-        <div className="rounded-xl border border-[#e2e2e4] bg-white p-6 shadow-[0_4px_20px_rgba(2,49,67,0.03)]">
+        <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
           <div className="mb-5">
-            <h2 className="text-[20px] font-bold text-[#1a1c1d]">Licencias previas</h2>
-            <p className="mt-1 text-sm text-[#41484c]">
+            <h2 className="text-[20px] font-bold text-build-main">Licencias previas</h2>
+            <p className="mt-1 text-sm text-slate-500">
               Marca la aprobacion y adjunta el soporte PDF por cada licencia.
             </p>
           </div>
@@ -121,13 +121,13 @@ export default function ConstructionProgressView({ projectId }: ConstructionProg
               return (
                 <div
                   key={licenseItem.key}
-                  className="rounded-xl border border-[#e2e2e4] bg-[#f9f9fb] p-4"
+                  className="rounded-xl border border-slate-200 bg-slate-50 p-4"
                 >
-                  <h3 className="text-sm font-bold text-[#1a1c1d]">{licenseItem.label}</h3>
+                  <h3 className="text-sm font-bold text-build-main">{licenseItem.label}</h3>
 
                   <div className="mt-4 grid gap-4">
                     <div>
-                      <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-[#72787c]">
+                      <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-slate-500">
                         Estado
                       </label>
                       <select
@@ -147,7 +147,7 @@ export default function ConstructionProgressView({ projectId }: ConstructionProg
                             },
                           }))
                         }
-                        className="w-full rounded-lg border border-[#c1c7cc] bg-white px-3 py-2 text-sm outline-none focus:border-[#023143]"
+                        className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm outline-none transition-all focus:border-build-accent focus:ring-1 focus:ring-build-accent"
                       >
                         <option value="pendiente">Pendiente</option>
                         <option value="aprobado">Aprobado</option>
@@ -155,7 +155,7 @@ export default function ConstructionProgressView({ projectId }: ConstructionProg
                     </div>
 
                     <div>
-                      <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-[#72787c]">
+                      <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-slate-500">
                         Fecha de aprobacion
                       </label>
                       <input
@@ -176,16 +176,16 @@ export default function ConstructionProgressView({ projectId }: ConstructionProg
                             },
                           }))
                         }
-                        className="w-full rounded-lg border border-[#c1c7cc] bg-white px-3 py-2 text-sm outline-none focus:border-[#023143]"
+                        className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm outline-none transition-all focus:border-build-accent focus:ring-1 focus:ring-build-accent"
                       />
                     </div>
 
-                    <label className="rounded-xl border-2 border-dashed border-[#c1c7cc] bg-white px-4 py-5 text-center hover:border-[#023143]">
-                      <span className="material-symbols-outlined text-[24px] text-[#023143]">
+                    <label className="rounded-xl border-2 border-dashed border-slate-300 bg-white px-4 py-5 text-center hover:border-build-accent">
+                      <span className="material-symbols-outlined text-[24px] text-build-main">
                         upload_file
                       </span>
-                      <p className="mt-2 text-sm font-bold text-[#1a1c1d]">Adjuntar PDF</p>
-                      <p className="mt-1 text-[11px] text-[#72787c]">
+                      <p className="mt-2 text-sm font-bold text-build-main">Adjuntar PDF</p>
+                      <p className="mt-1 text-[11px] text-slate-500">
                         {license.document
                           ? `${license.document.fileName} · ${license.document.fileSizeLabel}`
                           : "Haz click para seleccionar"}
@@ -225,22 +225,22 @@ export default function ConstructionProgressView({ projectId }: ConstructionProg
           </div>
         </div>
 
-        <div className="rounded-xl border border-[#e2e2e4] bg-white p-6 shadow-[0_4px_20px_rgba(2,49,67,0.03)]">
+        <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-[20px] font-bold text-[#1a1c1d]">Porcentaje global</h2>
-              <p className="mt-1 text-sm text-[#41484c]">Promedio calculado o override manual.</p>
+              <h2 className="text-[20px] font-bold text-build-main">Porcentaje global</h2>
+              <p className="mt-1 text-sm text-slate-500">Promedio calculado o override manual.</p>
             </div>
-            <div className="rounded-full bg-[#c2e8ff] px-4 py-2 text-lg font-bold text-[#001e2b]">
+            <div className="rounded-full bg-build-main/10 px-4 py-2 text-lg font-bold text-build-main">
               {globalPercent}%
             </div>
           </div>
 
           <div className="mt-6 space-y-4">
-            <label className="flex items-center justify-between rounded-xl border border-[#e2e2e4] bg-[#f9f9fb] px-4 py-3">
+            <label className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
               <div>
-                <p className="text-sm font-semibold text-[#1a1c1d]">Usar override manual</p>
-                <p className="text-[12px] text-[#72787c]">
+                <p className="text-sm font-semibold text-build-main">Usar override manual</p>
+                <p className="text-[12px] text-slate-500">
                   Si lo activas, el cliente vera este valor en vez del promedio automatico.
                 </p>
               </div>
@@ -261,7 +261,7 @@ export default function ConstructionProgressView({ projectId }: ConstructionProg
             </label>
 
             <div>
-              <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-[#72787c]">
+              <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-slate-500">
                 Override manual %
               </label>
               <input
@@ -279,15 +279,15 @@ export default function ConstructionProgressView({ projectId }: ConstructionProg
                     },
                   }))
                 }
-                className="w-full rounded-lg border border-[#c1c7cc] bg-white px-3 py-2 text-sm outline-none focus:border-[#023143] disabled:opacity-50"
+                className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm outline-none transition-all focus:border-build-accent focus:ring-1 focus:ring-build-accent disabled:opacity-50"
               />
             </div>
 
-            <div className="rounded-xl border border-[#e2e2e4] bg-[#f9f9fb] p-4">
-              <p className="text-[12px] font-bold uppercase tracking-wider text-[#72787c]">
+            <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+              <p className="text-[12px] font-bold uppercase tracking-wider text-slate-500">
                 Etapas en paralelo
               </p>
-              <p className="mt-2 text-sm text-[#41484c]">
+              <p className="mt-2 text-sm text-slate-500">
                 Acabados secos y humedos pueden avanzar en paralelo sin bloquear el resto del
                 seguimiento.
               </p>
@@ -296,10 +296,10 @@ export default function ConstructionProgressView({ projectId }: ConstructionProg
         </div>
       </section>
 
-      <section className="rounded-xl border border-[#e2e2e4] bg-white p-6 shadow-[0_4px_20px_rgba(2,49,67,0.03)]">
+      <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
         <div className="mb-5">
-          <h2 className="text-[20px] font-bold text-[#1a1c1d]">Etapas de construccion</h2>
-          <p className="mt-1 text-sm text-[#41484c]">
+          <h2 className="text-[20px] font-bold text-build-main">Etapas de construccion</h2>
+          <p className="mt-1 text-sm text-slate-500">
             Configura estado, avance, fechas y evidencia visual por cada etapa.
           </p>
         </div>
@@ -310,19 +310,19 @@ export default function ConstructionProgressView({ projectId }: ConstructionProg
             return (
               <div
                 key={stageKey}
-                className="grid gap-4 rounded-xl border border-[#e2e2e4] bg-[#f9f9fb] p-4 xl:grid-cols-[220px_180px_120px_180px_180px_minmax(0,1fr)]"
+                className="grid gap-4 rounded-xl border border-slate-200 bg-slate-50 p-4 xl:grid-cols-[220px_180px_120px_180px_180px_minmax(0,1fr)]"
               >
                 <div>
-                  <p className="text-sm font-bold text-[#1a1c1d]">
+                  <p className="text-sm font-bold text-build-main">
                     {CONSTRUCTION_STAGE_LABELS[stageKey]}
                   </p>
-                  <p className="mt-1 text-[12px] text-[#72787c]">
+                  <p className="mt-1 text-[12px] text-slate-500">
                     {CONSTRUCTION_STAGE_DESCRIPTIONS[stageKey]}
                   </p>
                 </div>
 
                 <div>
-                  <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-[#72787c]">
+                  <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-slate-500">
                     Estado
                   </label>
                   <select
@@ -342,7 +342,7 @@ export default function ConstructionProgressView({ projectId }: ConstructionProg
                         },
                       }))
                     }
-                    className="w-full rounded-lg border border-[#c1c7cc] bg-white px-3 py-2 text-sm outline-none focus:border-[#023143]"
+                    className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm outline-none transition-all focus:border-build-accent focus:ring-1 focus:ring-build-accent"
                   >
                     <option value="no_iniciada">No iniciada</option>
                     <option value="en_progreso">En progreso</option>
@@ -351,7 +351,7 @@ export default function ConstructionProgressView({ projectId }: ConstructionProg
                 </div>
 
                 <div>
-                  <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-[#72787c]">
+                  <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-slate-500">
                     %
                   </label>
                   <input
@@ -374,12 +374,12 @@ export default function ConstructionProgressView({ projectId }: ConstructionProg
                         },
                       }))
                     }
-                    className="w-full rounded-lg border border-[#c1c7cc] bg-white px-3 py-2 text-sm outline-none focus:border-[#023143]"
+                    className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm outline-none transition-all focus:border-build-accent focus:ring-1 focus:ring-build-accent"
                   />
                 </div>
 
                 <div>
-                  <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-[#72787c]">
+                  <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-slate-500">
                     Inicio real
                   </label>
                   <input
@@ -400,12 +400,12 @@ export default function ConstructionProgressView({ projectId }: ConstructionProg
                         },
                       }))
                     }
-                    className="w-full rounded-lg border border-[#c1c7cc] bg-white px-3 py-2 text-sm outline-none focus:border-[#023143]"
+                    className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm outline-none transition-all focus:border-build-accent focus:ring-1 focus:ring-build-accent"
                   />
                 </div>
 
                 <div>
-                  <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-[#72787c]">
+                  <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-slate-500">
                     Fin estimado
                   </label>
                   <input
@@ -426,16 +426,16 @@ export default function ConstructionProgressView({ projectId }: ConstructionProg
                         },
                       }))
                     }
-                    className="w-full rounded-lg border border-[#c1c7cc] bg-white px-3 py-2 text-sm outline-none focus:border-[#023143]"
+                    className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm outline-none transition-all focus:border-build-accent focus:ring-1 focus:ring-build-accent"
                   />
                 </div>
 
                 <div className="grid gap-3 md:grid-cols-2">
-                  <label className="rounded-lg border border-[#c1c7cc] bg-white px-3 py-3 text-center hover:border-[#023143]">
-                    <span className="text-[12px] font-bold text-[#1a1c1d]">
+                  <label className="rounded-xl border border-slate-300 bg-white px-3 py-3 text-center hover:border-build-accent">
+                    <span className="text-[12px] font-bold text-build-main">
                       Fotos ({stage.media.photos.length})
                     </span>
-                    <p className="mt-1 text-[11px] text-[#72787c]">
+                    <p className="mt-1 text-[11px] text-slate-500">
                       {stage.media.photos[0]?.fileName ?? "Adjuntar imagenes"}
                     </p>
                     <input
@@ -469,11 +469,11 @@ export default function ConstructionProgressView({ projectId }: ConstructionProg
                     />
                   </label>
 
-                  <label className="rounded-lg border border-[#c1c7cc] bg-white px-3 py-3 text-center hover:border-[#023143]">
-                    <span className="text-[12px] font-bold text-[#1a1c1d]">
+                  <label className="rounded-xl border border-slate-300 bg-white px-3 py-3 text-center hover:border-build-accent">
+                    <span className="text-[12px] font-bold text-build-main">
                       Reportes ({stage.media.reports.length})
                     </span>
-                    <p className="mt-1 text-[11px] text-[#72787c]">
+                    <p className="mt-1 text-[11px] text-slate-500">
                       {stage.media.reports[0]?.fileName ?? "Adjuntar PDF"}
                     </p>
                     <input

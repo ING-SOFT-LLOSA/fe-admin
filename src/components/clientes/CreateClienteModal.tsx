@@ -72,14 +72,14 @@ export default function CreateClienteModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#050a0e]/50 backdrop-blur-sm p-4 animate-fade-in">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden animate-slide-up">
-        <div className="px-8 py-5 border-b border-[#e2e2e4] flex justify-between items-center bg-[#f9f9fb]">
+        <div className="px-8 py-5 border-b border-slate-200 flex justify-between items-center bg-white">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-[#c2e8ff] flex items-center justify-center">
-              <span className="material-symbols-outlined text-[#023143]">person_add</span>
+            <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center">
+              <span className="material-symbols-outlined text-build-main">person_add</span>
             </div>
             <div>
-              <h2 className="text-[20px] font-bold text-[#1a1c1d]">Crear cliente</h2>
-              <p className="text-[12px] text-[#41484c] font-medium mt-0.5">
+              <h2 className="text-[20px] font-bold text-build-main">Crear cliente</h2>
+              <p className="text-[12px] text-slate-500 font-medium mt-0.5">
                 Registro en Firebase y base de datos Llosa
               </p>
             </div>
@@ -88,7 +88,7 @@ export default function CreateClienteModal({
             type="button"
             disabled={loading}
             onClick={handleClose}
-            className="text-[#c1c7cc] hover:text-[#ba1a1a] transition-colors"
+            className="text-slate-400 hover:text-build-main transition-colors"
           >
             <span className="material-symbols-outlined">close</span>
           </button>
@@ -108,33 +108,33 @@ export default function CreateClienteModal({
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-[12px] font-bold text-[#41484c] uppercase tracking-wider mb-1.5">
+              <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">
                 Nombre *
               </label>
               <input
                 required
                 value={form.nombre}
                 onChange={(e) => setForm((f) => ({ ...f, nombre: e.target.value }))}
-                className="w-full px-4 py-2.5 border border-[#e2e2e4] rounded-xl text-[14px] focus:outline-none focus:border-[#023143] focus:ring-2 focus:ring-[#023143]/10"
+                className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm text-build-main focus:outline-none focus:border-build-accent focus:ring-1 focus:ring-build-accent"
                 placeholder="Andre"
               />
             </div>
             <div>
-              <label className="block text-[12px] font-bold text-[#41484c] uppercase tracking-wider mb-1.5">
+              <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">
                 Apellidos *
               </label>
               <input
                 required
                 value={form.apellidos}
                 onChange={(e) => setForm((f) => ({ ...f, apellidos: e.target.value }))}
-                className="w-full px-4 py-2.5 border border-[#e2e2e4] rounded-xl text-[14px] focus:outline-none focus:border-[#023143] focus:ring-2 focus:ring-[#023143]/10"
+                className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm text-build-main focus:outline-none focus:border-build-accent focus:ring-1 focus:ring-build-accent"
                 placeholder="Contreras"
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-[12px] font-bold text-[#41484c] uppercase tracking-wider mb-1.5">
+            <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">
               Correo electrónico *
             </label>
             <input
@@ -142,54 +142,54 @@ export default function CreateClienteModal({
               required
               value={form.email}
               onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
-              className="w-full px-4 py-2.5 border border-[#e2e2e4] rounded-xl text-[14px] focus:outline-none focus:border-[#023143] focus:ring-2 focus:ring-[#023143]/10"
+              className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm text-build-main focus:outline-none focus:border-build-accent focus:ring-1 focus:ring-build-accent"
               placeholder="cliente@ejemplo.com"
             />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-[12px] font-bold text-[#41484c] uppercase tracking-wider mb-1.5">
+              <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">
                 DNI / RUC
               </label>
               <input
                 value={form.documentoIdentidad}
                 onChange={(e) => setForm((f) => ({ ...f, documentoIdentidad: e.target.value }))}
-                className="w-full px-4 py-2.5 border border-[#e2e2e4] rounded-xl text-[14px] focus:outline-none focus:border-[#023143] focus:ring-2 focus:ring-[#023143]/10"
+                className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm text-build-main focus:outline-none focus:border-build-accent focus:ring-1 focus:ring-build-accent"
                 placeholder="12345678"
               />
             </div>
             <div>
-              <label className="block text-[12px] font-bold text-[#41484c] uppercase tracking-wider mb-1.5">
+              <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">
                 Teléfono
               </label>
               <input
                 value={form.telefono}
                 onChange={(e) => setForm((f) => ({ ...f, telefono: e.target.value }))}
-                className="w-full px-4 py-2.5 border border-[#e2e2e4] rounded-xl text-[14px] focus:outline-none focus:border-[#023143] focus:ring-2 focus:ring-[#023143]/10"
+                className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm text-build-main focus:outline-none focus:border-build-accent focus:ring-1 focus:ring-build-accent"
                 placeholder="+51 999 888 777"
               />
             </div>
           </div>
 
-          <p className="text-[11px] text-[#72787c] leading-relaxed">
+          <p className="text-[11px] text-slate-500 leading-relaxed">
             El cliente recibirá un correo de Firebase para crear su contraseña. El rol{" "}
-            <span className="font-bold text-[#023143]">CLIENTE</span> se asigna automáticamente.
+            <span className="font-bold text-build-main">CLIENTE</span> se asigna automáticamente.
           </p>
 
-          <div className="flex justify-end gap-3 pt-2 border-t border-[#e2e2e4]">
+          <div className="flex justify-end gap-3 pt-4 mt-2">
             <button
               type="button"
               disabled={loading}
               onClick={handleClose}
-              className="px-5 py-2.5 text-sm font-bold text-[#41484c] hover:bg-[#f4f3f5] rounded-lg transition-colors"
+              className="px-5 py-2.5 text-sm font-bold text-slate-500 hover:bg-slate-50 hover:text-build-main rounded-xl transition-colors"
             >
               Cancelar
             </button>
             <button
               type="submit"
               disabled={loading || !!success}
-              className="px-6 py-2.5 bg-[#023143] text-white rounded-lg text-sm font-bold hover:bg-[#001b27] transition-all disabled:opacity-60 flex items-center gap-2"
+              className="px-6 py-2.5 bg-build-main text-white rounded-xl text-sm font-bold hover:bg-build-main/90 transition-all shadow-sm disabled:opacity-60 flex items-center gap-2"
             >
               {loading ? (
                 <>

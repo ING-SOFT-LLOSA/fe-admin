@@ -1,6 +1,4 @@
 "use client";
-import EmployeeLayout from "@/components/EmployeeLayout";
-
 const alerts = [
   { id: 1, type: "Cliente sin contacto", client: "Carlos Ruiz", project: "Torre A", priority: "Alta", action: "Llamar ahora", icon: "phone_in_talk", color: "#ba1a1a", bg: "#ffdad6" },
   { id: 2, type: "Contrato pendiente", client: "Familia Gómez", project: "Los Pinos", priority: "Alta", action: "Revisar estado", icon: "assignment_late", color: "#E65100", bg: "#FFF3E0" },
@@ -11,7 +9,7 @@ const alerts = [
 
 export default function EmployeeTrackingPage() {
   return (
-    <EmployeeLayout>
+    <>
       <div className="flex justify-between items-start animate-slide-up">
         <div>
           <h2 className="text-[28px] font-bold tracking-tight text-[#1a1c1d]">Centro de Seguimiento</h2>
@@ -57,6 +55,6 @@ export default function EmployeeTrackingPage() {
           ))}
         </div>
       </div>
-    </EmployeeLayout>
+    </>
   );
 }

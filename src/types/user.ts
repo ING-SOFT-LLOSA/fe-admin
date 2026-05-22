@@ -19,6 +19,8 @@ export interface Usuario {
   tipoUsuario: string;
   rol: string | null;
   activo: boolean;
+  telefono?: string;
+  documentoIdentidad?: string;
   createdAt?: string;
   funciones: string[];
 }

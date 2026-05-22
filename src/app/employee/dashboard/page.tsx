@@ -1,6 +1,4 @@
 "use client";
-import EmployeeLayout from "@/components/EmployeeLayout";
-
 const kpis = [
   { label: "Clientes Asignados", val: 34, icon: "group", bg: "#c2e8ff", ic: "#001e2b" },
   { label: "Contratos Pendientes", val: 5, icon: "pending_actions", bg: "#ffdad6", ic: "#93000a" },
@@ -19,7 +17,7 @@ const nextActions = [
 
 export default function EmployeeDashboardPage() {
   return (
-    <EmployeeLayout>
+    <>
       {/* ── Header ── */}
       <div className="flex justify-between items-start animate-slide-up">
         <div>
@@ -79,6 +77,6 @@ export default function EmployeeDashboardPage() {
           ))}
         </div>
       </div>
-    </EmployeeLayout>
+    </>
   );
 }

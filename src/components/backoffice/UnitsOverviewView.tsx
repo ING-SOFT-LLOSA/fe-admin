@@ -34,11 +34,11 @@ function getStatusClass(status: UnitStatus) {
     case "separado":
       return "bg-[#fff3e0] text-[#e65100]";
     case "en_contrato":
-      return "bg-[#c2e8ff] text-[#001e2b]";
+      return "bg-build-main/10 text-build-main";
     case "cancelado":
       return "bg-[#ffdad6] text-[#ba1a1a]";
     case "entregado":
-      return "bg-[#e9e0e1] text-[#1e1b1c]";
+      return "bg-slate-100 text-slate-600";
   }
 }
 
@@ -92,8 +92,8 @@ export default function UnitsOverviewView({ projectId }: UnitsOverviewViewProps)
 
   if (!project) {
     return (
-      <div className="rounded-xl border border-dashed border-[#c1c7cc] bg-white px-6 py-12 text-center">
-        <h1 className="text-lg font-bold text-[#1a1c1d]">Proyecto no encontrado</h1>
+      <div className="rounded-xl border border-dashed border-slate-300 bg-white px-6 py-12 text-center">
+        <h1 className="text-lg font-bold text-build-main">Proyecto no encontrado</h1>
       </div>
     );
   }
@@ -105,15 +105,15 @@ export default function UnitsOverviewView({ projectId }: UnitsOverviewViewProps)
       <div>
         <Link
           href={`/projects/${projectId}`}
-          className="inline-flex items-center gap-2 text-sm font-bold text-[#023143] hover:text-[#001b27]"
+          className="inline-flex items-center gap-2 text-sm font-bold text-slate-500 hover:text-build-main"
         >
           <span className="material-symbols-outlined text-[18px]">arrow_back</span>
           Volver al proyecto
         </Link>
-        <h1 className="mt-3 text-[34px] font-bold tracking-[-0.02em] text-[#1a1c1d]">
+        <h1 className="mt-3 text-[34px] font-bold tracking-[-0.02em] text-build-main">
           Unidades · {project.name}
         </h1>
-        <p className="mt-2 text-sm text-[#41484c]">
+        <p className="mt-2 text-sm text-slate-500">
           Gestiona unidades, cliente asignado y etapa del proceso de compra por torre.
         </p>
       </div>
@@ -121,59 +121,59 @@ export default function UnitsOverviewView({ projectId }: UnitsOverviewViewProps)
       <ProjectSectionNav projectId={projectId} />
 
       <div className="grid gap-4 xl:grid-cols-4">
-        <div className="rounded-xl border border-[#e2e2e4] bg-white p-5">
-          <p className="text-[11px] font-bold uppercase tracking-wider text-[#72787c]">
+        <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+          <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
             Total unidades
           </p>
-          <p className="mt-2 text-[28px] font-bold text-[#1a1c1d]">{allUnits.length}</p>
+          <p className="mt-2 text-[28px] font-bold text-build-main">{allUnits.length}</p>
         </div>
-        <div className="rounded-xl border border-[#e2e2e4] bg-white p-5">
-          <p className="text-[11px] font-bold uppercase tracking-wider text-[#72787c]">
+        <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+          <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
             Disponibles
           </p>
           <p className="mt-2 text-[28px] font-bold text-[#1c663b]">
             {allUnits.filter((unit) => unit.status === "disponible").length}
           </p>
         </div>
-        <div className="rounded-xl border border-[#e2e2e4] bg-white p-5">
-          <p className="text-[11px] font-bold uppercase tracking-wider text-[#72787c]">
+        <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+          <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
             En contrato
           </p>
-          <p className="mt-2 text-[28px] font-bold text-[#023143]">
+          <p className="mt-2 text-[28px] font-bold text-build-main">
             {allUnits.filter((unit) => unit.status === "en_contrato").length}
           </p>
         </div>
-        <div className="rounded-xl border border-[#e2e2e4] bg-white p-5">
-          <p className="text-[11px] font-bold uppercase tracking-wider text-[#72787c]">
+        <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+          <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
             Entregadas
           </p>
-          <p className="mt-2 text-[28px] font-bold text-[#4b4546]">
+          <p className="mt-2 text-[28px] font-bold text-slate-600">
             {allUnits.filter((unit) => unit.status === "entregado").length}
           </p>
         </div>
       </div>
 
-      <section className="rounded-xl border border-[#e2e2e4] bg-white p-6 shadow-[0_4px_20px_rgba(2,49,67,0.03)]">
+      <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
         <div className="grid gap-4 xl:grid-cols-[minmax(0,1.5fr)_repeat(4,180px)]">
           <div>
-            <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-[#72787c]">
+            <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-slate-500">
               Buscar unidad o cliente
             </label>
             <input
               value={search}
               onChange={(event) => setSearch(event.target.value)}
               placeholder="Ej. Torre A, Maria Garcia, A-101"
-              className="w-full rounded-lg border border-[#c1c7cc] px-3 py-2 text-sm outline-none focus:border-[#023143]"
+              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none transition-all focus:border-build-accent focus:ring-1 focus:ring-build-accent"
             />
           </div>
           <div>
-            <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-[#72787c]">
+            <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-slate-500">
               Torre
             </label>
             <select
               value={towerFilter}
               onChange={(event) => setTowerFilter(event.target.value)}
-              className="w-full rounded-lg border border-[#c1c7cc] px-3 py-2 text-sm outline-none focus:border-[#023143]"
+              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none transition-all focus:border-build-accent focus:ring-1 focus:ring-build-accent"
             >
               <option value="all">Todas</option>
               {project.towers.map((tower) => (
@@ -184,13 +184,13 @@ export default function UnitsOverviewView({ projectId }: UnitsOverviewViewProps)
             </select>
           </div>
           <div>
-            <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-[#72787c]">
+            <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-slate-500">
               Tipologia
             </label>
             <select
               value={typologyFilter}
               onChange={(event) => setTypologyFilter(event.target.value as UnitTypology | "all")}
-              className="w-full rounded-lg border border-[#c1c7cc] px-3 py-2 text-sm outline-none focus:border-[#023143]"
+              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none transition-all focus:border-build-accent focus:ring-1 focus:ring-build-accent"
             >
               <option value="all">Todas</option>
               <option value="1D">1D</option>
@@ -202,13 +202,13 @@ export default function UnitsOverviewView({ projectId }: UnitsOverviewViewProps)
             </select>
           </div>
           <div>
-            <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-[#72787c]">
+            <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-slate-500">
               Estado
             </label>
             <select
               value={statusFilter}
               onChange={(event) => setStatusFilter(event.target.value as UnitStatus | "all")}
-              className="w-full rounded-lg border border-[#c1c7cc] px-3 py-2 text-sm outline-none focus:border-[#023143]"
+              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none transition-all focus:border-build-accent focus:ring-1 focus:ring-build-accent"
             >
               <option value="all">Todos</option>
               <option value="disponible">Disponible</option>
@@ -219,13 +219,13 @@ export default function UnitsOverviewView({ projectId }: UnitsOverviewViewProps)
             </select>
           </div>
           <div>
-            <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-[#72787c]">
+            <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-slate-500">
               Etapa
             </label>
             <select
               value={stageFilter}
               onChange={(event) => setStageFilter(event.target.value)}
-              className="w-full rounded-lg border border-[#c1c7cc] px-3 py-2 text-sm outline-none focus:border-[#023143]"
+              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none transition-all focus:border-build-accent focus:ring-1 focus:ring-build-accent"
             >
               <option value="all">Todas</option>
               {PROCESS_MODULE_ORDER.map((moduleKey) => (
@@ -241,16 +241,16 @@ export default function UnitsOverviewView({ projectId }: UnitsOverviewViewProps)
       {groupedUnits.map((tower) => (
         <section
           key={tower.id}
-          className="rounded-xl border border-[#e2e2e4] bg-white shadow-[0_4px_20px_rgba(2,49,67,0.03)]"
+          className="rounded-xl border border-slate-200 bg-white shadow-sm"
         >
-          <div className="flex items-center justify-between border-b border-[#e2e2e4] px-6 py-4">
+          <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4">
             <div>
-              <h2 className="text-[20px] font-bold text-[#1a1c1d]">{tower.name}</h2>
-              <p className="mt-1 text-sm text-[#41484c]">
+              <h2 className="text-[20px] font-bold text-build-main">{tower.name}</h2>
+              <p className="mt-1 text-sm text-slate-500">
                 {tower.units.length} unidades visibles luego de filtros
               </p>
             </div>
-            <span className="rounded-full bg-[#f4f3f5] px-3 py-1 text-[12px] font-bold text-[#41484c]">
+            <span className="rounded-full bg-slate-100 px-3 py-1 text-[12px] font-bold text-slate-500">
               {tower.floors} pisos
             </span>
           </div>
@@ -258,7 +258,7 @@ export default function UnitsOverviewView({ projectId }: UnitsOverviewViewProps)
           <div className="overflow-x-auto">
             <table className="w-full border-collapse text-left">
               <thead>
-                <tr className="bg-[#f9f9fb]">
+                <tr className="bg-slate-50">
                   {[
                     "Unidad",
                     "Piso",
@@ -271,22 +271,22 @@ export default function UnitsOverviewView({ projectId }: UnitsOverviewViewProps)
                   ].map((header) => (
                     <th
                       key={header}
-                      className="px-6 py-3 text-[11px] font-bold uppercase tracking-wider text-[#72787c]"
+                      className="px-6 py-3 text-[11px] font-bold uppercase tracking-wider text-slate-500"
                     >
                       {header}
                     </th>
                   ))}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[#e2e2e4]">
+              <tbody className="divide-y divide-slate-200">
                 {tower.units.map((unit) => (
-                  <tr key={unit.id} className="hover:bg-[#f9f9fb]">
+                  <tr key={unit.id} className="hover:bg-slate-50 transition-colors">
                     <td className="px-6 py-4">
-                      <p className="text-sm font-bold text-[#1a1c1d]">{unit.number}</p>
+                      <p className="text-sm font-bold text-build-main">{unit.number}</p>
                     </td>
-                    <td className="px-6 py-4 text-sm text-[#41484c]">{unit.floor}</td>
-                    <td className="px-6 py-4 text-sm text-[#41484c]">{unit.area} m2</td>
-                    <td className="px-6 py-4 text-sm text-[#41484c]">{unit.typology}</td>
+                    <td className="px-6 py-4 text-sm text-slate-500">{unit.floor}</td>
+                    <td className="px-6 py-4 text-sm text-slate-500">{unit.area} m2</td>
+                    <td className="px-6 py-4 text-sm text-slate-500">{unit.typology}</td>
                     <td className="px-6 py-4">
                       <span
                         className={`rounded-full px-3 py-1 text-[11px] font-bold uppercase ${getStatusClass(unit.status)}`}
@@ -297,27 +297,27 @@ export default function UnitsOverviewView({ projectId }: UnitsOverviewViewProps)
                     <td className="px-6 py-4">
                       {unit.client ? (
                         <div className="flex flex-col gap-1">
-                          <span className="text-sm font-semibold text-[#1a1c1d]">
+                          <span className="text-sm font-semibold text-build-main">
                             {unit.client.fullName}
                           </span>
                           <Link
                             href={`/clientes/${unit.client.clientId}/expediente`}
-                            className="text-[12px] font-bold text-[#023143] hover:underline"
+                            className="text-[12px] font-bold text-build-accent hover:underline"
                           >
                             Ver expediente
                           </Link>
                         </div>
                       ) : (
-                        <span className="text-sm text-[#72787c]">Sin asignar</span>
+                        <span className="text-sm text-slate-400">Sin asignar</span>
                       )}
                     </td>
-                    <td className="px-6 py-4 text-sm font-semibold text-[#023143]">
+                    <td className="px-6 py-4 text-sm font-semibold text-build-main">
                       {getCurrentStageLabel(unit)}
                     </td>
                     <td className="px-6 py-4">
                       <Link
                         href={`/projects/${projectId}/unidades/${unit.id}`}
-                        className="inline-flex items-center gap-2 rounded-lg bg-[#023143] px-4 py-2 text-[12px] font-bold text-white hover:bg-[#001b27]"
+                        className="inline-flex items-center gap-2 rounded-xl bg-build-main px-4 py-2 text-[12px] font-bold text-white shadow-sm transition-all hover:bg-build-main/90"
                       >
                         <span className="material-symbols-outlined text-[16px]">open_in_new</span>
                         Abrir detalle

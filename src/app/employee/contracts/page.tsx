@@ -1,6 +1,4 @@
 "use client";
-import EmployeeLayout from "@/components/EmployeeLayout";
-
 const contracts = [
   { id: 1, client: "Familia Gómez", project: "Los Pinos", apt: "Lote 12", state: "Generado", deadline: "30 Oct", resp: "Juan Empleado" },
   { id: 2, client: "Carlos Ruiz", project: "Torre A", apt: "402", state: "Pendiente de firma", deadline: "Hoy", resp: "Juan Empleado" },
@@ -21,7 +19,7 @@ const stateColors: Record<string, { bg: string; text: string }> = {
 
 export default function EmployeeContractsPage() {
   return (
-    <EmployeeLayout>
+    <>
       <div className="flex justify-between items-start animate-slide-up">
         <div>
           <h2 className="text-[28px] font-bold tracking-tight text-[#1a1c1d]">Mis Contratos</h2>
@@ -73,6 +71,6 @@ export default function EmployeeContractsPage() {
           </div>
         ))}
       </div>
-    </EmployeeLayout>
+    </>
   );
 }

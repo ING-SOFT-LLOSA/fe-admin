@@ -1,6 +1,4 @@
 "use client";
-import EmployeeLayout from "@/components/EmployeeLayout";
-
 const advances = [
   { id: 1, title: "Vaciado de losa 4to piso", project: "Torre A", stage: "Estructura", date: "Hoy", state: "Borrador" },
   { id: 2, title: "Instalación de drywall interiores", project: "Torre A", stage: "Acabados", date: "Ayer", state: "Listo para enviar" },
@@ -17,7 +15,7 @@ const stateColors: Record<string, { bg: string; text: string }> = {
 
 export default function EmployeeProgressPage() {
   return (
-    <EmployeeLayout>
+    <>
       <div className="flex justify-between items-start animate-slide-up">
         <div>
           <h2 className="text-[28px] font-bold tracking-tight text-[#1a1c1d]">Avances de Obra</h2>
@@ -116,6 +114,6 @@ export default function EmployeeProgressPage() {
           </div>
         </div>
       </div>
-    </EmployeeLayout>
+    </>
   );
 }
