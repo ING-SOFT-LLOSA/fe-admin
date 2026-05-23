@@ -78,7 +78,7 @@ pipeline {
                 ]) {
                     sh '''
                         docker compose down
-                        docker compose up -d --build front-llosa
+                        docker compose up -d --build front-llosa-admin
                     '''
                 }
             }
