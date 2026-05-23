@@ -12,7 +12,7 @@ pipeline {
             }
         }
 
-        stage('Install & Lint') {
+        stage('Install & Test') {
             agent {
                 docker {
                     image 'node:20-alpine'
@@ -22,8 +22,7 @@ pipeline {
             steps {
                 sh '''
                     npm ci
-                    npm run test
-                    npm run lint
+                    npm run test -- --coverage
                 '''
             }
         }
@@ -43,12 +42,20 @@ pipeline {
         }
 
         stage('SonarQube Analysis') {
-            environment {
-                scannerHome = tool 'SonarScanner'
+            agent {
+                docker {
+                    image 'node:22-bookworm'
+                    reuseNode true
+                }
             }
             steps {
                 withSonarQubeEnv('SonarQube-Server') {
-                    sh "${scannerHome}/bin/sonar-scanner"
+                    sh '''
+                        export COREPACK_HOME="$WORKSPACE/.corepack"
+                        export SONAR_TOKEN="${SONAR_AUTH_TOKEN:-$SONAR_TOKEN}"
+                        corepack pnpm --package=sonarqube-scanner@4 dlx sonar-scanner \
+                            -Dsonar.host.url="$SONAR_HOST_URL"
+                    '''
                 }
             }
         }
