@@ -22,6 +22,7 @@ pipeline {
             steps {
                 sh '''
                     npm ci
+                    npm run test
                     npm run lint
                 '''
             }
