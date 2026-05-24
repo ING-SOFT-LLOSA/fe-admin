@@ -35,9 +35,9 @@ pipeline {
                     string(credentialsId: 'NEXT_PUBLIC_FIREBASE_PROJECT_ID_LLOSA', variable: 'NEXT_PUBLIC_FIREBASE_PROJECT_ID_LLOSA'),
                 ]) {
                     sh '''
-                        echo "NEXT_PUBLIC_FIREBASE_API_KEY=$NEXT_PUBLIC_FIREBASE_API_KEY_LLOSA" > .env.local
-                        echo "NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=$NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN_LLOSA" >> .env.local
-                        echo "NEXT_PUBLIC_FIREBASE_PROJECT_ID=$NEXT_PUBLIC_FIREBASE_PROJECT_ID_LLOSA" >> .env.local
+                        echo "NEXT_PUBLIC_FIREBASE_API_KEY_LLOSA=$NEXT_PUBLIC_FIREBASE_API_KEY_LLOSA" > .env.local
+                        echo "NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN_LLOSA=$NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN_LLOSA" >> .env.local
+                        echo "NEXT_PUBLIC_FIREBASE_PROJECT_ID_LLOSA=$NEXT_PUBLIC_FIREBASE_PROJECT_ID_LLOSA" >> .env.local
                     '''
                 }
             }
@@ -94,6 +94,10 @@ pipeline {
                     sh '''
                         docker rm -f front-llosa || true
                         docker compose down || true
+                        docker compose build \
+                            --build-arg NEXT_PUBLIC_FIREBASE_API_KEY_LLOSA=$NEXT_PUBLIC_FIREBASE_API_KEY_LLOSA \
+                            --build-arg NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN_LLOSA=$NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN_LLOSA \
+                            --build-arg NEXT_PUBLIC_FIREBASE_PROJECT_ID_LLOSA=$NEXT_PUBLIC_FIREBASE_PROJECT_ID_LLOSA
                         docker compose up -d --build front-llosa
                     '''
                 }
