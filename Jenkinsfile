@@ -27,6 +27,22 @@ pipeline {
             }
         }
 
+        stage('Create .env.local') {
+            steps {
+                withCredentials([
+                    string(credentialsId: 'NEXT_PUBLIC_FIREBASE_API_KEY_LLOSA', variable: 'NEXT_PUBLIC_FIREBASE_API_KEY'),
+                    string(credentialsId: 'NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN_LLOSA', variable: 'NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN'),
+                    string(credentialsId: 'NEXT_PUBLIC_FIREBASE_PROJECT_ID_LLOSA', variable: 'NEXT_PUBLIC_FIREBASE_PROJECT_ID'),
+                ]) {
+                    sh '''
+                        echo "NEXT_PUBLIC_FIREBASE_API_KEY=$NEXT_PUBLIC_FIREBASE_API_KEY" > .env.local
+                        echo "NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=$NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN" >> .env.local
+                        echo "NEXT_PUBLIC_FIREBASE_PROJECT_ID=$NEXT_PUBLIC_FIREBASE_PROJECT_ID" >> .env.local
+                    '''
+                }
+            }
+        }
+
         stage('Build') {
             agent {
                 docker {
