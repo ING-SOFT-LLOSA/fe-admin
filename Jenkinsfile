@@ -92,7 +92,8 @@ pipeline {
                     string(credentialsId: 'NEXT_PUBLIC_FIREBASE_PROJECT_ID_LLOSA', variable: 'NEXT_PUBLIC_FIREBASE_PROJECT_ID_LLOSA')
                 ]) {
                     sh '''
-                        docker compose down
+                        docker rm -f front-llosa || true
+                        docker compose down || true
                         docker compose up -d --build front-llosa
                     '''
                 }
