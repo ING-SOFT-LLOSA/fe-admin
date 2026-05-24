@@ -27,7 +27,7 @@ pipeline {
             }
         }
 
-        stage('Create .env.local') {
+        stage('Create .env') {
             steps {
                 withCredentials([
                     string(credentialsId: 'NEXT_PUBLIC_FIREBASE_API_KEY_LLOSA', variable: 'NEXT_PUBLIC_FIREBASE_API_KEY_LLOSA'),
@@ -94,10 +94,6 @@ pipeline {
                     sh '''
                         docker rm -f front-llosa || true
                         docker compose down || true
-                        echo "JENKINS ENV: "
-                        echo "KEY   = $NEXT_PUBLIC_FIREBASE_API_KEY_LLOSA"
-                        echo "DOMAIN= $NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN_LLOSA"
-                        echo "PROJ  = $NEXT_PUBLIC_FIREBASE_PROJECT_ID_LLOSA"
                         docker compose build \
                             --build-arg NEXT_PUBLIC_FIREBASE_API_KEY_LLOSA=$NEXT_PUBLIC_FIREBASE_API_KEY_LLOSA \
                             --build-arg NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN_LLOSA=$NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN_LLOSA \
