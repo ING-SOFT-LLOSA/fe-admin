@@ -31,6 +31,8 @@ ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 # Next.js telemetry is disabled by default below.
 ENV NEXT_TELEMETRY_DISABLED=1
 
+COPY . .
+
 RUN npm run build
 
 # Production image, copy all the files and run next
