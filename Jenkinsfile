@@ -71,14 +71,14 @@ pipeline {
         stage('Deploy (Docker Compose)') {
             steps {
                 withCredentials([
-                    string(credentialsId: 'NEXT_PUBLIC_FIREBASE_API_KEY_ID', variable: 'NEXT_PUBLIC_FIREBASE_API_KEY'),
-                    string(credentialsId: 'NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN_ID', variable: 'NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN'),
-                    string(credentialsId: 'NEXT_PUBLIC_FIREBASE_PROJECT_ID_ID', variable: 'NEXT_PUBLIC_FIREBASE_PROJECT_ID'),
-                    string(credentialsId: 'NEXT_PUBLIC_API_URL_ID', variable: 'NEXT_PUBLIC_API_URL')
+                    string(credentialsId: 'NEXT_PUBLIC_FIREBASE_API_KEY_LLOSA', variable: 'NEXT_PUBLIC_FIREBASE_API_KEY_LLOSA'),
+                    string(credentialsId: 'NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN_LLOSA', variable: 'NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN_LLOSA'),
+                    string(credentialsId: 'NEXT_PUBLIC_FIREBASE_PROJECT_ID_LLOSA', variable: 'NEXT_PUBLIC_FIREBASE_PROJECT_ID_LLOSA'),
+                    string(credentialsId: 'NEXT_PUBLIC_API_URL_LLOSA', variable: 'NEXT_PUBLIC_API_URL_LLOSA')
                 ]) {
                     sh '''
                         docker compose down
-                        docker compose up -d --build front-llosa-admin
+                        docker compose up -d --build front-llosa
                     '''
                 }
             }
