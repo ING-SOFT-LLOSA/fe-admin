@@ -12,7 +12,7 @@ pipeline {
             }
         }
 
-        stage('Install & Lint') {
+        stage('Install & Test') {
             agent {
                 docker {
                     image 'node:20-alpine'
@@ -22,32 +22,26 @@ pipeline {
             steps {
                 sh '''
                     npm ci
-                    npm run lint
-                '''
-            }
-        }
-
-        stage('Build') {
-            agent {
-                docker {
-                    image 'node:20-alpine'
-                    reuseNode true
-                }
-            }
-            steps {
-                sh '''
-                    npm run build
+                    npm run test -- --coverage
                 '''
             }
         }
 
         stage('SonarQube Analysis') {
-            environment {
-                scannerHome = tool 'SonarScanner'
+            agent {
+                docker {
+                    image 'node:22-bookworm'
+                    reuseNode true
+                }
             }
             steps {
                 withSonarQubeEnv('SonarQube-Server') {
-                    sh "${scannerHome}/bin/sonar-scanner"
+                    sh '''
+                        export COREPACK_HOME="$WORKSPACE/.corepack"
+                        export SONAR_TOKEN="${SONAR_AUTH_TOKEN:-$SONAR_TOKEN}"
+                        corepack pnpm --package=sonarqube-scanner@4 dlx sonar-scanner \
+                            -Dsonar.host.url="$SONAR_HOST_URL"
+                    '''
                 }
             }
         }
@@ -63,13 +57,14 @@ pipeline {
         stage('Deploy (Docker Compose)') {
             steps {
                 withCredentials([
-                    string(credentialsId: 'NEXT_PUBLIC_FIREBASE_API_KEY_ID', variable: 'NEXT_PUBLIC_FIREBASE_API_KEY'),
-                    string(credentialsId: 'NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN_ID', variable: 'NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN'),
-                    string(credentialsId: 'NEXT_PUBLIC_FIREBASE_PROJECT_ID_ID', variable: 'NEXT_PUBLIC_FIREBASE_PROJECT_ID'),
-                    string(credentialsId: 'NEXT_PUBLIC_API_URL_ID', variable: 'NEXT_PUBLIC_API_URL')
+                    string(credentialsId: 'NEXT_PUBLIC_FIREBASE_API_KEY_LLOSA', variable: 'NEXT_PUBLIC_FIREBASE_API_KEY_LLOSA'),
+                    string(credentialsId: 'NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN_LLOSA', variable: 'NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN_LLOSA'),
+                    string(credentialsId: 'NEXT_PUBLIC_FIREBASE_PROJECT_ID_LLOSA', variable: 'NEXT_PUBLIC_FIREBASE_PROJECT_ID_LLOSA'),
+                    string(credentialsId: 'NEXT_PUBLIC_API_URL_LLOSA', variable: 'NEXT_PUBLIC_API_URL_LLOSA')
                 ]) {
                     sh '''
-                        docker compose down
+                        docker rm -f front-llosa || true
+                        docker compose down || true
                         docker compose up -d --build front-llosa
                     '''
                 }
