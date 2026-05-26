@@ -2,9 +2,9 @@ import { initializeApp, getApps, type FirebaseApp } from "firebase/app";
 import { getAuth, type Auth } from "firebase/auth";
 
 const firebaseConfig = {
-  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
-  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
-  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY_LLOSA,
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN_LLOSA,
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID_LLOSA,
 };
 
 function getFirebaseApp(): FirebaseApp {
@@ -13,7 +13,7 @@ function getFirebaseApp(): FirebaseApp {
   }
   if (!firebaseConfig.apiKey || !firebaseConfig.authDomain || !firebaseConfig.projectId) {
     throw new Error(
-      "Faltan variables NEXT_PUBLIC_FIREBASE_* en .env.local (ver .env.local.example)",
+      "Faltan variables NEXT_PUBLIC_FIREBASE_*_LLOSA en .env.local (ver .env.local.example)",
     );
   }
   return initializeApp(firebaseConfig);
