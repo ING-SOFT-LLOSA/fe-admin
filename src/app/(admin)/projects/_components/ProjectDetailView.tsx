@@ -31,16 +31,50 @@ export default function ProjectDetailView({ projectId }: ProjectDetailViewProps)
   const [successMessage, setSuccessMessage] = useState("");
 
   useEffect(() => {
-    const timer = window.setTimeout(() => {
-      const currentProject = getProjectBySlug(projectId);
-      setProject(currentProject);
-      if (currentProject) {
-        setFormValues(getProjectFormValues(currentProject));
-      }
-      setIsLoading(false);
-    }, 500);
+    let mounted = true;
 
-    return () => window.clearTimeout(timer);
+    async function loadProject() {
+      try {
+        const { apiFetch } = await import("@/lib/api/http");
+        const allProjects = await apiFetch<any[]>("/api/proyectos");
+        const backendProject = allProjects.find(p => p.id === projectId);
+        
+        if (mounted && backendProject) {
+          const mappedProject: ProjectMock = {
+            slug: backendProject.id,
+            uuid_proyecto: backendProject.id,
+            name: backendProject.nombre,
+            district: backendProject.distrito || "",
+            direction: backendProject.direccion || "",
+            date_init: new Date(backendProject.fechaInicio || backendProject.createdAt),
+            created_at: new Date(backendProject.createdAt) as any,
+            towers: [] // backend does not return towers yet
+          };
+          
+          setProject(mappedProject);
+          setFormValues({
+            name: mappedProject.name,
+            district: mappedProject.district,
+            direction: mappedProject.direction,
+            date_init: backendProject.fechaInicio ? backendProject.fechaInicio : "",
+          });
+          setIsLoading(false);
+        } else if (mounted) {
+          setIsLoading(false);
+        }
+      } catch (error) {
+        console.error("Error fetching project:", error);
+        if (mounted) {
+          setIsLoading(false);
+        }
+      }
+    }
+
+    loadProject();
+
+    return () => {
+      mounted = false;
+    };
   }, [projectId]);
 
   const handleFieldChange = (field: keyof ProjectFormValues, value: string) => {
