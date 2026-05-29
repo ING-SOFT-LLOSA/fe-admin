@@ -7,28 +7,37 @@ import ProjectForm from "./ProjectForm";
 import TowerList from "./TowerList";
 import {
   formatProjectDate,
-  getProjectBySlug,
-  getProjectFormValues,
-  getProjectStats,
-  type ProjectFormValues,
   type ProjectMock,
 } from "../_data/mock-projects";
+import { updateProyecto, getAvanceGeneral, deleteProyecto } from "@/lib/api/proyectos";
+import type { ProyectoCreateDTO } from "@/lib/api/proyectos";
+import { useRouter } from "next/navigation";
 
 type ProjectDetailViewProps = {
   projectId: string;
 };
 
 export default function ProjectDetailView({ projectId }: ProjectDetailViewProps) {
+  const router = useRouter();
   const [project, setProject] = useState<ProjectMock | null>(null);
-  const [formValues, setFormValues] = useState<ProjectFormValues>({
-    name: "",
-    district: "",
-    direction: "",
-    date_init: "",
+  const [formValues, setFormValues] = useState<ProyectoCreateDTO>({
+    nombre: "",
+    descripcion: "",
+    precertificacionEdgeLeed: false,
+    linkRecorridoVirtual: "",
+    departamento: "",
+    distrito: "",
+    direccion: "",
+    fechaInicio: "",
+    fechaFin: "",
   });
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
+  const [unitsCount, setUnitsCount] = useState<number | string>("...");
+  const [avanceGlobal, setAvanceGlobal] = useState<number>(0);
+  const [isDeleting, setIsDeleting] = useState(false);
+
 
   useEffect(() => {
     let mounted = true;
@@ -36,6 +45,7 @@ export default function ProjectDetailView({ projectId }: ProjectDetailViewProps)
     async function loadProject() {
       try {
         const { apiFetch } = await import("@/lib/api/http");
+        const { fetchActivosPorProyecto } = await import("@/lib/api/proyectos");
         const allProjects = await apiFetch<any[]>("/api/proyectos");
         const backendProject = allProjects.find(p => p.id === projectId);
         
@@ -51,12 +61,28 @@ export default function ProjectDetailView({ projectId }: ProjectDetailViewProps)
             towers: [] // backend does not return towers yet
           };
           
+          try {
+            const activosPage = await fetchActivosPorProyecto(backendProject.id);
+            setUnitsCount(activosPage.totalElements);
+            
+            const avance = await getAvanceGeneral(backendProject.id);
+            setAvanceGlobal(avance.avanceGlobal);
+          } catch(e) {
+            setUnitsCount(0);
+            setAvanceGlobal(0);
+          }
+
           setProject(mappedProject);
           setFormValues({
-            name: mappedProject.name,
-            district: mappedProject.district,
-            direction: mappedProject.direction,
-            date_init: backendProject.fechaInicio ? backendProject.fechaInicio : "",
+            nombre: backendProject.nombre || "",
+            descripcion: backendProject.descripcion || "",
+            precertificacionEdgeLeed: backendProject.precertificacionEdgeLeed || false,
+            linkRecorridoVirtual: backendProject.linkRecorridoVirtual || "",
+            departamento: backendProject.departamento || "",
+            distrito: backendProject.distrito || "",
+            direccion: backendProject.direccion || "",
+            fechaInicio: backendProject.fechaInicio ? backendProject.fechaInicio : "",
+            fechaFin: backendProject.fechaFin ? backendProject.fechaFin : "",
           });
           setIsLoading(false);
         } else if (mounted) {
@@ -77,31 +103,49 @@ export default function ProjectDetailView({ projectId }: ProjectDetailViewProps)
     };
   }, [projectId]);
 
-  const handleFieldChange = (field: keyof ProjectFormValues, value: string) => {
+  const handleFieldChange = (field: keyof ProyectoCreateDTO, value: string | boolean) => {
     setFormValues((current) => ({ ...current, [field]: value }));
   };
 
-  const handleSave = () => {
-    if (!project) {
-      return;
-    }
-
+  const handleSave = async () => {
+    if (!project) return;
     setIsSaving(true);
     setSuccessMessage("");
 
-    window.setTimeout(() => {
-      const updatedProject: ProjectMock = {
-        ...project,
-        name: formValues.name,
-        district: formValues.district,
-        direction: formValues.direction,
-        date_init: new Date(formValues.date_init),
-      };
-
-      setProject(updatedProject);
+    try {
+      await updateProyecto(projectId, formValues);
+      setSuccessMessage("¡Proyecto actualizado correctamente!");
+      
+      // Update local state mock to reflect changes in the header
+      setProject(prev => prev ? {
+        ...prev,
+        name: formValues.nombre,
+        district: formValues.distrito,
+        direction: formValues.direccion,
+      } : null);
+    } catch(e) {
+      console.error(e);
+      alert("Hubo un error al guardar los cambios del proyecto.");
+    } finally {
       setIsSaving(false);
-      setSuccessMessage("Los cambios se guardaron localmente en esta vista mock.");
-    }, 800);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!confirm("¿Estás completamente seguro de que deseas ELIMINAR este proyecto? Esta acción no se puede deshacer y borrará todas las unidades y etapas asociadas.")) {
+      return;
+    }
+    
+    setIsDeleting(true);
+    try {
+      await deleteProyecto(projectId);
+      alert("Proyecto eliminado correctamente.");
+      router.push("/projects");
+    } catch(e) {
+      console.error(e);
+      alert("Ocurrió un error al intentar eliminar el proyecto.");
+      setIsDeleting(false);
+    }
   };
 
   return (
@@ -159,11 +203,12 @@ export default function ProjectDetailView({ projectId }: ProjectDetailViewProps)
                   </p>
                 </div>
 
-                <div className="grid gap-3 md:grid-cols-3">
+                <div className="grid gap-3 md:grid-cols-4">
                   {[
+                    { label: "Avance", value: `${avanceGlobal}%` },
                     { label: "Distrito", value: project.district },
-                    { label: "Torres", value: String(getProjectStats(project).towersCount) },
-                    { label: "Unidades", value: String(getProjectStats(project).unitsCount) },
+                    { label: "Torres", value: "Pendiente API" },
+                    { label: "Unidades", value: String(unitsCount) },
                   ].map((item) => (
                     <div
                       key={item.label}
@@ -219,7 +264,26 @@ export default function ProjectDetailView({ projectId }: ProjectDetailViewProps)
               isSaving={isSaving}
             />
 
-            <TowerList towers={project.towers} />
+            <section className="rounded-xl border border-red-200 bg-red-50 p-6 shadow-sm mt-6">
+              <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                <div>
+                  <h2 className="text-[20px] font-bold text-red-700">Zona de peligro</h2>
+                  <p className="mt-1 text-sm text-red-600">
+                    Eliminar este proyecto borrará permanentemente todas las unidades, etapas y avances. Esta acción no se puede deshacer.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleDelete}
+                  disabled={isDeleting}
+                  className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-red-600 px-6 py-2.5 text-sm font-bold text-white shadow-sm transition-all hover:bg-red-700 disabled:opacity-60"
+                >
+                  {isDeleting ? "Eliminando..." : "Eliminar proyecto"}
+                </button>
+              </div>
+            </section>
+
+            <TowerList projectId={projectId} />
           </>
         )}
       </section>

@@ -1,26 +1,28 @@
 "use client";
 
 import type { ChangeEvent } from "react";
-
-import type { ProjectFormValues } from "../_data/mock-projects";
+import type { ProyectoCreateDTO } from "@/lib/api/proyectos";
 
 type ProjectFormProps = {
-  values: ProjectFormValues;
-  onChange: (field: keyof ProjectFormValues, value: string) => void;
+  values: ProyectoCreateDTO;
+  onChange: (field: keyof ProyectoCreateDTO, value: string | boolean) => void;
   onSubmit: () => void;
   isSaving: boolean;
 };
 
-const fields: Array<{
-  key: keyof ProjectFormValues;
+const textFields: Array<{
+  key: keyof ProyectoCreateDTO;
   label: string;
   type: "text" | "date";
   placeholder?: string;
 }> = [
-  { key: "name", label: "Nombre del proyecto", type: "text", placeholder: "Nombre del proyecto" },
-  { key: "district", label: "Distrito", type: "text", placeholder: "Distrito" },
-  { key: "direction", label: "Direccion", type: "text", placeholder: "Direccion completa" },
-  { key: "date_init", label: "Fecha de inicio", type: "date" },
+  { key: "nombre", label: "Nombre del proyecto", type: "text", placeholder: "Nombre del proyecto" },
+  { key: "departamento", label: "Departamento", type: "text", placeholder: "Ej. Lima" },
+  { key: "distrito", label: "Distrito", type: "text", placeholder: "Ej. Miraflores" },
+  { key: "direccion", label: "Dirección", type: "text", placeholder: "Dirección completa" },
+  { key: "fechaInicio", label: "Fecha de inicio", type: "date" },
+  { key: "fechaFin", label: "Fecha de fin estimada", type: "date" },
+  { key: "linkRecorridoVirtual", label: "Link recorrido virtual", type: "text", placeholder: "https://..." },
 ];
 
 export default function ProjectForm({
@@ -30,33 +32,67 @@ export default function ProjectForm({
   isSaving,
 }: ProjectFormProps) {
   const handleInputChange =
-    (field: keyof ProjectFormValues) =>
-    (event: ChangeEvent<HTMLInputElement>) => {
+    (field: keyof ProyectoCreateDTO) =>
+    (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
       onChange(field, event.target.value);
+    };
+
+  const handleCheckboxChange =
+    (field: keyof ProyectoCreateDTO) =>
+    (event: ChangeEvent<HTMLInputElement>) => {
+      onChange(field, event.target.checked);
     };
 
   return (
     <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
       <div className="mb-5">
-        <h2 className="text-[20px] font-bold text-build-main">Informacion del proyecto</h2>
+        <h2 className="text-[20px] font-bold text-build-main">Información del proyecto</h2>
         <p className="mt-1 text-sm text-slate-500">Actualiza los datos principales del proyecto.</p>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
-        {fields.map((field) => (
-          <label key={field.key} className={field.key === "direction" ? "md:col-span-2" : ""}>
+        {textFields.map((field) => (
+          <label key={field.key} className={field.key === "direccion" || field.key === "linkRecorridoVirtual" ? "md:col-span-2" : ""}>
             <span className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-slate-500">
               {field.label}
             </span>
             <input
               type={field.type}
-              value={values[field.key]}
+              value={String(values[field.key])}
               onChange={handleInputChange(field.key)}
               placeholder={field.placeholder}
               className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-build-main outline-none transition-all focus:border-build-accent focus:ring-1 focus:ring-build-accent"
             />
           </label>
         ))}
+        
+        <label className="md:col-span-2">
+          <span className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-slate-500">
+            Descripción
+          </span>
+          <textarea
+            value={values.descripcion}
+            onChange={handleInputChange("descripcion")}
+            placeholder="Breve descripción del proyecto..."
+            rows={3}
+            className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-build-main outline-none transition-all focus:border-build-accent focus:ring-1 focus:ring-build-accent"
+          />
+        </label>
+
+        <label className="md:col-span-2 flex items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={values.precertificacionEdgeLeed}
+            onChange={handleCheckboxChange("precertificacionEdgeLeed")}
+            className="h-4 w-4 accent-[#023143]"
+          />
+          <div>
+            <p className="text-sm font-semibold text-build-main">Precertificación EDGE / LEED</p>
+            <p className="text-[12px] text-slate-500">
+              Marca esta opción si el proyecto cuenta con certificación sostenible.
+            </p>
+          </div>
+        </label>
       </div>
 
       <div className="mt-6 flex justify-end">
