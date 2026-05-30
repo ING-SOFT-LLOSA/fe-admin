@@ -8,7 +8,7 @@ import DeleteUsuarioModal from "@/components/clientes/DeleteUsuarioModal";
 import AssignPropertyWizard from "@/components/clientes/AssignPropertyWizard";
 import { useAuth } from "@/contexts/AuthContext";
 import { canEliminarUsuario } from "@/lib/auth/permissions";
-import { fetchUsuariosPaginado, mapUsuarioToClienteRow } from "@/lib/api/users";
+import { fetchUsuarios, mapUsuarioToClienteRow } from "@/lib/api/users";
 import type { ClienteRow } from "@/types/user";
 
 // --- Mock Data ---
@@ -68,10 +68,19 @@ export default function ClientsPage() {
     if (showSpinner) setListLoading(true);
     setListError(null);
     try {
-      const pageData = await fetchUsuariosPaginado(p, s, q);
-      setClients(pageData.content.map(mapUsuarioToClienteRow));
-      setTotalPages(pageData.totalPages);
-      setTotalElements(pageData.totalElements);
+      const allUsers = await fetchUsuarios();
+      const filtered = q ? allUsers.filter(u => 
+        u.nombre.toLowerCase().includes(q.toLowerCase()) || 
+        (u.apellidos && u.apellidos.toLowerCase().includes(q.toLowerCase())) ||
+        (u.email && u.email.toLowerCase().includes(q.toLowerCase()))
+      ) : allUsers;
+      
+      const start = p * s;
+      const paginated = filtered.slice(start, start + s);
+
+      setClients(paginated.map(mapUsuarioToClienteRow));
+      setTotalPages(Math.ceil(filtered.length / s) || 1);
+      setTotalElements(filtered.length);
     } catch (err) {
       setListError(err instanceof Error ? err.message : "No se pudieron cargar los usuarios.");
     } finally {

@@ -1,5 +1,5 @@
 import ConstructionProgressView from "@/components/backoffice/ConstructionProgressView";
-import { getSeedProjectIds } from "@/lib/backoffice/seed";
+import { apiFetch } from "@/lib/api/http";
 
 type ProjectObraPageProps = {
   params: Promise<{
@@ -7,8 +7,16 @@ type ProjectObraPageProps = {
   }>;
 };
 
-export function generateStaticParams() {
-  return getSeedProjectIds().map((id) => ({ id }));
+export async function generateStaticParams() {
+  try {
+    const proyectos = await apiFetch<any[]>("/api/proyectos");
+    return proyectos.map((project) => ({
+      id: project.id,
+    }));
+  } catch (error) {
+    console.error("Error fetching projects for static params:", error);
+    return [];
+  }
 }
 
 export default async function ProjectObraPage({ params }: ProjectObraPageProps) {

@@ -3,6 +3,8 @@
 import { useState, useEffect } from "react";
 
 import { registerCliente, registerEmpleado, fetchRoles } from "@/lib/api/users";
+import { getFirebaseAuth } from "@/lib/firebase";
+import { fetchSignInMethodsForEmail } from "firebase/auth";
 import type { Rol } from "@/types/user";
 
 type CreateClienteModalProps = {
@@ -53,6 +55,19 @@ export default function CreateClienteModal({
     setLoading(true);
 
     try {
+      // 1. Verificar si el correo ya existe en Firebase
+      const auth = getFirebaseAuth();
+      try {
+        const methods = await fetchSignInMethodsForEmail(auth, form.email.trim());
+        if (methods && methods.length > 0) {
+          throw new Error("Este correo ya se encuentra registrado. Por favor, utiliza otro.");
+        }
+      } catch (authErr: any) {
+        // En caso Firebase tenga "Email Enumeration Protection" activado, ignoramos el error aquí 
+        // y dejamos que el backend se encargue. Pero si es el error específico de auth, lo mostramos.
+        if (authErr.message && authErr.message.includes("registrado")) throw authErr;
+      }
+
       if (form.tipoUsuario === "CLIENTE") {
         await registerCliente({
           nombre: form.nombre.trim(),

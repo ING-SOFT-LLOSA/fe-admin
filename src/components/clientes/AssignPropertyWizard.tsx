@@ -38,8 +38,6 @@ export default function AssignPropertyWizard({ onClose, onSuccess }: AssignPrope
 
   // Step 3: Details (CU004 requires these)
   const [tipoFinanciamiento, setTipoFinanciamiento] = useState("CREDITO_HIPOTECARIO");
-  const [faseComercial, setFaseComercial] = useState("SEPARACION");
-  const [estadoTramiteLegal, setEstadoTramiteLegal] = useState("EN_PROCESO");
 
   // Load Projects on mount
   useEffect(() => {
@@ -124,8 +122,8 @@ export default function AssignPropertyWizard({ onClose, onSuccess }: AssignPrope
           idUsuario: searchedClient.id,
           idActivo: unitId,
           tipoFinanciamiento,
-          faseComercial,
-          estadoTramiteLegal,
+          faseComercial: "SEPARACION",
+          estadoTramiteLegal: "EN_PROCESO",
           fechaAdquisicion: new Date().toISOString()
         })
       );
@@ -303,8 +301,8 @@ export default function AssignPropertyWizard({ onClose, onSuccess }: AssignPrope
                 <p className="text-[13px] text-slate-500 mt-1">Ingresa las condiciones de financiamiento y confirma la asignación.</p>
               </div>
 
-              {/* Form Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+              {/* Form */}
+              <div className="mb-4">
                  <div>
                     <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2">Financiamiento</label>
                     <select
@@ -314,31 +312,6 @@ export default function AssignPropertyWizard({ onClose, onSuccess }: AssignPrope
                     >
                       <option value="CREDITO_HIPOTECARIO">Crédito Hipotecario</option>
                       <option value="CREDITO_DIRECTO">Crédito Directo</option>
-                      <option value="CONTADO">Contado</option>
-                    </select>
-                 </div>
-                 <div>
-                    <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2">Fase Comercial</label>
-                    <select
-                      value={faseComercial}
-                      onChange={e => setFaseComercial(e.target.value)}
-                      className="w-full px-4 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-build-accent"
-                    >
-                      <option value="SEPARACION">Separación</option>
-                      <option value="MINUTA">Minuta (Contrato)</option>
-                      <option value="ESCRITURA">Escritura Pública</option>
-                    </select>
-                 </div>
-                 <div className="md:col-span-2">
-                    <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2">Trámite Legal</label>
-                    <select
-                      value={estadoTramiteLegal}
-                      onChange={e => setEstadoTramiteLegal(e.target.value)}
-                      className="w-full px-4 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-build-accent"
-                    >
-                      <option value="EN_PROCESO">En Proceso</option>
-                      <option value="COMPLETADO">Completado</option>
-                      <option value="OBSERVADO">Observado</option>
                     </select>
                  </div>
               </div>

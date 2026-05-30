@@ -1,5 +1,5 @@
-import { getMockProjects } from "../_data/mock-projects";
 import ProjectDetailView from "../_components/ProjectDetailView";
+import { apiFetch } from "@/lib/api/http";
 
 type ProjectDetailPageProps = {
   params: Promise<{
@@ -7,10 +7,16 @@ type ProjectDetailPageProps = {
   }>;
 };
 
-export function generateStaticParams() {
-  return getMockProjects().map((project) => ({
-    id: project.slug,
-  }));
+export async function generateStaticParams() {
+  try {
+    const proyectos = await apiFetch<any[]>("/api/proyectos");
+    return proyectos.map((project) => ({
+      id: project.id,
+    }));
+  } catch (error) {
+    console.error("Error fetching projects for static params:", error);
+    return [];
+  }
 }
 
 export default async function ProjectDetailPage({ params }: ProjectDetailPageProps) {
