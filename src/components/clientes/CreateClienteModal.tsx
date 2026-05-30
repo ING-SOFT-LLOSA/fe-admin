@@ -84,7 +84,6 @@ export default function CreateClienteModal({
           apellidos: form.apellidos.trim(),
           email: form.email.trim(),
           telefono: form.telefono.trim() || undefined,
-          documentoIdentidad: form.documentoIdentidad.trim() || undefined,
           tipoUsuario: "EMPLEADO",
           idRol: parseInt(form.rolId, 10),
         });
@@ -238,7 +237,7 @@ export default function CreateClienteModal({
               >
                 <option value="">Seleccione un rol</option>
                 {roles.map(r => (
-                  <option key={r.id} value={r.id}>{r.nombre}</option>
+                  <option key={r.idRol} value={r.idRol}>{r.nombre}</option>
                 ))}
               </select>
             </div>
