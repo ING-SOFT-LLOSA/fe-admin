@@ -1,8 +1,25 @@
 import { apiFetch } from "@/lib/api/http";
 import type { ClienteRow, CrearClientePayload, CrearEmpleadoPayload, Usuario, Rol } from "@/types/user";
 
+export interface Page<T> {
+  content: T[];
+  pageable: any;
+  last: boolean;
+  totalPages: number;
+  totalElements: number;
+  size: number;
+  number: number;
+  first: boolean;
+  numberOfElements: number;
+  empty: boolean;
+}
+
 export function fetchUsuarios(): Promise<Usuario[]> {
   return apiFetch<Usuario[]>("/api/users");
+}
+
+export function fetchUsuariosPaginado(page = 0, size = 10, search = ""): Promise<Page<Usuario>> {
+  return apiFetch<Page<Usuario>>(`/api/users/paginado?page=${page}&size=${size}&search=${encodeURIComponent(search)}`);
 }
 
 export function registerCliente(payload: CrearClientePayload): Promise<Usuario> {
@@ -69,21 +86,32 @@ function getInitials(nombre: string, apellidos?: string | null): string {
   return `${first}${second}`.toUpperCase();
 }
 
-function statusForUsuario(u: Usuario): { status: string; statusBg: string } {
+function statusForUsuario(u: Usuario): { status: string; statusBg: string; rolName: string } {
+  let rolName = "Empleado";
+  if (u.rol) {
+    if (typeof u.rol === 'string') {
+      rolName = u.rol;
+    } else if (typeof u.rol === 'object' && 'nombre' in u.rol) {
+      rolName = (u.rol as any).nombre;
+    }
+  }
+
   if (!u.activo) {
-    return { status: "Inactivo", statusBg: "bg-[#eeeeef] text-[#41484c]" };
+    return { status: "Inactivo", statusBg: "bg-[#eeeeef] text-[#41484c]", rolName };
   }
   if (u.tipoUsuario === "CLIENTE") {
-    return { status: "Registrado", statusBg: "bg-[#E8F5E9] text-[#2E7D32]" };
+    return { status: "Registrado", statusBg: "bg-[#E8F5E9] text-[#2E7D32]", rolName };
   }
+
   return {
-    status: u.rol ?? "Empleado",
+    status: rolName,
     statusBg: "bg-[#c2e8ff] text-[#001e2b]",
+    rolName
   };
 }
 
 export function mapUsuarioToClienteRow(u: Usuario): ClienteRow {
-  const { status, statusBg } = statusForUsuario(u);
+  const { status, statusBg, rolName } = statusForUsuario(u);
   return {
     id: u.id,
     initials: getInitials(u.nombre, u.apellidos),
@@ -95,6 +123,6 @@ export function mapUsuarioToClienteRow(u: Usuario): ClienteRow {
     status,
     statusBg,
     tipoUsuario: u.tipoUsuario,
-    rol: u.rol,
+    rol: rolName,
   };
 }

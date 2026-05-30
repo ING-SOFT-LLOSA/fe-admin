@@ -37,6 +37,12 @@
   - `DELETE /api/users/:id`
   - `DELETE /api/users/:id/hard`
 
+## Infraestructura y Despliegue (Reciente)
+
+- **Variables de Entorno (Build-time)**: La variable `NEXT_PUBLIC_API_URL_LLOSA` ahora se inyecta correctamente como `ARG` en el `Dockerfile` y `docker-compose.yml` a través del pipeline de Jenkins (`withCredentials`). Esto solucionó el error donde la app productiva seguía apuntando al fallback `localhost:8080`.
+- **Normalización de URLs**: Se implementó la eliminación de "trailing slashes" en `http.ts` y `api.ts` (`.replace(/\/$/, "")`) para prevenir la formación de URLs malformadas como `//api/auth/me`.
+- **Conexión a Producción**: El frontend web en `https://llosa-admin.ingsoftware.lat` está correctamente configurado para llamar al backend en `https://backend-llosa.ingsoftware.lat/` (requiere configuración de CORS pendiente en el backend).
+
 ## Módulos administrativos
 
 ### `/projects`

@@ -1,8 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
-import { registerCliente } from "@/lib/api/users";
+import { registerCliente, registerEmpleado, fetchRoles } from "@/lib/api/users";
+import { getFirebaseAuth } from "@/lib/firebase";
+import { fetchSignInMethodsForEmail } from "firebase/auth";
+import type { Rol } from "@/types/user";
 
 type CreateClienteModalProps = {
   open: boolean;
@@ -16,6 +19,8 @@ const EMPTY_FORM = {
   email: "",
   telefono: "",
   documentoIdentidad: "",
+  tipoUsuario: "CLIENTE" as "CLIENTE" | "EMPLEADO",
+  rolId: "",
 };
 
 export default function CreateClienteModal({
@@ -27,6 +32,13 @@ export default function CreateClienteModal({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [roles, setRoles] = useState<Rol[]>([]);
+
+  useEffect(() => {
+    if (open) {
+      fetchRoles().then(setRoles).catch(console.error);
+    }
+  }, [open]);
 
   function handleClose() {
     if (loading) return;
@@ -43,17 +55,43 @@ export default function CreateClienteModal({
     setLoading(true);
 
     try {
-      await registerCliente({
-        nombre: form.nombre.trim(),
-        apellidos: form.apellidos.trim(),
-        email: form.email.trim(),
-        telefono: form.telefono.trim() || undefined,
-        documentoIdentidad: form.documentoIdentidad.trim() || undefined,
-        tipoUsuario: "CLIENTE",
-      });
+      // 1. Verificar si el correo ya existe en Firebase
+      const auth = getFirebaseAuth();
+      try {
+        const methods = await fetchSignInMethodsForEmail(auth, form.email.trim());
+        if (methods && methods.length > 0) {
+          throw new Error("Este correo ya se encuentra registrado. Por favor, utiliza otro.");
+        }
+      } catch (authErr: any) {
+        // En caso Firebase tenga "Email Enumeration Protection" activado, ignoramos el error aquí 
+        // y dejamos que el backend se encargue. Pero si es el error específico de auth, lo mostramos.
+        if (authErr.message && authErr.message.includes("registrado")) throw authErr;
+      }
+
+      if (form.tipoUsuario === "CLIENTE") {
+        await registerCliente({
+          nombre: form.nombre.trim(),
+          apellidos: form.apellidos.trim(),
+          email: form.email.trim(),
+          telefono: form.telefono.trim() || undefined,
+          documentoIdentidad: form.documentoIdentidad.trim() || undefined,
+          tipoUsuario: "CLIENTE",
+        });
+      } else {
+        if (!form.rolId) throw new Error("Debe seleccionar un rol para el empleado.");
+        await registerEmpleado({
+          nombre: form.nombre.trim(),
+          apellidos: form.apellidos.trim(),
+          email: form.email.trim(),
+          telefono: form.telefono.trim() || undefined,
+          documentoIdentidad: form.documentoIdentidad.trim() || undefined,
+          tipoUsuario: "EMPLEADO",
+          idRol: parseInt(form.rolId, 10),
+        });
+      }
 
       setSuccess(
-        "Cliente creado. Se envió un correo para que defina su contraseña e inicie sesión.",
+        "Usuario creado. Se envió un correo para que defina su contraseña e inicie sesión.",
       );
       onCreated();
 
@@ -61,7 +99,7 @@ export default function CreateClienteModal({
         handleClose();
       }, 2200);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "No se pudo crear el cliente.");
+      setError(err instanceof Error ? err.message : "No se pudo crear el usuario.");
     } finally {
       setLoading(false);
     }
@@ -78,7 +116,7 @@ export default function CreateClienteModal({
               <span className="material-symbols-outlined text-build-main">person_add</span>
             </div>
             <div>
-              <h2 className="text-[20px] font-bold text-build-main">Crear cliente</h2>
+              <h2 className="text-[20px] font-bold text-build-main">Crear usuario</h2>
               <p className="text-[12px] text-slate-500 font-medium mt-0.5">
                 Registro en Firebase y base de datos Llosa
               </p>
@@ -133,18 +171,33 @@ export default function CreateClienteModal({
             </div>
           </div>
 
-          <div>
-            <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">
-              Correo electrónico *
-            </label>
-            <input
-              type="email"
-              required
-              value={form.email}
-              onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
-              className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm text-build-main focus:outline-none focus:border-build-accent focus:ring-1 focus:ring-build-accent"
-              placeholder="cliente@ejemplo.com"
-            />
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+                Correo electrónico *
+              </label>
+              <input
+                type="email"
+                required
+                value={form.email}
+                onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
+                className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm text-build-main focus:outline-none focus:border-build-accent focus:ring-1 focus:ring-build-accent"
+                placeholder="usuario@ejemplo.com"
+              />
+            </div>
+            <div>
+              <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+                Tipo de Usuario *
+              </label>
+              <select
+                value={form.tipoUsuario}
+                onChange={(e) => setForm((f) => ({ ...f, tipoUsuario: e.target.value as "CLIENTE" | "EMPLEADO" }))}
+                className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm text-build-main focus:outline-none focus:border-build-accent focus:ring-1 focus:ring-build-accent"
+              >
+                <option value="CLIENTE">Cliente</option>
+                <option value="EMPLEADO">Empleado</option>
+              </select>
+            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
@@ -172,9 +225,27 @@ export default function CreateClienteModal({
             </div>
           </div>
 
+          {form.tipoUsuario === "EMPLEADO" && (
+            <div>
+              <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+                Rol del Empleado *
+              </label>
+              <select
+                required
+                value={form.rolId}
+                onChange={(e) => setForm((f) => ({ ...f, rolId: e.target.value }))}
+                className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm text-build-main focus:outline-none focus:border-build-accent focus:ring-1 focus:ring-build-accent"
+              >
+                <option value="">Seleccione un rol</option>
+                {roles.map(r => (
+                  <option key={r.id} value={r.id}>{r.nombre}</option>
+                ))}
+              </select>
+            </div>
+          )}
+
           <p className="text-[11px] text-slate-500 leading-relaxed">
-            El cliente recibirá un correo de Firebase para crear su contraseña. El rol{" "}
-            <span className="font-bold text-build-main">CLIENTE</span> se asigna automáticamente.
+            El usuario recibirá un correo de Firebase para crear su contraseña automáticamente.
           </p>
 
           <div className="flex justify-end gap-3 pt-4 mt-2">
@@ -212,7 +283,7 @@ export default function CreateClienteModal({
                 </>
               ) : (
                 <>
-                  Crear cliente
+                  Crear usuario
                   <span className="material-symbols-outlined text-[18px]">check</span>
                 </>
               )}

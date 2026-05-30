@@ -9,6 +9,8 @@ import ProjectSectionNav from "@/components/backoffice/ProjectSectionNav";
 import { PROCESS_MODULE_LABELS, PROCESS_MODULE_ORDER, UNIT_DOCUMENT_DEFINITIONS } from "@/lib/backoffice/config";
 import { computeProjectGlobalPercent, useBackofficeWorkspace } from "@/lib/backoffice/store";
 import type { BackofficeProject, BackofficeUnit, ProcessModuleKey, UnitClientAssignment } from "@/lib/backoffice/types";
+import { getHitosActivo, getAvancesActivo, HitoUnidadResponseDTO, AvanceUnidadResponseDTO } from "@/lib/api/proyectos";
+import { useEffect, useState as useReactState } from "react";
 
 type UnitDetailViewProps = {
   projectId: string;
@@ -42,6 +44,16 @@ export default function UnitDetailView({ projectId, unitId }: UnitDetailViewProp
 
   const inheritedProjectDocs =
     project?.documents.filter((document) => document.visibleToClient) ?? [];
+
+  const [hitos, setHitos] = useReactState<HitoUnidadResponseDTO[]>([]);
+  const [avances, setAvances] = useReactState<AvanceUnidadResponseDTO[]>([]);
+
+  useEffect(() => {
+    if (unitId) {
+      getHitosActivo(unitId).then(setHitos).catch(console.error);
+      getAvancesActivo(unitId).then(setAvances).catch(console.error);
+    }
+  }, [unitId]);
 
   function updateUnit(updater: (currentUnit: BackofficeUnit, currentProject: BackofficeProject) => BackofficeUnit) {
     updateWorkspace((current) => ({
@@ -170,6 +182,43 @@ export default function UnitDetailView({ projectId, unitId }: UnitDetailViewProp
           }))
         }
       />
+
+      {/* Avance de Obra Section */}
+      <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+        <h2 className="text-[20px] font-bold text-build-main">Avance Constructivo de la Unidad</h2>
+        <p className="mt-1 text-sm text-slate-500 mb-5">Hitos de construcción asignados a esta unidad desde el backend real.</p>
+        
+        <div className="overflow-x-auto">
+          <table className="w-full text-left">
+            <thead className="bg-slate-50 border-b border-slate-200">
+              <tr>
+                <th className="px-4 py-2 text-xs font-bold text-slate-500">Hito</th>
+                <th className="px-4 py-2 text-xs font-bold text-slate-500">Descripción</th>
+                <th className="px-4 py-2 text-xs font-bold text-slate-500">Estado</th>
+                <th className="px-4 py-2 text-xs font-bold text-slate-500">Fecha Completado</th>
+                <th className="px-4 py-2 text-xs font-bold text-slate-500">Observaciones</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100 bg-white">
+              {hitos.length === 0 ? (
+                <tr><td colSpan={5} className="px-4 py-4 text-center text-sm text-slate-500">Aún no hay hitos para esta unidad.</td></tr>
+              ) : hitos.map((hito) => (
+                <tr key={hito.id} className="hover:bg-slate-50 transition-colors">
+                  <td className="px-4 py-3 text-sm font-bold text-build-main">{hito.hitoNombre}</td>
+                  <td className="px-4 py-3 text-sm text-slate-600">{hito.hitoDescripcion}</td>
+                  <td className="px-4 py-3 text-sm">
+                    <span className={`px-2 py-1 rounded text-xs font-bold ${hito.estado === 'COMPLETADO' ? 'bg-[#d6f0e0] text-[#1c663b]' : 'bg-slate-100 text-slate-700'}`}>
+                      {hito.estado}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 text-sm text-slate-600">{hito.fechaCompletado ? new Date(hito.fechaCompletado).toLocaleDateString() : '-'}</td>
+                  <td className="px-4 py-3 text-sm text-slate-500">{hito.observaciones || '-'}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
 
       <section className="grid gap-4 xl:grid-cols-2">
         <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">

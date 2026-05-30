@@ -1,6 +1,6 @@
 import { getStoredToken } from "@/lib/auth/session";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL_LLOSA ?? "http://localhost:8080";
+const API_URL = (process.env.NEXT_PUBLIC_API_URL_LLOSA ?? "http://localhost:8080").replace(/\/$/, "");
 
 export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
   const token = getStoredToken();
@@ -12,6 +12,7 @@ export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> 
     ...init,
     headers: {
       Accept: "application/json",
+      "Content-Type": "application/json",
       Authorization: `Bearer ${token}`,
       ...init?.headers,
     },

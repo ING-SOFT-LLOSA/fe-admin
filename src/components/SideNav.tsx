@@ -20,7 +20,7 @@ type NavGroup = {
 const groups: NavGroup[] = [
   {
     items: [
-      { href: "/projects", icon: "architecture", label: "Proyectos e Inventario", requiredFuncs: ["PROY_VER"] },
+      { href: "/projects", icon: "architecture", label: "Gestión de proyectos", requiredFuncs: ["PROY_VER"] },
       { href: "/clientes", icon: "group", label: "Clientes y Asignaciones", requiredFuncs: ["PROY_VER"] },
       { href: "/finanzas", icon: "payments", label: "Pagos y Cronogramas", requiredFuncs: ["PAGOS_VER"] },
       { href: "/agenda", icon: "calendar_today", label: "Agenda y Citas" }, // Público para empleados
