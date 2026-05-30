@@ -40,6 +40,8 @@ export interface CrearEmpleadoPayload {
   email: string;
   tipoUsuario: "EMPLEADO";
   idRol: number;
+    telefono?: string; 
+
 }
 
 export interface ClienteRow {
