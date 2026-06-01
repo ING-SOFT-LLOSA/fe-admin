@@ -1,4 +1,4 @@
-import ConstructionProgressView from "@/components/backoffice/ConstructionProgressView";
+import ConstructionProgressView from "@/modules/obra/components/ConstructionProgressView";
 import { apiFetch } from "@/lib/api/http";
 
 type ProjectObraPageProps = {

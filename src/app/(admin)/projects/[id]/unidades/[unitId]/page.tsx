@@ -1,5 +1,5 @@
-import UnitDetailView from "@/components/backoffice/UnitDetailView";
-import { getSeedProjectIds, getSeedUnitIds } from "@/lib/backoffice/seed";
+import UnitDetailView from "@/modules/inventario/components/UnitDetailView";
+import { getSeedProjectIds, getSeedUnitIds } from "@/modules/shared/workspace/seed";
 
 type ProjectUnitDetailPageProps = {
   params: Promise<{

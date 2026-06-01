@@ -1,12 +1,13 @@
-"use client";
+﻿"use client";
 import { usePathname } from "next/navigation";
 
 const crumbs: Record<string, string> = {
-  projects: "Gestión de proyectos",
-  proyectos: "Gestión de proyectos",
+  projects: "Proyectos e Inventario",
+  proyectos: "Proyectos e Inventario",
   clientes: "Clientes y Asignaciones",
+  obra: "Avance de Obra",
   finanzas: "Pagos y Cronogramas",
-  legal: "Expedientes Legales",
+  legal: "Gestión Legal",
   agenda: "Agenda y Citas",
   progress: "Avances Multimedia",
   configuracion: "Gestión de Empleados",
@@ -35,7 +36,7 @@ export default function TopNav() {
             placeholder="Buscar cualquier cosa..."
             className="w-full bg-white border border-transparent hover:border-build-accent focus:border-build-main focus:bg-white rounded-lg pl-9 pr-12 py-2 text-[13px] text-build-main placeholder:text-build-accent outline-none transition-all duration-200"
           />
-          <kbd className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-build-main font-semibold bg-build-accent/20 px-1.5 py-0.5 rounded">⌘K</kbd>
+          <kbd className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-build-main font-semibold bg-build-accent/20 px-1.5 py-0.5 rounded">âŒ˜K</kbd>
         </div>
       </div>
 

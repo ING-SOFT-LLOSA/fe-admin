@@ -1,4 +1,4 @@
-import ProjectsOverview from "./_components/ProjectsOverview";
+import ProjectsOverview from "@/modules/proyectos/components/ProjectsOverview";
 
 export default function ProjectsPage() {
   return <ProjectsOverview />;

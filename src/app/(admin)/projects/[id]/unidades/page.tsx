@@ -1,4 +1,4 @@
-import UnitsOverviewView from "@/components/backoffice/UnitsOverviewView";
+import UnitsOverviewView from "@/modules/inventario/components/UnitsOverviewView";
 import { apiFetch } from "@/lib/api/http";
 
 type ProjectUnitsPageProps = {

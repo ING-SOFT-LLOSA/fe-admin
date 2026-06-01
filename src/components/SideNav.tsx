@@ -1,10 +1,10 @@
-"use client";
+﻿"use client";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 
 import { useAuth } from "@/contexts/AuthContext";
 
-/* Explicit types — badge is optional ────────────────── */
+/* Explicit types â€” badge is optional â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 type NavItem = {
   href: string;
   icon: string;
@@ -20,8 +20,10 @@ type NavGroup = {
 const groups: NavGroup[] = [
   {
     items: [
-      { href: "/projects", icon: "architecture", label: "Gestión de proyectos", requiredFuncs: ["PROY_VER"] },
+      { href: "/projects", icon: "architecture", label: "Proyectos e Inventario", requiredFuncs: ["PROY_VER"] },
       { href: "/clientes", icon: "group", label: "Clientes y Asignaciones", requiredFuncs: ["PROY_VER"] },
+      { href: "/obra", icon: "engineering", label: "Avance de Obra", requiredFuncs: ["OBRA_VER", "PROY_VER"] },
+      { href: "/legal", icon: "balance", label: "Gestión Legal", requiredFuncs: ["PROY_VER"] },
       { href: "/finanzas", icon: "payments", label: "Pagos y Cronogramas", requiredFuncs: ["PAGOS_VER"] },
       { href: "/agenda", icon: "calendar_today", label: "Agenda y Citas" }, // Público para empleados
     ],
@@ -111,7 +113,7 @@ export default function SideNav() {
           className="flex w-full items-center justify-center gap-2 rounded-xl bg-build-main px-4 py-3 text-[13px] font-bold text-white shadow-sm transition-colors hover:bg-build-accent"
         >
           <span className="material-symbols-outlined text-[18px]">logout</span>
-          Cerrar Sesión
+          Cerrar SesiÃ³n
         </button>
       </div>
     </aside>

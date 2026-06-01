@@ -1,4 +1,4 @@
-import ProjectDetailView from "../_components/ProjectDetailView";
+import ProjectDetailView from "@/modules/proyectos/components/ProjectDetailView";
 import { apiFetch } from "@/lib/api/http";
 
 type ProjectDetailPageProps = {

@@ -1,4 +1,4 @@
-import NewProjectWizard from "./_components/NewProjectWizard";
+import NewProjectWizard from "@/modules/proyectos/components/NewProjectWizard";
 
 export const metadata = {
   title: "Crear Nuevo Proyecto - Portal Empresa",

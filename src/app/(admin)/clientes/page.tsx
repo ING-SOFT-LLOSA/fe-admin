@@ -1,11 +1,11 @@
 "use client";
 import Link from "next/link";
 import React, { useEffect, useState } from "react";
-import CreateClienteModal from "@/components/clientes/CreateClienteModal";
-import EditClienteModal from "@/components/clientes/EditClienteModal";
-import ViewClienteModal from "@/components/clientes/ViewClienteModal";
-import DeleteUsuarioModal from "@/components/clientes/DeleteUsuarioModal";
-import AssignPropertyWizard from "@/components/clientes/AssignPropertyWizard";
+import CreateClienteModal from "@/modules/clientes/components/CreateClienteModal";
+import EditClienteModal from "@/modules/clientes/components/EditClienteModal";
+import ViewClienteModal from "@/modules/clientes/components/ViewClienteModal";
+import DeleteUsuarioModal from "@/modules/clientes/components/DeleteUsuarioModal";
+import AssignPropertyWizard from "@/modules/asignaciones/components/AssignPropertyWizard";
 import { useAuth } from "@/contexts/AuthContext";
 import { canEliminarUsuario } from "@/lib/auth/permissions";
 import { fetchUsuarios, mapUsuarioToClienteRow } from "@/lib/api/users";
