@@ -2,6 +2,18 @@ import { getStoredToken } from "@/lib/auth/session";
 
 const API_URL = (process.env.NEXT_PUBLIC_API_URL_LLOSA ?? "http://localhost:8080").replace(/\/$/, "");
 
+export class ApiError extends Error {
+  status: number;
+  path: string;
+
+  constructor(message: string, status: number, path: string) {
+    super(message);
+    this.name = "ApiError";
+    this.status = status;
+    this.path = path;
+  }
+}
+
 export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
   const token = getStoredToken();
   if (!token) {
@@ -28,13 +40,17 @@ export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> 
     } catch {
       /* no JSON */
     }
+
     if (res.status === 403) {
-      throw new Error(
+      throw new ApiError(
         message ||
-          "No tienes permisos para ejecutar esta acción. El borrado definitivo requiere autorización del backend.",
+          "No tienes permisos para ejecutar esta acción. Solicita autorización o revisa los permisos del rol activo.",
+        res.status,
+        path,
       );
     }
-    throw new Error(message || `Error ${res.status} en ${path}`);
+
+    throw new ApiError(message || `Error ${res.status} en ${path}`, res.status, path);
   }
 
   if (res.status === 204) {

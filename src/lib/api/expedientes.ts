@@ -16,3 +16,7 @@ export function asignarActivo(payload: AsignarActivoPayload): Promise<void> {
     body: JSON.stringify(payload),
   });
 }
+
+export function fetchMisActivos(): Promise<import("@/lib/api/proyectos").ActivoResponseDTO[]> {
+  return apiFetch<import("@/lib/api/proyectos").ActivoResponseDTO[]>("/api/expedientes/mis-activos");
+}

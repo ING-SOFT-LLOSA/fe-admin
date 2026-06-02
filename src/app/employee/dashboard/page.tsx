@@ -70,7 +70,7 @@ export default function EmployeeDashboardPage() {
               <div className="flex-1">
                 <p className="text-[14px] font-medium text-[#1a1c1d]">{action.text}</p>
               </div>
-              <button className="px-4 py-1.5 border border-[#e2e2e4] text-[#41484c] text-[12px] font-semibold rounded-lg hover:bg-white transition-colors">
+              <button className="px-4 py-1.5 border border-[#e2e2e4] text-[#41484c] text-[12px] font-semibold rounded-lg hover:bg-white dark:bg-white/5 transition-colors">
                 Resolver
               </button>
             </div>

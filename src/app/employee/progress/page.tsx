@@ -35,7 +35,7 @@ export default function EmployeeProgressPage() {
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="block text-[11px] font-bold text-[#72787c] uppercase tracking-widest mb-1.5">Proyecto</label>
-                <select className="w-full px-3 py-2 border border-[#e2e2e4] rounded-lg text-[13px] bg-white focus:outline-none focus:border-[#023143]">
+                <select className="w-full px-3 py-2 border border-[#e2e2e4] rounded-lg text-[13px] bg-white dark:bg-white/5 focus:outline-none focus:border-[#023143]">
                   <option>Seleccionar...</option>
                   <option>Torre A</option>
                   <option>Edificio Central</option>
@@ -43,7 +43,7 @@ export default function EmployeeProgressPage() {
               </div>
               <div>
                 <label className="block text-[11px] font-bold text-[#72787c] uppercase tracking-widest mb-1.5">Etapa / Hito</label>
-                <select className="w-full px-3 py-2 border border-[#e2e2e4] rounded-lg text-[13px] bg-white focus:outline-none focus:border-[#023143]">
+                <select className="w-full px-3 py-2 border border-[#e2e2e4] rounded-lg text-[13px] bg-white dark:bg-white/5 focus:outline-none focus:border-[#023143]">
                   <option>Estructura</option>
                   <option>Acabados</option>
                 </select>

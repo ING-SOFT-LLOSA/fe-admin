@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
   /* Constructora Theme */
@@ -74,8 +75,13 @@
 @keyframes scaleIn  { from { opacity:0; transform:scale(.97) } to { opacity:1; transform:scale(1) } }
 
 @layer base {
-  html { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #ffffff; color: var(--color-build-main); }
-  body { font-family: 'Plus Jakarta Sans', sans-serif; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; background-color: #ffffff; color: var(--color-build-main); margin: 0; padding: 0; }
+  .dark {
+    --color-build-bg: #0d0b0c; /* Much darker for better contrast */
+    --color-build-accent: #d4b572;
+  }
+
+  html { font-family: 'Plus Jakarta Sans', sans-serif; background-color: var(--color-build-bg); color: var(--color-build-main); transition: background-color 0.3s ease, color 0.3s ease; }
+  body { font-family: 'Plus Jakarta Sans', sans-serif; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; background-color: var(--color-build-bg); color: var(--color-build-main); margin: 0; padding: 0; transition: background-color 0.3s ease, color 0.3s ease; }
 
   h1, h2, h3, h4, h5, h6 {
     font-family: 'Outfit', sans-serif;
@@ -111,13 +117,24 @@
     border: 1px solid #E0E0E0;
     padding: 0.75rem 1rem;
     font-size: 1rem;
-    transition: border-color 0.3s ease;
+    transition: border-color 0.3s ease, background-color 0.3s ease, color 0.3s ease;
+    background-color: transparent;
+  }
+
+  .dark input, .dark textarea, .dark select {
+    border-color: rgba(255, 255, 255, 0.08);
+    color: #ffffff;
+    background-color: rgba(0, 0, 0, 0.25);
   }
 
   input:focus, textarea:focus, select:focus {
     outline: none;
-    border-color: #C49E5D;
+    border-color: var(--color-build-accent);
     box-shadow: 0 0 0 3px rgba(196, 158, 93, 0.1);
+  }
+  
+  .dark input:focus, .dark textarea:focus, .dark select:focus {
+    box-shadow: 0 0 0 3px rgba(212, 181, 114, 0.2);
   }
 
   .material-symbols-outlined {
@@ -132,6 +149,10 @@
   ::-webkit-scrollbar-track  { background: #f8f9fa; }
   ::-webkit-scrollbar-thumb  { background: #C49E5D; border-radius: 4px; }
   ::-webkit-scrollbar-thumb:hover { background: #755A26; }
+  
+  .dark ::-webkit-scrollbar-track  { background: #0d0b0c; }
+  .dark ::-webkit-scrollbar-thumb  { background: #d4b572; border-radius: 4px; }
+  .dark ::-webkit-scrollbar-thumb:hover { background: #c49e5d; }
 }
 
 @layer utilities {
@@ -154,6 +175,9 @@
     animation: shimmer 1.5s infinite;
     border-radius: 6px;
   }
+  .dark .skeleton {
+    background: linear-gradient(90deg, rgba(255,255,255,0.05) 25%, rgba(255,255,255,0.1) 50%, rgba(255,255,255,0.05) 75%);
+  }
 
   /* Premium card */
   .card {
@@ -167,6 +191,15 @@
     box-shadow: 0 8px 24px rgba(2,49,67,.09);
     transform: translateY(-1px);
   }
+  
+  .dark .card {
+    background: #181516; /* Darker than 231f20, lighter than bg */
+    border-color: rgba(255, 255, 255, 0.05);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.4), 0 0 0 0 rgba(0,0,0,0);
+  }
+  .dark .card:hover {
+    box-shadow: 0 8px 24px rgba(0,0,0,0.6);
+  }
 
   /* Status badges */
   .badge-active   { background:#E8F5E9; color:#2E7D32; }
@@ -174,4 +207,10 @@
   .badge-warning  { background:#FFF3E0; color:#E65100; }
   .badge-error    { background:#ffdad6; color:#93000a; }
   .badge-info     { background:#c2e8ff; color:#001e2b; }
+  
+  .dark .badge-active   { background:rgba(46, 125, 50, 0.2); color:#81c784; }
+  .dark .badge-inactive { background:rgba(255, 255, 255, 0.1); color:#ffffff; }
+  .dark .badge-warning  { background:rgba(230, 81, 0, 0.2); color:#ffb74d; }
+  .dark .badge-error    { background:rgba(147, 0, 10, 0.2); color:#e57373; }
+  .dark .badge-info     { background:rgba(255, 255, 255, 0.15); color:#64b5f6; }
 }

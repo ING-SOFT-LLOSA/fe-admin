@@ -44,7 +44,7 @@ export default function EmployeeTrackingPage() {
               </div>
 
               <div className="shrink-0 flex items-center gap-2">
-                <button className="px-4 py-2 bg-white border border-[#e2e2e4] text-[#41484c] text-[12px] font-bold rounded-lg hover:border-[#023143] hover:text-[#023143] transition-colors">
+                <button className="px-4 py-2 bg-white dark:bg-white/5 border border-[#e2e2e4] text-[#41484c] text-[12px] font-bold rounded-lg hover:border-[#023143] hover:text-[#023143] transition-colors">
                   {a.action}
                 </button>
                 <button className="p-2 text-[#72787c] hover:bg-[#f4f3f5] hover:text-[#ba1a1a] rounded-lg transition-colors" title="Descartar alerta">

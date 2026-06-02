@@ -1,6 +1,9 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  turbopack: {
+    root: process.cwd(),
+  },
   images: {
     remotePatterns: [
       { protocol: "https", hostname: "lh3.googleusercontent.com" },
@@ -14,9 +17,9 @@ const nextConfig: NextConfig = {
         permanent: false,
       },
       {
-        source: "/proyectos",
-        destination: "/projects",
-        permanent: true,
+        source: "/projects",
+        destination: "/proyectos",
+        permanent: false,
       },
       {
         source: "/projects/:id/cronograma-pagos",

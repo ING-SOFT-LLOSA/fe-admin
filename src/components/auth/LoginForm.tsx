@@ -23,7 +23,7 @@ type LoginFormProps = {
 };
 
 
-export default function LoginForm({ redirectTo = "/projects" }: LoginFormProps) {
+export default function LoginForm({ redirectTo = "/proyectos" }: LoginFormProps) {
   const router = useRouter();
   const { loginEmail, loginGoogle, isAuthenticated, isLoading: authLoading } = useAuth();
 
@@ -127,9 +127,9 @@ export default function LoginForm({ redirectTo = "/projects" }: LoginFormProps) 
 
         <div className="w-full max-w-[448px]">
           {/* Card */}
-          <div className="bg-white rounded-2xl shadow-[0_8px_40px_rgba(0,22,41,0.08)] border border-white p-6">
+          <div className="bg-white dark:bg-white/5 rounded-2xl shadow-[0_8px_40px_rgba(0,22,41,0.08)] border border-white p-6">
             <div className="mb-7">
-              <h2 className="text-3xl font-bold text-build-main leading-tight" style={{ fontFamily: "'Outfit', sans-serif" }}>
+              <h2 className="text-3xl font-bold text-build-main dark:text-white leading-tight" style={{ fontFamily: "'Outfit', sans-serif" }}>
                 Inicia sesión
               </h2>
             </div>
@@ -137,7 +137,7 @@ export default function LoginForm({ redirectTo = "/projects" }: LoginFormProps) 
             {error && (
               <div
                 role="alert"
-                className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-[13px] text-red-800"
+                className="mb-4 rounded-xl border border-red-200 dark:border-red-900/50 bg-red-50 dark:bg-red-900/20 px-4 py-3 text-[13px] text-red-800 dark:text-red-400"
               >
                 {error}
               </div>
@@ -156,7 +156,7 @@ export default function LoginForm({ redirectTo = "/projects" }: LoginFormProps) 
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="usuario@correo.com"
-                  className="h-10 w-full px-4 rounded-xl border border-gray-200 bg-white text-[15px] text-build-main outline-none transition-all duration-200 focus:border-build-accent focus:ring-4 focus:ring-build-accent/20 box-border"
+                  className="h-10 w-full px-4 rounded-xl border border-gray-200 bg-white dark:bg-white/5 text-[15px] text-build-main dark:text-white outline-none transition-all duration-200 focus:border-build-accent focus:ring-4 focus:ring-build-accent/20 box-border"
                 />
               </div>
 
@@ -173,7 +173,7 @@ export default function LoginForm({ redirectTo = "/projects" }: LoginFormProps) 
                     value={pass}
                     onChange={(e) => setPass(e.target.value)}
                     placeholder="••••••••"
-                    className="h-10 w-full pl-4 pr-12 rounded-xl border border-gray-200 bg-white text-[15px] text-build-main outline-none transition-all duration-200 focus:border-build-accent focus:ring-4 focus:ring-build-accent/20 box-border"
+                    className="h-10 w-full pl-4 pr-12 rounded-xl border border-gray-200 bg-white dark:bg-white/5 text-[15px] text-build-main dark:text-white outline-none transition-all duration-200 focus:border-build-accent focus:ring-4 focus:ring-build-accent/20 box-border"
                   />
                   <button
                     type="button"
@@ -216,9 +216,9 @@ export default function LoginForm({ redirectTo = "/projects" }: LoginFormProps) 
 
               {/* Divider */}
               <div className="flex items-center gap-3 my-2">
-                <div className="flex-1 h-[1px] bg-slate-200" />
-                <span className="text-[12px] font-semibold text-slate-400 uppercase">O</span>
-                <div className="flex-1 h-[1px] bg-slate-200" />
+                <div className="flex-1 h-[1px] bg-slate-200 dark:bg-white/15" />
+                <span className="text-[12px] font-semibold text-slate-400 dark:text-white/50 uppercase">O</span>
+                <div className="flex-1 h-[1px] bg-slate-200 dark:bg-white/15" />
               </div>
 
               {/* Google Sign-In */}
@@ -228,12 +228,12 @@ export default function LoginForm({ redirectTo = "/projects" }: LoginFormProps) 
                 disabled={loading}
                 onMouseEnter={() => setGoogleHover(true)}
                 onMouseLeave={() => setGoogleHover(false)}
-                className={`h-11 w-full border border-gray-200 rounded-xl text-[15px] font-semibold tracking-wide transition-all duration-300 flex items-center justify-center gap-2.5 text-build-main ${
+                className={`h-11 w-full border border-gray-200 rounded-xl text-[15px] font-semibold tracking-wide transition-all duration-300 flex items-center justify-center gap-2.5 text-build-main dark:text-white ${
                   loading
-                    ? "opacity-60 cursor-not-allowed bg-white"
+                    ? "opacity-60 cursor-not-allowed bg-white dark:bg-white/5"
                     : googleHover
-                    ? "bg-slate-50"
-                    : "bg-white"
+                    ? "bg-slate-50 dark:bg-white/5"
+                    : "bg-white dark:bg-white/5"
                 }`}
               >
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -246,18 +246,18 @@ export default function LoginForm({ redirectTo = "/projects" }: LoginFormProps) 
               </button>
 
               {/* Info callout */}
-              <div className="mt-1 flex items-start gap-2 p-3 rounded-xl bg-slate-50 border border-slate-100">
-                <span className="material-symbols-outlined text-[18px] text-slate-400 mt-0.5 flex-shrink-0">mail</span>
-                <p className="text-[12px] text-slate-500 leading-relaxed">
+              <div className="mt-1 flex items-start gap-2 p-3 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-100 dark:border-white/5">
+                <span className="material-symbols-outlined text-[18px] text-slate-400 dark:text-white/50 mt-0.5 flex-shrink-0">mail</span>
+                <p className="text-[12px] text-slate-500 dark:text-white/60 leading-relaxed">
                   ¿Es tu primera vez? Revisa tu correo electrónico para encontrar el enlace de activación de cuenta enviado por Llosa Edificaciones.
                 </p>
               </div>
 
               {/* Forgot password */}
-              <div className="pt-2 text-center border-t border-slate-200">
+              <div className="pt-2 text-center border-t border-slate-200 dark:border-white/10">
                 <button
                   type="button"
-                  className="text-[12px] font-semibold text-build-accent hover:text-build-main transition-colors duration-300 cursor-pointer border-none bg-transparent p-0"
+                  className="text-[12px] font-semibold text-build-accent hover:text-build-main dark:text-white transition-colors duration-300 cursor-pointer border-none bg-transparent p-0"
                 >
                   ¿Olvidaste tu contraseña?
                 </button>

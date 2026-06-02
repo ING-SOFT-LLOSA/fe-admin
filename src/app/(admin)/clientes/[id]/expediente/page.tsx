@@ -1,4 +1,4 @@
-import ClientExpedienteView from "@/components/backoffice/ClientExpedienteView";
+import ClientExpedienteView from "@/modules/legal/components/ClientExpedienteView";
 
 type ClientExpedientePageProps = {
   params: Promise<{

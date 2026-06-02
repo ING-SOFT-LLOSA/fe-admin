@@ -1,4 +1,4 @@
-import FinancePaymentScheduleView from "@/components/backoffice/FinancePaymentScheduleView";
+import FinancePaymentScheduleView from "@/modules/finanzas/components/FinancePaymentScheduleView";
 
 type FinancePageProps = {
   searchParams: Promise<{

@@ -185,12 +185,12 @@ export default function UsersConfigurationPage() {
   }
 
   return (
-    <PermissionGuard requiredFuncs={["USER_GESTIONAR", "ROL_GESTIONAR"]} fallbackUrl="/projects">
+    <PermissionGuard requiredFuncs={["USER_GESTIONAR", "ROL_GESTIONAR"]} fallbackUrl="/proyectos">
       {/* existing content */}
       <div className="flex justify-between items-end mb-6">
         <div>
-          <h2 className="text-2xl md:text-3xl font-bold tracking-[-0.01em] text-build-main">Gestión de Empleados</h2>
-          <p className="text-base text-slate-600 mt-2">Administra usuarios internos, roles y permisos de acceso.</p>
+          <h2 className="text-2xl md:text-3xl font-bold tracking-[-0.01em] text-build-main dark:text-white">Gestión de Empleados</h2>
+          <p className="text-base text-slate-600 dark:text-white/70 mt-2">Administra usuarios internos, roles y permisos de acceso.</p>
         </div>
         {hasUserGestionar && (
           <button
@@ -206,18 +206,18 @@ export default function UsersConfigurationPage() {
 
       {initialLoading ? (
         <div className="flex justify-center items-center py-20">
-           <svg className="animate-spin w-8 h-8 text-build-main" viewBox="0 0 24 24" fill="none">
+           <svg className="animate-spin w-8 h-8 text-build-main dark:text-white" viewBox="0 0 24 24" fill="none">
              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
            </svg>
         </div>
       ) : (
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+        <div className="bg-white dark:bg-white/5 rounded-2xl border border-slate-200 dark:border-white/10 shadow-sm overflow-hidden">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="border-b border-slate-200 bg-white">
+              <tr className="border-b border-slate-200 dark:border-white/10 bg-white dark:bg-white/5">
                 {["Usuario", "Correo", "Rol Base", "Estado", "Acciones"].map((h) => (
-                  <th key={h} className={`py-4 px-6 text-[12px] font-semibold text-slate-500 uppercase tracking-wider ${h === "Acciones" ? "text-right" : ""}`}>
+                  <th key={h} className={`py-4 px-6 text-[12px] font-semibold text-slate-500 dark:text-white/60 uppercase tracking-wider ${h === "Acciones" ? "text-right" : ""}`}>
                     {h}
                   </th>
                 ))}
@@ -225,23 +225,23 @@ export default function UsersConfigurationPage() {
             </thead>
             <tbody>
               {users.map((u) => (
-                <tr key={u.id} className="border-b border-slate-200 hover:bg-slate-50 transition-colors group">
+                <tr key={u.id} className="border-b border-slate-200 dark:border-white/10 hover:bg-slate-50 dark:bg-white/5 transition-colors group">
                   <td className="py-4 px-6">
                     <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-full bg-build-bg flex items-center justify-center text-build-main text-xs font-bold">
+                      <div className="w-9 h-9 rounded-full bg-build-bg flex items-center justify-center text-build-main dark:text-white text-xs font-bold">
                         {u.nombre.charAt(0)}
                       </div>
                       <div>
-                        <span className={`font-semibold ${u.activo ? "text-build-main" : "text-slate-400 line-through"}`}>
+                        <span className={`font-semibold ${u.activo ? "text-build-main dark:text-white" : "text-slate-400 dark:text-white/50 line-through"}`}>
                           {[u.nombre, u.apellidos].filter(Boolean).join(" ")}
                         </span>
-                        <p className="text-[11px] text-slate-400 font-semibold">ID: {u.id}</p>
+                        <p className="text-[11px] text-slate-400 dark:text-white/50 font-semibold">ID: {u.id}</p>
                       </div>
                     </div>
                   </td>
-                  <td className={`py-4 px-6 text-sm ${u.activo ? "text-slate-600" : "text-slate-400"}`}>{u.email}</td>
+                  <td className={`py-4 px-6 text-sm ${u.activo ? "text-slate-600 dark:text-white/70" : "text-slate-400 dark:text-white/50"}`}>{u.email}</td>
                   <td className="py-4 px-6">
-                    <span className="inline-flex items-center px-2.5 py-1 rounded-md bg-slate-100 text-slate-600 text-[11px] font-bold">
+                    <span className="inline-flex items-center px-2.5 py-1 rounded-md bg-slate-100 dark:bg-white/10 text-slate-600 dark:text-white/70 text-[11px] font-bold">
                       {u.rol ? (ROLE_LABELS[u.rol] || u.rol) : "Sin Rol"}
                     </span>
                   </td>
@@ -262,7 +262,7 @@ export default function UsersConfigurationPage() {
                         <button
                           onClick={() => handleOpenEdit(u)}
                           disabled={!u.activo}
-                          className="p-1.5 text-build-main hover:bg-build-bg rounded-md transition-colors flex items-center justify-center"
+                          className="p-1.5 text-build-main dark:text-white hover:bg-build-bg rounded-md transition-colors flex items-center justify-center"
                           title="Editar Rol"
                         >
                           <span className="material-symbols-outlined text-[18px]">edit</span>
@@ -282,7 +282,7 @@ export default function UsersConfigurationPage() {
               ))}
               {users.length === 0 && (
                  <tr>
-                    <td colSpan={5} className="py-12 text-center text-slate-400 text-sm">No hay empleados registrados.</td>
+                    <td colSpan={5} className="py-12 text-center text-slate-400 dark:text-white/50 text-sm">No hay empleados registrados.</td>
                  </tr>
               )}
             </tbody>
@@ -293,10 +293,10 @@ export default function UsersConfigurationPage() {
       {/* Creacion / Edicion Modal */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#050a0e]/50 backdrop-blur-sm animate-fade-in p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh]">
-            <div className="px-6 py-5 border-b border-slate-200 flex justify-between items-center bg-white">
-              <h2 className="text-[20px] font-bold text-build-main">{editingId ? "Editar Rol de Empleado" : "Crear Nuevo Usuario"}</h2>
-              <button disabled={loading} onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-[#ba1a1a] transition-colors">
+          <div className="bg-white dark:bg-white/5 rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh]">
+            <div className="px-6 py-5 border-b border-slate-200 dark:border-white/10 flex justify-between items-center bg-white dark:bg-white/5">
+              <h2 className="text-[20px] font-bold text-build-main dark:text-white">{editingId ? "Editar Rol de Empleado" : "Crear Nuevo Usuario"}</h2>
+              <button disabled={loading} onClick={() => setIsModalOpen(false)} className="text-slate-400 dark:text-white/50 hover:text-[#ba1a1a] transition-colors">
                 <span className="material-symbols-outlined">close</span>
               </button>
             </div>
@@ -305,23 +305,23 @@ export default function UsersConfigurationPage() {
               {/* Form Info */}
               <div className="grid grid-cols-2 gap-5">
                 <div>
-                  <label className="block text-[12px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Nombre Completo</label>
+                  <label className="block text-[12px] font-bold text-slate-500 dark:text-white/60 uppercase tracking-wider mb-1.5">Nombre Completo</label>
                   <input
                     type="text"
                     required
                     disabled={!!editingId}
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm text-build-main focus:outline-none focus:border-build-accent focus:ring-1 focus:ring-build-accent disabled:bg-slate-50 disabled:text-slate-400"
+                    className="w-full px-3 py-2.5 border border-slate-200 dark:border-white/10 rounded-xl text-sm text-build-main dark:text-white focus:outline-none focus:border-build-accent focus:ring-1 focus:ring-build-accent disabled:bg-slate-50 dark:bg-white/5 disabled:text-slate-400 dark:text-white/50"
                     placeholder="Ej. Juan Pérez"
                   />
                 </div>
                 <div>
-                  <label className="block text-[12px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Rol Base</label>
+                  <label className="block text-[12px] font-bold text-slate-500 dark:text-white/60 uppercase tracking-wider mb-1.5">Rol Base</label>
                   <select
                     value={formData.baseRole}
                     onChange={(e) => handleRoleChange(e.target.value)}
-                    className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm text-build-main focus:outline-none focus:border-build-accent focus:ring-1 focus:ring-build-accent"
+                    className="w-full px-3 py-2.5 border border-slate-200 dark:border-white/10 rounded-xl text-sm text-build-main dark:text-white focus:outline-none focus:border-build-accent focus:ring-1 focus:ring-build-accent"
                   >
                     {rolesList.map((r) => (
                       <option key={r.idRol} value={r.nombre}>
@@ -331,7 +331,7 @@ export default function UsersConfigurationPage() {
                   </select>
                 </div>
                 <div className="col-span-2">
-                  <label className="block text-[12px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+                  <label className="block text-[12px] font-bold text-slate-500 dark:text-white/60 uppercase tracking-wider mb-1.5">
                     Correo corporativo <span className="text-slate-300 font-normal normal-case">(acceso institucional)</span>
                   </label>
                   <input
@@ -340,7 +340,7 @@ export default function UsersConfigurationPage() {
                     disabled={!!editingId}
                     value={formData.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm text-build-main focus:outline-none focus:border-build-accent focus:ring-1 focus:ring-build-accent disabled:bg-slate-50 disabled:text-slate-400"
+                    className="w-full px-3 py-2.5 border border-slate-200 dark:border-white/10 rounded-xl text-sm text-build-main dark:text-white focus:outline-none focus:border-build-accent focus:ring-1 focus:ring-build-accent disabled:bg-slate-50 dark:bg-white/5 disabled:text-slate-400 dark:text-white/50"
                     placeholder="correo@ejemplo.com"
                   />
                 </div>
@@ -348,7 +348,7 @@ export default function UsersConfigurationPage() {
 
               {/* Dynamic Permissions */}
               <div>
-                <h3 className="text-[14px] font-bold text-build-main mb-4 border-b border-slate-200 pb-2">
+                <h3 className="text-[14px] font-bold text-build-main dark:text-white mb-4 border-b border-slate-200 dark:border-white/10 pb-2">
                   Permisos del Rol (Solo Lectura)
                 </h3>
                 <div className="grid grid-cols-2 gap-y-4 gap-x-8">
@@ -356,7 +356,7 @@ export default function UsersConfigurationPage() {
                     const isChecked = selectedRoleFuncs.includes(code);
                     return (
                       <label key={code} className="flex items-center justify-between group opacity-80 cursor-not-allowed">
-                        <span className="text-[13px] font-medium text-slate-600">
+                        <span className="text-[13px] font-medium text-slate-600 dark:text-white/70">
                           {label}
                         </span>
                         <div className="relative inline-flex items-center">
@@ -366,7 +366,7 @@ export default function UsersConfigurationPage() {
                             checked={isChecked}
                             readOnly
                           />
-                          <div className={`w-9 h-5 rounded-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all ${isChecked ? "bg-build-main after:translate-x-full after:border-white" : "bg-slate-300"}`}></div>
+                          <div className={`w-9 h-5 rounded-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white dark:bg-white/5 after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all ${isChecked ? "bg-build-main after:translate-x-full after:border-white" : "bg-slate-300"}`}></div>
                         </div>
                       </label>
                     );
@@ -390,12 +390,12 @@ export default function UsersConfigurationPage() {
             </div>
 
             {/* Footer Form Actions */}
-            <div className="px-6 py-4 border-t border-slate-200 bg-white flex justify-end gap-3">
+            <div className="px-6 py-4 border-t border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 flex justify-end gap-3">
               <button
                 type="button"
                 disabled={loading}
                 onClick={() => setIsModalOpen(false)}
-                className="px-5 py-2.5 text-sm font-bold text-slate-400 hover:text-build-main transition-colors"
+                className="px-5 py-2.5 text-sm font-bold text-slate-400 dark:text-white/50 hover:text-build-main dark:text-white transition-colors"
               >
                 Cancelar
               </button>
@@ -427,19 +427,19 @@ export default function UsersConfigurationPage() {
       {/* Confirmation Modal */}
       {isConfirmOpen && targetUser && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#050a0e]/50 backdrop-blur-sm animate-fade-in p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 text-center">
+          <div className="bg-white dark:bg-white/5 rounded-2xl shadow-2xl w-full max-w-sm p-6 text-center">
             <div className="w-16 h-16 rounded-full bg-[#ffdad6] flex items-center justify-center mx-auto mb-4">
               <span className="material-symbols-outlined text-[#ba1a1a] text-[32px]">warning</span>
             </div>
-            <h3 className="text-[18px] font-bold text-build-main mb-2">¿Desactivar usuario?</h3>
-            <p className="text-[13px] text-slate-600 mb-6">
+            <h3 className="text-[18px] font-bold text-build-main dark:text-white mb-2">¿Desactivar usuario?</h3>
+            <p className="text-[13px] text-slate-600 dark:text-white/70 mb-6">
               Estás a punto de deshabilitar a <b>{[targetUser.nombre, targetUser.apellidos].join(" ")}</b>. El usuario quedará inactivo y perderá acceso al sistema al instante.
             </p>
             <div className="flex gap-3">
               <button
                 disabled={loading}
                 onClick={() => setIsConfirmOpen(false)}
-                className="flex-1 px-4 py-2.5 border border-slate-200 text-build-main rounded-xl text-sm font-bold hover:bg-slate-50 transition-colors"
+                className="flex-1 px-4 py-2.5 border border-slate-200 dark:border-white/10 text-build-main dark:text-white rounded-xl text-sm font-bold hover:bg-slate-50 dark:bg-white/5 transition-colors"
               >
                 Cancelar
               </button>

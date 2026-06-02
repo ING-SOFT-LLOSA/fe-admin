@@ -1,6 +1,5 @@
 import { apiFetch } from "@/lib/api/http";
 
-// Re-using the types from the project
 export interface Proyecto {
   id: string; // UUID
   nombre: string;
@@ -20,19 +19,6 @@ export interface ProyectoCreateDTO {
   fechaInicio: string; // YYYY-MM-DD
   fechaFin: string; // YYYY-MM-DD
 }
-
-export interface DashboardProyectoDTO {
-  id: string; // UUID
-  nombreProyecto: string;
-  avanceGlobal: number;
-}
-
-export interface EtapaCreateDTO {
-  nombre: string;
-  descripcion: string;
-  orden: number;
-}
-
 
 export interface Page<T> {
   content: T[];
@@ -82,17 +68,6 @@ export function deleteProyecto(uuid: string): Promise<void> {
   });
 }
 
-export function getAvanceGeneral(uuid: string): Promise<DashboardProyectoDTO> {
-  return apiFetch<DashboardProyectoDTO>(`/api/proyectos/${uuid}/avance-general`);
-}
-
-export function crearEtapaProyecto(uuid: string, data: EtapaCreateDTO): Promise<any> {
-  return apiFetch<any>(`/api/proyectos/${uuid}/etapas`, {
-    method: "POST",
-    body: JSON.stringify(data),
-  });
-}
-
 export interface ActivoRequestDTO {
   nro: string;
   tipo: string;
@@ -100,20 +75,6 @@ export interface ActivoRequestDTO {
   estadoComercial: string;
   precio: number;
   descripcion: string;
-}
-
-export interface HitoUnidadResponseDTO {
-  id: string; // uuid_hito_unidad
-  hitoNombre: string;
-  hitoDescripcion: string;
-  estado: string;
-  fechaCompletado: string | null;
-  observaciones: string | null;
-}
-
-export interface AvanceUnidadResponseDTO {
-  hitoNombre: string;
-  estado: string;
 }
 
 export function createActivo(idPiso: number, data: ActivoRequestDTO): Promise<ActivoResponseDTO> {
@@ -134,13 +95,5 @@ export function deleteActivo(uuid: string): Promise<void> {
   return apiFetch<void>(`/api/activos/${uuid}`, {
     method: "DELETE",
   });
-}
-
-export function getHitosActivo(uuid: string): Promise<HitoUnidadResponseDTO[]> {
-  return apiFetch<HitoUnidadResponseDTO[]>(`/api/activos/${uuid}/hitos`);
-}
-
-export function getAvancesActivo(uuid: string): Promise<AvanceUnidadResponseDTO[]> {
-  return apiFetch<AvanceUnidadResponseDTO[]>(`/api/activos/${uuid}/avances`);
 }
 
