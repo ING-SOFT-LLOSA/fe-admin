@@ -3,5 +3,5 @@
 import LoginForm from "@/components/auth/LoginForm";
 
 export default function LoginEmpresaPage() {
-  return <LoginForm redirectTo="/projects" />;
+  return <LoginForm redirectTo="/proyectos" />;
 }

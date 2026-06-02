@@ -56,7 +56,7 @@ export default function EmployeeSideNav() {
       {/* Brand */}
       <div className="px-5 pt-6 pb-5 border-b border-white/8">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-white/15 flex items-center justify-center shrink-0">
+          <div className="w-9 h-9 rounded-xl bg-white dark:bg-white/5/15 flex items-center justify-center shrink-0">
             <span className="material-symbols-outlined text-white text-[20px] fill">domain</span>
           </div>
           <div>
@@ -89,8 +89,8 @@ export default function EmployeeSideNav() {
                       href={href}
                       className={`group flex items-center gap-3 px-3 py-2.5 rounded-lg text-[13px] font-medium transition-all duration-150 ${
                         active
-                          ? "bg-white/12 text-white border-l-[3px] border-white pl-[9px]"
-                          : "text-white/60 hover:text-white hover:bg-white/6 border-l-[3px] border-transparent pl-[9px]"
+                          ? "bg-white dark:bg-white/5/12 text-white border-l-[3px] border-white pl-[9px]"
+                          : "text-white/60 hover:text-white hover:bg-white dark:bg-white/5/6 border-l-[3px] border-transparent pl-[9px]"
                       }`}
                     >
                       <span className={`material-symbols-outlined text-[19px] transition-all ${active ? "fill" : "group-hover:scale-110"}`}>

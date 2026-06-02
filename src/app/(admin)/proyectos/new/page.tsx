@@ -8,10 +8,10 @@ export default function NewProjectPage() {
   return (
     <div className="mx-auto max-w-5xl">
       <header className="mb-8">
-        <h1 className="text-2xl md:text-3xl font-bold tracking-[-0.01em] text-build-main">
+        <h1 className="text-2xl md:text-3xl font-bold tracking-[-0.01em] text-build-main dark:text-white">
           Crear Nuevo Proyecto
         </h1>
-        <p className="mt-2 text-base text-slate-600">
+        <p className="mt-2 text-base text-slate-600 dark:text-white/70">
           Completa los datos generales y configura la estructura de inventario del proyecto.
         </p>
       </header>

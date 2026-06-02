@@ -147,20 +147,20 @@ export default function AssignPropertyWizard({ onClose, onSuccess }: AssignPrope
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#050a0e]/50 backdrop-blur-sm p-4 animate-fade-in">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl overflow-hidden flex flex-col h-[650px] animate-slide-up relative">
+      <div className="bg-white dark:bg-white/5 rounded-2xl shadow-2xl w-full max-w-3xl overflow-hidden flex flex-col h-[650px] animate-slide-up relative">
 
         {/* Header */}
-        <div className="px-8 py-5 border-b border-slate-200 flex justify-between items-center bg-white shrink-0">
+        <div className="px-8 py-5 border-b border-slate-200 dark:border-white/10 flex justify-between items-center bg-white dark:bg-white/5 shrink-0">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center">
-              <span className="material-symbols-outlined text-build-main">key</span>
+            <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-white/10 flex items-center justify-center">
+              <span className="material-symbols-outlined text-build-main dark:text-white">key</span>
             </div>
             <div>
-              <h2 className="text-[20px] font-bold text-build-main">Vincular Cliente a Unidad</h2>
-              <p className="text-[12px] text-slate-500 font-medium mt-0.5">Paso {step} de 3</p>
+              <h2 className="text-[20px] font-bold text-build-main dark:text-white">Vincular Cliente a Unidad</h2>
+              <p className="text-[12px] text-slate-500 dark:text-white/60 font-medium mt-0.5">Paso {step} de 3</p>
             </div>
           </div>
-          <button disabled={loading} onClick={onClose} className="text-slate-400 hover:text-build-main transition-colors">
+          <button disabled={loading} onClick={onClose} className="text-slate-400 dark:text-white/50 hover:text-build-main dark:text-white transition-colors">
             <span className="material-symbols-outlined">close</span>
           </button>
         </div>
@@ -177,16 +177,16 @@ export default function AssignPropertyWizard({ onClose, onSuccess }: AssignPrope
           {step === 1 && (
             <div className="space-y-6 animate-fade-in">
               <div>
-                <h3 className="text-[18px] font-bold text-build-main">Seleccionar proyecto y unidad</h3>
-                <p className="text-[13px] text-slate-500">Elige un proyecto para consultar unidades disponibles que el cliente adquirirá.</p>
+                <h3 className="text-[18px] font-bold text-build-main dark:text-white">Seleccionar proyecto y unidad</h3>
+                <p className="text-[13px] text-slate-500 dark:text-white/60">Elige un proyecto para consultar unidades disponibles que el cliente adquirirá.</p>
               </div>
 
               <div>
-                <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2">Proyecto</label>
+                <label className="block text-[11px] font-bold text-slate-500 dark:text-white/60 uppercase tracking-wider mb-2">Proyecto</label>
                 <select
                   value={selectedProjectId}
                   onChange={e => setSelectedProjectId(e.target.value)}
-                  className="w-full lg:w-1/2 px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-semibold focus:outline-none focus:border-build-accent focus:ring-1 focus:ring-build-accent"
+                  className="w-full lg:w-1/2 px-4 py-2.5 bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl text-sm font-semibold focus:outline-none focus:border-build-accent focus:ring-1 focus:ring-build-accent"
                 >
                   {projects.length === 0 && <option value="">Cargando proyectos...</option>}
                   {projects.map(p => <option key={p.id} value={p.id}>{p.nombre}</option>)}
@@ -194,17 +194,17 @@ export default function AssignPropertyWizard({ onClose, onSuccess }: AssignPrope
               </div>
 
               <div>
-                <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2">Unidades Disponibles (Inventario)</label>
+                <label className="block text-[11px] font-bold text-slate-500 dark:text-white/60 uppercase tracking-wider mb-2">Unidades Disponibles (Inventario)</label>
                 {loadingUnits ? (
-                  <p className="text-[13px] text-slate-500 p-4 bg-slate-50 rounded-xl text-center flex items-center justify-center gap-2">
-                     <svg className="animate-spin w-4 h-4 text-build-main" viewBox="0 0 24 24" fill="none">
+                  <p className="text-[13px] text-slate-500 dark:text-white/60 p-4 bg-slate-50 dark:bg-white/5 rounded-xl text-center flex items-center justify-center gap-2">
+                     <svg className="animate-spin w-4 h-4 text-build-main dark:text-white" viewBox="0 0 24 24" fill="none">
                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
                      </svg>
                     Cargando inventario...
                   </p>
                 ) : units.length === 0 ? (
-                  <p className="text-[13px] text-slate-500 p-4 bg-slate-50 rounded-xl text-center">No hay unidades disponibles en este proyecto.</p>
+                  <p className="text-[13px] text-slate-500 dark:text-white/60 p-4 bg-slate-50 dark:bg-white/5 rounded-xl text-center">No hay unidades disponibles en este proyecto.</p>
                 ) : (
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                     {units.map(u => {
@@ -219,17 +219,17 @@ export default function AssignPropertyWizard({ onClose, onSuccess }: AssignPrope
                           }}
                           className={`cursor-pointer border-2 rounded-xl p-4 transition-all ${isSelected
                             ? "border-build-main bg-build-main/5"
-                            : "border-slate-200 hover:border-build-accent bg-white"
+                            : "border-slate-200 dark:border-white/10 hover:border-build-accent bg-white dark:bg-white/5"
                             }`}
                         >
                           <div className="flex justify-between items-start mb-2">
-                            <span className={`material-symbols-outlined text-[20px] ${isSelected ? "text-build-main" : "text-slate-400"}`}>
+                            <span className={`material-symbols-outlined text-[20px] ${isSelected ? "text-build-main dark:text-white" : "text-slate-400 dark:text-white/50"}`}>
                               {u.type === "ESTACIONAMIENTO" ? "directions_car" : "apartment"}
                             </span>
-                            {isSelected && <span className="material-symbols-outlined text-[16px] text-build-main">check_circle</span>}
+                            {isSelected && <span className="material-symbols-outlined text-[16px] text-build-main dark:text-white">check_circle</span>}
                           </div>
-                          <h4 className={`text-[13px] font-bold leading-tight ${isSelected ? "text-build-main" : "text-build-main"}`}>{u.name}</h4>
-                          <p className="text-[10px] text-slate-400 mt-1 font-mono truncate" title={u.id}>{u.id}</p>
+                          <h4 className={`text-[13px] font-bold leading-tight ${isSelected ? "text-build-main dark:text-white" : "text-build-main dark:text-white"}`}>{u.name}</h4>
+                          <p className="text-[10px] text-slate-400 dark:text-white/50 mt-1 font-mono truncate" title={u.id}>{u.id}</p>
                         </div>
                       );
                     })}
@@ -244,27 +244,27 @@ export default function AssignPropertyWizard({ onClose, onSuccess }: AssignPrope
           {step === 2 && (
             <div className="space-y-6 animate-fade-in">
               <div>
-                <h3 className="text-[18px] font-bold text-build-main">Confirmar cliente</h3>
-                <p className="text-[13px] text-slate-500">Busca por nombre, documento o correo para continuar con la asignación.</p>
+                <h3 className="text-[18px] font-bold text-build-main dark:text-white">Confirmar cliente</h3>
+                <p className="text-[13px] text-slate-500 dark:text-white/60">Busca por nombre, documento o correo para continuar con la asignación.</p>
               </div>
 
               <div>
                 <div className="flex gap-2">
                   <div className="relative flex-1">
-                    <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-[18px]">search</span>
+                    <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-white/50 text-[18px]">search</span>
                     <input
                       type="text"
                       placeholder="Buscar por DNI o Nombre... (ej. Carlos, 4589...)"
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       onKeyDown={e => e.key === "Enter" && handleSearchClient()}
-                      className="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-build-accent focus:ring-1 focus:ring-build-accent"
+                      className="w-full pl-10 pr-4 py-3 border border-slate-200 dark:border-white/10 rounded-xl text-sm focus:outline-none focus:border-build-accent focus:ring-1 focus:ring-build-accent"
                     />
                   </div>
                   <button
                     onClick={handleSearchClient}
                     disabled={!searchQuery.trim()}
-                    className="px-6 py-3 bg-slate-100 text-build-main rounded-xl font-bold text-sm hover:bg-slate-200 transition-colors disabled:opacity-50"
+                    className="px-6 py-3 bg-slate-100 dark:bg-white/10 text-build-main dark:text-white rounded-xl font-bold text-sm hover:bg-slate-200 dark:bg-white/15 transition-colors disabled:opacity-50"
                   >
                     Buscar
                   </button>
@@ -284,8 +284,8 @@ export default function AssignPropertyWizard({ onClose, onSuccess }: AssignPrope
                       {searchedClient.initials}
                     </div>
                     <div>
-                      <h4 className="text-[16px] font-bold text-build-main">{searchedClient.name}</h4>
-                      <p className="text-[13px] text-slate-500">DNI: {searchedClient.dni} | {searchedClient.email}</p>
+                      <h4 className="text-[16px] font-bold text-build-main dark:text-white">{searchedClient.name}</h4>
+                      <p className="text-[13px] text-slate-500 dark:text-white/60">DNI: {searchedClient.dni} | {searchedClient.email}</p>
                     </div>
                   </div>
                   <span className="material-symbols-outlined text-[#27a85e] text-[32px]">check_circle</span>
@@ -298,19 +298,19 @@ export default function AssignPropertyWizard({ onClose, onSuccess }: AssignPrope
           {step === 3 && (
             <div className="space-y-6 animate-fade-in">
               <div className="text-center mb-6">
-                <span className="material-symbols-outlined text-[48px] text-build-main">handshake</span>
-                <h3 className="text-[20px] font-bold text-build-main mt-2">Detalles de la Operación</h3>
-                <p className="text-[13px] text-slate-500 mt-1">Ingresa las condiciones de financiamiento y confirma la asignación.</p>
+                <span className="material-symbols-outlined text-[48px] text-build-main dark:text-white">handshake</span>
+                <h3 className="text-[20px] font-bold text-build-main dark:text-white mt-2">Detalles de la Operación</h3>
+                <p className="text-[13px] text-slate-500 dark:text-white/60 mt-1">Ingresa las condiciones de financiamiento y confirma la asignación.</p>
               </div>
 
               {/* Form */}
               <div className="mb-4">
                  <div>
-                    <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2">Financiamiento</label>
+                    <label className="block text-[11px] font-bold text-slate-500 dark:text-white/60 uppercase tracking-wider mb-2">Financiamiento</label>
                     <select
                       value={tipoFinanciamiento}
                       onChange={e => setTipoFinanciamiento(e.target.value)}
-                      className="w-full px-4 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-build-accent"
+                      className="w-full px-4 py-2 border border-slate-200 dark:border-white/10 rounded-lg text-sm focus:outline-none focus:border-build-accent"
                     >
                       <option value="CREDITO_HIPOTECARIO">Crédito Hipotecario</option>
                       <option value="CREDITO_DIRECTO">Crédito Directo</option>
@@ -318,20 +318,20 @@ export default function AssignPropertyWizard({ onClose, onSuccess }: AssignPrope
                  </div>
               </div>
 
-              <div className="bg-slate-50 border border-slate-200 rounded-xl p-5 grid grid-cols-2 gap-6 relative overflow-hidden">
+              <div className="bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl p-5 grid grid-cols-2 gap-6 relative overflow-hidden">
                 <div className="relative z-10">
-                  <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">Cliente Asignado</label>
-                  <h4 className="text-[14px] font-bold text-build-main">{searchedClient?.name}</h4>
-                  <p className="text-[12px] text-slate-500">DNI: {searchedClient?.dni}</p>
+                  <label className="block text-[11px] font-bold text-slate-500 dark:text-white/60 uppercase tracking-wider mb-1">Cliente Asignado</label>
+                  <h4 className="text-[14px] font-bold text-build-main dark:text-white">{searchedClient?.name}</h4>
+                  <p className="text-[12px] text-slate-500 dark:text-white/60">DNI: {searchedClient?.dni}</p>
                 </div>
-                <div className="relative z-10 border-l border-slate-200 pl-6">
-                  <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">Unidades ({selectedProject?.nombre})</label>
+                <div className="relative z-10 border-l border-slate-200 dark:border-white/10 pl-6">
+                  <label className="block text-[11px] font-bold text-slate-500 dark:text-white/60 uppercase tracking-wider mb-1">Unidades ({selectedProject?.nombre})</label>
                   <div className="space-y-1">
                     {selectedUnitIds.map(id => {
                       const u = units.find(unit => unit.id === id);
                       return (
                         <div key={id} className="flex flex-col">
-                          <span className="text-[13px] font-bold text-build-main">{u?.name}</span>
+                          <span className="text-[13px] font-bold text-build-main dark:text-white">{u?.name}</span>
                         </div>
                       );
                     })}
@@ -360,14 +360,14 @@ export default function AssignPropertyWizard({ onClose, onSuccess }: AssignPrope
         </div>
 
         {/* Footer Buttons */}
-        <div className="px-8 py-4 bg-white border-t border-slate-200 flex justify-between shrink-0">
+        <div className="px-8 py-4 bg-white dark:bg-white/5 border-t border-slate-200 dark:border-white/10 flex justify-between shrink-0">
           <button
             disabled={loading || successMsg !== ""}
             onClick={() => {
               if (step === 1) onClose();
               else setStep((prev) => (prev === 3 ? 2 : 1));
             }}
-            className="px-5 py-2.5 text-sm font-bold text-slate-500 hover:bg-slate-50 hover:text-build-main rounded-xl transition-colors"
+            className="px-5 py-2.5 text-sm font-bold text-slate-500 dark:text-white/60 hover:bg-slate-50 dark:bg-white/5 hover:text-build-main dark:text-white rounded-xl transition-colors"
           >
             {step === 1 ? "Cancelar" : "Volver"}
           </button>
@@ -405,7 +405,7 @@ export default function AssignPropertyWizard({ onClose, onSuccess }: AssignPrope
         </div>
 
         {/* Loading Overlay Global */}
-        {loading && <div className="absolute inset-0 bg-white/40 backdrop-blur-[1px] z-50 rounded-2xl pointer-events-none"></div>}
+        {loading && <div className="absolute inset-0 bg-white dark:bg-white/5/40 backdrop-blur-[1px] z-50 rounded-2xl pointer-events-none"></div>}
 
       </div>
     </div>

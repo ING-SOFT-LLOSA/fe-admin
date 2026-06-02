@@ -44,16 +44,16 @@ export default function ProjectForm({
     };
 
   return (
-    <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+    <section className="rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 p-6 shadow-sm">
       <div className="mb-5">
-        <h2 className="text-[20px] font-bold text-build-main">Información del proyecto</h2>
-        <p className="mt-1 text-sm text-slate-500">Actualiza los datos principales del proyecto.</p>
+        <h2 className="text-[20px] font-bold text-build-main dark:text-white">Información del proyecto</h2>
+        <p className="mt-1 text-sm text-slate-500 dark:text-white/60">Actualiza los datos principales del proyecto.</p>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
         {textFields.map((field) => (
           <label key={field.key} className={field.key === "direccion" || field.key === "linkRecorridoVirtual" ? "md:col-span-2" : ""}>
-            <span className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-slate-500">
+            <span className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-white/60">
               {field.label}
             </span>
             <input
@@ -61,13 +61,13 @@ export default function ProjectForm({
               value={String(values[field.key])}
               onChange={handleInputChange(field.key)}
               placeholder={field.placeholder}
-              className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-build-main outline-none transition-all focus:border-build-accent focus:ring-1 focus:ring-build-accent"
+              className="w-full rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 px-3 py-2.5 text-sm text-build-main dark:text-white outline-none transition-all focus:border-build-accent focus:ring-1 focus:ring-build-accent"
             />
           </label>
         ))}
         
         <label className="md:col-span-2">
-          <span className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-slate-500">
+          <span className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-white/60">
             Descripción
           </span>
           <textarea
@@ -75,11 +75,11 @@ export default function ProjectForm({
             onChange={handleInputChange("descripcion")}
             placeholder="Breve descripción del proyecto..."
             rows={3}
-            className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-build-main outline-none transition-all focus:border-build-accent focus:ring-1 focus:ring-build-accent"
+            className="w-full rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 px-3 py-2.5 text-sm text-build-main dark:text-white outline-none transition-all focus:border-build-accent focus:ring-1 focus:ring-build-accent"
           />
         </label>
 
-        <label className="md:col-span-2 flex items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 cursor-pointer">
+        <label className="md:col-span-2 flex items-center gap-3 rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 px-4 py-3 cursor-pointer">
           <input
             type="checkbox"
             checked={values.precertificacionEdgeLeed}
@@ -87,8 +87,8 @@ export default function ProjectForm({
             className="h-4 w-4 accent-[#023143]"
           />
           <div>
-            <p className="text-sm font-semibold text-build-main">Precertificación EDGE / LEED</p>
-            <p className="text-[12px] text-slate-500">
+            <p className="text-sm font-semibold text-build-main dark:text-white">Precertificación EDGE / LEED</p>
+            <p className="text-[12px] text-slate-500 dark:text-white/60">
               Marca esta opción si el proyecto cuenta con certificación sostenible.
             </p>
           </div>

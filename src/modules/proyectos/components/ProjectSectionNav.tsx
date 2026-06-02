@@ -5,8 +5,7 @@ import { usePathname } from "next/navigation";
 
 const sections = [
   { href: "", label: "Resumen" },
-  { href: "/obra", label: "Obra" },
-  { href: "/unidades", label: "Unidades" },
+  { href: "/unidades", label: "Inventario" },
 ];
 
 type ProjectSectionNavProps = {
@@ -17,11 +16,11 @@ export default function ProjectSectionNav({ projectId }: ProjectSectionNavProps)
   const pathname = usePathname();
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-2 shadow-sm">
+    <div className="rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 p-2 shadow-sm">
       <div className="flex flex-wrap gap-2">
         {sections.map((section) => {
-          const href = `/projects/${projectId}${section.href}`;
-          const active = pathname === href;
+          const href = `/proyectos/${projectId}${section.href}`;
+          const active = section.href === "" ? pathname === href : pathname.startsWith(href);
           return (
             <Link
               key={href}
@@ -29,7 +28,7 @@ export default function ProjectSectionNav({ projectId }: ProjectSectionNavProps)
               className={`rounded-lg px-4 py-2 text-sm font-bold transition-colors ${
                 active
                   ? "bg-build-main text-white"
-                  : "text-slate-500 hover:bg-slate-100 hover:text-build-main"
+                  : "text-slate-500 dark:text-white/60 hover:bg-slate-100 dark:bg-white/10 hover:text-build-main dark:text-white"
               }`}
             >
               {section.label}

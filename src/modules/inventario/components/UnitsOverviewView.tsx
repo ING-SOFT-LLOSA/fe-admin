@@ -1,322 +1,198 @@
 "use client";
 
 import Link from "next/link";
-import { useDeferredValue, useMemo, useState } from "react";
+import { useDeferredValue, useEffect, useMemo, useState } from "react";
 
-import ProjectSectionNav from "@/modules/proyectos/components/ProjectSectionNav";
-import { PROCESS_MODULE_LABELS, PROCESS_MODULE_ORDER } from "@/modules/shared/workspace/config";
-import { useBackofficeWorkspace } from "@/modules/shared/workspace/store";
-import type { BackofficeUnit, UnitStatus, UnitTypology } from "@/modules/shared/workspace/types";
+import { fetchActivosPorProyecto } from "@/modules/inventario/services";
+import type { ActivoResponseDTO } from "@/modules/inventario/types";
 
 type UnitsOverviewViewProps = {
   projectId: string;
 };
 
-function getStatusLabel(status: UnitStatus) {
-  switch (status) {
-    case "disponible":
-      return "Disponible";
-    case "separado":
-      return "Separado";
-    case "en_contrato":
-      return "En contrato";
-    case "cancelado":
-      return "Cancelado";
-    case "entregado":
-      return "Entregado";
-  }
-}
-
-function getStatusClass(status: UnitStatus) {
-  switch (status) {
-    case "disponible":
-      return "bg-[#d6f0e0] text-[#1c663b]";
-    case "separado":
-      return "bg-[#fff3e0] text-[#e65100]";
-    case "en_contrato":
-      return "bg-build-main/10 text-build-main";
-    case "cancelado":
-      return "bg-[#ffdad6] text-[#ba1a1a]";
-    case "entregado":
-      return "bg-slate-100 text-slate-600";
-  }
-}
-
-function getCurrentStageLabel(unit: BackofficeUnit) {
-  const moduleKey = PROCESS_MODULE_ORDER[unit.process.currentModule - 1] ?? "separacion";
-  return PROCESS_MODULE_LABELS[moduleKey];
+function getStatusClass(status: string) {
+  const normalized = status.toUpperCase();
+  if (normalized === "DISPONIBLE") return "bg-[#d6f0e0] text-[#1c663b]";
+  if (normalized === "SEPARADO") return "bg-[#fff3e0] text-[#e65100]";
+  if (normalized === "VENDIDO" || normalized === "EN_CONTRATO") return "bg-build-main/10 text-build-main dark:text-white";
+  if (normalized === "BLOQUEADO" || normalized === "CANCELADO") return "bg-[#ffdad6] text-[#ba1a1a]";
+  return "bg-slate-100 dark:bg-white/10 text-slate-600 dark:text-white/70";
 }
 
 export default function UnitsOverviewView({ projectId }: UnitsOverviewViewProps) {
-  const { workspace, isHydrated } = useBackofficeWorkspace();
+  const [units, setUnits] = useState<ActivoResponseDTO[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState("");
   const [search, setSearch] = useState("");
-  const [towerFilter, setTowerFilter] = useState("all");
-  const [typologyFilter, setTypologyFilter] = useState<UnitTypology | "all">("all");
-  const [statusFilter, setStatusFilter] = useState<UnitStatus | "all">("all");
-  const [stageFilter, setStageFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [typeFilter, setTypeFilter] = useState("all");
   const deferredSearch = useDeferredValue(search);
 
-  const project = workspace.projects.find((entry) => entry.id === projectId);
+  useEffect(() => {
+    let mounted = true;
 
-  const groupedUnits = useMemo(() => {
-    if (!project) return [];
-    return project.towers
-      .map((tower) => ({
-        ...tower,
-        units: tower.units.filter((unit) => {
-          const query = deferredSearch.trim().toLowerCase();
-          const matchesQuery =
-            query.length === 0 ||
-            unit.number.toLowerCase().includes(query) ||
-            tower.name.toLowerCase().includes(query) ||
-            unit.client?.fullName.toLowerCase().includes(query);
-          const matchesTower = towerFilter === "all" || tower.id === towerFilter;
-          const matchesTypology = typologyFilter === "all" || unit.typology === typologyFilter;
-          const matchesStatus = statusFilter === "all" || unit.status === statusFilter;
-          const matchesStage = stageFilter === "all" || getCurrentStageLabel(unit) === stageFilter;
-          return matchesQuery && matchesTower && matchesTypology && matchesStatus && matchesStage;
-        }),
-      }))
-      .filter((tower) => tower.units.length > 0);
-  }, [deferredSearch, project, stageFilter, statusFilter, towerFilter, typologyFilter]);
+    async function loadInventory() {
+      console.log("projectId:", projectId); // ← ¿llega bien?
+      setIsLoading(true);
+      setError("");
+      try {
+        const activosPage = await fetchActivosPorProyecto(projectId);
+        console.log("respuesta:", activosPage); // ← ¿qué retorna?
+        if (mounted) setUnits(activosPage.content ?? []);
+      } catch (loadError) {
+        if (mounted) {
+          setError(loadError instanceof Error ? loadError.message : "No se pudo cargar el inventario.");
+        }
+      } finally {
+        if (mounted) setIsLoading(false);
+      }
+    }
 
-  if (!isHydrated) {
-    return (
-      <div className="space-y-4">
-        <div className="skeleton h-12 w-full" />
-        <div className="skeleton h-28 w-full" />
-        <div className="skeleton h-96 w-full" />
-      </div>
-    );
-  }
+    void loadInventory();
+    return () => {
+      mounted = false;
+    };
+  }, [projectId]);
 
-  if (!project) {
-    return (
-      <div className="rounded-xl border border-dashed border-slate-300 bg-white px-6 py-12 text-center">
-        <h1 className="text-lg font-bold text-build-main">Proyecto no encontrado</h1>
-      </div>
-    );
-  }
+  const visibleUnits = useMemo(() => {
+    const query = deferredSearch.trim().toLowerCase();
+    return units.filter((unit) => {
+      const matchesQuery =
+        query.length === 0 ||
+        unit.nro.toLowerCase().includes(query) ||
+        unit.tipo.toLowerCase().includes(query) ||
+        unit.descripcion?.toLowerCase().includes(query);
+      const matchesStatus = statusFilter === "all" || unit.estadoComercial === statusFilter;
+      const matchesType = typeFilter === "all" || unit.tipo === typeFilter;
+      return matchesQuery && matchesStatus && matchesType;
+    });
+  }, [deferredSearch, statusFilter, typeFilter, units]);
 
-  const allUnits = project.towers.flatMap((tower) => tower.units);
+  const unitTypes = Array.from(new Set(units.map((unit) => unit.tipo))).sort();
+  const unitStatuses = Array.from(new Set(units.map((unit) => unit.estadoComercial))).sort();
 
   return (
     <section className="space-y-6">
-      <div>
-        <Link
-          href={`/projects/${projectId}`}
-          className="inline-flex items-center gap-2 text-sm font-bold text-slate-500 hover:text-build-main"
-        >
-          <span className="material-symbols-outlined text-[18px]">arrow_back</span>
-          Volver al proyecto
-        </Link>
-        <h1 className="mt-3 text-[34px] font-bold tracking-[-0.02em] text-build-main">
-          Unidades · {project.name}
-        </h1>
-        <p className="mt-2 text-sm text-slate-500">
-          Gestiona unidades, cliente asignado y etapa del proceso de compra por torre.
-        </p>
-      </div>
-
-      <ProjectSectionNav projectId={projectId} />
+      {error ? (
+        <div className="rounded-xl border border-red-200 dark:border-red-900/50 bg-red-50 dark:bg-red-900/20 px-4 py-3 text-sm text-red-800 dark:text-red-400">
+          {error}
+        </div>
+      ) : null}
 
       <div className="grid gap-4 xl:grid-cols-4">
-        <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-          <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
-            Total unidades
-          </p>
-          <p className="mt-2 text-[28px] font-bold text-build-main">{allUnits.length}</p>
+        <div className="rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 p-5 shadow-sm">
+          <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-white/60">Total unidades</p>
+          <p className="mt-2 text-[28px] font-bold text-build-main dark:text-white">{units.length}</p>
         </div>
-        <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-          <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
-            Disponibles
-          </p>
+        <div className="rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 p-5 shadow-sm">
+          <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-white/60">Disponibles</p>
           <p className="mt-2 text-[28px] font-bold text-[#1c663b]">
-            {allUnits.filter((unit) => unit.status === "disponible").length}
+            {units.filter((unit) => unit.estadoComercial === "DISPONIBLE").length}
           </p>
         </div>
-        <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-          <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
-            En contrato
-          </p>
-          <p className="mt-2 text-[28px] font-bold text-build-main">
-            {allUnits.filter((unit) => unit.status === "en_contrato").length}
+        <div className="rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 p-5 shadow-sm">
+          <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-white/60">Separadas</p>
+          <p className="mt-2 text-[28px] font-bold text-build-accent">
+            {units.filter((unit) => unit.estadoComercial === "SEPARADO").length}
           </p>
         </div>
-        <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-          <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
-            Entregadas
-          </p>
-          <p className="mt-2 text-[28px] font-bold text-slate-600">
-            {allUnits.filter((unit) => unit.status === "entregado").length}
+        <div className="rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 p-5 shadow-sm">
+          <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-white/60">Valor listado</p>
+          <p className="mt-2 text-[22px] font-bold text-build-main dark:text-white">
+            S/ {units.reduce((total, unit) => total + (unit.precio || 0), 0).toLocaleString("es-PE")}
           </p>
         </div>
       </div>
 
-      <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-        <div className="grid gap-4 xl:grid-cols-[minmax(0,1.5fr)_repeat(4,180px)]">
+      <section className="rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 p-6 shadow-sm">
+        <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_220px_220px]">
           <div>
-            <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-slate-500">
-              Buscar unidad o cliente
+            <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-white/60">
+              Buscar unidad
             </label>
             <input
               value={search}
               onChange={(event) => setSearch(event.target.value)}
-              placeholder="Ej. Torre A, Maria Garcia, A-101"
-              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none transition-all focus:border-build-accent focus:ring-1 focus:ring-build-accent"
+              placeholder="Ej. 101, departamento, terraza"
+              className="w-full rounded-xl border border-slate-200 dark:border-white/10 px-3 py-2 text-sm outline-none transition-all focus:border-build-accent focus:ring-1 focus:ring-build-accent"
             />
           </div>
           <div>
-            <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-slate-500">
-              Torre
+            <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-white/60">
+              Tipo
             </label>
             <select
-              value={towerFilter}
-              onChange={(event) => setTowerFilter(event.target.value)}
-              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none transition-all focus:border-build-accent focus:ring-1 focus:ring-build-accent"
+              value={typeFilter}
+              onChange={(event) => setTypeFilter(event.target.value)}
+              className="w-full rounded-xl border border-slate-200 dark:border-white/10 px-3 py-2 text-sm outline-none transition-all focus:border-build-accent focus:ring-1 focus:ring-build-accent"
             >
-              <option value="all">Todas</option>
-              {project.towers.map((tower) => (
-                <option key={tower.id} value={tower.id}>
-                  {tower.name}
-                </option>
+              <option value="all">Todos</option>
+              {unitTypes.map((type) => (
+                <option key={type} value={type}>{type}</option>
               ))}
             </select>
           </div>
           <div>
-            <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-slate-500">
-              Tipologia
-            </label>
-            <select
-              value={typologyFilter}
-              onChange={(event) => setTypologyFilter(event.target.value as UnitTypology | "all")}
-              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none transition-all focus:border-build-accent focus:ring-1 focus:ring-build-accent"
-            >
-              <option value="all">Todas</option>
-              <option value="1D">1D</option>
-              <option value="2D">2D</option>
-              <option value="3D">3D</option>
-              <option value="estacionamiento">Estacionamiento</option>
-              <option value="deposito">Deposito</option>
-              <option value="oficina">Oficina</option>
-            </select>
-          </div>
-          <div>
-            <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-slate-500">
-              Estado
+            <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-white/60">
+              Estado comercial
             </label>
             <select
               value={statusFilter}
-              onChange={(event) => setStatusFilter(event.target.value as UnitStatus | "all")}
-              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none transition-all focus:border-build-accent focus:ring-1 focus:ring-build-accent"
+              onChange={(event) => setStatusFilter(event.target.value)}
+              className="w-full rounded-xl border border-slate-200 dark:border-white/10 px-3 py-2 text-sm outline-none transition-all focus:border-build-accent focus:ring-1 focus:ring-build-accent"
             >
               <option value="all">Todos</option>
-              <option value="disponible">Disponible</option>
-              <option value="separado">Separado</option>
-              <option value="en_contrato">En contrato</option>
-              <option value="cancelado">Cancelado</option>
-              <option value="entregado">Entregado</option>
-            </select>
-          </div>
-          <div>
-            <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-slate-500">
-              Etapa
-            </label>
-            <select
-              value={stageFilter}
-              onChange={(event) => setStageFilter(event.target.value)}
-              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none transition-all focus:border-build-accent focus:ring-1 focus:ring-build-accent"
-            >
-              <option value="all">Todas</option>
-              {PROCESS_MODULE_ORDER.map((moduleKey) => (
-                <option key={moduleKey} value={PROCESS_MODULE_LABELS[moduleKey]}>
-                  {PROCESS_MODULE_LABELS[moduleKey]}
-                </option>
+              {unitStatuses.map((status) => (
+                <option key={status} value={status}>{status}</option>
               ))}
             </select>
           </div>
         </div>
       </section>
 
-      {groupedUnits.map((tower) => (
-        <section
-          key={tower.id}
-          className="rounded-xl border border-slate-200 bg-white shadow-sm"
-        >
-          <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4">
-            <div>
-              <h2 className="text-[20px] font-bold text-build-main">{tower.name}</h2>
-              <p className="mt-1 text-sm text-slate-500">
-                {tower.units.length} unidades visibles luego de filtros
-              </p>
-            </div>
-            <span className="rounded-full bg-slate-100 px-3 py-1 text-[12px] font-bold text-slate-500">
-              {tower.floors} pisos
-            </span>
-          </div>
-
-          <div className="overflow-x-auto">
-            <table className="w-full border-collapse text-left">
-              <thead>
-                <tr className="bg-slate-50">
-                  {[
-                    "Unidad",
-                    "Piso",
-                    "Area",
-                    "Tipologia",
-                    "Estado",
-                    "Cliente asignado",
-                    "Etapa actual",
-                    "Acciones",
-                  ].map((header) => (
-                    <th
-                      key={header}
-                      className="px-6 py-3 text-[11px] font-bold uppercase tracking-wider text-slate-500"
-                    >
-                      {header}
-                    </th>
-                  ))}
+      <section className="overflow-hidden rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 shadow-sm">
+        <div className="overflow-x-auto">
+          <table className="w-full border-collapse text-left">
+            <thead>
+              <tr className="bg-slate-50 dark:bg-white/5">
+                {["Unidad", "Piso", "Tipo", "Área", "Precio base", "Estado", "Acciones"].map((header) => (
+                  <th key={header} className="px-6 py-3 text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-white/60">
+                    {header}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-200 dark:divide-white/10">
+              {isLoading ? (
+                <tr>
+                  <td colSpan={7} className="px-6 py-10 text-center text-sm text-slate-500 dark:text-white/60">
+                    Cargando inventario...
+                  </td>
                 </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-200">
-                {tower.units.map((unit) => (
-                  <tr key={unit.id} className="hover:bg-slate-50 transition-colors">
-                    <td className="px-6 py-4">
-                      <p className="text-sm font-bold text-build-main">{unit.number}</p>
+              ) : visibleUnits.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="px-6 py-10 text-center text-sm text-slate-500 dark:text-white/60">
+                    No hay unidades para los filtros seleccionados.
+                  </td>
+                </tr>
+              ) : (
+                visibleUnits.map((unit) => (
+                  <tr key={unit.id} className="hover:bg-slate-50 dark:bg-white/5 transition-colors">
+                    <td className="px-6 py-4 text-sm font-bold text-build-main dark:text-white">{unit.nro}</td>
+                    <td className="px-6 py-4 text-sm text-slate-500 dark:text-white/60">{unit.pisoId}</td>
+                    <td className="px-6 py-4 text-sm text-slate-500 dark:text-white/60">{unit.tipo}</td>
+                    <td className="px-6 py-4 text-sm text-slate-500 dark:text-white/60">{unit.areaM2} m2</td>
+                    <td className="px-6 py-4 text-sm font-semibold text-build-main dark:text-white">
+                      S/ {unit.precio.toLocaleString("es-PE")}
                     </td>
-                    <td className="px-6 py-4 text-sm text-slate-500">{unit.floor}</td>
-                    <td className="px-6 py-4 text-sm text-slate-500">{unit.area} m2</td>
-                    <td className="px-6 py-4 text-sm text-slate-500">{unit.typology}</td>
                     <td className="px-6 py-4">
-                      <span
-                        className={`rounded-full px-3 py-1 text-[11px] font-bold uppercase ${getStatusClass(unit.status)}`}
-                      >
-                        {getStatusLabel(unit.status)}
+                      <span className={`rounded-full px-3 py-1 text-[11px] font-bold uppercase ${getStatusClass(unit.estadoComercial)}`}>
+                        {unit.estadoComercial}
                       </span>
                     </td>
                     <td className="px-6 py-4">
-                      {unit.client ? (
-                        <div className="flex flex-col gap-1">
-                          <span className="text-sm font-semibold text-build-main">
-                            {unit.client.fullName}
-                          </span>
-                          <Link
-                            href={`/clientes/${unit.client.clientId}/expediente`}
-                            className="text-[12px] font-bold text-build-accent hover:underline"
-                          >
-                            Ver expediente
-                          </Link>
-                        </div>
-                      ) : (
-                        <span className="text-sm text-slate-400">Sin asignar</span>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 text-sm font-semibold text-build-main">
-                      {getCurrentStageLabel(unit)}
-                    </td>
-                    <td className="px-6 py-4">
                       <Link
-                        href={`/projects/${projectId}/unidades/${unit.id}`}
+                        href={`/proyectos/${projectId}/unidades/${unit.id}`}
                         className="inline-flex items-center gap-2 rounded-xl bg-build-main px-4 py-2 text-[12px] font-bold text-white shadow-sm transition-all hover:bg-build-main/90"
                       >
                         <span className="material-symbols-outlined text-[16px]">open_in_new</span>
@@ -324,12 +200,12 @@ export default function UnitsOverviewView({ projectId }: UnitsOverviewViewProps)
                       </Link>
                     </td>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </section>
-      ))}
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </section>
     </section>
   );
 }

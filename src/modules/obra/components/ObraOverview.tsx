@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
-import { fetchProyectos, getAvanceGeneral } from "@/modules/proyectos/services";
+import { fetchProyectos } from "@/modules/proyectos/services";
+import { getAvanceGeneral } from "@/lib/api/obra";
 import type { Proyecto } from "@/modules/proyectos/types";
 
 type ProjectProgressRow = Proyecto & {
@@ -53,64 +54,64 @@ export default function ObraOverview() {
     <section className="space-y-6">
       <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-[-0.01em] text-build-main md:text-3xl">
+          <h1 className="text-2xl font-bold tracking-[-0.01em] text-build-main dark:text-white md:text-3xl">
             Avance de Obra
           </h1>
-          <p className="mt-2 text-sm text-slate-600">
+          <p className="mt-2 text-sm text-slate-600 dark:text-white/70">
             Seguimiento constructivo por proyecto, etapas, hitos y evidencia visual.
           </p>
         </div>
       </div>
 
       {error ? (
-        <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+        <div className="rounded-xl border border-red-200 dark:border-red-900/50 bg-red-50 dark:bg-red-900/20 px-4 py-3 text-sm text-red-800 dark:text-red-400">
           {error}
         </div>
       ) : null}
 
-      <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+      <div className="overflow-hidden rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 shadow-sm">
         <table className="w-full text-left">
-          <thead className="border-b border-slate-200 bg-slate-50">
+          <thead className="border-b border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5">
             <tr>
               {["Proyecto", "Ubicación", "Avance", "Acción"].map((header) => (
-                <th key={header} className="px-5 py-3 text-xs font-bold uppercase tracking-wider text-slate-500">
+                <th key={header} className="px-5 py-3 text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-white/60">
                   {header}
                 </th>
               ))}
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-100">
+          <tbody className="divide-y divide-slate-100 dark:divide-white/5">
             {isLoading ? (
               <tr>
-                <td colSpan={4} className="px-5 py-10 text-center text-sm text-slate-500">
+                <td colSpan={4} className="px-5 py-10 text-center text-sm text-slate-500 dark:text-white/60">
                   Cargando avances...
                 </td>
               </tr>
             ) : projects.length === 0 ? (
               <tr>
-                <td colSpan={4} className="px-5 py-10 text-center text-sm text-slate-500">
+                <td colSpan={4} className="px-5 py-10 text-center text-sm text-slate-500 dark:text-white/60">
                   No hay proyectos registrados.
                 </td>
               </tr>
             ) : (
               projects.map((project) => (
-                <tr key={project.id} className="hover:bg-slate-50">
-                  <td className="px-5 py-4 text-sm font-bold text-build-main">{project.nombre}</td>
-                  <td className="px-5 py-4 text-sm text-slate-600">{project.direccion || "-"}</td>
+                <tr key={project.id} className="hover:bg-slate-50 dark:bg-white/5">
+                  <td className="px-5 py-4 text-sm font-bold text-build-main dark:text-white">{project.nombre}</td>
+                  <td className="px-5 py-4 text-sm text-slate-600 dark:text-white/70">{project.direccion || "-"}</td>
                   <td className="px-5 py-4">
                     <div className="flex items-center gap-3">
-                      <div className="h-2 w-32 rounded-full bg-slate-100">
+                      <div className="h-2 w-32 rounded-full bg-slate-100 dark:bg-white/10">
                         <div
                           className="h-2 rounded-full bg-build-accent"
                           style={{ width: `${Math.min(project.avanceGlobal ?? 0, 100)}%` }}
                         />
                       </div>
-                      <span className="text-sm font-bold text-build-main">{project.avanceGlobal ?? 0}%</span>
+                      <span className="text-sm font-bold text-build-main dark:text-white">{project.avanceGlobal ?? 0}%</span>
                     </div>
                   </td>
                   <td className="px-5 py-4">
                     <Link
-                      href={`/projects/${project.id}/obra`}
+                      href={`/obra/${project.id}`}
                       className="inline-flex items-center gap-2 rounded-lg bg-build-main px-3 py-2 text-xs font-bold text-white hover:bg-build-main/90"
                     >
                       <span className="material-symbols-outlined text-[16px]">engineering</span>

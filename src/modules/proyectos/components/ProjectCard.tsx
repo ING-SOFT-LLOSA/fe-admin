@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { formatProjectDate } from "@/modules/proyectos/data/mock-projects";
+import { formatProjectDate } from "@/modules/proyectos/utils/format";
 
 type ProyectoResponse = {
   id: string;
@@ -16,39 +16,39 @@ export default function ProjectCard({ project }: { project: ProyectoResponse }) 
 
   return (
     <Link
-      href={`/projects/${slug}`}
-      className="block rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-all hover:-translate-y-1 hover:shadow-md hover:border-build-accent group"
+      href={`/proyectos/${slug}`}
+      className="block rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 p-6 shadow-sm transition-all hover:-translate-y-1 hover:shadow-md hover:border-build-accent group"
     >
       <article>
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div className="space-y-3">
             <div className="flex items-center gap-2">
-              <span className="inline-flex items-center rounded-md bg-slate-100 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider text-slate-600">
+              <span className="inline-flex items-center rounded-md bg-slate-100 dark:bg-white/10 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider text-slate-600 dark:text-white/70">
                 Proyecto
               </span>
-              <span className="text-[12px] font-semibold text-slate-500">
+              <span className="text-[12px] font-semibold text-slate-500 dark:text-white/60">
                 {project.fechaInicio ? `Inicio ${formatProjectDate(new Date(project.fechaInicio))}` : "Sin fecha de inicio"}
               </span>
             </div>
 
             <div>
-              <h2 className="text-[20px] font-bold text-build-main group-hover:text-build-accent transition-colors">
+              <h2 className="text-[20px] font-bold text-build-main dark:text-white group-hover:text-build-accent transition-colors">
                 {project.nombre}
               </h2>
-              <p className="mt-1 text-sm text-slate-500">{project.distrito || "Distrito no especificado"}</p>
+              <p className="mt-1 text-sm text-slate-500 dark:text-white/60">{project.distrito || "Distrito no especificado"}</p>
             </div>
 
-            <div className="grid gap-3 text-sm text-slate-600 md:grid-cols-3">
+            <div className="grid gap-3 text-sm text-slate-600 dark:text-white/70 md:grid-cols-3">
               <div>
-                <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Dirección</p>
+                <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-white/60">Dirección</p>
                 <p className="mt-1">{project.direccion || "No especificada"}</p>
               </div>
               <div>
-                <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Fecha Creación</p>
+                <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-white/60">Fecha Creación</p>
                 <p className="mt-1">{project.createdAt ? formatProjectDate(new Date(project.createdAt)) : "-"}</p>
               </div>
               <div>
-                <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500">ID</p>
+                <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-white/60">ID</p>
                 <p className="mt-1 truncate">{project.id}</p>
               </div>
             </div>

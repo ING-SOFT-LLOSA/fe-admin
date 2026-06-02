@@ -39,7 +39,7 @@ export default function DeleteUsuarioModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#050a0e]/60 backdrop-blur-sm p-4 animate-fade-in">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8 relative">
+      <div className="bg-white dark:bg-white/5 rounded-2xl shadow-2xl w-full max-w-md p-8 relative">
         <div className="flex flex-col items-center text-center">
           <div className="w-14 h-14 rounded-full bg-[#ffdad6] flex items-center justify-center mb-4">
             <span className="material-symbols-outlined text-[#ba1a1a] text-[28px]">delete_forever</span>
@@ -54,7 +54,7 @@ export default function DeleteUsuarioModal({
           </p>
 
           {error && (
-            <div className="w-full mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-[13px] text-red-800 text-left">
+            <div className="w-full mb-4 rounded-lg border border-red-200 dark:border-red-900/50 bg-red-50 dark:bg-red-900/20 px-4 py-3 text-[13px] text-red-800 dark:text-red-400 text-left">
               {error}
             </div>
           )}
