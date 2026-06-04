@@ -21,9 +21,14 @@ pipeline {
             }
             steps {
                 sh '''
+                    # Instalar dependencias del sistema primero
+                    apt-get update && apt-get install -y \
+                        libnss3 libnspr4 libatk1.0-0 libatk-bridge2.0-0 \
+                        libcups2 libatspi2.0-0 libxrandr2 libxcomposite1 \
+                        libxdamage1 libxkbcommon0 libpango-1.0-0 libpangocairo-1.0-0
+
                     npm ci
-                    npx playwright install-deps chromium
-                    npx playwright install chromium
+                    npx playwright install chromium --no-deps
                     npm run test -- --coverage
                     npx playwright test
                 '''
