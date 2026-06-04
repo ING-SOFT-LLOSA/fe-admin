@@ -15,14 +15,16 @@ pipeline {
         stage('Install & Test') {
             agent {
                 docker {
-                    image 'node:20-alpine'
+                    image 'node:20'
                     reuseNode true
                 }
             }
             steps {
                 sh '''
                     npm ci
+                    npx playwright install chromium --with-deps
                     npm run test -- --coverage
+                    npx playwright test
                 '''
             }
         }
@@ -49,7 +51,7 @@ pipeline {
         stage('Quality Gate') {
             steps {
                 timeout(time: 1, unit: 'HOURS') {
-                    waitForQualityGate abortPipeline: false
+                    waitForQualityGate abortPipeline: true
                 }
             }
         }

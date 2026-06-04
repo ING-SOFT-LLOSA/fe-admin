@@ -44,5 +44,5 @@ next-env.d.ts
 
 docker-compose.override.yml
 
-CLAUDE.md
-AGENTS.md
+*.md
+!README.md
