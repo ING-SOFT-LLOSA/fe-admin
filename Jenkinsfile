@@ -22,7 +22,8 @@ pipeline {
             steps {
                 sh '''
                     npm ci
-                    npx playwright install chromium --with-deps
+                    npx playwright install-deps chromium
+                    npx playwright install chromium
                     npm run test -- --coverage
                     npx playwright test
                 '''
