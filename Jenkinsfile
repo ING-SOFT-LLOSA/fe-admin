@@ -64,9 +64,9 @@ pipeline {
                 ]) {
                     sh '''
                         export NEXT_PUBLIC_API_URL_LLOSA="https://backend-llosa-dev.ingsoftware.lat"
-                        docker compose -p llosa_front_dev -f docker-compose.yml down --remove-orphans || true
-                        docker rm -f front-llosa-dev 2>/dev/null || true
-                        docker compose -p llosa_front_dev -f docker-compose.yml up -d --build front-llosa-dev
+                        docker compose -f docker-compose.yml down --remove-orphans || true
+                        docker rm -f front-llosa 2>/dev/null || true
+                        docker compose -f docker-compose.yml up -d --build front-llosa
                     '''
                 }
             }

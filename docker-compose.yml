@@ -1,5 +1,5 @@
 services:
-  front-llosa-dev:
+  front-llosa:
     build:
       context: .
       args:
@@ -7,7 +7,7 @@ services:
         NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN_LLOSA: ${NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN_LLOSA}
         NEXT_PUBLIC_FIREBASE_PROJECT_ID_LLOSA: ${NEXT_PUBLIC_FIREBASE_PROJECT_ID_LLOSA}
         NEXT_PUBLIC_API_URL_LLOSA: ${NEXT_PUBLIC_API_URL_LLOSA}
-    container_name: front-llosa-dev
+    container_name: front-llosa
     environment:
       - NEXT_PUBLIC_FIREBASE_API_KEY_LLOSA=${NEXT_PUBLIC_FIREBASE_API_KEY_LLOSA}
       - NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN_LLOSA=${NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN_LLOSA}
