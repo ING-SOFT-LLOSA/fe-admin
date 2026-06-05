@@ -120,7 +120,7 @@ export function mapUsuarioToClienteRow(u: Usuario): ClienteRow {
 }
 
 export function fetchExpedientesPorUsuario(idUsuario: number): Promise<any[]> {
-  return apiFetch<any[]>(`/api/expedientes/usuario/${idUsuario}`);
+  return apiFetch<any[]>(`/api/expedientes/${idUsuario}`);
 }
 
 export function unlinkAssignment(uuid: string): Promise<void> {
