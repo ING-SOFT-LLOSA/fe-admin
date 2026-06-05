@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from "react";
 
-import { getAvanceGeneral, getEtapasByProyecto } from "@/lib/api/obra";
+import { getAvanceGeneral, getEtapasByProyecto, getAvancesActivo } from "@/lib/api/obra";
 import type { EtapaResponseDTO } from "@/lib/api/obra";
+import { fetchActivosPorProyecto } from "@/lib/api/proyectos";
 import { fetchProyectos } from "@/modules/proyectos/services";
 import type { Proyecto } from "@/modules/proyectos/types";
 
@@ -41,6 +42,59 @@ export default function ConstructionProgressView({
   const [error,     setError]     = useState("");
   const [activeTab, setActiveTab] = useState<Tab>("timeline");
 
+  // Helper to fetch floor-level hitos and correct master stages status dynamically
+  async function fetchAndCorrectEtapas(projectId: string, rawEtapas: EtapaResponseDTO[]): Promise<EtapaResponseDTO[]> {
+    try {
+      const assetsPage = await fetchActivosPorProyecto(projectId).catch(() => ({ content: [] }));
+      const assets = assetsPage?.content || [];
+      
+      // Group assets by unique floor (pisoId)
+      const uniqueFloorsMap = new Map<number, string>();
+      assets.forEach((a) => {
+        if (a.pisoId && !uniqueFloorsMap.has(a.pisoId)) {
+          uniqueFloorsMap.set(a.pisoId, a.id);
+        }
+      });
+
+      const proxyAssetIds = Array.from(uniqueFloorsMap.values());
+      if (proxyAssetIds.length === 0) {
+        return rawEtapas;
+      }
+
+      const allFloorAvances = await Promise.all(
+        proxyAssetIds.map((id) => getAvancesActivo(id).catch(() => []))
+      );
+
+      return rawEtapas.map((etapa) => {
+        const floorStates = allFloorAvances.map((floorAvances) => {
+          const matchingAvance = floorAvances.find((fa) => fa.hitoOrden === etapa.orden);
+          return matchingAvance?.estado || "PENDIENTE";
+        });
+
+        let computedEstado = etapa.estado;
+        if (floorStates.length > 0) {
+          const allCompleted = floorStates.every((st) => st === "COMPLETADO");
+          const anyCompleted = floorStates.some((st) => st === "COMPLETADO");
+          if (allCompleted) {
+            computedEstado = "COMPLETADO";
+          } else if (anyCompleted) {
+            computedEstado = "EN_PROGRESO";
+          } else {
+            computedEstado = "PENDIENTE";
+          }
+        }
+
+        return {
+          ...etapa,
+          estado: computedEstado,
+        };
+      });
+    } catch (err) {
+      console.error("Error correcting stages:", err);
+      return rawEtapas;
+    }
+  }
+
   useEffect(() => {
     let mounted = true;
 
@@ -56,7 +110,11 @@ export default function ConstructionProgressView({
         if (!mounted) return;
         setProject(projects.find((p) => p.id === projectId) ?? null);
         setAvance(progress?.avanceGlobal ?? 0);
-        setEtapas(etapasRes);
+
+        // Correct stages status using the floor data to workaround backend caching/state issue
+        const corrected = await fetchAndCorrectEtapas(projectId, etapasRes);
+        if (!mounted) return;
+        setEtapas(corrected);
       } catch (err) {
         if (mounted) setError(err instanceof Error ? err.message : "No se pudo cargar la obra.");
       } finally {
@@ -137,7 +195,8 @@ export default function ConstructionProgressView({
             etapas={etapas}
             onRefresh={async () => {
               const updated = await getEtapasByProyecto(projectId).catch(() => etapas);
-              setEtapas(updated);
+              const corrected = await fetchAndCorrectEtapas(projectId, updated);
+              setEtapas(corrected);
             }}
           />
         )}
