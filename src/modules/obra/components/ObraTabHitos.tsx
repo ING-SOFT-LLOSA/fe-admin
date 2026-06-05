@@ -66,9 +66,10 @@ export default function ObraTabHitos({ projectId, etapas, onRefresh }: ObraTabHi
   const [loadingTorres,    setLoadingTorres]    = useState(false);
   const [selectedTorreId,  setSelectedTorreId]  = useState<string>("");
 
-  const [pisos,            setPisos]            = useState<PisoResponseDTO[]>([]);
+  const [pisosMap,         setPisosMap]         = useState<Record<number, PisoResponseDTO[]>>({});
   const [loadingPisos,     setLoadingPisos]     = useState(false);
   const [selectedPisoId,   setSelectedPisoId]   = useState<string>("");
+  const pisos = selectedTorreId ? (pisosMap[Number(selectedTorreId)] || []) : [];
 
   const [activos,          setActivos]          = useState<ActivoResponseDTO[]>([]);
 
@@ -76,24 +77,46 @@ export default function ObraTabHitos({ projectId, etapas, onRefresh }: ObraTabHi
   const [loadingAvances,   setLoadingAvances]   = useState(false);
   const [errorPiso,        setErrorPiso]        = useState("");
 
-  // ── Cargar torres cuando se abre la pestaña "Por piso" ──────────────────
+  // ── Cargar torres y precargar pisos cuando se abre la pestaña "Por piso" ──
   useEffect(() => {
     if (nivel !== "piso") return;
 
     let cancelled = false;
     setLoadingTorres(true);
+    setLoadingPisos(true);
 
     fetchTorresPorProyecto(projectId)
-      .then((data) => {
-        if (!cancelled) {
-          setTorres(data);
-          setSelectedTorreId("");
-          setPisos([]);
-          setSelectedPisoId("");
+      .then(async (data) => {
+        if (cancelled) return;
+        setTorres(data);
+        setSelectedTorreId("");
+        setSelectedPisoId("");
+
+        // Precargar todos los pisos de todas las torres en paralelo
+        try {
+          const loadPisosPromises = data.map(async (t) => {
+            const pisoList = await fetchPisosPorTorre(t.id).catch(() => [] as PisoResponseDTO[]);
+            return { torreId: t.id, pisos: pisoList };
+          });
+          const results = await Promise.all(loadPisosPromises);
+          if (!cancelled) {
+            const newMap: Record<number, PisoResponseDTO[]> = {};
+            for (const res of results) {
+              newMap[res.torreId] = res.pisos;
+            }
+            setPisosMap(newMap);
+          }
+        } catch (err) {
+          console.error("Error precargando pisos:", err);
+        } finally {
+          if (!cancelled) setLoadingPisos(false);
         }
       })
       .catch((err: unknown) => {
-        if (!cancelled) console.error(err);
+        if (!cancelled) {
+          console.error(err);
+          setLoadingPisos(false);
+        }
       });
 
     fetchActivosPorProyecto(projectId)
@@ -112,32 +135,9 @@ export default function ObraTabHitos({ projectId, etapas, onRefresh }: ObraTabHi
     return () => { cancelled = true; };
   }, [nivel, projectId]);
 
-  // ── Cargar pisos cuando se selecciona una torre ───────────────────────────
+  // ── Resetear piso seleccionado cuando cambia la torre ──────────────────────
   useEffect(() => {
-    if (!selectedTorreId) {
-      setPisos([]);
-      setSelectedPisoId("");
-      return;
-    }
-
-    let cancelled = false;
-    setLoadingPisos(true);
-
-    fetchPisosPorTorre(Number(selectedTorreId))
-      .then((data) => {
-        if (!cancelled) {
-          setPisos(data);
-          setSelectedPisoId("");
-        }
-      })
-      .catch((err: unknown) => {
-        if (!cancelled) console.error(err);
-      })
-      .finally(() => {
-        if (!cancelled) setLoadingPisos(false);
-      });
-
-    return () => { cancelled = true; };
+    setSelectedPisoId("");
   }, [selectedTorreId]);
 
   // ── Cargar avances del piso seleccionado (usando Activo proxy) ────────────────
