@@ -35,17 +35,7 @@ export default function InventoryConfigurator({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-8">
-      <div className="rounded-xl border border-blue-100 bg-blue-50/50 p-5 text-sm text-blue-800">
-        <span className="mb-2 flex items-center gap-2 font-bold">
-          <span className="material-symbols-outlined text-[20px]">info</span>
-          Previsualización de inventario
-        </span>
-        <p>
-          Esta configuración solo sirve para estimar el volumen del proyecto. La creación automática
-          de torres, pisos y unidades está desactivada hasta que el backend autorice el endpoint de
-          estructura física.
-        </p>
-      </div>
+
 
       <div className="grid gap-x-8 gap-y-6 md:grid-cols-2">
         <div className="space-y-5">

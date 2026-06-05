@@ -150,40 +150,17 @@ export default function FinancePaymentScheduleView({
         </div>
       </section>
 
-      <section className="rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 p-6 shadow-sm overflow-x-auto">
-        <h3 className="text-lg font-bold text-build-main dark:text-white mb-4">
-          Cronograma de Pagos (Mock)
-        </h3>
-        <table className="w-full text-left text-sm text-slate-600 dark:text-white/70">
-          <thead className="border-b border-slate-200 dark:border-white/10">
-            <tr>
-              <th className="pb-3 font-semibold text-slate-500">N° Cuota</th>
-              <th className="pb-3 font-semibold text-slate-500">Fecha Vencimiento</th>
-              <th className="pb-3 font-semibold text-slate-500">Monto</th>
-              <th className="pb-3 font-semibold text-slate-500">Estado</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-100 dark:divide-white/5">
-            {[1, 2, 3, 4, 5].map((cuota) => (
-              <tr key={cuota}>
-                <td className="py-3">{cuota}</td>
-                <td className="py-3">15/{cuota.toString().padStart(2, "0")}/2026</td>
-                <td className="py-3 font-medium text-build-main dark:text-white">
-                  S/ {(commercialValue / 5).toLocaleString("es-PE", { maximumFractionDigits: 2 })}
-                </td>
-                <td className="py-3">
-                  <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${
-                    cuota <= 2 
-                      ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
-                      : "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400"
-                  }`}>
-                    {cuota <= 2 ? "Pagado" : "Pendiente"}
-                  </span>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      <section className="rounded-2xl border border-dashed border-slate-300 dark:border-white/20 bg-white dark:bg-white/5 px-6 py-12 text-center">
+        <h2 className="text-lg font-bold text-build-main dark:text-white">
+          {isLoading ? "Cargando información financiera..." : "Cronogramas pendientes de integración"}
+        </h2>
+        <p className="mx-auto mt-2 max-w-2xl text-sm text-slate-500 dark:text-white/60">
+          {selectedProject
+            ? `Proyecto seleccionado: ${selectedProject.nombre}${selectedUnit ? `, unidad ${selectedUnit.nro}` : ""}.`
+            : "Selecciona un proyecto para preparar la vista financiera."}{" "}
+          El frontend ya no usa cronogramas mock de `localStorage`; falta exponer endpoints de cuotas,
+          vouchers, mora y estados de cuenta para completar este módulo con datos reales.
+        </p>
       </section>
     </section>
   );

@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 type CalEvent = {
   id: string;
   label: string;
@@ -48,15 +48,19 @@ const EVENT_TYPES = [
   "Reunión General"
 ];
 
-const CLIENTS_MOCK = [
-  { id: "C001", name: "Carlos Mendoza", unit: "Torre Aviana - 1402" },
-  { id: "C002", name: "Maria Rojas", unit: "Parque Sur - 501" },
-  { id: "C003", name: "Luis Fernandez", unit: "Lumiere - 204" },
-];
+import { fetchUsuarios } from "@/lib/api/users";
+import type { Usuario } from "@/types/user";
 
 export default function SchedulePage() {
   const [calDays, setCalDays] = useState<CalDay[]>(INITIAL_CAL_DAYS);
   const [modalOpen, setModalOpen] = useState(false);
+  const [clients, setClients] = useState<Usuario[]>([]);
+
+  useEffect(() => {
+    fetchUsuarios().then((users) => {
+      setClients(users.filter(u => u.tipoUsuario === "CLIENTE"));
+    }).catch(console.error);
+  }, []);
 
   // Form State
   const [clientId, setClientId] = useState("");
@@ -73,7 +77,7 @@ export default function SchedulePage() {
   const [successMsg, setSuccessMsg] = useState("");
   const [warningMsg, setWarningMsg] = useState("");
 
-  const selectedClient = CLIENTS_MOCK.find(c => c.id === clientId);
+  const selectedClient = clients.find(c => String(c.id) === clientId);
 
   function resetForm() {
     setClientId("");
@@ -117,14 +121,14 @@ export default function SchedulePage() {
 
       const newEvent: CalEvent = {
         id: `EV_${Date.now()}`,
-        label: `${eventType} - ${selectedClient?.name}`,
+        label: `${eventType} - ${selectedClient?.nombre || ""} ${selectedClient?.apellidos || ""}`,
         bg: "bg-[#c2e8ff]",
         dot: "bg-[#001e2b]",
         text: "text-[#001e2b]",
         time: startTime,
-        client: selectedClient?.name,
+        client: selectedClient?.nombre || "",
         type: eventType,
-        unit: selectedClient?.unit
+        unit: ""
       };
 
       // Find the day mapped to local grid (for demo, just push it to the actual day number)
@@ -277,7 +281,7 @@ export default function SchedulePage() {
                       className="w-full px-3 py-2.5 border border-slate-200 dark:border-white/10 rounded-xl text-sm text-build-main dark:text-white focus:outline-none focus:border-build-accent focus:ring-1 focus:ring-build-accent"
                     >
                       <option value="">-- Seleccionar Cliente --</option>
-                      {CLIENTS_MOCK.map((c) => <option key={c.id} value={c.id}>{c.name} ({c.unit})</option>)}
+                      {clients.map((c) => <option key={c.id} value={String(c.id)}>{c.nombre} {c.apellidos}</option>)}
                     </select>
                   </div>
 

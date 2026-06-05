@@ -13,7 +13,7 @@ const nextConfig: NextConfig = {
     return [
       {
         source: "/",
-        destination: "/login-empresa",
+        destination: "/login",
         permanent: false,
       },
       {

@@ -132,12 +132,12 @@ export default function AssignPropertyWizard({ onClose, onSuccess }: AssignPrope
       
       await Promise.all(assignments);
       
-      setSuccessMsg("Propiedad vinculada correctamente.");
+      setSuccessMsg("Unidad asignada correctamente.");
       setTimeout(() => {
         onSuccess();
       }, 2000);
     } catch (err) {
-      setErrorMsg("Ocurrió un error en el backend al asignar la propiedad. ¿El UUID del activo es válido?");
+      setErrorMsg("Ocurrió un error al asignar la unidad.");
     } finally {
       setLoading(false);
     }
@@ -156,7 +156,7 @@ export default function AssignPropertyWizard({ onClose, onSuccess }: AssignPrope
               <span className="material-symbols-outlined text-build-main dark:text-white">key</span>
             </div>
             <div>
-              <h2 className="text-[20px] font-bold text-build-main dark:text-white">Vincular Cliente a Unidad</h2>
+              <h2 className="text-[20px] font-bold text-build-main dark:text-white">Asignar unidad</h2>
               <p className="text-[12px] text-slate-500 dark:text-white/60 font-medium mt-0.5">Paso {step} de 3</p>
             </div>
           </div>
@@ -178,7 +178,7 @@ export default function AssignPropertyWizard({ onClose, onSuccess }: AssignPrope
             <div className="space-y-6 animate-fade-in">
               <div>
                 <h3 className="text-[18px] font-bold text-build-main dark:text-white">Seleccionar proyecto y unidad</h3>
-                <p className="text-[13px] text-slate-500 dark:text-white/60">Elige un proyecto para consultar unidades disponibles que el cliente adquirirá.</p>
+                <p className="text-[13px] text-slate-500 dark:text-white/60">Elige un proyecto para consultar unidades disponibles.</p>
               </div>
 
               <div>
@@ -254,7 +254,7 @@ export default function AssignPropertyWizard({ onClose, onSuccess }: AssignPrope
                     <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-white/50 text-[18px]">search</span>
                     <input
                       type="text"
-                      placeholder="Buscar por DNI o Nombre... (ej. Carlos, 4589...)"
+                      placeholder="Buscar por nombre, correo o documento"
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       onKeyDown={e => e.key === "Enter" && handleSearchClient()}
@@ -285,7 +285,9 @@ export default function AssignPropertyWizard({ onClose, onSuccess }: AssignPrope
                     </div>
                     <div>
                       <h4 className="text-[16px] font-bold text-build-main dark:text-white">{searchedClient.name}</h4>
-                      <p className="text-[13px] text-slate-500 dark:text-white/60">DNI: {searchedClient.dni} | {searchedClient.email}</p>
+                      <p className="text-[13px] text-slate-500 dark:text-white/60">
+                        {searchedClient.dni !== "—" ? `Documento: ${searchedClient.dni} | ` : ""}{searchedClient.email}
+                      </p>
                     </div>
                   </div>
                   <span className="material-symbols-outlined text-[#27a85e] text-[32px]">check_circle</span>
@@ -299,7 +301,7 @@ export default function AssignPropertyWizard({ onClose, onSuccess }: AssignPrope
             <div className="space-y-6 animate-fade-in">
               <div className="text-center mb-6">
                 <span className="material-symbols-outlined text-[48px] text-build-main dark:text-white">handshake</span>
-                <h3 className="text-[20px] font-bold text-build-main dark:text-white mt-2">Detalles de la Operación</h3>
+                <h3 className="text-[20px] font-bold text-build-main dark:text-white mt-2">Resumen de asignación</h3>
                 <p className="text-[13px] text-slate-500 dark:text-white/60 mt-1">Ingresa las condiciones de financiamiento y confirma la asignación.</p>
               </div>
 
@@ -322,7 +324,7 @@ export default function AssignPropertyWizard({ onClose, onSuccess }: AssignPrope
                 <div className="relative z-10">
                   <label className="block text-[11px] font-bold text-slate-500 dark:text-white/60 uppercase tracking-wider mb-1">Cliente Asignado</label>
                   <h4 className="text-[14px] font-bold text-build-main dark:text-white">{searchedClient?.name}</h4>
-                  <p className="text-[12px] text-slate-500 dark:text-white/60">DNI: {searchedClient?.dni}</p>
+                  <p className="text-[12px] text-slate-500 dark:text-white/60">{searchedClient?.email}</p>
                 </div>
                 <div className="relative z-10 border-l border-slate-200 dark:border-white/10 pl-6">
                   <label className="block text-[11px] font-bold text-slate-500 dark:text-white/60 uppercase tracking-wider mb-1">Unidades ({selectedProject?.nombre})</label>

@@ -1,8 +1,11 @@
 import type { PerfilConPermisos } from "@/types/auth";
+// Removed mock imports
 
 const API_URL = (process.env.NEXT_PUBLIC_API_URL_LLOSA ?? "http://localhost:8080").replace(/\/$/, "");
 
 export async function fetchPerfil(token: string): Promise<PerfilConPermisos> {
+
+
   const res = await fetch(`${API_URL}/api/auth/me`, {
     headers: {
       Authorization: `Bearer ${token}`,

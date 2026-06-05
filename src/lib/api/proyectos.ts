@@ -44,8 +44,32 @@ export interface ActivoResponseDTO {
   descripcion: string;
 }
 
+export interface TorreResponseDTO {
+  id: number;
+  nombre: string;
+  nroPisos: number;
+  nroSotanos: number;
+  areaComunM2: number;
+  proyectoId: string;
+}
+
+export interface PisoResponseDTO {
+  id: number;
+  numero: number;
+  tipo: string;
+  torreId: number;
+}
+
 export function fetchProyectos(): Promise<Proyecto[]> {
   return apiFetch<Proyecto[]>("/api/proyectos");
+}
+
+export function fetchTorresPorProyecto(uuidProyecto: string): Promise<TorreResponseDTO[]> {
+  return apiFetch<TorreResponseDTO[]>(`/api/torres/${uuidProyecto}`);
+}
+
+export function fetchPisosPorTorre(idTorre: number): Promise<PisoResponseDTO[]> {
+  return apiFetch<PisoResponseDTO[]>(`/api/pisos/${idTorre}`);
 }
 
 export function fetchActivosPorProyecto(uuidProyecto: string, estado?: string): Promise<Page<ActivoResponseDTO>> {

@@ -165,7 +165,7 @@ export default function EditClienteModal({
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-[11px] font-bold text-slate-500 dark:text-white/60 uppercase tracking-wider mb-1.5">
-                DNI / RUC
+                DNI / CE
               </label>
               <input
                 value={form.documentoIdentidad}

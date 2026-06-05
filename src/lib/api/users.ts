@@ -1,5 +1,6 @@
 import { apiFetch } from "@/lib/api/http";
-import type { ClienteRow, CrearClientePayload, CrearEmpleadoPayload, Usuario, Rol } from "@/types/user";
+// Removed mock imports
+import type { ClienteRow, CrearClientePayload, CrearEmpleadoPayload, Rol, Usuario } from "@/types/user";
 
 export interface Page<T> {
   content: T[];
@@ -30,23 +31,11 @@ export function registerCliente(payload: CrearClientePayload): Promise<Usuario> 
   });
 }
 
-export async function updateCliente(id: number, payload: Partial<CrearClientePayload>): Promise<Usuario> {
-  // Simulación temporal ya que el endpoint PUT /api/users/{id} aún no existe
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      resolve({
-        id,
-        nombre: payload.nombre ?? "",
-        apellidos: payload.apellidos ?? "",
-        email: payload.email ?? "",
-        telefono: payload.telefono,
-        documentoIdentidad: payload.documentoIdentidad,
-        tipoUsuario: "CLIENTE",
-        rol: null,
-        activo: true,
-        funciones: [],
-      });
-    }, 1200);
+export function updateCliente(id: number, payload: Partial<CrearClientePayload>): Promise<Usuario> {
+  return apiFetch<Usuario>(`/api/users/${id}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
   });
 }
 
@@ -70,12 +59,10 @@ export function fetchRoles(): Promise<Rol[]> {
   return apiFetch<Rol[]>("/api/roles");
 }
 
-/** Desactiva usuario (revoca acceso Firebase, mantiene registro en BD). */
 export function desactivarUsuario(id: number): Promise<void> {
   return apiFetch<void>(`/api/users/${id}`, { method: "DELETE" });
 }
 
-/** Elimina usuario en Firebase y PostgreSQL (irreversible). */
 export function eliminarUsuarioCompleto(id: number): Promise<void> {
   return apiFetch<void>(`/api/users/${id}/hard`, { method: "DELETE" });
 }
@@ -89,9 +76,9 @@ function getInitials(nombre: string, apellidos?: string | null): string {
 function statusForUsuario(u: Usuario): { status: string; statusBg: string; rolName: string } {
   let rolName = "Empleado";
   if (u.rol) {
-    if (typeof u.rol === 'string') {
+    if (typeof u.rol === "string") {
       rolName = u.rol;
-    } else if (typeof u.rol === 'object' && 'nombre' in u.rol) {
+    } else if (typeof u.rol === "object" && "nombre" in u.rol) {
       rolName = (u.rol as any).nombre;
     }
   }
@@ -106,12 +93,16 @@ function statusForUsuario(u: Usuario): { status: string; statusBg: string; rolNa
   return {
     status: rolName,
     statusBg: "bg-[#c2e8ff] text-[#001e2b]",
-    rolName
+    rolName,
   };
 }
 
 export function mapUsuarioToClienteRow(u: Usuario): ClienteRow {
   const { status, statusBg, rolName } = statusForUsuario(u);
+  
+  // Como ya no hay MOCK_MODE ni assignments locales, el proyecto se ve desde el perfil.
+  const assignedUnits = "Revisar perfil";
+
   return {
     id: u.id,
     initials: getInitials(u.nombre, u.apellidos),
@@ -119,10 +110,19 @@ export function mapUsuarioToClienteRow(u: Usuario): ClienteRow {
     dni: u.documentoIdentidad || "—",
     email: u.email,
     phone: u.telefono || "—",
-    project: "Sin asignar",
+    project: assignedUnits,
     status,
     statusBg,
     tipoUsuario: u.tipoUsuario,
     rol: rolName,
+    createdAt: u.createdAt,
   };
+}
+
+export function fetchExpedientesPorUsuario(idUsuario: number): Promise<any[]> {
+  return apiFetch<any[]>(`/api/expedientes/usuario/${idUsuario}`);
+}
+
+export function unlinkAssignment(uuid: string): Promise<void> {
+  return apiFetch<void>(`/api/expedientes/delete/${uuid}`, { method: "DELETE" });
 }
