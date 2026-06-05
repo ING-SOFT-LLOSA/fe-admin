@@ -140,7 +140,12 @@ export default function AssignPropertyWizard({ onClose, onSuccess, client }: Ass
         onSuccess();
       }, 2000);
     } catch (err) {
-      setErrorMsg("Ocurrió un error al asignar la unidad.");
+      console.error("Error detallado al asignar unidad:", err);
+      setErrorMsg(
+        err instanceof Error
+          ? err.message
+          : "Ocurrió un error al asignar la unidad."
+      );
     } finally {
       setLoading(false);
     }

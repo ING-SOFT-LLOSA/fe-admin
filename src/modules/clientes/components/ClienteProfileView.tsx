@@ -48,7 +48,26 @@ export default function ClienteProfileView({ clientId }: ClienteProfileViewProps
         if (!mounted) return;
         const found = users.find((user) => String(user.id) === clientId);
         setClient(found ? mapUsuarioToClienteRow(found) : null);
-        setAssignments(exps);
+        
+        const mappedExps = (exps || []).map((exp: any) => {
+          const act = exp.activo;
+          const label = act
+            ? `${act.tipo === "ESTACIONAMIENTO" ? "Cochera" : act.tipo === "DEPOSITO" ? "Depósito" : "Dpto"} ${act.nro}`
+            : "Unidad Desconocida";
+          
+          return {
+            clientId: Number(clientId),
+            unitId: act?.id || exp.uuidUsuarioActivo || "unknown-unit",
+            unitLabel: label,
+            projectName: exp.projectName || "Proyecto Edificación",
+            financing: exp.tipoFinanciamiento === "CREDITO_DIRECTO" ? "Crédito Directo" : "Crédito Hipotecario",
+            assignedAt: exp.fechaAdquisicion ? exp.fechaAdquisicion.split("T")[0] : "",
+            status: exp.estadoTramiteLegal === "Desvinculada" ? "Desvinculado" : "Vigente",
+            estadoTramiteLegal: exp.estadoTramiteLegal,
+            uuidUsuarioActivo: exp.uuidUsuarioActivo,
+          };
+        });
+        setAssignments(mappedExps);
       })
       .catch((err) => {
         if (mounted) setError(err instanceof Error ? err.message : "No se pudo cargar el cliente.");
