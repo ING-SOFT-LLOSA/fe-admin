@@ -33,7 +33,7 @@ export function registerCliente(payload: CrearClientePayload): Promise<Usuario> 
 
 export function updateCliente(id: number, payload: Partial<CrearClientePayload>): Promise<Usuario> {
   return apiFetch<Usuario>(`/api/users/${id}`, {
-    method: "PUT",
+    method: "PATCH",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
   });
