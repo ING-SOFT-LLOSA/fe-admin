@@ -74,8 +74,8 @@ export function fetchPisosPorTorre(idTorre: number): Promise<PisoResponseDTO[]> 
 
 export function fetchActivosPorProyecto(uuidProyecto: string, estado?: string): Promise<Page<ActivoResponseDTO>> {
   const url = estado 
-    ? `/api/proyecto/${uuidProyecto}?estado=${estado}&size=100` 
-    : `/api/proyecto/${uuidProyecto}?size=100`;
+    ? `/api/activos/proyecto/${uuidProyecto}?estado=${estado}&size=100` 
+    : `/api/activos/proyecto/${uuidProyecto}?size=100`;
   return apiFetch<Page<ActivoResponseDTO>>(url);
 }
 
