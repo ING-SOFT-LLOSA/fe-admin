@@ -4,9 +4,10 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 
 import { fetchUsuarios, fetchExpedientesPorUsuario } from "@/lib/api/users";
-import { fetchContratoActivo } from "@/lib/api/expedientes";
-import type { UsuarioActivoResponseDTO } from "@/lib/api/expedientes";
+import { fetchContratoActivo, fetchCommercialStepper, createCommercialHito, updateCommercialHitoEstado } from "@/lib/api/expedientes";
+import type { UsuarioActivoResponseDTO, StepperResponseDTO } from "@/lib/api/expedientes";
 import type { Usuario } from "@/types/user";
+import { useAuth } from "@/contexts/AuthContext";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -45,11 +46,11 @@ const ESTADO_BADGE = {
 };
 
 const PROCESO_ETAPAS: ProcesoEtapa[] = [
-  { id: "separacion", label: "Separación",      icon: "handshake",       estado: "completado", responsable: "Diego Salazar", fechaInicio: "2025-11-01", fechaFin: "2025-11-05" },
-  { id: "contrato",   label: "Contrato",        icon: "description",     estado: "completado", responsable: "Diego Salazar", fechaInicio: "2025-11-10", fechaFin: "2025-12-02" },
-  { id: "escritura",  label: "Escritura Pública", icon: "verified",      estado: "en_proceso", responsable: "María Torres",  fechaInicio: "2026-01-15", comentarios: "Minuta en revisión notarial." },
-  { id: "entrega",    label: "Entrega",          icon: "key",             estado: "pendiente",  responsable: "—" },
-  { id: "saneamiento",label: "Saneamiento",      icon: "domain_verified", estado: "pendiente",  responsable: "—" },
+  { id: "separacion", label: "Separación",      icon: "handshake",       estado: "pendiente", responsable: "—" },
+  { id: "contrato",   label: "Contrato",        icon: "description",     estado: "pendiente", responsable: "—" },
+  { id: "escritura",  label: "Escritura Pública", icon: "verified",      estado: "pendiente", responsable: "—" },
+  { id: "entrega",    label: "Entrega",          icon: "key",             estado: "pendiente", responsable: "—" },
+  { id: "saneamiento",label: "Saneamiento",      icon: "domain_verified", estado: "pendiente", responsable: "—" },
 ];
 
 const DOCUMENTOS_SECCIONES = [
@@ -116,10 +117,15 @@ const AUDITORIA_MOCK = [
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function ClientExpedienteView({ clientId }: ClientExpedienteViewProps) {
+  const { perfil } = useAuth();
   const [client,    setClient]    = useState<Usuario | null>(null);
   const [expedientes, setExpedientes] = useState<any[]>([]);
   const [selectedExpediente, setSelectedExpediente] = useState<any | null>(null);
   const [contrato, setContrato] = useState<UsuarioActivoResponseDTO | null>(null);
+
+  const [stepper, setStepper] = useState<StepperResponseDTO | null>(null);
+  const [loadingStepper, setLoadingStepper] = useState(false);
+  const [updateError, setUpdateError] = useState("");
 
   const [isLoading, setIsLoading] = useState(true);
   const [error,     setError]     = useState("");
@@ -158,6 +164,62 @@ export default function ClientExpedienteView({ clientId }: ClientExpedienteViewP
     }
   }, [selectedExpediente]);
 
+  // Fetch / Seed commercial milestones (Hitos Comerciales)
+  useEffect(() => {
+    if (!contrato?.id) {
+      setStepper(null);
+      return;
+    }
+
+    let cancelled = false;
+    setLoadingStepper(true);
+    setUpdateError("");
+
+    fetchCommercialStepper(contrato.id)
+      .then(async (data) => {
+        if (cancelled) return;
+
+        const totalHitosCount = data.etapas?.reduce((acc, e) => acc + (e.hitos?.length || 0), 0) || 0;
+
+        if (totalHitosCount === 0) {
+          // Seed default hitos
+          try {
+            const defaultHitos = [
+              { etapaProceso: "SEPARACION" as const, nombreHito: "Separación", orden: 1, descripcion: "Comprobante de separación y ficha de cliente completada." },
+              { etapaProceso: "CONTRATO" as const,   nombreHito: "Contrato",   orden: 2, descripcion: "Minuta firmada y contrato visado." },
+              { etapaProceso: "PAGO" as const,       nombreHito: "Escritura Pública", orden: 3, descripcion: "Firma de escritura notarial y financiamiento." },
+              { etapaProceso: "ENTREGA" as const,    nombreHito: "Entrega",    orden: 4, descripcion: "Entrega física de llaves y conformidad." },
+              { etapaProceso: "SANEAMIENTO" as const,nombreHito: "Saneamiento",orden: 5, descripcion: "Inscripción en registros públicos (SUNARP)." },
+            ];
+            await Promise.all(
+              defaultHitos.map(h => createCommercialHito({
+                uuidUsuarioActivo: contrato.id,
+                etapaProceso: h.etapaProceso,
+                nombreHito: h.nombreHito,
+                descripcion: h.descripcion,
+                orden: h.orden
+              }))
+            );
+            const freshData = await fetchCommercialStepper(contrato.id);
+            if (!cancelled) setStepper(freshData);
+          } catch (err) {
+            console.error("Error seeding commercial hitos:", err);
+            if (!cancelled) setStepper(data);
+          }
+        } else {
+          setStepper(data);
+        }
+      })
+      .catch((err) => {
+        console.error("Error loading stepper:", err);
+      })
+      .finally(() => {
+        if (!cancelled) setLoadingStepper(false);
+      });
+
+    return () => { cancelled = true; };
+  }, [contrato]);
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-24">
@@ -182,6 +244,57 @@ export default function ClientExpedienteView({ clientId }: ClientExpedienteViewP
 
   const fullName = client ? [client.nombre, client.apellidos].filter(Boolean).join(" ") : "Cliente no encontrado";
   const initials = fullName.split(" ").slice(0, 2).map((w) => w[0]).join("").toUpperCase();
+
+  // Map backend stepper stages to UI format
+  const mappedEtapas = stepper?.etapas.map(et => {
+    const mainHito = et.hitos?.[0]; // Seeding puts exactly 1 hito per stage
+    const label = et.etapa === "SEPARACION" ? "Separación"
+                : et.etapa === "CONTRATO" ? "Contrato"
+                : et.etapa === "PAGO" ? "Escritura Pública"
+                : et.etapa === "ENTREGA" ? "Entrega"
+                : "Saneamiento";
+    const icon = et.etapa === "SEPARACION" ? "handshake"
+               : et.etapa === "CONTRATO" ? "description"
+               : et.etapa === "PAGO" ? "verified"
+               : et.etapa === "ENTREGA" ? "key"
+               : "domain_verified";
+
+    let estado: "pendiente" | "en_proceso" | "completado" = "pendiente";
+    if (et.porcentajeAvance === 100) {
+      estado = "completado";
+    } else if (et.porcentajeAvance > 0 || mainHito?.estado === "EN_PROGRESO") {
+      estado = "en_proceso";
+    }
+
+    return {
+      id: et.etapa,
+      label,
+      icon,
+      estado,
+      responsable: mainHito?.estado === "COMPLETADO" ? "Diego Salazar" : "María Torres",
+      fechaInicio: mainHito?.createdAt ? new Date(mainHito.createdAt).toLocaleDateString("es-PE") : undefined,
+      fechaFin: mainHito?.fechaCompletado ? new Date(mainHito.fechaCompletado).toLocaleDateString("es-PE") : undefined,
+      comentarios: mainHito?.descripcion || "",
+      uuidHito: mainHito?.uuidHitoComercial
+    };
+  }) || [];
+
+  const displayEtapas = mappedEtapas.length > 0 ? mappedEtapas : PROCESO_ETAPAS;
+  const canEdit = !!(perfil?.rol === "ADMIN" || perfil?.funciones?.includes("CONTRATO_EDITAR"));
+
+  async function handleUpdateHito(uuidHito: string, nuevoEstado: string) {
+    setUpdateError("");
+    try {
+      await updateCommercialHitoEstado(uuidHito, nuevoEstado);
+      if (contrato?.id) {
+        const freshData = await fetchCommercialStepper(contrato.id);
+        setStepper(freshData);
+      }
+    } catch (err) {
+      console.error("Error updating hito:", err);
+      setUpdateError(err instanceof Error ? err.message : "Error al actualizar el estado del hito.");
+    }
+  }
 
   return (
     <section className="space-y-6">
@@ -279,10 +392,17 @@ export default function ClientExpedienteView({ clientId }: ClientExpedienteViewP
         ))}
       </div>
 
+      {/* Warning/Error messages for state updates */}
+      {updateError && (
+        <div className="rounded-xl border border-red-200 bg-red-50 dark:bg-red-900/20 dark:border-red-900/40 px-4 py-3 text-sm text-red-700 dark:text-red-400 animate-pulse">
+          {updateError}
+        </div>
+      )}
+
       {/* Tab content */}
       <div>
-        {activeTab === "resumen"     && <TabResumen     client={client} expediente={selectedExpediente} contrato={contrato} />}
-        {activeTab === "proceso"     && <TabProceso     />}
+        {activeTab === "resumen"     && <TabResumen     client={client} expediente={selectedExpediente} contrato={contrato} displayEtapas={displayEtapas} loadingStepper={loadingStepper} />}
+        {activeTab === "proceso"     && <TabProceso     displayEtapas={displayEtapas} loadingStepper={loadingStepper} canEdit={canEdit} onUpdateHito={handleUpdateHito} />}
         {activeTab === "documentos"  && <TabDocumentos  />}
         {activeTab === "saneamiento" && <TabSaneamiento />}
         {activeTab === "auditoria"   && <TabAuditoria   />}
@@ -293,9 +413,21 @@ export default function ClientExpedienteView({ clientId }: ClientExpedienteViewP
 
 // ─── Tab: Resumen ─────────────────────────────────────────────────────────────
 
-function TabResumen({ client, expediente, contrato }: { client: Usuario | null, expediente: any, contrato: UsuarioActivoResponseDTO | null }) {
-  const etapaActual = PROCESO_ETAPAS.find((e) => e.estado === "en_proceso") ?? PROCESO_ETAPAS[0];
-  const completadas = PROCESO_ETAPAS.filter((e) => e.estado === "completado").length;
+function TabResumen({
+  client,
+  expediente,
+  contrato,
+  displayEtapas,
+  loadingStepper,
+}: {
+  client: Usuario | null;
+  expediente: any;
+  contrato: UsuarioActivoResponseDTO | null;
+  displayEtapas: any[];
+  loadingStepper: boolean;
+}) {
+  const etapaActual = displayEtapas.find((e) => e.estado === "en_proceso") ?? displayEtapas.find((e) => e.estado === "pendiente") ?? displayEtapas[0];
+  const completadas = displayEtapas.filter((e) => e.estado === "completado").length;
 
   return (
     <div className="space-y-4">
@@ -311,8 +443,8 @@ function TabResumen({ client, expediente, contrato }: { client: Usuario | null, 
         <div className="rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 p-5 shadow-sm">
           <h3 className="text-sm font-bold text-build-main dark:text-white mb-4">Progreso del proceso legal</h3>
           <div className="space-y-3">
-            {PROCESO_ETAPAS.map((etapa) => {
-              const badge = ESTADO_BADGE[etapa.estado];
+            {displayEtapas.map((etapa) => {
+              const badge = ESTADO_BADGE[etapa.estado as keyof typeof ESTADO_BADGE] || ESTADO_BADGE.pendiente;
               return (
                 <div key={etapa.id} className="flex items-center justify-between gap-3">
                   <div className="flex items-center gap-2">
@@ -337,11 +469,11 @@ function TabResumen({ client, expediente, contrato }: { client: Usuario | null, 
             <div className="h-1.5 w-full rounded-full bg-slate-100 dark:bg-white/10">
               <div
                 className="h-1.5 rounded-full bg-build-accent"
-                style={{ width: `${(completadas / PROCESO_ETAPAS.length) * 100}%` }}
+                style={{ width: `${(completadas / displayEtapas.length) * 100}%` }}
               />
             </div>
             <p className="text-xs text-slate-400 dark:text-white/40 mt-1.5">
-              {completadas} de {PROCESO_ETAPAS.length} etapas completadas
+              {completadas} de {displayEtapas.length} etapas completadas
             </p>
           </div>
         </div>
@@ -362,8 +494,17 @@ function TabResumen({ client, expediente, contrato }: { client: Usuario | null, 
           </div>
           <div className="rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 p-5 shadow-sm">
             <p className="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-white/40 mb-2">Última actualización</p>
-            <p className="text-sm font-semibold text-build-main dark:text-white">11 de mayo, 2026</p>
-            <p className="text-xs text-slate-400 dark:text-white/40 mt-0.5">Por Diego Salazar</p>
+            {etapaActual.fechaFin || etapaActual.fechaInicio ? (
+              <>
+                <p className="text-sm font-semibold text-build-main dark:text-white">{etapaActual.fechaFin || etapaActual.fechaInicio}</p>
+                <p className="text-xs text-slate-400 dark:text-white/40 mt-0.5">Por {etapaActual.responsable}</p>
+              </>
+            ) : (
+              <>
+                <p className="text-sm font-semibold text-build-main dark:text-white">11 de mayo, 2026</p>
+                <p className="text-xs text-slate-400 dark:text-white/40 mt-0.5">Por Diego Salazar</p>
+              </>
+            )}
           </div>
         </div>
       </div>
@@ -373,7 +514,17 @@ function TabResumen({ client, expediente, contrato }: { client: Usuario | null, 
 
 // ─── Tab: Proceso Legal ───────────────────────────────────────────────────────
 
-function TabProceso() {
+function TabProceso({
+  displayEtapas,
+  loadingStepper,
+  canEdit,
+  onUpdateHito,
+}: {
+  displayEtapas: any[];
+  loadingStepper: boolean;
+  canEdit: boolean;
+  onUpdateHito: (uuidHito: string, nuevoEstado: string) => Promise<void>;
+}) {
   return (
     <div className="rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 p-6 shadow-sm">
       <h3 className="text-sm font-bold text-build-main dark:text-white mb-1">Proceso Legal</h3>
@@ -384,8 +535,8 @@ function TabProceso() {
       <div className="relative">
         <div className="absolute left-5 top-0 bottom-0 w-px bg-slate-200 dark:bg-white/10" />
         <ol className="space-y-0">
-          {PROCESO_ETAPAS.map((etapa, index) => {
-            const badge = ESTADO_BADGE[etapa.estado];
+          {displayEtapas.map((etapa) => {
+            const badge = ESTADO_BADGE[etapa.estado as keyof typeof ESTADO_BADGE] || ESTADO_BADGE.pendiente;
             return (
               <li key={etapa.id} className="relative flex gap-6 pb-8 last:pb-0">
                 {/* Node */}
@@ -413,7 +564,20 @@ function TabProceso() {
                     }`}>
                       {etapa.label}
                     </p>
-                    <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full ${badge.cls}`}>{badge.label}</span>
+                    {canEdit && etapa.uuidHito ? (
+                      <select
+                        value={etapa.estado === "completado" ? "COMPLETADO" : etapa.estado === "en_proceso" ? "EN_PROGRESO" : "PENDIENTE"}
+                        disabled={loadingStepper}
+                        onChange={(e) => onUpdateHito(etapa.uuidHito, e.target.value)}
+                        className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full border-0 cursor-pointer focus:ring-2 focus:ring-build-accent/50 focus:outline-none transition-all ${badge.cls} ${loadingStepper ? "opacity-50 cursor-not-allowed" : ""}`}
+                      >
+                        <option value="PENDIENTE" className="bg-white dark:bg-[#111] text-slate-700 dark:text-white">Pendiente</option>
+                        <option value="EN_PROGRESO" className="bg-white dark:bg-[#111] text-slate-700 dark:text-white">En proceso</option>
+                        <option value="COMPLETADO" className="bg-white dark:bg-[#111] text-slate-700 dark:text-white">Completado</option>
+                      </select>
+                    ) : (
+                      <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full ${badge.cls}`}>{badge.label}</span>
+                    )}
                   </div>
 
                   <div className="grid grid-cols-2 gap-x-6 gap-y-1 text-xs text-slate-400 dark:text-white/40">
