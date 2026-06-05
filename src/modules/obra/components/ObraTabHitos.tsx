@@ -67,7 +67,7 @@ export default function ObraTabHitos({ projectId, etapas, onRefresh }: ObraTabHi
   const [selectedTorreId,  setSelectedTorreId]  = useState<string>("");
 
   const [pisosMap,         setPisosMap]         = useState<Record<number, PisoResponseDTO[]>>({});
-  const [loadingPisos,     setLoadingPisos]     = useState(false);
+  const [loadingPisosMap,  setLoadingPisosMap]  = useState<Record<number, boolean>>({});
   const [selectedPisoId,   setSelectedPisoId]   = useState<string>("");
   const pisos = selectedTorreId ? (pisosMap[Number(selectedTorreId)] || []) : [];
 
@@ -83,39 +83,35 @@ export default function ObraTabHitos({ projectId, etapas, onRefresh }: ObraTabHi
 
     let cancelled = false;
     setLoadingTorres(true);
-    setLoadingPisos(true);
+    setPisosMap({});
+    setLoadingPisosMap({});
 
     fetchTorresPorProyecto(projectId)
-      .then(async (data) => {
+      .then((data) => {
         if (cancelled) return;
         setTorres(data);
         setSelectedTorreId("");
         setSelectedPisoId("");
 
-        // Precargar todos los pisos de todas las torres en paralelo
-        try {
-          const loadPisosPromises = data.map(async (t) => {
-            const pisoList = await fetchPisosPorTorre(t.id).catch(() => [] as PisoResponseDTO[]);
-            return { torreId: t.id, pisos: pisoList };
-          });
-          const results = await Promise.all(loadPisosPromises);
-          if (!cancelled) {
-            const newMap: Record<number, PisoResponseDTO[]> = {};
-            for (const res of results) {
-              newMap[res.torreId] = res.pisos;
-            }
-            setPisosMap(newMap);
-          }
-        } catch (err) {
-          console.error("Error precargando pisos:", err);
-        } finally {
-          if (!cancelled) setLoadingPisos(false);
-        }
+        // Cargar pisos para cada torre de manera individual e incremental
+        data.forEach((t) => {
+          setLoadingPisosMap((prev) => ({ ...prev, [t.id]: true }));
+          fetchPisosPorTorre(t.id)
+            .then((pisoList) => {
+              if (cancelled) return;
+              setPisosMap((prev) => ({ ...prev, [t.id]: pisoList }));
+              setLoadingPisosMap((prev) => ({ ...prev, [t.id]: false }));
+            })
+            .catch((err) => {
+              console.error(`Error cargando pisos de torre ${t.id}:`, err);
+              if (cancelled) return;
+              setLoadingPisosMap((prev) => ({ ...prev, [t.id]: false }));
+            });
+        });
       })
       .catch((err: unknown) => {
         if (!cancelled) {
           console.error(err);
-          setLoadingPisos(false);
         }
       });
 
@@ -421,24 +417,25 @@ export default function ObraTabHitos({ projectId, etapas, onRefresh }: ObraTabHi
               </select>
             )}
 
-            {selectedTorreId && (
-              loadingPisos ? (
-                <span className="text-sm text-slate-400 dark:text-white/40">Cargando pisos…</span>
-              ) : (
-                <select
-                  value={selectedPisoId}
-                  onChange={(e) => setSelectedPisoId(e.target.value)}
-                  className="w-full sm:w-auto rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 px-3 py-2 text-sm focus:outline-none focus:border-build-accent dark:text-white"
-                >
-                  <option value="">— Piso —</option>
-                  {pisos.map((p) => (
-                    <option key={p.id} value={p.id}>
-                      Piso {p.nroPiso}
-                    </option>
-                  ))}
-                </select>
-              )
-            )}
+            <select
+              value={selectedPisoId}
+              onChange={(e) => setSelectedPisoId(e.target.value)}
+              disabled={!selectedTorreId || loadingPisosMap[Number(selectedTorreId)]}
+              className="w-full sm:w-auto rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 px-3 py-2 text-sm focus:outline-none focus:border-build-accent dark:text-white disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <option value="">
+                {selectedTorreId && loadingPisosMap[Number(selectedTorreId)]
+                  ? "Cargando pisos..."
+                  : "— Piso —"}
+              </option>
+              {selectedTorreId &&
+                !loadingPisosMap[Number(selectedTorreId)] &&
+                pisos.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    Piso {p.nroPiso}
+                  </option>
+                ))}
+            </select>
           </div>
 
           {/* Error de piso */}
