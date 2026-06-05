@@ -55,9 +55,7 @@ export interface TorreResponseDTO {
 
 export interface PisoResponseDTO {
   id: number;
-  numero: number;
-  tipo: string;
-  torreId: number;
+  nroPiso: number;
 }
 
 export function fetchProyectos(): Promise<Proyecto[]> {

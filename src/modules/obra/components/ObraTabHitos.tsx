@@ -433,7 +433,7 @@ export default function ObraTabHitos({ projectId, etapas, onRefresh }: ObraTabHi
                   <option value="">— Piso —</option>
                   {pisos.map((p) => (
                     <option key={p.id} value={p.id}>
-                      Piso {p.numero} ({p.tipo})
+                      Piso {p.nroPiso}
                     </option>
                   ))}
                 </select>
