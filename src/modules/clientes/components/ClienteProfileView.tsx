@@ -156,6 +156,7 @@ export default function ClienteProfileView({ clientId }: ClienteProfileViewProps
 
       {activeModal === "assign" && (
         <AssignPropertyWizard
+          client={client}
           onClose={closeModal}
           onSuccess={() => { closeModal(); refresh(); }}
         />

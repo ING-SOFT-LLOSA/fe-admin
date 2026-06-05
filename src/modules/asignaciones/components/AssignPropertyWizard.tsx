@@ -11,6 +11,7 @@ import type { ClienteRow } from "@/types/user";
 interface AssignPropertyWizardProps {
   onClose: () => void;
   onSuccess: () => void;
+  client?: ClienteRow;
 }
 
 interface UnitSelection {
@@ -19,8 +20,10 @@ interface UnitSelection {
   type: string;
 }
 
-export default function AssignPropertyWizard({ onClose, onSuccess }: AssignPropertyWizardProps) {
+export default function AssignPropertyWizard({ onClose, onSuccess, client }: AssignPropertyWizardProps) {
   const [step, setStep] = useState<1 | 2 | 3>(1);
+  const totalSteps = client ? 2 : 3;
+  const currentStep = client ? (step === 3 ? 2 : 1) : step;
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
@@ -35,7 +38,7 @@ export default function AssignPropertyWizard({ onClose, onSuccess }: AssignPrope
   // Step 2: Client
   const [searchQuery, setSearchQuery] = useState("");
   const [clients, setClients] = useState<ClienteRow[]>([]);
-  const [searchedClient, setSearchedClient] = useState<ClienteRow | null>(null);
+  const [searchedClient, setSearchedClient] = useState<ClienteRow | null>(client || null);
   const [searchError, setSearchError] = useState("");
 
   // Step 3: Details (CU004 requires these)
@@ -80,7 +83,7 @@ export default function AssignPropertyWizard({ onClose, onSuccess }: AssignPrope
       return;
     }
     setErrorMsg("");
-    setStep(2);
+    setStep(client ? 3 : 2);
   }
 
   function handleSearchClient() {
@@ -157,7 +160,7 @@ export default function AssignPropertyWizard({ onClose, onSuccess }: AssignPrope
             </div>
             <div>
               <h2 className="text-[20px] font-bold text-build-main dark:text-white">Asignar unidad</h2>
-              <p className="text-[12px] text-slate-500 dark:text-white/60 font-medium mt-0.5">Paso {step} de 3</p>
+              <p className="text-[12px] text-slate-500 dark:text-white/60 font-medium mt-0.5">Paso {currentStep} de {totalSteps}</p>
             </div>
           </div>
           <button disabled={loading} onClick={onClose} className="text-slate-400 dark:text-white/50 hover:text-build-main dark:text-white transition-colors">
@@ -167,7 +170,7 @@ export default function AssignPropertyWizard({ onClose, onSuccess }: AssignPrope
 
         {/* Stepper Progress */}
         <div className="h-1 w-full bg-build-bg">
-          <div className="h-full bg-build-main transition-all duration-300" style={{ width: `${(step / 3) * 100}%` }} />
+          <div className="h-full bg-build-main transition-all duration-300" style={{ width: `${(currentStep / totalSteps) * 100}%` }} />
         </div>
 
         {/* Body */}
@@ -367,6 +370,7 @@ export default function AssignPropertyWizard({ onClose, onSuccess }: AssignPrope
             disabled={loading || successMsg !== ""}
             onClick={() => {
               if (step === 1) onClose();
+              else if (client) setStep(1);
               else setStep((prev) => (prev === 3 ? 2 : 1));
             }}
             className="px-5 py-2.5 text-sm font-bold text-slate-500 dark:text-white/60 hover:bg-slate-50 dark:bg-white/5 hover:text-build-main dark:text-white rounded-xl transition-colors"
