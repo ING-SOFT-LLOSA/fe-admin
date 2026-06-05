@@ -124,12 +124,12 @@ export default function AssignPropertyWizard({ onClose, onSuccess, client }: Ass
       // Create a promise for each unit selected
       const assignments = selectedUnitIds.map(unitId => 
         asignarActivo({
-          idUsuario: searchedClient.id,
+          idsUsuarios: [searchedClient.id],
           idActivo: unitId,
           tipoFinanciamiento,
           faseComercial: "SEPARACION",
           estadoTramiteLegal: "EN_PROCESO",
-          fechaAdquisicion: new Date().toISOString()
+          fechaAdquisicion: new Date().toISOString().split(".")[0]
         })
       );
       

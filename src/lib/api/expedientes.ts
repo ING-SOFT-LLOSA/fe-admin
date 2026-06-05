@@ -1,12 +1,12 @@
 import { apiFetch } from "@/lib/api/http";
 
 export interface AsignarActivoPayload {
-  idUsuario: number;
+  idsUsuarios: number[];
   idActivo: string;
   tipoFinanciamiento: string;
   faseComercial: string;
   estadoTramiteLegal: string;
-  fechaAdquisicion: string; // ISO String
+  fechaAdquisicion: string; 
 }
 
 export function asignarActivo(payload: AsignarActivoPayload): Promise<void> {
