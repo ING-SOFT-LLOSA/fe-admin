@@ -62,5 +62,9 @@ export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> 
     return undefined as T;
   }
 
-  return JSON.parse(text) as T;
+  try {
+    return JSON.parse(text) as T;
+  } catch {
+    return text as unknown as T;
+  }
 }
