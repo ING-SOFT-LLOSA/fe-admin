@@ -53,13 +53,13 @@ export function getAvanceGeneral(uuid: string): Promise<DashboardProyectoDTO> {
   return apiFetch<DashboardProyectoDTO>(`/api/proyectos/${uuid}/avance-general`);
 }
 
-export function crearEtapaProyecto(uuid: string, data: EtapaCreateDTO): Promise<any> {
+export function crearEtapaProyecto(uuid: string, data: EtapaCreateDTO): Promise<HitoResponseDTO> {
   const payload = {
     titulo: data.nombre,
     orden: data.orden,
     tipo: "OBRA"
   };
-  return apiFetch<any>(`/api/proyectos/${uuid}/hitos`, {
+  return apiFetch<HitoResponseDTO>(`/api/proyectos/${uuid}/hitos`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),

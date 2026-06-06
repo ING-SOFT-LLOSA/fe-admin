@@ -1,14 +1,14 @@
 import { ProjectFormData, InventoryConfig } from "./wizard-logic";
 import { apiFetch } from "@/lib/api/http";
 
-export async function createProject(data: ProjectFormData) {
+export async function createProject(data: ProjectFormData): Promise<{ id: string }> {
   const payload = {
     ...data,
     fechaInicio: data.fechaInicio || null,
     fechaFin: data.fechaFin || null,
   };
 
-  return await apiFetch<any>("/api/proyectos", {
+  return await apiFetch<{ id: string }>("/api/proyectos", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -68,7 +68,7 @@ export async function createInventory(projectId: string, config: InventoryConfig
     });
   }
 
-  return await apiFetch<any>(`/api/proyectos/${projectId}/estructura-fisica`, {
+  return await apiFetch<void>(`/api/proyectos/${projectId}/estructura-fisica`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ torres }),

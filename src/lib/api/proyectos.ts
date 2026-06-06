@@ -22,7 +22,7 @@ export interface ProyectoCreateDTO {
 
 export interface Page<T> {
   content: T[];
-  pageable: any;
+  pageable: unknown;
   last: boolean;
   totalPages: number;
   totalElements: number;
@@ -36,6 +36,9 @@ export interface Page<T> {
 export interface ActivoResponseDTO {
   id: string; // UUID
   pisoId: number;
+  nroPiso?: number;
+  torreNombre?: string;
+  proyectoNombre?: string;
   nro: string;
   tipo: string;
   areaM2: number;

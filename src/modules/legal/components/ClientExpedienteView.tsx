@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 
 import { fetchUsuarios, fetchExpedientesPorUsuario } from "@/lib/api/users";
 import { fetchContratoActivo, fetchCommercialStepper, createCommercialHito, updateCommercialHitoEstado } from "@/lib/api/expedientes";
+import { fetchProyectos, fetchActivosPorProyecto, fetchTorresPorProyecto, fetchPisosPorTorre } from "@/lib/api/proyectos";
 import type { UsuarioActivoResponseDTO, StepperResponseDTO } from "@/lib/api/expedientes";
 import type { Usuario } from "@/types/user";
 import { useAuth } from "@/contexts/AuthContext";
@@ -119,8 +120,8 @@ const AUDITORIA_MOCK = [
 export default function ClientExpedienteView({ clientId }: ClientExpedienteViewProps) {
   const { perfil } = useAuth();
   const [client,    setClient]    = useState<Usuario | null>(null);
-  const [expedientes, setExpedientes] = useState<any[]>([]);
-  const [selectedExpediente, setSelectedExpediente] = useState<any | null>(null);
+  const [expedientes, setExpedientes] = useState<UsuarioActivoResponseDTO[]>([]);
+  const [selectedExpediente, setSelectedExpediente] = useState<UsuarioActivoResponseDTO | null>(null);
   const [contrato, setContrato] = useState<UsuarioActivoResponseDTO | null>(null);
 
   const [stepper, setStepper] = useState<StepperResponseDTO | null>(null);
@@ -157,8 +158,8 @@ export default function ClientExpedienteView({ clientId }: ClientExpedienteViewP
   }, [clientId]);
 
   useEffect(() => {
-    if (selectedExpediente) {
-      fetchContratoActivo(selectedExpediente.idActivo).then(setContrato).catch(console.error);
+    if (selectedExpediente?.activo?.id) {
+      fetchContratoActivo(selectedExpediente.activo.id).then(setContrato).catch(console.error);
     } else {
       setContrato(null);
     }
@@ -166,7 +167,7 @@ export default function ClientExpedienteView({ clientId }: ClientExpedienteViewP
 
   // Fetch / Seed commercial milestones (Hitos Comerciales)
   useEffect(() => {
-    if (!contrato?.id) {
+    if (!contrato?.uuidUsuarioActivo) {
       setStepper(null);
       return;
     }
@@ -175,7 +176,7 @@ export default function ClientExpedienteView({ clientId }: ClientExpedienteViewP
     setLoadingStepper(true);
     setUpdateError("");
 
-    fetchCommercialStepper(contrato.id)
+    fetchCommercialStepper(contrato.uuidUsuarioActivo)
       .then(async (data) => {
         if (cancelled) return;
 
@@ -193,14 +194,14 @@ export default function ClientExpedienteView({ clientId }: ClientExpedienteViewP
             ];
             await Promise.all(
               defaultHitos.map(h => createCommercialHito({
-                uuidUsuarioActivo: contrato.id,
+                uuidUsuarioActivo: contrato.uuidUsuarioActivo,
                 etapaProceso: h.etapaProceso,
                 nombreHito: h.nombreHito,
                 descripcion: h.descripcion,
                 orden: h.orden
               }))
             );
-            const freshData = await fetchCommercialStepper(contrato.id);
+            const freshData = await fetchCommercialStepper(contrato.uuidUsuarioActivo);
             if (!cancelled) setStepper(freshData);
           } catch (err) {
             console.error("Error seeding commercial hitos:", err);
@@ -286,8 +287,8 @@ export default function ClientExpedienteView({ clientId }: ClientExpedienteViewP
     setUpdateError("");
     try {
       await updateCommercialHitoEstado(uuidHito, nuevoEstado);
-      if (contrato?.id) {
-        const freshData = await fetchCommercialStepper(contrato.id);
+      if (contrato?.uuidUsuarioActivo) {
+        const freshData = await fetchCommercialStepper(contrato.uuidUsuarioActivo);
         setStepper(freshData);
       }
     } catch (err) {
@@ -319,13 +320,13 @@ export default function ClientExpedienteView({ clientId }: ClientExpedienteViewP
         <div className="flex items-center gap-4 bg-white dark:bg-white/5 p-4 rounded-xl border border-slate-200 dark:border-white/10 shadow-sm">
           <label className="text-sm font-bold text-build-main dark:text-white whitespace-nowrap">Unidad:</label>
           <select 
-            value={selectedExpediente?.idActivo || ""} 
-            onChange={e => setSelectedExpediente(expedientes.find(x => x.idActivo === e.target.value))}
+            value={selectedExpediente?.activo?.id || ""} 
+            onChange={e => setSelectedExpediente(expedientes.find(x => x.activo?.id === e.target.value) || null)}
             className="flex-1 rounded-lg border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-[#111] px-3 py-2 text-sm focus:outline-none dark:text-white"
           >
             {expedientes.map(exp => (
-              <option key={exp.idActivo} value={exp.idActivo}>
-                {exp.proyectoNombre} - {exp.torreNombre} - Piso {exp.pisoNum} - {exp.tipoUnidad} {exp.numUnidad}
+              <option key={exp.activo?.id} value={exp.activo?.id}>
+                {exp.activo?.proyectoNombre} - {exp.activo?.torreNombre} - Piso {exp.activo?.nroPiso} - {exp.activo?.tipo} {exp.activo?.nro}
               </option>
             ))}
           </select>
@@ -433,8 +434,8 @@ function TabResumen({
     <div className="space-y-4">
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <ResumenKpi icon="person"         label="Cliente"           value={[client?.nombre, client?.apellidos].filter(Boolean).join(" ") || "—"} />
-        <ResumenKpi icon="apartment"      label="Proyecto"          value={expediente?.proyectoNombre || "—"} />
-        <ResumenKpi icon="meeting_room"   label="Unidad"            value={expediente ? `${expediente.tipoUnidad} ${expediente.numUnidad}` : "—"} />
+        <ResumenKpi icon="apartment"      label="Proyecto"          value={expediente?.activo?.proyectoNombre || "—"} />
+        <ResumenKpi icon="meeting_room"   label="Unidad"            value={expediente?.activo ? `${expediente.activo.tipo} ${expediente.activo.nro}` : "—"} />
         <ResumenKpi icon="attach_money"   label="Financiamiento"    value={contrato?.tipoFinanciamiento || "Pendiente"} />
       </div>
 

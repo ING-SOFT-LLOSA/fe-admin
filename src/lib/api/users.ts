@@ -1,10 +1,11 @@
 import { apiFetch } from "@/lib/api/http";
 // Removed mock imports
 import type { ClienteRow, CrearClientePayload, CrearEmpleadoPayload, Rol, Usuario } from "@/types/user";
+import type { UsuarioActivoResponseDTO } from "@/lib/api/expedientes";
 
 export interface Page<T> {
   content: T[];
-  pageable: any;
+  pageable: unknown;
   last: boolean;
   totalPages: number;
   totalElements: number;
@@ -74,14 +75,7 @@ function getInitials(nombre: string, apellidos?: string | null): string {
 }
 
 function statusForUsuario(u: Usuario): { status: string; statusBg: string; rolName: string } {
-  let rolName = "Empleado";
-  if (u.rol) {
-    if (typeof u.rol === "string") {
-      rolName = u.rol;
-    } else if (typeof u.rol === "object" && "nombre" in u.rol) {
-      rolName = (u.rol as any).nombre;
-    }
-  }
+  const rolName = u.rol || "Empleado";
 
   if (!u.activo) {
     return { status: "Inactivo", statusBg: "bg-[#eeeeef] text-[#41484c]", rolName };
@@ -119,8 +113,8 @@ export function mapUsuarioToClienteRow(u: Usuario): ClienteRow {
   };
 }
 
-export function fetchExpedientesPorUsuario(idUsuario: number): Promise<any[]> {
-  return apiFetch<any[]>(`/api/expedientes/${idUsuario}`);
+export function fetchExpedientesPorUsuario(idUsuario: number): Promise<UsuarioActivoResponseDTO[]> {
+  return apiFetch<UsuarioActivoResponseDTO[]>(`/api/expedientes/${idUsuario}`);
 }
 
 export function unlinkAssignment(uuid: string): Promise<void> {

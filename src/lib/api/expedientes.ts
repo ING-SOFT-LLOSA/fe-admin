@@ -22,13 +22,12 @@ export function fetchMisActivos(): Promise<import("@/lib/api/proyectos").ActivoR
 }
 
 export interface UsuarioActivoResponseDTO {
-  id: string; // UUID of UsuarioActivo
+  uuidUsuarioActivo: string;
   tipoFinanciamiento: string;
   faseComercial: string;
   estadoTramiteLegal: string;
   fechaAdquisicion: string;
-  activo: import("@/lib/api/proyectos").ActivoResponseDTO;
-  // It might also have copropietarios or similar based on the backend
+  activo?: import("@/lib/api/proyectos").ActivoResponseDTO;
 }
 
 export function fetchContratoActivo(uuidActivo: string): Promise<UsuarioActivoResponseDTO> {
