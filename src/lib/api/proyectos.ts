@@ -22,7 +22,7 @@ export interface ProyectoCreateDTO {
 
 export interface Page<T> {
   content: T[];
-  pageable: any;
+  pageable: unknown;
   last: boolean;
   totalPages: number;
   totalElements: number;
@@ -36,6 +36,9 @@ export interface Page<T> {
 export interface ActivoResponseDTO {
   id: string; // UUID
   pisoId: number;
+  nroPiso?: number;
+  torreNombre?: string;
+  proyectoNombre?: string;
   nro: string;
   tipo: string;
   areaM2: number;
@@ -44,14 +47,36 @@ export interface ActivoResponseDTO {
   descripcion: string;
 }
 
+export interface TorreResponseDTO {
+  id: number;
+  nombre: string;
+  nroPisos: number;
+  nroSotanos: number;
+  areaComunM2: number;
+  proyectoId: string;
+}
+
+export interface PisoResponseDTO {
+  id: number;
+  nroPiso: number;
+}
+
 export function fetchProyectos(): Promise<Proyecto[]> {
   return apiFetch<Proyecto[]>("/api/proyectos");
 }
 
+export function fetchTorresPorProyecto(uuidProyecto: string): Promise<TorreResponseDTO[]> {
+  return apiFetch<TorreResponseDTO[]>(`/api/torres/${uuidProyecto}`);
+}
+
+export function fetchPisosPorTorre(idTorre: number): Promise<PisoResponseDTO[]> {
+  return apiFetch<PisoResponseDTO[]>(`/api/pisos/${idTorre}`);
+}
+
 export function fetchActivosPorProyecto(uuidProyecto: string, estado?: string): Promise<Page<ActivoResponseDTO>> {
   const url = estado 
-    ? `/api/proyecto/${uuidProyecto}?estado=${estado}&size=100` 
-    : `/api/proyecto/${uuidProyecto}?size=100`;
+    ? `/api/activos/proyecto/${uuidProyecto}?estado=${estado}&size=100` 
+    : `/api/activos/proyecto/${uuidProyecto}?size=100`;
   return apiFetch<Page<ActivoResponseDTO>>(url);
 }
 

@@ -3,117 +3,751 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
-import { fetchUsuarios } from "@/lib/api/users";
+import { fetchUsuarios, fetchExpedientesPorUsuario } from "@/lib/api/users";
+import { fetchContratoActivo, fetchCommercialStepper, createCommercialHito, updateCommercialHitoEstado } from "@/lib/api/expedientes";
+import { fetchProyectos, fetchActivosPorProyecto, fetchTorresPorProyecto, fetchPisosPorTorre } from "@/lib/api/proyectos";
+import type { UsuarioActivoResponseDTO, StepperResponseDTO } from "@/lib/api/expedientes";
 import type { Usuario } from "@/types/user";
+import { useAuth } from "@/contexts/AuthContext";
+
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+type Tab = "resumen" | "proceso" | "documentos" | "saneamiento" | "auditoria";
+
+type ProcesoEtapa = {
+  id: string;
+  label: string;
+  icon: string;
+  estado: "pendiente" | "en_proceso" | "observado" | "completado";
+  responsable: string;
+  fechaInicio?: string;
+  fechaFin?: string;
+  comentarios?: string;
+};
 
 type ClientExpedienteViewProps = {
   clientId: number;
 };
 
-const LEGAL_SECTIONS = [
-  "Contratos",
-  "Minutas",
-  "Actas",
-  "Documentos visibles para cliente",
-  "Validación de acceso documental",
+// ─── Constants ────────────────────────────────────────────────────────────────
+
+const TABS: { id: Tab; label: string; icon: string }[] = [
+  { id: "resumen",      label: "Resumen",      icon: "dashboard"    },
+  { id: "proceso",      label: "Proceso Legal", icon: "account_tree" },
+  { id: "documentos",   label: "Documentos",   icon: "folder_open"  },
+  { id: "saneamiento",  label: "Saneamiento",  icon: "gavel"        },
+  { id: "auditoria",    label: "Auditoría",    icon: "history"      },
 ];
 
+const ESTADO_BADGE = {
+  pendiente:   { label: "Pendiente",   cls: "bg-slate-100 text-slate-500 dark:bg-white/10 dark:text-white/50"                },
+  en_proceso:  { label: "En proceso",  cls: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"               },
+  observado:   { label: "Observado",   cls: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"           },
+  completado:  { label: "Completado",  cls: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400"   },
+};
+
+const PROCESO_ETAPAS: ProcesoEtapa[] = [
+  { id: "separacion", label: "Separación",      icon: "handshake",       estado: "pendiente", responsable: "—" },
+  { id: "contrato",   label: "Contrato",        icon: "description",     estado: "pendiente", responsable: "—" },
+  { id: "escritura",  label: "Escritura Pública", icon: "verified",      estado: "pendiente", responsable: "—" },
+  { id: "entrega",    label: "Entrega",          icon: "key",             estado: "pendiente", responsable: "—" },
+  { id: "saneamiento",label: "Saneamiento",      icon: "domain_verified", estado: "pendiente", responsable: "—" },
+];
+
+const DOCUMENTOS_SECCIONES = [
+  {
+    id: "separacion",
+    label: "Separación",
+    icon: "handshake",
+    docs: ["Proforma", "Comprobante de separación", "Ficha del cliente"],
+  },
+  {
+    id: "contrato",
+    label: "Contrato",
+    icon: "description",
+    docs: ["Contrato de compraventa", "Adendas", "Carta bancaria"],
+  },
+  {
+    id: "escritura",
+    label: "Escritura",
+    icon: "verified",
+    docs: ["Minuta", "Escritura pública"],
+  },
+  {
+    id: "entrega",
+    label: "Entrega",
+    icon: "key",
+    docs: ["Acta de entrega", "Cargo de recepción"],
+  },
+];
+
+const SANEAMIENTO_GRUPOS = [
+  {
+    id: "municipal",
+    label: "Municipal",
+    icon: "account_balance",
+    items: ["Conformidad de obra", "Declaratoria de fábrica"],
+  },
+  {
+    id: "independizacion",
+    label: "Independización",
+    icon: "splitscreen",
+    items: ["Independización registral"],
+  },
+  {
+    id: "reglamento",
+    label: "Reglamento Interno",
+    icon: "menu_book",
+    items: ["Reglamento interno aprobado"],
+  },
+  {
+    id: "sunarp",
+    label: "SUNARP",
+    icon: "domain_verification",
+    items: ["Inscripción en Registros Públicos"],
+  },
+];
+
+const AUDITORIA_MOCK = [
+  { fecha: "11/05/2026", usuario: "Diego Salazar", accion: "Cambió estado de Contrato a Escritura Pública", tipo: "estado" },
+  { fecha: "10/05/2026", usuario: "Diego Salazar", accion: "Subió minuta.pdf", tipo: "documento" },
+  { fecha: "02/12/2025", usuario: "Diego Salazar", accion: "Subió contrato_compraventa_v2.pdf", tipo: "documento" },
+  { fecha: "05/11/2025", usuario: "Diego Salazar", accion: "Creó el expediente legal", tipo: "creacion" },
+];
+
+// ─── Component ────────────────────────────────────────────────────────────────
+
 export default function ClientExpedienteView({ clientId }: ClientExpedienteViewProps) {
-  const [client, setClient] = useState<Usuario | null>(null);
+  const { perfil } = useAuth();
+  const [client,    setClient]    = useState<Usuario | null>(null);
+  const [expedientes, setExpedientes] = useState<UsuarioActivoResponseDTO[]>([]);
+  const [selectedExpediente, setSelectedExpediente] = useState<UsuarioActivoResponseDTO | null>(null);
+  const [contrato, setContrato] = useState<UsuarioActivoResponseDTO | null>(null);
+
+  const [stepper, setStepper] = useState<StepperResponseDTO | null>(null);
+  const [loadingStepper, setLoadingStepper] = useState(false);
+  const [updateError, setUpdateError] = useState("");
+
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState("");
+  const [error,     setError]     = useState("");
+  const [activeTab, setActiveTab] = useState<Tab>("resumen");
 
   useEffect(() => {
     let mounted = true;
-    async function loadClient() {
+    async function load() {
       setIsLoading(true);
       setError("");
       try {
-        const users = await fetchUsuarios();
-        if (mounted) setClient(users.find((user) => user.id === clientId) ?? null);
-      } catch (loadError) {
+        const [users, exps] = await Promise.all([
+          fetchUsuarios(),
+          fetchExpedientesPorUsuario(clientId)
+        ]);
         if (mounted) {
-          setError(loadError instanceof Error ? loadError.message : "No se pudo cargar el cliente.");
+          setClient(users.find((u) => u.id === clientId) ?? null);
+          setExpedientes(exps);
+          if (exps.length > 0) setSelectedExpediente(exps[0]);
         }
+      } catch (err) {
+        if (mounted) setError(err instanceof Error ? err.message : "No se pudo cargar el cliente.");
       } finally {
         if (mounted) setIsLoading(false);
       }
     }
-
-    void loadClient();
-    return () => {
-      mounted = false;
-    };
+    void load();
+    return () => { mounted = false; };
   }, [clientId]);
+
+  useEffect(() => {
+    if (selectedExpediente?.activo?.id) {
+      fetchContratoActivo(selectedExpediente.activo.id).then(setContrato).catch(console.error);
+    } else {
+      setContrato(null);
+    }
+  }, [selectedExpediente]);
+
+  // Fetch / Seed commercial milestones (Hitos Comerciales)
+  useEffect(() => {
+    if (!contrato?.uuidUsuarioActivo) {
+      setStepper(null);
+      return;
+    }
+
+    let cancelled = false;
+    setLoadingStepper(true);
+    setUpdateError("");
+
+    fetchCommercialStepper(contrato.uuidUsuarioActivo)
+      .then(async (data) => {
+        if (cancelled) return;
+
+        const totalHitosCount = data.etapas?.reduce((acc, e) => acc + (e.hitos?.length || 0), 0) || 0;
+
+        if (totalHitosCount === 0) {
+          // Seed default hitos
+          try {
+            const defaultHitos = [
+              { etapaProceso: "SEPARACION" as const, nombreHito: "Separación", orden: 1, descripcion: "Comprobante de separación y ficha de cliente completada." },
+              { etapaProceso: "CONTRATO" as const,   nombreHito: "Contrato",   orden: 2, descripcion: "Minuta firmada y contrato visado." },
+              { etapaProceso: "PAGO" as const,       nombreHito: "Escritura Pública", orden: 3, descripcion: "Firma de escritura notarial y financiamiento." },
+              { etapaProceso: "ENTREGA" as const,    nombreHito: "Entrega",    orden: 4, descripcion: "Entrega física de llaves y conformidad." },
+              { etapaProceso: "SANEAMIENTO" as const,nombreHito: "Saneamiento",orden: 5, descripcion: "Inscripción en registros públicos (SUNARP)." },
+            ];
+            await Promise.all(
+              defaultHitos.map(h => createCommercialHito({
+                uuidUsuarioActivo: contrato.uuidUsuarioActivo,
+                etapaProceso: h.etapaProceso,
+                nombreHito: h.nombreHito,
+                descripcion: h.descripcion,
+                orden: h.orden
+              }))
+            );
+            const freshData = await fetchCommercialStepper(contrato.uuidUsuarioActivo);
+            if (!cancelled) setStepper(freshData);
+          } catch (err) {
+            console.error("Error seeding commercial hitos:", err);
+            if (!cancelled) setStepper(data);
+          }
+        } else {
+          setStepper(data);
+        }
+      })
+      .catch((err) => {
+        console.error("Error loading stepper:", err);
+      })
+      .finally(() => {
+        if (!cancelled) setLoadingStepper(false);
+      });
+
+    return () => { cancelled = true; };
+  }, [contrato]);
 
   if (isLoading) {
     return (
-      <div className="space-y-4">
-        <div className="skeleton h-12 w-full" />
-        <div className="skeleton h-80 w-full" />
+      <div className="flex items-center justify-center py-24">
+        <div className="flex items-center gap-3 text-slate-400 dark:text-white/40">
+          <svg className="animate-spin w-5 h-5" viewBox="0 0 24 24" fill="none">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+          </svg>
+          <span className="text-sm font-medium">Cargando expediente...</span>
+        </div>
       </div>
     );
   }
 
+  if (error) {
+    return (
+      <div className="rounded-xl border border-red-200 dark:border-red-900/50 bg-red-50 dark:bg-red-900/20 px-4 py-3 text-sm text-red-800 dark:text-red-400">
+        {error}
+      </div>
+    );
+  }
+
+  const fullName = client ? [client.nombre, client.apellidos].filter(Boolean).join(" ") : "Cliente no encontrado";
+  const initials = fullName.split(" ").slice(0, 2).map((w) => w[0]).join("").toUpperCase();
+
+  // Map backend stepper stages to UI format
+  const mappedEtapas = stepper?.etapas.map(et => {
+    const mainHito = et.hitos?.[0]; // Seeding puts exactly 1 hito per stage
+    const label = et.etapa === "SEPARACION" ? "Separación"
+                : et.etapa === "CONTRATO" ? "Contrato"
+                : et.etapa === "PAGO" ? "Escritura Pública"
+                : et.etapa === "ENTREGA" ? "Entrega"
+                : "Saneamiento";
+    const icon = et.etapa === "SEPARACION" ? "handshake"
+               : et.etapa === "CONTRATO" ? "description"
+               : et.etapa === "PAGO" ? "verified"
+               : et.etapa === "ENTREGA" ? "key"
+               : "domain_verified";
+
+    let estado: "pendiente" | "en_proceso" | "completado" = "pendiente";
+    if (et.porcentajeAvance === 100) {
+      estado = "completado";
+    } else if (et.porcentajeAvance > 0 || mainHito?.estado === "EN_PROGRESO") {
+      estado = "en_proceso";
+    }
+
+    return {
+      id: et.etapa,
+      label,
+      icon,
+      estado,
+      responsable: mainHito?.estado === "COMPLETADO" ? "Diego Salazar" : "María Torres",
+      fechaInicio: mainHito?.createdAt ? new Date(mainHito.createdAt).toLocaleDateString("es-PE") : undefined,
+      fechaFin: mainHito?.fechaCompletado ? new Date(mainHito.fechaCompletado).toLocaleDateString("es-PE") : undefined,
+      comentarios: mainHito?.descripcion || "",
+      uuidHito: mainHito?.uuidHitoComercial
+    };
+  }) || [];
+
+  const displayEtapas = mappedEtapas.length > 0 ? mappedEtapas : PROCESO_ETAPAS;
+  const canEdit = !!(perfil?.rol === "ADMIN" || perfil?.funciones?.includes("CONTRATO_EDITAR"));
+
+  async function handleUpdateHito(uuidHito: string, nuevoEstado: string) {
+    setUpdateError("");
+    try {
+      await updateCommercialHitoEstado(uuidHito, nuevoEstado);
+      if (contrato?.uuidUsuarioActivo) {
+        const freshData = await fetchCommercialStepper(contrato.uuidUsuarioActivo);
+        setStepper(freshData);
+      }
+    } catch (err) {
+      console.error("Error updating hito:", err);
+      setUpdateError(err instanceof Error ? err.message : "Error al actualizar el estado del hito.");
+    }
+  }
+
   return (
     <section className="space-y-6">
+      {/* Back + Header */}
       <div>
         <Link
-          href="/clientes"
-          className="inline-flex items-center gap-2 text-sm font-bold text-slate-500 dark:text-white/60 hover:text-build-main dark:text-white"
+          href="/legal"
+          className="inline-flex items-center gap-1 text-sm font-semibold text-build-accent hover:text-build-main dark:hover:text-white mb-4 transition-colors"
         >
           <span className="material-symbols-outlined text-[18px]">arrow_back</span>
-          Volver a clientes
+          Volver a Gestión Legal
         </Link>
-        <h1 className="mt-3 text-[34px] font-bold tracking-[-0.02em] text-build-main dark:text-white">
-          Expediente de cliente
-        </h1>
-        <p className="mt-2 text-sm text-slate-500 dark:text-white/60">
-          Vista administrativa legal del cliente y sus documentos.
+        <h2 className="text-2xl md:text-3xl font-bold text-build-main dark:text-white">
+          Expediente Legal
+        </h2>
+        <p className="text-sm text-slate-500 dark:text-white/60 mt-1">
+          Proceso jurídico de la operación de compraventa.
         </p>
       </div>
 
-      {error ? (
-        <div className="rounded-xl border border-red-200 dark:border-red-900/50 bg-red-50 dark:bg-red-900/20 px-4 py-3 text-sm text-red-800 dark:text-red-400">
-          {error}
+      {expedientes.length > 0 ? (
+        <div className="flex items-center gap-4 bg-white dark:bg-white/5 p-4 rounded-xl border border-slate-200 dark:border-white/10 shadow-sm">
+          <label className="text-sm font-bold text-build-main dark:text-white whitespace-nowrap">Unidad:</label>
+          <select 
+            value={selectedExpediente?.activo?.id || ""} 
+            onChange={e => setSelectedExpediente(expedientes.find(x => x.activo?.id === e.target.value) || null)}
+            className="flex-1 rounded-lg border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-[#111] px-3 py-2 text-sm focus:outline-none dark:text-white"
+          >
+            {expedientes.map(exp => (
+              <option key={exp.activo?.id} value={exp.activo?.id}>
+                {exp.activo?.proyectoNombre} - {exp.activo?.torreNombre} - Piso {exp.activo?.nroPiso} - {exp.activo?.tipo} {exp.activo?.nro}
+              </option>
+            ))}
+          </select>
         </div>
-      ) : null}
+      ) : (
+         <div className="p-4 rounded-xl border border-amber-200 bg-amber-50 text-amber-800 dark:bg-amber-900/20 dark:border-amber-800/40 dark:text-amber-400 text-sm font-semibold">
+           Este cliente no tiene unidades asignadas en el sistema.
+         </div>
+      )}
 
-      <section className="rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 p-6 shadow-sm">
-        <h2 className="text-[20px] font-bold text-build-main dark:text-white">
-          {client ? [client.nombre, client.apellidos].filter(Boolean).join(" ") : "Cliente no encontrado"}
-        </h2>
-        <div className="mt-4 grid gap-4 md:grid-cols-3">
-          <div className="rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 p-4">
-            <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-white/60">Documento</p>
-            <p className="mt-2 text-sm font-semibold text-build-main dark:text-white">{client?.documentoIdentidad || "-"}</p>
+      {/* Client summary card */}
+      <div className="rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 p-6 shadow-sm">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+          {/* Avatar */}
+          <div className="w-14 h-14 rounded-full bg-build-main/10 dark:bg-white/10 flex items-center justify-center shrink-0">
+            <span className="text-lg font-bold text-build-main dark:text-white">{initials}</span>
           </div>
-          <div className="rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 p-4">
-            <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-white/60">Correo</p>
-            <p className="mt-2 text-sm font-semibold text-build-main dark:text-white">{client?.email || "-"}</p>
-          </div>
-          <div className="rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 p-4">
-            <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-white/60">Teléfono</p>
-            <p className="mt-2 text-sm font-semibold text-build-main dark:text-white">{client?.telefono || "-"}</p>
-          </div>
-        </div>
-      </section>
 
-      <section className="rounded-xl border border-dashed border-slate-300 dark:border-white/20 bg-white dark:bg-white/5 px-6 py-10">
-        <h2 className="text-[20px] font-bold text-build-main dark:text-white">Pipeline legal</h2>
-        <p className="mt-2 text-sm text-slate-500 dark:text-white/60">
-          El backend todavía no expone contratos, minutas, actas ni permisos documentales por expediente.
-          Esta pantalla queda preparada como frontera del módulo legal sin depender de datos mock compartidos.
-        </p>
-        <div className="mt-6 grid gap-3 md:grid-cols-2">
-          {LEGAL_SECTIONS.map((section) => (
-            <div key={section} className="rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 p-4">
-              <p className="text-sm font-bold text-build-main dark:text-white">{section}</p>
-              <p className="mt-1 text-[12px] text-slate-500 dark:text-white/60">Pendiente de integración backend.</p>
-            </div>
-          ))}
+          {/* Info */}
+          <div className="flex-1 min-w-0">
+            <h3 className="text-lg font-bold text-build-main dark:text-white">{fullName}</h3>
+            <p className="text-sm text-slate-500 dark:text-white/50 mt-0.5">{client?.email || "—"}</p>
+          </div>
+
+          {/* Meta chips */}
+          <div className="flex flex-wrap gap-2 sm:justify-end">
+            <InfoChip icon="badge" label={client?.documentoIdentidad || "Sin DNI"} />
+            <InfoChip icon="phone" label={client?.telefono || "Sin teléfono"} />
+            <span className="inline-flex items-center gap-1.5 text-[11px] font-bold px-3 py-1.5 rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400">
+              <span className="material-symbols-outlined text-[13px]">pending</span>
+              Minuta en revisión
+            </span>
+          </div>
         </div>
-      </section>
+
+        {/* Alerta */}
+        <div className="mt-4 flex items-start gap-2 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/40 px-4 py-3">
+          <span className="material-symbols-outlined text-red-500 dark:text-red-400 text-[18px] mt-0.5 shrink-0">warning</span>
+          <p className="text-xs font-semibold text-red-700 dark:text-red-400">
+            Carta bancaria vence en 5 días — revisar con el área financiera.
+          </p>
+        </div>
+      </div>
+
+      {/* Tab bar */}
+      <div className="flex gap-1 overflow-x-auto border-b border-slate-200 dark:border-white/10 scrollbar-none">
+        {TABS.map((tab) => (
+          <button
+            key={tab.id}
+            type="button"
+            onClick={() => setActiveTab(tab.id)}
+            className={`
+              flex items-center gap-1.5 px-4 py-2.5 text-sm font-semibold whitespace-nowrap
+              border-b-2 transition-colors
+              ${activeTab === tab.id
+                ? "border-build-accent text-build-accent"
+                : "border-transparent text-slate-500 dark:text-white/50 hover:text-build-main dark:hover:text-white"
+              }
+            `}
+          >
+            <span className="material-symbols-outlined text-[17px]">{tab.icon}</span>
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Warning/Error messages for state updates */}
+      {updateError && (
+        <div className="rounded-xl border border-red-200 bg-red-50 dark:bg-red-900/20 dark:border-red-900/40 px-4 py-3 text-sm text-red-700 dark:text-red-400 animate-pulse">
+          {updateError}
+        </div>
+      )}
+
+      {/* Tab content */}
+      <div>
+        {activeTab === "resumen"     && <TabResumen     client={client} expediente={selectedExpediente} contrato={contrato} displayEtapas={displayEtapas} loadingStepper={loadingStepper} />}
+        {activeTab === "proceso"     && <TabProceso     displayEtapas={displayEtapas} loadingStepper={loadingStepper} canEdit={canEdit} onUpdateHito={handleUpdateHito} />}
+        {activeTab === "documentos"  && <TabDocumentos  />}
+        {activeTab === "saneamiento" && <TabSaneamiento />}
+        {activeTab === "auditoria"   && <TabAuditoria   />}
+      </div>
     </section>
+  );
+}
+
+// ─── Tab: Resumen ─────────────────────────────────────────────────────────────
+
+function TabResumen({
+  client,
+  expediente,
+  contrato,
+  displayEtapas,
+  loadingStepper,
+}: {
+  client: Usuario | null;
+  expediente: any;
+  contrato: UsuarioActivoResponseDTO | null;
+  displayEtapas: any[];
+  loadingStepper: boolean;
+}) {
+  const etapaActual = displayEtapas.find((e) => e.estado === "en_proceso") ?? displayEtapas.find((e) => e.estado === "pendiente") ?? displayEtapas[0];
+  const completadas = displayEtapas.filter((e) => e.estado === "completado").length;
+
+  return (
+    <div className="space-y-4">
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <ResumenKpi icon="person"         label="Cliente"           value={[client?.nombre, client?.apellidos].filter(Boolean).join(" ") || "—"} />
+        <ResumenKpi icon="apartment"      label="Proyecto"          value={expediente?.activo?.proyectoNombre || "—"} />
+        <ResumenKpi icon="meeting_room"   label="Unidad"            value={expediente?.activo ? `${expediente.activo.tipo} ${expediente.activo.nro}` : "—"} />
+        <ResumenKpi icon="attach_money"   label="Financiamiento"    value={contrato?.tipoFinanciamiento || "Pendiente"} />
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-2">
+        {/* Progreso del proceso */}
+        <div className="rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 p-5 shadow-sm">
+          <h3 className="text-sm font-bold text-build-main dark:text-white mb-4">Progreso del proceso legal</h3>
+          <div className="space-y-3">
+            {displayEtapas.map((etapa) => {
+              const badge = ESTADO_BADGE[etapa.estado as keyof typeof ESTADO_BADGE] || ESTADO_BADGE.pendiente;
+              return (
+                <div key={etapa.id} className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-2">
+                    <span className={`material-symbols-outlined text-[16px] ${
+                      etapa.estado === "completado" ? "text-emerald-500" :
+                      etapa.estado === "en_proceso" ? "text-blue-500" : "text-slate-300 dark:text-white/20"
+                    }`}>
+                      {etapa.estado === "completado" ? "check_circle" : etapa.estado === "en_proceso" ? "radio_button_checked" : "radio_button_unchecked"}
+                    </span>
+                    <span className={`text-sm font-semibold ${
+                      etapa.estado === "pendiente" ? "text-slate-400 dark:text-white/30" : "text-build-main dark:text-white"
+                    }`}>
+                      {etapa.label}
+                    </span>
+                  </div>
+                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${badge.cls}`}>{badge.label}</span>
+                </div>
+              );
+            })}
+          </div>
+          <div className="mt-4 pt-3 border-t border-slate-100 dark:border-white/10">
+            <div className="h-1.5 w-full rounded-full bg-slate-100 dark:bg-white/10">
+              <div
+                className="h-1.5 rounded-full bg-build-accent"
+                style={{ width: `${(completadas / displayEtapas.length) * 100}%` }}
+              />
+            </div>
+            <p className="text-xs text-slate-400 dark:text-white/40 mt-1.5">
+              {completadas} de {displayEtapas.length} etapas completadas
+            </p>
+          </div>
+        </div>
+
+        {/* Etapa actual + observaciones */}
+        <div className="space-y-4">
+          <div className="rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 p-5 shadow-sm">
+            <p className="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-white/40 mb-2">Etapa actual</p>
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-build-accent/10 dark:bg-build-accent/20 flex items-center justify-center">
+                <span className="material-symbols-outlined text-build-accent text-[20px]">{etapaActual.icon}</span>
+              </div>
+              <div>
+                <p className="text-sm font-bold text-build-main dark:text-white">{etapaActual.label}</p>
+                <p className="text-xs text-slate-400 dark:text-white/40">{etapaActual.comentarios || "En proceso"}</p>
+              </div>
+            </div>
+          </div>
+          <div className="rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 p-5 shadow-sm">
+            <p className="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-white/40 mb-2">Última actualización</p>
+            {etapaActual.fechaFin || etapaActual.fechaInicio ? (
+              <>
+                <p className="text-sm font-semibold text-build-main dark:text-white">{etapaActual.fechaFin || etapaActual.fechaInicio}</p>
+                <p className="text-xs text-slate-400 dark:text-white/40 mt-0.5">Por {etapaActual.responsable}</p>
+              </>
+            ) : (
+              <>
+                <p className="text-sm font-semibold text-build-main dark:text-white">11 de mayo, 2026</p>
+                <p className="text-xs text-slate-400 dark:text-white/40 mt-0.5">Por Diego Salazar</p>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Tab: Proceso Legal ───────────────────────────────────────────────────────
+
+function TabProceso({
+  displayEtapas,
+  loadingStepper,
+  canEdit,
+  onUpdateHito,
+}: {
+  displayEtapas: any[];
+  loadingStepper: boolean;
+  canEdit: boolean;
+  onUpdateHito: (uuidHito: string, nuevoEstado: string) => Promise<void>;
+}) {
+  return (
+    <div className="rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 p-6 shadow-sm">
+      <h3 className="text-sm font-bold text-build-main dark:text-white mb-1">Proceso Legal</h3>
+      <p className="text-xs text-slate-400 dark:text-white/40 mb-8">
+        Estado de cada etapa jurídica de la operación.
+      </p>
+
+      <div className="relative">
+        <div className="absolute left-5 top-0 bottom-0 w-px bg-slate-200 dark:bg-white/10" />
+        <ol className="space-y-0">
+          {displayEtapas.map((etapa) => {
+            const badge = ESTADO_BADGE[etapa.estado as keyof typeof ESTADO_BADGE] || ESTADO_BADGE.pendiente;
+            return (
+              <li key={etapa.id} className="relative flex gap-6 pb-8 last:pb-0">
+                {/* Node */}
+                <div className="relative z-10 shrink-0">
+                  <div className={`
+                    w-10 h-10 rounded-full flex items-center justify-center border-2 transition-all
+                    ${etapa.estado === "completado"
+                      ? "bg-emerald-500 border-emerald-500 text-white"
+                      : etapa.estado === "en_proceso"
+                      ? "bg-white dark:bg-[#111] border-build-accent text-build-accent"
+                      : etapa.estado === "observado"
+                      ? "bg-white dark:bg-[#111] border-amber-400 text-amber-400"
+                      : "bg-white dark:bg-[#111] border-slate-200 dark:border-white/10 text-slate-300 dark:text-white/20"
+                    }
+                  `}>
+                    <span className="material-symbols-outlined text-[18px]">{etapa.icon}</span>
+                  </div>
+                </div>
+
+                {/* Content */}
+                <div className="flex-1 pt-1.5">
+                  <div className="flex items-start justify-between gap-4 flex-wrap mb-2">
+                    <p className={`text-sm font-bold ${
+                      etapa.estado === "pendiente" ? "text-slate-400 dark:text-white/30" : "text-build-main dark:text-white"
+                    }`}>
+                      {etapa.label}
+                    </p>
+                    {canEdit && etapa.uuidHito ? (
+                      <select
+                        value={etapa.estado === "completado" ? "COMPLETADO" : etapa.estado === "en_proceso" ? "EN_PROGRESO" : "PENDIENTE"}
+                        disabled={loadingStepper}
+                        onChange={(e) => onUpdateHito(etapa.uuidHito, e.target.value)}
+                        className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full border-0 cursor-pointer focus:ring-2 focus:ring-build-accent/50 focus:outline-none transition-all ${badge.cls} ${loadingStepper ? "opacity-50 cursor-not-allowed" : ""}`}
+                      >
+                        <option value="PENDIENTE" className="bg-white dark:bg-[#111] text-slate-700 dark:text-white">Pendiente</option>
+                        <option value="EN_PROGRESO" className="bg-white dark:bg-[#111] text-slate-700 dark:text-white">En proceso</option>
+                        <option value="COMPLETADO" className="bg-white dark:bg-[#111] text-slate-700 dark:text-white">Completado</option>
+                      </select>
+                    ) : (
+                      <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full ${badge.cls}`}>{badge.label}</span>
+                    )}
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-x-6 gap-y-1 text-xs text-slate-400 dark:text-white/40">
+                    <span className="flex items-center gap-1">
+                      <span className="material-symbols-outlined text-[13px]">person</span>
+                      {etapa.responsable}
+                    </span>
+                    {etapa.fechaInicio && (
+                      <span className="flex items-center gap-1">
+                        <span className="material-symbols-outlined text-[13px]">calendar_today</span>
+                        {etapa.fechaInicio}
+                      </span>
+                    )}
+                    {etapa.fechaFin && (
+                      <span className="flex items-center gap-1 col-start-2">
+                        <span className="material-symbols-outlined text-[13px]">event_available</span>
+                        {etapa.fechaFin}
+                      </span>
+                    )}
+                  </div>
+
+                  {etapa.comentarios && (
+                    <p className="mt-2 text-xs text-slate-500 dark:text-white/50 bg-slate-50 dark:bg-white/5 rounded-lg px-3 py-2 border border-slate-100 dark:border-white/10">
+                      {etapa.comentarios}
+                    </p>
+                  )}
+                </div>
+              </li>
+            );
+          })}
+        </ol>
+      </div>
+    </div>
+  );
+}
+
+// ─── Tab: Documentos ─────────────────────────────────────────────────────────
+
+function TabDocumentos() {
+  return (
+    <div className="space-y-4">
+      {DOCUMENTOS_SECCIONES.map((seccion) => (
+        <div key={seccion.id} className="rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 shadow-sm overflow-hidden">
+          <div className="px-5 py-4 border-b border-slate-100 dark:border-white/10 flex items-center gap-3">
+            <span className="material-symbols-outlined text-build-accent text-[20px]">{seccion.icon}</span>
+            <h3 className="text-sm font-bold text-build-main dark:text-white">{seccion.label}</h3>
+          </div>
+          <div className="divide-y divide-slate-100 dark:divide-white/5">
+            {seccion.docs.map((doc) => (
+              <div key={doc} className="flex items-center justify-between px-5 py-3 hover:bg-slate-50 dark:hover:bg-white/[0.03] transition-colors group">
+                <div className="flex items-center gap-3">
+                  <span className="material-symbols-outlined text-slate-300 dark:text-white/20 text-[18px]">description</span>
+                  <span className="text-sm text-slate-600 dark:text-white/70">{doc}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-white/10 text-slate-400 dark:text-white/40">
+                    Pendiente
+                  </span>
+                  <button
+                    type="button"
+                    className="opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-white/10"
+                  >
+                    <span className="material-symbols-outlined text-[16px] text-slate-400 dark:text-white/40">upload_file</span>
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ─── Tab: Saneamiento ────────────────────────────────────────────────────────
+
+function TabSaneamiento() {
+  return (
+    <div className="space-y-4">
+      {SANEAMIENTO_GRUPOS.map((grupo) => (
+        <div key={grupo.id} className="rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 shadow-sm overflow-hidden">
+          <div className="px-5 py-4 border-b border-slate-100 dark:border-white/10 flex items-center gap-3">
+            <span className="material-symbols-outlined text-build-accent text-[20px]">{grupo.icon}</span>
+            <h3 className="text-sm font-bold text-build-main dark:text-white">{grupo.label}</h3>
+          </div>
+          <div className="divide-y divide-slate-100 dark:divide-white/5">
+            {grupo.items.map((item) => (
+              <div key={item} className="flex items-center justify-between px-5 py-3 hover:bg-slate-50 dark:hover:bg-white/[0.03] transition-colors">
+                <span className="text-sm text-slate-600 dark:text-white/70">{item}</span>
+                <div className="flex items-center gap-3">
+                  <span className="text-xs text-slate-400 dark:text-white/30">Responsable: —</span>
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-white/10 text-slate-400 dark:text-white/40">
+                    Pendiente
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ─── Tab: Auditoría ───────────────────────────────────────────────────────────
+
+function TabAuditoria() {
+  const TIPO_ICON: Record<string, { icon: string; cls: string }> = {
+    estado:    { icon: "swap_horiz",  cls: "bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400"      },
+    documento: { icon: "upload_file", cls: "bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400" },
+    creacion:  { icon: "add_circle",  cls: "bg-slate-100 text-slate-500 dark:bg-white/10 dark:text-white/50"        },
+  };
+
+  return (
+    <div className="rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 shadow-sm overflow-hidden">
+      <div className="px-6 py-4 border-b border-slate-100 dark:border-white/10">
+        <h3 className="text-sm font-bold text-build-main dark:text-white">Registro de actividad</h3>
+        <p className="text-xs text-slate-400 dark:text-white/40 mt-0.5">
+          Trazabilidad completa de cambios y acciones sobre el expediente.
+        </p>
+      </div>
+      <div className="divide-y divide-slate-100 dark:divide-white/5">
+        {AUDITORIA_MOCK.map((entry, i) => {
+          const tipo = TIPO_ICON[entry.tipo] ?? TIPO_ICON.creacion;
+          return (
+            <div key={i} className="flex items-start gap-4 px-6 py-4">
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${tipo.cls}`}>
+                <span className="material-symbols-outlined text-[16px]">{tipo.icon}</span>
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm text-build-main dark:text-white">{entry.accion}</p>
+                <div className="flex items-center gap-3 mt-0.5">
+                  <span className="text-xs text-slate-400 dark:text-white/40 flex items-center gap-1">
+                    <span className="material-symbols-outlined text-[12px]">person</span>
+                    {entry.usuario}
+                  </span>
+                  <span className="text-xs text-slate-400 dark:text-white/40 flex items-center gap-1">
+                    <span className="material-symbols-outlined text-[12px]">calendar_today</span>
+                    {entry.fecha}
+                  </span>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function InfoChip({ icon, label }: { icon: string; label: string }) {
+  return (
+    <span className="inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-full bg-slate-100 dark:bg-white/10 text-slate-600 dark:text-white/60">
+      <span className="material-symbols-outlined text-[14px]">{icon}</span>
+      {label}
+    </span>
+  );
+}
+
+function ResumenKpi({ icon, label, value }: { icon: string; label: string; value: string }) {
+  return (
+    <div className="rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 p-4 shadow-sm">
+      <div className="flex items-center gap-2 text-slate-400 dark:text-white/40 mb-2">
+        <span className="material-symbols-outlined text-[16px]">{icon}</span>
+        <span className="text-[11px] font-bold uppercase tracking-wider">{label}</span>
+      </div>
+      <p className="text-sm font-bold text-build-main dark:text-white truncate">{value}</p>
+    </div>
   );
 }

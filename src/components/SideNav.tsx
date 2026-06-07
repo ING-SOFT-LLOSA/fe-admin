@@ -43,7 +43,7 @@ export default function SideNav() {
 
   async function handleLogout() {
     await logout();
-    router.push("/login-empresa");
+    router.push("/login");
   }
 
   return (

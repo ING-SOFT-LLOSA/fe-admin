@@ -5,7 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 
 import { useAuth } from "@/contexts/AuthContext";
 
-const LOGIN_PATHS = ["/login", "/login-empresa"];
+const LOGIN_PATHS = ["/login"];
 
 export default function AuthGuard({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading } = useAuth();
@@ -15,7 +15,7 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (isLoading) return;
     if (!isAuthenticated && !LOGIN_PATHS.includes(pathname)) {
-      router.replace("/login-empresa");
+      router.replace("/login");
     }
   }, [isAuthenticated, isLoading, pathname, router]);
 

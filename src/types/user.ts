@@ -56,4 +56,5 @@ export interface ClienteRow {
   statusBg: string;
   tipoUsuario: string;
   rol: string | null;
+  createdAt?: string;
 }

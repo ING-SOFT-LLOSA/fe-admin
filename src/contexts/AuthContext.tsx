@@ -23,6 +23,7 @@ import {
   getStoredToken,
   saveSession,
 } from "@/lib/auth/session";
+// Removed mock imports
 import type { PerfilConPermisos } from "@/types/auth";
 
 interface AuthContextValue {

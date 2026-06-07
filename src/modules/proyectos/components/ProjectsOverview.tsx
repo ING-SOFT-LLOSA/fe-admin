@@ -4,18 +4,11 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import ProjectCard from "./ProjectCard";
 import { apiFetch } from "@/lib/api/http";
+import { Proyecto } from "../types/proyecto";
 
-type ProyectoResponse = {
-  id: string;
-  nombre: string;
-  distrito: string;
-  direccion: string;
-  fechaInicio: string;
-  createdAt: string;
-};
 
 export default function ProjectsOverview() {
-  const [projects, setProjects] = useState<ProyectoResponse[]>([]);
+  const [projects, setProjects] = useState<Proyecto[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -23,7 +16,7 @@ export default function ProjectsOverview() {
 
     async function loadProjects() {
       try {
-        const data = await apiFetch<ProyectoResponse[]>("/api/proyectos");
+        const data = await apiFetch<Proyecto[]>("/api/proyectos");
         if (mounted) {
           setProjects(data || []);
           setIsLoading(false);
@@ -67,10 +60,7 @@ export default function ProjectsOverview() {
               <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-white/60">Total proyectos</p>
               <p className="mt-2 text-[24px] font-bold text-build-main dark:text-white">{projects.length}</p>
             </div>
-            <div className="rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 p-5 shadow-sm">
-              <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-white/60">Estado</p>
-              <p className="mt-2 text-sm font-bold text-green-600">Conectado al Backend</p>
-            </div>
+          
           </div>
         </header>
 
@@ -97,7 +87,14 @@ export default function ProjectsOverview() {
               <p className="mt-1 text-sm text-slate-500 dark:text-white/60">Cuando se registren proyectos aparecerán aquí.</p>
             </div>
           ) : (
-            projects.map((project) => <ProjectCard key={project.id} project={project} />)
+            <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+              {projects.map(project => (
+                <ProjectCard
+                  key={project.id}
+                  project={project}
+                />
+              ))}
+            </div>
           )}
         </section>
       </section>

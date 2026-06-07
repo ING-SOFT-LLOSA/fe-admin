@@ -53,15 +53,30 @@ export function getAvanceGeneral(uuid: string): Promise<DashboardProyectoDTO> {
   return apiFetch<DashboardProyectoDTO>(`/api/proyectos/${uuid}/avance-general`);
 }
 
-export function crearEtapaProyecto(uuid: string, data: EtapaCreateDTO): Promise<any> {
-  return apiFetch<any>(`/api/proyectos/${uuid}/etapas`, {
+export function crearEtapaProyecto(uuid: string, data: EtapaCreateDTO): Promise<HitoResponseDTO> {
+  const payload = {
+    titulo: data.nombre,
+    orden: data.orden,
+    tipo: "OBRA"
+  };
+  return apiFetch<HitoResponseDTO>(`/api/proyectos/${uuid}/hitos`, {
     method: "POST",
-    body: JSON.stringify(data),
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
   });
 }
 
 export function getEtapasByProyecto(uuid: string): Promise<EtapaResponseDTO[]> {
-  return apiFetch<EtapaResponseDTO[]>(`/api/proyectos/${uuid}/etapas`);
+  return apiFetch<HitoResponseDTO[]>(`/api/proyectos/${uuid}/hitos`).then(hitos => 
+    hitos.map(h => ({
+      id: h.id,
+      nombre: h.titulo,
+      descripcion: "",
+      orden: h.orden,
+      estado: h.estado,
+      hitos: []
+    }))
+  );
 }
 
 export function getHitosActivo(uuid: string): Promise<HitoUnidadResponseDTO[]> {
@@ -70,4 +85,12 @@ export function getHitosActivo(uuid: string): Promise<HitoUnidadResponseDTO[]> {
 
 export function getAvancesActivo(uuid: string): Promise<AvanceUnidadResponseDTO[]> {
   return apiFetch<AvanceUnidadResponseDTO[]>(`/api/activos/${uuid}/avances`);
+}
+
+export function updateAvanceUnidad(id: string, estado: string): Promise<AvanceUnidadResponseDTO> {
+  return apiFetch<AvanceUnidadResponseDTO>(`/api/avances-unidad/${id}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ estado }),
+  });
 }
