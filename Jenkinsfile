@@ -17,7 +17,7 @@ pipeline {
                 branch 'test'
             }
             steps {
-                withCredentials([file(credentialsId: 'LLOSA_BACKOFFICE_SECRETS_TEST', variable: 'SECRET_FILE')]) {
+                withCredentials([file(credentialsId: 'LLOSA_SECRETS_FRONTEND_ADMIN_TEST', variable: 'SECRET_FILE')]) {
                     sh '''
                         rm -f .env.test
                         cp "$SECRET_FILE" .env.test
@@ -34,7 +34,7 @@ pipeline {
                 branch 'dev'
             }
             steps {
-                withCredentials([file(credentialsId: 'LLOSA_BACKOFFICE_SECRETS_DEV', variable: 'SECRET_FILE')]) {
+                withCredentials([file(credentialsId: 'LLOSA_SECRETS_FRONTEND_ADMIN_DEV', variable: 'SECRET_FILE')]) {
                     sh '''
                         rm -f .env.dev
                         cp "$SECRET_FILE" .env.dev
