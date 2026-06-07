@@ -1,0 +1,23 @@
+services:
+  fe-client:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_FIREBASE_API_KEY_LLOSA: ${NEXT_PUBLIC_FIREBASE_API_KEY_LLOSA}
+        NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN_LLOSA: ${NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN_LLOSA}
+        NEXT_PUBLIC_FIREBASE_PROJECT_ID_LLOSA: ${NEXT_PUBLIC_FIREBASE_PROJECT_ID_LLOSA}
+        NEXT_PUBLIC_API_URL_LLOSA: ${NEXT_PUBLIC_API_URL_LLOSA}
+    container_name: llosa-frontend-dev
+    environment:
+      - NEXT_PUBLIC_FIREBASE_API_KEY_LLOSA=${NEXT_PUBLIC_FIREBASE_API_KEY_LLOSA}
+      - NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN_LLOSA=${NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN_LLOSA}
+      - NEXT_PUBLIC_FIREBASE_PROJECT_ID_LLOSA=${NEXT_PUBLIC_FIREBASE_PROJECT_ID_LLOSA}
+      - NEXT_PUBLIC_API_URL_LLOSA=${NEXT_PUBLIC_API_URL_LLOSA}
+    networks:
+      - proxy_net
+    restart: unless-stopped
+
+networks:
+  proxy_net:
+    external: true
