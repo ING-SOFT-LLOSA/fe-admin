@@ -11,12 +11,7 @@ type Documento = {
   id: string;
   nombre: string;
   categoria: DocCategoria;
-  version: string;
   fechaCarga: string;
-  subidoPor: string;
-  tamanio: string;
-  tipo: "pdf" | "dwg" | "xlsx" | "docx" | "jpg";
-  estado: "vigente" | "reemplazado" | "pendiente_revision";
 };
 
 type ObraTabDocumentacionProps = {
@@ -33,31 +28,14 @@ const CATEGORIAS: { id: DocCategoria; label: string; icon: string; description: 
   { id: "certificacion",   label: "Certificación EDGE / LEED",    icon: "eco",                description: "Documentos de pre-certificación y certificación de sostenibilidad"    },
 ];
 
-const ESTADO_BADGE: Record<Documento["estado"], { label: string; cls: string }> = {
-  vigente:             { label: "Vigente",           cls: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400" },
-  reemplazado:         { label: "Reemplazado",       cls: "bg-slate-100 text-slate-500 dark:bg-white/10 dark:text-white/50"              },
-  pendiente_revision:  { label: "Pend. revisión",    cls: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"         },
-};
-
-const TIPO_ICON: Record<Documento["tipo"], { icon: string; color: string }> = {
-  pdf:  { icon: "picture_as_pdf", color: "text-red-500"     },
-  dwg:  { icon: "square_foot",    color: "text-blue-500"    },
-  xlsx: { icon: "table_chart",    color: "text-green-600"   },
-  docx: { icon: "article",        color: "text-blue-600"    },
-  jpg:  { icon: "image",          color: "text-purple-500"  },
-};
-
-const SEED_DOCS: Documento[] = [];
-
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function ObraTabDocumentacion({ projectId }: ObraTabDocumentacionProps) {
-  const [activeCategoria, setActiveCategoria] = useState<DocCategoria | null>(null);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [showUpload, setShowUpload] = useState(false);
   const [documents, setDocuments] = useState<Documento[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [uploadingCat, setUploadingCat] = useState<DocCategoria | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
 
   const loadDocuments = async () => {
     if (!projectId) return;
@@ -75,31 +53,17 @@ export default function ObraTabDocumentacion({ projectId }: ObraTabDocumentacion
             break;
           }
         }
-        
-        let tipo: Documento["tipo"] = "pdf";
-        const ext = doc.nombreOriginal.split(".").pop()?.toLowerCase();
-        if (ext === "dwg") tipo = "dwg";
-        else if (ext === "xlsx" || ext === "xls") tipo = "xlsx";
-        else if (ext === "docx" || ext === "doc") tipo = "docx";
-        else if (ext === "jpg" || ext === "jpeg" || ext === "png") tipo = "jpg";
-
         return {
           id: doc.id,
           nombre,
           categoria,
-          version: "v1.0",
           fechaCarga: doc.createdAt ? doc.createdAt.split("T")[0] : new Date().toISOString().split("T")[0],
-          subidoPor: "Sistema",
-          tamanio: "—",
-          tipo,
-          estado: "vigente" as const
         };
       });
       setDocuments(mapped);
     } catch (err) {
       console.error("Error loading documents:", err);
       setError(err instanceof Error ? err.message : "Error al cargar documentos.");
-      setDocuments([]);
     } finally {
       setLoading(false);
     }
@@ -108,6 +72,35 @@ export default function ObraTabDocumentacion({ projectId }: ObraTabDocumentacion
   useEffect(() => {
     loadDocuments();
   }, [projectId]);
+
+  const handleUploadClick = (categoria: DocCategoria) => {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = ".pdf,.jpg,.jpeg,.png,.dwg,.xlsx,.docx";
+    input.onchange = async (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (!file) return;
+      await handleUpload(categoria, file);
+    };
+    input.click();
+  };
+
+  const handleUpload = async (categoria: DocCategoria, file: File) => {
+    setUploadingCat(categoria);
+    setActionError(null);
+    try {
+      const finalFileName = `[${categoria}] ${file.name}`;
+      const renamedFile = new File([file], finalFileName, { type: file.type });
+      
+      await uploadDocument(projectId, renamedFile, "PDF_LEGAL");
+      await loadDocuments();
+    } catch (err) {
+      console.error("Error uploading project document:", err);
+      setActionError(err instanceof Error ? err.message : "Error al subir el documento.");
+    } finally {
+      setUploadingCat(null);
+    }
+  };
 
   const handleDownload = async (docId: string) => {
     try {
@@ -119,435 +112,129 @@ export default function ObraTabDocumentacion({ projectId }: ObraTabDocumentacion
     }
   };
 
-  const handleDeleteDoc = async (docId: string) => {
+  const handleDelete = async (docId: string) => {
     if (!confirm("¿Estás seguro de que deseas eliminar este documento?")) return;
+    setActionError(null);
     try {
       await deleteDocumento(docId);
       await loadDocuments();
     } catch (err) {
       console.error("Error deleting document:", err);
-      alert(err instanceof Error ? err.message : "Error al eliminar el documento.");
+      setActionError(err instanceof Error ? err.message : "Error al eliminar el documento.");
     }
   };
 
-  const filteredDocs = documents.filter((d) => {
-    if (activeCategoria && d.categoria !== activeCategoria) return false;
-    if (searchQuery) {
-      const q = searchQuery.toLowerCase();
-      return (
-        d.nombre.toLowerCase().includes(q) ||
-        d.subidoPor.toLowerCase().includes(q) ||
-        d.tipo.includes(q)
-      );
-    }
-    return true;
-  });
-
-  const totalVigentes = documents.filter((d) => d.estado === "vigente").length;
-  const totalPendientes = documents.filter((d) => d.estado === "pendiente_revision").length;
-
   return (
-    <div className="space-y-6">
-      {error && (
+    <div className="space-y-4">
+      {(error || actionError) && (
         <div className="rounded-xl border border-red-200 bg-red-50 dark:bg-red-900/20 dark:border-red-900/40 px-4 py-3 text-sm text-red-700 dark:text-red-400">
-          {error}
+          {error || actionError}
         </div>
       )}
 
-      {/* KPI row */}
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <KpiMini icon="folder_open" label="Total documentos" value={String(documents.length)} />
-        <KpiMini icon="verified" label="Vigentes" value={String(totalVigentes)} accent="text-emerald-500" />
-        <KpiMini icon="pending" label="Pend. revisión" value={String(totalPendientes)} accent="text-amber-500" />
-        <KpiMini icon="category" label="Categorías" value={String(CATEGORIAS.length)} accent="text-blue-500" />
-      </div>
-
-      {/* Toolbar */}
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <div className="relative flex-1 max-w-sm">
-          <span className="material-symbols-outlined text-[18px] text-slate-400 absolute left-3 top-1/2 -translate-y-1/2">
-            search
-          </span>
-          <input
-            type="text"
-            placeholder="Buscar documento..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-9 pr-3 py-2 rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 text-sm text-build-main dark:text-white outline-none focus:border-build-accent focus:ring-1 focus:ring-build-accent transition"
-          />
-        </div>
-        <button
-          type="button"
-          onClick={() => setShowUpload((v) => !v)}
-          className="inline-flex items-center gap-1.5 px-4 py-2 bg-build-main text-white rounded-lg text-xs font-bold hover:bg-build-main/90 transition-colors"
-        >
-          <span className="material-symbols-outlined text-[16px]">upload_file</span>
-          Subir documento
-        </button>
-      </div>
-
-      {/* Upload panel */}
-      {showUpload && (
-        <UploadDocPanel
-          projectId={projectId}
-          onClose={() => setShowUpload(false)}
-          onUploadSuccess={loadDocuments}
-        />
-      )}
-
-      {/* Category cards */}
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
-        {CATEGORIAS.map((cat) => {
-          const count = documents.filter((d) => d.categoria === cat.id && d.estado === "vigente").length;
-          const isActive = activeCategoria === cat.id;
-          return (
-            <button
-              key={cat.id}
-              type="button"
-              onClick={() => setActiveCategoria(isActive ? null : cat.id)}
-              className={`
-                text-left rounded-xl border p-4 transition-all group
-                ${isActive
-                  ? "border-build-accent bg-build-accent/5 dark:bg-build-accent/10 shadow-sm ring-1 ring-build-accent/30"
-                  : "border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 hover:border-build-accent/50 hover:shadow-sm"
-                }
-              `}
-            >
-              <div className="flex items-center gap-2 mb-2">
-                <div className={`
-                  w-8 h-8 rounded-lg flex items-center justify-center transition-colors
-                  ${isActive
-                    ? "bg-build-accent/20 text-build-accent"
-                    : "bg-build-bg dark:bg-white/10 text-slate-500 dark:text-white/50 group-hover:text-build-accent"
-                  }
-                `}>
-                  <span className="material-symbols-outlined text-[18px]">{cat.icon}</span>
-                </div>
-                <span className={`
-                  text-[10px] font-bold px-2 py-0.5 rounded-full
-                  ${isActive
-                    ? "bg-build-accent/20 text-build-accent"
-                    : "bg-slate-100 dark:bg-white/10 text-slate-500 dark:text-white/50"
-                  }
-                `}>
-                  {count}
-                </span>
-              </div>
-              <p className={`text-xs font-bold leading-tight ${isActive ? "text-build-accent" : "text-build-main dark:text-white"}`}>
-                {cat.label}
-              </p>
-              <p className="text-[10px] text-slate-400 dark:text-white/40 mt-0.5 line-clamp-2">
-                {cat.description}
-              </p>
-            </button>
-          );
-        })}
-      </div>
-
-      {/* Documents table */}
       <div className="rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 shadow-sm overflow-hidden">
-        <div className="px-6 py-4 border-b border-slate-100 dark:border-white/10 flex items-center justify-between">
-          <div>
-            <h3 className="text-sm font-bold text-build-main dark:text-white">
-              {activeCategoria
-                ? CATEGORIAS.find((c) => c.id === activeCategoria)?.label
-                : "Todos los documentos"}
-            </h3>
-            <p className="text-xs text-slate-400 dark:text-white/40 mt-0.5">
-              {filteredDocs.length} documento{filteredDocs.length !== 1 ? "s" : ""}
-              {searchQuery ? ` coinciden con "${searchQuery}"` : ""}
-            </p>
-          </div>
-          {activeCategoria && (
-            <button
-              type="button"
-              onClick={() => setActiveCategoria(null)}
-              className="text-xs font-semibold text-build-accent hover:text-build-main dark:hover:text-white transition-colors flex items-center gap-1"
-            >
-              <span className="material-symbols-outlined text-[14px]">close</span>
-              Limpiar filtro
-            </button>
-          )}
+        {/* Header */}
+        <div className="px-5 py-4 border-b border-slate-100 dark:border-white/10 flex items-center gap-3 bg-slate-50/50 dark:bg-white/[0.02]">
+          <span className="material-symbols-outlined text-build-accent text-[20px]">folder_open</span>
+          <h3 className="text-sm font-bold text-build-main dark:text-white font-sans">Documentación del Proyecto</h3>
         </div>
 
-        {loading && documents.length === 0 ? (
-          <div className="flex items-center justify-center py-12">
-            <svg className="animate-spin w-5 h-5 text-build-accent mr-3" viewBox="0 0 24 24" fill="none">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
-            </svg>
-            <span className="text-sm text-slate-500 dark:text-white/40 font-medium">Cargando documentos...</span>
-          </div>
-        ) : filteredDocs.length === 0 ? (
-          <div className="px-6 py-14 flex flex-col items-center gap-3 text-center">
-            <span className="material-symbols-outlined text-[40px] text-slate-200 dark:text-white/20">
-              folder_off
-            </span>
-            <p className="text-sm font-semibold text-slate-400 dark:text-white/40">
-              No se encontraron documentos
-            </p>
-            <p className="text-xs text-slate-300 dark:text-white/20">
-              {searchQuery
-                ? "Intenta con otro término de búsqueda."
-                : "Sube documentos técnicos para esta categoría."}
-            </p>
-          </div>
-        ) : (
-          <table className="w-full text-left">
-            <thead className="bg-slate-50 dark:bg-white/5 border-b border-slate-100 dark:border-white/10">
-              <tr>
-                {["Documento", "Categoría", "Versión", "Subido por", "Fecha", "Tamaño", "Estado", ""].map((h) => (
-                  <th key={h} className="px-4 py-3 text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-white/40">
-                    {h}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100 dark:divide-white/5">
-              {filteredDocs.map((doc) => {
-                const tipoInfo = TIPO_ICON[doc.tipo] || TIPO_ICON.pdf;
-                const badge = ESTADO_BADGE[doc.estado];
-                const catLabel = CATEGORIAS.find((c) => c.id === doc.categoria)?.label ?? doc.categoria;
-
-                return (
-                  <tr key={doc.id} className="hover:bg-slate-50 dark:hover:bg-white/[0.03] group">
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-3">
-                        <span className={`material-symbols-outlined text-[20px] ${tipoInfo.color}`}>
-                          {tipoInfo.icon}
-                        </span>
-                        <div className="min-w-0">
-                          <p className="text-sm font-semibold text-build-main dark:text-white truncate max-w-[260px]" title={doc.nombre}>
-                            {doc.nombre}
-                          </p>
-                          <p className="text-[10px] text-slate-400 dark:text-white/30 uppercase">{doc.tipo.toUpperCase()}</p>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className="text-xs text-slate-500 dark:text-white/50">{catLabel}</span>
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className="text-xs font-bold text-build-main dark:text-white bg-slate-100 dark:bg-white/10 px-2 py-0.5 rounded-md">
-                        {doc.version}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-xs text-slate-500 dark:text-white/50">{doc.subidoPor}</td>
-                    <td className="px-4 py-3 text-xs text-slate-500 dark:text-white/50 whitespace-nowrap">
-                      {new Date(doc.fechaCarga).toLocaleDateString("es-PE", { day: "2-digit", month: "short", year: "numeric" })}
-                    </td>
-                    <td className="px-4 py-3 text-xs text-slate-500 dark:text-white/50">{doc.tamanio}</td>
-                    <td className="px-4 py-3">
-                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full whitespace-nowrap ${badge.cls}`}>
-                        {badge.label}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button
-                          type="button"
-                          title="Ver documento"
-                          onClick={() => handleDownload(doc.id)}
-                          className="p-1.5 rounded-lg text-slate-400 hover:text-build-main dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/10 transition-colors"
-                        >
-                          <span className="material-symbols-outlined text-[16px]">visibility</span>
-                        </button>
-                        <button
-                          type="button"
-                          title="Descargar"
-                          onClick={() => handleDownload(doc.id)}
-                          className="p-1.5 rounded-lg text-slate-400 hover:text-build-main dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/10 transition-colors"
-                        >
-                          <span className="material-symbols-outlined text-[16px]">download</span>
-                        </button>
-                        <button
-                          type="button"
-                          title="Eliminar"
-                          onClick={() => handleDeleteDoc(doc.id)}
-                          className="p-1.5 rounded-lg text-slate-400 hover:text-red-500 dark:hover:text-red-400 hover:bg-slate-100 dark:hover:bg-white/10 transition-colors"
-                        >
-                          <span className="material-symbols-outlined text-[16px]">delete</span>
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        )}
-      </div>
-    </div>
-  );
-}
-
-// ─── Upload Panel ─────────────────────────────────────────────────────────────
-
-type UploadDocPanelProps = {
-  projectId: string;
-  onClose: () => void;
-  onUploadSuccess: () => void;
-};
-
-function UploadDocPanel({ projectId, onClose, onUploadSuccess }: UploadDocPanelProps) {
-  const [nombre, setNombre]       = useState("");
-  const [categoria, setCategoria] = useState<DocCategoria>("planos");
-  const [version, setVersion]     = useState("v1.0");
-  const [file, setFile]           = useState<File | null>(null);
-  const [uploading, setUploading] = useState(false);
-  const [error, setError]         = useState<string | null>(null);
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const selectedFile = e.target.files[0];
-      setFile(selectedFile);
-      if (!nombre) {
-        const nameWithoutExt = selectedFile.name.substring(0, selectedFile.name.lastIndexOf("."));
-        setNombre(nameWithoutExt);
-      }
-    }
-  };
-
-  const handleUpload = async () => {
-    if (!file || !nombre.trim()) return;
-    setUploading(true);
-    setError(null);
-    try {
-      const ext = file.name.split(".").pop() || "";
-      const finalFileName = `[${categoria}] ${nombre.trim()}.${ext}`;
-      const renamedFile = new File([file], finalFileName, { type: file.type });
-      
-      await uploadDocument(projectId, renamedFile, "PDF_LEGAL");
-      onUploadSuccess();
-      onClose();
-    } catch (err) {
-      console.error("Error uploading project document:", err);
-      setError(err instanceof Error ? err.message : "Error al subir el documento.");
-    } finally {
-      setUploading(false);
-    }
-  };
-
-  return (
-    <div className="rounded-xl border border-build-accent/30 bg-build-accent/5 dark:bg-build-accent/10 p-6 shadow-sm space-y-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <h3 className="text-sm font-bold text-build-main dark:text-white flex items-center gap-2">
-            <span className="material-symbols-outlined text-build-accent text-[18px]">upload_file</span>
-            Subir documento técnico
-          </h3>
-          <p className="text-xs text-slate-400 dark:text-white/40 mt-0.5">
-            Sube planos, licencias, cuadros de acabados u otros documentos del proyecto.
-          </p>
-        </div>
-        <button
-          type="button"
-          onClick={onClose}
-          disabled={uploading}
-          className="p-1 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-white hover:bg-white/50 dark:hover:bg-white/10 transition-colors disabled:opacity-50"
-        >
-          <span className="material-symbols-outlined text-[18px]">close</span>
-        </button>
-      </div>
-
-      {error && (
-        <div className="rounded-xl border border-red-200 bg-red-50 dark:bg-red-900/20 dark:border-red-900/40 px-4 py-3 text-sm text-red-700 dark:text-red-400">
-          {error}
-        </div>
-      )}
-
-      <div className="grid gap-4 md:grid-cols-4 items-end">
-        <div className="md:col-span-2">
-          <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-white/50 mb-1.5">
-            Nombre del documento *
-          </label>
-          <input
-            type="text"
-            value={nombre}
-            onChange={(e) => setNombre(e.target.value)}
-            disabled={uploading}
-            placeholder="Ej. Plano de Arquitectura — Planta Nivel 3"
-            className="w-full rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 px-3 py-2.5 text-sm text-build-main dark:text-white outline-none focus:border-build-accent focus:ring-1 focus:ring-build-accent transition disabled:opacity-50"
-          />
-        </div>
-        <div>
-          <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-white/50 mb-1.5">
-            Categoría
-          </label>
-          <select
-            value={categoria}
-            onChange={(e) => setCategoria(e.target.value as DocCategoria)}
-            disabled={uploading}
-            className="w-full rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 px-3 py-2.5 text-sm text-build-main dark:text-white outline-none focus:border-build-accent focus:ring-1 focus:ring-build-accent transition disabled:opacity-50"
-          >
-            {CATEGORIAS.map((c) => (
-              <option key={c.id} value={c.id}>{c.label}</option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-white/50 mb-1.5">
-            Versión
-          </label>
-          <input
-            type="text"
-            value={version}
-            onChange={(e) => setVersion(e.target.value)}
-            disabled={uploading}
-            placeholder="v1.0"
-            className="w-full rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 px-3 py-2.5 text-sm text-build-main dark:text-white outline-none focus:border-build-accent focus:ring-1 focus:ring-build-accent transition disabled:opacity-50"
-          />
-        </div>
-      </div>
-
-      <div className="flex flex-col sm:flex-row items-center gap-3 mt-2">
-        <label className="w-full flex-1 cursor-pointer rounded-xl border-2 border-dashed border-slate-300 dark:border-white/20 bg-white dark:bg-white/5 px-6 py-4 flex items-center justify-center gap-3 text-sm font-semibold text-slate-500 dark:text-white/50 hover:border-build-accent hover:text-build-accent transition-colors">
-          <span className="material-symbols-outlined text-[22px]">cloud_upload</span>
-          <span className="truncate">{file ? file.name : "Seleccionar archivo (.pdf, .dwg, .xlsx, .docx, .jpg, .png)"}</span>
-          <input type="file" className="hidden" accept=".pdf,.dwg,.xlsx,.docx,.jpg,.png" disabled={uploading} onChange={handleFileChange} />
-        </label>
-        <button
-          type="button"
-          onClick={handleUpload}
-          disabled={!nombre.trim() || !file || uploading}
-          className="w-full sm:w-auto rounded-xl bg-build-main px-6 py-3 text-sm font-bold text-white hover:bg-build-main/90 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
-        >
-          {uploading ? (
-            <svg className="animate-spin w-4 h-4 text-white" viewBox="0 0 24 24" fill="none">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
-            </svg>
+        {/* Rows */}
+        <div className="divide-y divide-slate-100 dark:divide-white/5">
+          {loading && documents.length === 0 ? (
+            <div className="flex items-center justify-center py-12">
+              <svg className="animate-spin w-5 h-5 text-build-accent mr-3" viewBox="0 0 24 24" fill="none">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+              </svg>
+              <span className="text-sm text-slate-500 dark:text-white/40 font-medium">Cargando documentos...</span>
+            </div>
           ) : (
-            <span className="material-symbols-outlined text-[16px]">publish</span>
+            CATEGORIAS.map((cat) => {
+              const doc = documents.find((d) => d.categoria === cat.id);
+              const isCompleted = !!doc;
+              const isUploading = uploadingCat === cat.id;
+
+              return (
+                <div
+                  key={cat.id}
+                  className="flex flex-col px-5 py-4 hover:bg-slate-50 dark:hover:bg-white/[0.03] transition-colors gap-3 group"
+                >
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <div className="flex items-start gap-3 min-w-0">
+                      <span className={`material-symbols-outlined text-[20px] mt-0.5 shrink-0 ${isCompleted ? "text-emerald-500" : "text-slate-300 dark:text-white/20"}`}>
+                        {isCompleted ? "verified" : cat.icon}
+                      </span>
+                      <div className="min-w-0">
+                        <p className="text-sm font-semibold text-slate-700 dark:text-white/80">{cat.label}</p>
+                        {isCompleted ? (
+                          <div className="space-y-0.5 mt-0.5">
+                            <p className="text-xs text-slate-500 dark:text-white/50 truncate max-w-[280px] sm:max-w-md" title={doc.nombre}>
+                              Archivo: {doc.nombre}
+                            </p>
+                            <p className="text-[10px] text-slate-400 dark:text-white/30">
+                              Completado el: {new Date(doc.fechaCarga).toLocaleDateString("es-PE", { day: "2-digit", month: "short", year: "numeric" })}
+                            </p>
+                          </div>
+                        ) : (
+                          <p className="text-xs text-slate-400 dark:text-white/40 mt-0.5">{cat.description}</p>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-3 self-end sm:self-center shrink-0">
+                      {isCompleted ? (
+                        <>
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
+                            Completado
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => handleDownload(doc.id)}
+                            className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-white/10 text-slate-500 dark:text-white/50 hover:text-build-main dark:hover:text-white transition-colors"
+                            title="Descargar / Ver archivo"
+                          >
+                            <span className="material-symbols-outlined text-[18px]">download</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDelete(doc.id)}
+                            className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-950/20 text-red-500 hover:text-red-600 transition-colors"
+                            title="Eliminar archivo"
+                          >
+                            <span className="material-symbols-outlined text-[18px]">delete</span>
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-white/10 text-slate-400 dark:text-white/40">
+                            Pendiente
+                          </span>
+                          <button
+                            type="button"
+                            disabled={isUploading}
+                            onClick={() => handleUploadClick(cat.id)}
+                            className={`p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-white/10 text-slate-500 dark:text-white/50 hover:text-build-main dark:hover:text-white transition-colors ${isUploading ? "opacity-50 cursor-not-allowed" : ""}`}
+                            title="Subir archivo"
+                          >
+                            {isUploading ? (
+                              <svg className="animate-spin w-4 h-4 text-build-accent" viewBox="0 0 24 24" fill="none">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+                              </svg>
+                            ) : (
+                              <span className="material-symbols-outlined text-[18px]">upload_file</span>
+                            )}
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })
           )}
-          <span>{uploading ? "Subiendo..." : "Subir"}</span>
-        </button>
-      </div>
-    </div>
-  );
-}
-
-// ─── KPI Mini ─────────────────────────────────────────────────────────────────
-
-function KpiMini({
-  icon,
-  label,
-  value,
-  accent = "text-build-main dark:text-white",
-}: {
-  icon: string;
-  label: string;
-  value: string;
-  accent?: string;
-}) {
-  return (
-    <div className="rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 p-4 shadow-sm flex items-center gap-4">
-      <div className="w-10 h-10 rounded-xl bg-build-bg dark:bg-white/10 flex items-center justify-center shrink-0">
-        <span className="material-symbols-outlined text-build-accent text-[20px]">{icon}</span>
-      </div>
-      <div>
-        <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-white/40">{label}</p>
-        <p className={`text-xl font-bold tracking-tight ${accent}`}>{value}</p>
+        </div>
       </div>
     </div>
   );
