@@ -45,7 +45,7 @@ export default function ClientExpedients({ assignments }: ClientExpedientsProps)
                   Contrato firmado
                 </span>
                 <Link
-                  href={`/clientes/${item.unitId}/expediente`}
+                  href={`/clientes/${item.clientId}/expediente`}
                   className="text-xs font-semibold text-build-main dark:text-white hover:bg-build-bg dark:hover:bg-white/10 transition-colors px-3 py-1.5 rounded-lg flex items-center gap-1"
                 >
                   Abrir

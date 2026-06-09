@@ -37,7 +37,7 @@ export default function ClientsPage() {
     setListError(null);
     try {
       const allUsers = await fetchUsuarios();
-      let filtered = allUsers;  
+      let filtered = allUsers.filter(u => u.tipoUsuario === "CLIENTE");  
       if (q) {
           filtered = filtered.filter(
             u =>
@@ -193,7 +193,7 @@ export default function ClientsPage() {
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="border-b border-slate-200 dark:border-white/10 bg-white dark:bg-white/5">
-                {["Nombre", "Correo", "Teléfono", "Unidades asignadas", "Estado", "Acciones"].map(h => (
+                {["Nombre", "Correo", "Teléfono", "Activo/Inactivo", "Acciones"].map(h => (
                   <th key={h} className="py-4 px-6 text-[12px] font-semibold text-slate-500 dark:text-white/60 uppercase tracking-wider">{h}</th>
                 ))}
               </tr>
@@ -201,7 +201,7 @@ export default function ClientsPage() {
             <tbody className="text-sm text-build-main dark:text-white">
               {listLoading && (
                 <tr>
-                  <td colSpan={6} className="py-12 text-center text-build-accent">
+                  <td colSpan={5} className="py-12 text-center text-build-accent">
                     <span className="inline-flex items-center gap-2">
                       <svg className="animate-spin w-5 h-5" viewBox="0 0 24 24" fill="none">
                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
@@ -233,9 +233,6 @@ export default function ClientsPage() {
 
                 <td className="py-4 px-6 text-build-accent">{c.email}</td>
                 <td className="py-4 px-6 text-build-accent">{c.phone}</td>
-                <td className="py-4 px-6 font-medium text-build-main dark:text-white">
-                  {c.project}
-                </td>
 
                 <td className="py-4 px-6">
                   <span

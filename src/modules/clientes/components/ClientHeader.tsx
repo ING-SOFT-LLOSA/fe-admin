@@ -49,7 +49,7 @@ export default function ClientHeader({
           label="Estado"
           value={client.status}
           valueClassName={
-            client.status === "Activo"
+            client.status === "ACTIVO" || client.status === "Activo" || client.status === "Registrado"
               ? "text-emerald-600 dark:text-emerald-400"
               : "text-slate-400 dark:text-white/40"
           }

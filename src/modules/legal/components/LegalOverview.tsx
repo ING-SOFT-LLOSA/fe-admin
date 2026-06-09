@@ -10,6 +10,8 @@ export default function LegalOverview() {
   const router = useRouter();
   const [clients, setClients] = useState<Usuario[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [legalStatuses, setLegalStatuses] = useState<Record<number, string>>({});
+  const [isStatusesLoading, setIsStatusesLoading] = useState(false);
   const [error, setError] = useState("");
   const [search, setSearch] = useState("");
 
@@ -20,11 +22,38 @@ export default function LegalOverview() {
       setError("");
       try {
         const users = await fetchUsuarios();
-        if (mounted) setClients(users.filter((u) => u.tipoUsuario === "CLIENTE"));
+        const clientList = users.filter((u) => u.tipoUsuario === "CLIENTE");
+        if (mounted) {
+          setClients(clientList);
+          setIsStatusesLoading(true);
+        }
+
+        const statusMap: Record<number, string> = {};
+        await Promise.all(
+          clientList.map(async (client) => {
+            try {
+              const { fetchExpedientesPorUsuario } = await import("@/lib/api/users");
+              const exps = await fetchExpedientesPorUsuario(client.id);
+              if (exps && exps.length > 0) {
+                statusMap[client.id] = exps[0].estadoTramiteLegal || "Por iniciar";
+              } else {
+                statusMap[client.id] = "Sin unidades";
+              }
+            } catch (err) {
+              statusMap[client.id] = "Por iniciar";
+            }
+          })
+        );
+        if (mounted) {
+          setLegalStatuses(statusMap);
+        }
       } catch (err) {
         if (mounted) setError(err instanceof Error ? err.message : "No se pudieron cargar los clientes.");
       } finally {
-        if (mounted) setIsLoading(false);
+        if (mounted) {
+          setIsLoading(false);
+          setIsStatusesLoading(false);
+        }
       }
     }
     void load();
@@ -131,12 +160,48 @@ export default function LegalOverview() {
                     <td className="px-5 py-4 text-sm text-slate-500 dark:text-white/60">
                       {client.email}
                     </td>
-                    {/* Estado */}
+                     {/* Estado */}
                     <td className="px-5 py-4">
-                      <span className="inline-flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-1 rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400">
-                        <span className="material-symbols-outlined text-[12px]">pending</span>
-                        Por iniciar
-                      </span>
+                      {isStatusesLoading && !legalStatuses[client.id] ? (
+                        <span className="inline-flex items-center gap-1 text-[11px] text-slate-400 dark:text-white/40">
+                          <svg className="animate-spin w-3.5 h-3.5 text-slate-400" viewBox="0 0 24 24" fill="none">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+                          </svg>
+                          Cargando...
+                        </span>
+                      ) : (
+                        (() => {
+                          const status = legalStatuses[client.id] || "Por iniciar";
+                          if (status === "Sin unidades") {
+                            return (
+                              <span className="inline-flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-1 rounded-full bg-slate-100 dark:bg-white/10 text-slate-600 dark:text-white/50">
+                                <span className="material-symbols-outlined text-[12px]">info</span>
+                                Sin asignar
+                              </span>
+                            );
+                          }
+                          
+                          let badgeClass = "bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400";
+                          let icon = "pending";
+                          
+                          const normStatus = status.toLowerCase();
+                          if (normStatus.includes("firmad") || normStatus.includes("inscrit") || normStatus.includes("completad") || normStatus.includes("sunarp")) {
+                            badgeClass = "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400";
+                            icon = "check_circle";
+                          } else if (normStatus.includes("proces") || normStatus.includes("revision") || normStatus.includes("minuta") || normStatus.includes("firma")) {
+                            badgeClass = "bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400";
+                            icon = "progress_activity";
+                          }
+                          
+                          return (
+                            <span className={`inline-flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-1 rounded-full ${badgeClass}`}>
+                              <span className="material-symbols-outlined text-[12px]">{icon}</span>
+                              {status}
+                            </span>
+                          );
+                        })()
+                      )}
                     </td>
                     {/* Action hint */}
                     <td className="px-5 py-4">

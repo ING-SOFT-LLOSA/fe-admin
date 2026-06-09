@@ -4,22 +4,18 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
-import { fetchUsuarios, mapUsuarioToClienteRow } from "@/lib/api/users";
+import { fetchUsuarioPorId, mapUsuarioToClienteRow } from "@/lib/api/users";
 import type { ClienteRow } from "@/types/user";
 
 import AssignPropertyWizard from "@/modules/asignaciones/components/AssignPropertyWizard";
 import EditClienteModal from "@/modules/clientes/components/EditClienteModal";
 import DeleteUsuarioModal from "@/modules/clientes/components/DeleteUsuarioModal";
-import UnlinkPropertyModal from "@/modules/clientes/components/UnlinkPropertyModal";
-
 import ClientHeader from "./ClientHeader";
 import ClientKpis from "./ClientKpis";
-import ClientGeneralStatus from "./ClientGeneralStatus";
-import ClientProperties from "./ClientProperties";
 import ClientActivity from "./ClientActivity";
 import ClientExpedients from "./ClientExpedients";
 
-type Modal = "edit" | "delete" | "assign" | "unlink" | null;
+type Modal = "edit" | "delete" | "assign" | null;
 
 type ClienteProfileViewProps = {
   clientId: string;
@@ -41,13 +37,12 @@ export default function ClienteProfileView({ clientId }: ClienteProfileViewProps
     setLoading(true);
 
     Promise.all([
-      fetchUsuarios(),
+      fetchUsuarioPorId(Number(clientId)),
       import("@/lib/api/users").then(m => m.fetchExpedientesPorUsuario(Number(clientId)))
     ])
-      .then(([users, exps]) => {
+      .then(([user, exps]) => {
         if (!mounted) return;
-        const found = users.find((user) => String(user.id) === clientId);
-        setClient(found ? mapUsuarioToClienteRow(found) : null);
+        setClient(user ? mapUsuarioToClienteRow(user) : null);
         
         const mappedExps = (exps || []).map((exp: any) => {
           const act = exp.activo;
@@ -86,10 +81,7 @@ export default function ClienteProfileView({ clientId }: ClienteProfileViewProps
     setSelectedAssignment(null);
   }
 
-  function handleUnlink(assignment: any) {
-    setSelectedAssignment(assignment);
-    setActiveModal("unlink");
-  }
+
 
   function refresh() {
     setRefreshCount((c) => c + 1);
@@ -151,10 +143,8 @@ export default function ClienteProfileView({ clientId }: ClienteProfileViewProps
 
         <div className="lg:col-span-2 space-y-6">
           <ClientKpis assignments={assignments} />
-          <ClientGeneralStatus assignments={assignments} />
-          <ClientProperties assignments={assignments} onUnlink={handleUnlink} />
-          <ClientActivity assignments={assignments} clientCreatedAt="2026-01-15" />
           <ClientExpedients assignments={assignments} />
+          <ClientActivity assignments={assignments} clientCreatedAt={client?.createdAt} />
         </div>
       </div>
 
@@ -181,12 +171,7 @@ export default function ClienteProfileView({ clientId }: ClienteProfileViewProps
         />
       )}
 
-      <UnlinkPropertyModal
-        open={activeModal === "unlink"}
-        assignment={selectedAssignment}
-        onClose={closeModal}
-        onUnlinked={() => { closeModal(); refresh(); }}
-      />
+
     </div>
   );
 }

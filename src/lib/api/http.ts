@@ -1,4 +1,5 @@
 import { getStoredToken } from "@/lib/auth/session";
+import { getFirebaseAuth } from "@/lib/firebase";
 
 const API_URL = (process.env.NEXT_PUBLIC_API_URL_LLOSA ?? "http://localhost:8080").replace(/\/$/, "");
 
@@ -15,7 +16,27 @@ export class ApiError extends Error {
 }
 
 export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
-  const token = getStoredToken();
+  let token = getStoredToken();
+
+  if (typeof window !== "undefined") {
+    try {
+      const auth = getFirebaseAuth();
+      if (auth.currentUser) {
+        const freshToken = await auth.currentUser.getIdToken(false);
+        if (freshToken) {
+          token = freshToken;
+          const { saveSession, getStoredPerfil } = await import("@/lib/auth/session");
+          const perfil = getStoredPerfil();
+          if (perfil) {
+            saveSession(freshToken, perfil);
+          }
+        }
+      }
+    } catch (err) {
+      console.warn("No se pudo refrescar el token de Firebase:", err);
+    }
+  }
+
   if (!token) {
     throw new Error("No hay sesión activa. Inicia sesión de nuevo.");
   }

@@ -28,18 +28,7 @@ export default function TopNav() {
           <span className="text-[13px] font-semibold text-build-main dark:text-white/80">{label}</span>
         </div>
 
-        {/* Center: search */}
-        <div className="flex-1 max-w-sm mx-8">
-          <div className="relative">
-            <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-build-accent text-[17px]">search</span>
-            <input
-              type="text"
-              placeholder="Buscar cualquier cosa..."
-              className="w-full bg-white dark:bg-white/5 border border-transparent dark:border-white/10 hover:border-build-accent dark:hover:border-build-accent focus:border-build-main dark:focus:border-build-accent focus:bg-white dark:focus:bg-slate-800 rounded-lg pl-9 pr-12 py-2 text-[13px] text-build-main dark:text-white placeholder:text-build-accent outline-none transition-all duration-200"
-            />
-            <kbd className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-build-main dark:text-white/70 font-semibold bg-build-accent/20 px-1.5 py-0.5 rounded">Ctrl K</kbd>
-          </div>
-        </div>
+
 
         {/* Right: actions + avatar */}
         <div className="flex items-center gap-2">
