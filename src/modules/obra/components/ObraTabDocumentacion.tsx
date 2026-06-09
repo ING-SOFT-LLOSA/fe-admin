@@ -47,157 +47,7 @@ const TIPO_ICON: Record<Documento["tipo"], { icon: string; color: string }> = {
   jpg:  { icon: "image",          color: "text-purple-500"  },
 };
 
-// Demo seed data — will be replaced with real API data
-const SEED_DOCS: Documento[] = [
-  // Anteproyecto
-  {
-    id: "DOC-A01",
-    nombre: "Anteproyecto Aprobado — Memoria Descriptiva",
-    categoria: "anteproyecto",
-    version: "v1.0",
-    fechaCarga: "2025-08-15",
-    subidoPor: "Arq. Sánchez",
-    tamanio: "4.2 MB",
-    tipo: "pdf",
-    estado: "vigente",
-  },
-  {
-    id: "DOC-A02",
-    nombre: "Resolución de Aprobación Municipal",
-    categoria: "anteproyecto",
-    version: "v1.0",
-    fechaCarga: "2025-08-20",
-    subidoPor: "Arq. Sánchez",
-    tamanio: "1.8 MB",
-    tipo: "pdf",
-    estado: "vigente",
-  },
-  // Licencia
-  {
-    id: "DOC-L01",
-    nombre: "Licencia de Construcción — Resolución N° 2025-0487",
-    categoria: "licencia",
-    version: "v1.0",
-    fechaCarga: "2025-10-01",
-    subidoPor: "Legal",
-    tamanio: "2.1 MB",
-    tipo: "pdf",
-    estado: "vigente",
-  },
-  {
-    id: "DOC-L02",
-    nombre: "Conformidad de Obra — Certificado",
-    categoria: "licencia",
-    version: "v1.0",
-    fechaCarga: "2026-05-28",
-    subidoPor: "Legal",
-    tamanio: "890 KB",
-    tipo: "pdf",
-    estado: "pendiente_revision",
-  },
-  // Planos
-  {
-    id: "DOC-P01",
-    nombre: "Plano de Arquitectura — Planta General",
-    categoria: "planos",
-    version: "v3.2",
-    fechaCarga: "2026-03-12",
-    subidoPor: "Ing. Torres",
-    tamanio: "18.5 MB",
-    tipo: "dwg",
-    estado: "vigente",
-  },
-  {
-    id: "DOC-P02",
-    nombre: "Plano de Estructuras — Cimentación",
-    categoria: "planos",
-    version: "v2.1",
-    fechaCarga: "2026-01-20",
-    subidoPor: "Ing. Quispe",
-    tamanio: "22.3 MB",
-    tipo: "dwg",
-    estado: "vigente",
-  },
-  {
-    id: "DOC-P03",
-    nombre: "Plano de IIEE — Red General",
-    categoria: "planos",
-    version: "v1.0",
-    fechaCarga: "2025-12-05",
-    subidoPor: "Ing. Campos",
-    tamanio: "15.1 MB",
-    tipo: "dwg",
-    estado: "reemplazado",
-  },
-  {
-    id: "DOC-P04",
-    nombre: "Plano de IIEE — Red General (Actualizado)",
-    categoria: "planos",
-    version: "v2.0",
-    fechaCarga: "2026-04-18",
-    subidoPor: "Ing. Campos",
-    tamanio: "16.8 MB",
-    tipo: "dwg",
-    estado: "vigente",
-  },
-  {
-    id: "DOC-P05",
-    nombre: "Plano de IISS — Red Agua y Desagüe",
-    categoria: "planos",
-    version: "v1.1",
-    fechaCarga: "2026-02-10",
-    subidoPor: "Ing. Rivera",
-    tamanio: "14.7 MB",
-    tipo: "dwg",
-    estado: "vigente",
-  },
-  // Acabados
-  {
-    id: "DOC-AC01",
-    nombre: "Cuadro de Acabados — Departamentos Tipo A",
-    categoria: "acabados",
-    version: "v2.0",
-    fechaCarga: "2026-04-01",
-    subidoPor: "Arq. Díaz",
-    tamanio: "3.4 MB",
-    tipo: "xlsx",
-    estado: "vigente",
-  },
-  {
-    id: "DOC-AC02",
-    nombre: "Cuadro de Acabados — Áreas Comunes",
-    categoria: "acabados",
-    version: "v1.0",
-    fechaCarga: "2026-03-15",
-    subidoPor: "Arq. Díaz",
-    tamanio: "2.8 MB",
-    tipo: "xlsx",
-    estado: "vigente",
-  },
-  // Certificación
-  {
-    id: "DOC-C01",
-    nombre: "Pre-certificación EDGE — Informe Preliminar",
-    categoria: "certificacion",
-    version: "v1.0",
-    fechaCarga: "2026-01-10",
-    subidoPor: "Consultoría Green",
-    tamanio: "5.6 MB",
-    tipo: "pdf",
-    estado: "vigente",
-  },
-  {
-    id: "DOC-C02",
-    nombre: "Simulación Energética — EDGE App Export",
-    categoria: "certificacion",
-    version: "v1.0",
-    fechaCarga: "2026-01-10",
-    subidoPor: "Consultoría Green",
-    tamanio: "1.2 MB",
-    tipo: "xlsx",
-    estado: "vigente",
-  },
-];
+const SEED_DOCS: Documento[] = [];
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
@@ -245,11 +95,11 @@ export default function ObraTabDocumentacion({ projectId }: ObraTabDocumentacion
           estado: "vigente" as const
         };
       });
-      setDocuments([...mapped, ...SEED_DOCS]);
+      setDocuments(mapped);
     } catch (err) {
       console.error("Error loading documents:", err);
       setError(err instanceof Error ? err.message : "Error al cargar documentos.");
-      setDocuments(SEED_DOCS);
+      setDocuments([]);
     } finally {
       setLoading(false);
     }
@@ -260,10 +110,6 @@ export default function ObraTabDocumentacion({ projectId }: ObraTabDocumentacion
   }, [projectId]);
 
   const handleDownload = async (docId: string) => {
-    if (docId.startsWith("DOC-")) {
-      alert("Descarga simulada para documento demo.");
-      return;
-    }
     try {
       const res = await fetchSignedUrl(docId);
       window.open(res.url, "_blank");
@@ -274,10 +120,6 @@ export default function ObraTabDocumentacion({ projectId }: ObraTabDocumentacion
   };
 
   const handleDeleteDoc = async (docId: string) => {
-    if (docId.startsWith("DOC-")) {
-      alert("No se pueden eliminar los documentos demo.");
-      return;
-    }
     if (!confirm("¿Estás seguro de que deseas eliminar este documento?")) return;
     try {
       await deleteDocumento(docId);
@@ -518,16 +360,14 @@ export default function ObraTabDocumentacion({ projectId }: ObraTabDocumentacion
                         >
                           <span className="material-symbols-outlined text-[16px]">download</span>
                         </button>
-                        {!doc.id.startsWith("DOC-") && (
-                          <button
-                            type="button"
-                            title="Eliminar"
-                            onClick={() => handleDeleteDoc(doc.id)}
-                            className="p-1.5 rounded-lg text-slate-400 hover:text-red-500 dark:hover:text-red-400 hover:bg-slate-100 dark:hover:bg-white/10 transition-colors"
-                          >
-                            <span className="material-symbols-outlined text-[16px]">delete</span>
-                          </button>
-                        )}
+                        <button
+                          type="button"
+                          title="Eliminar"
+                          onClick={() => handleDeleteDoc(doc.id)}
+                          className="p-1.5 rounded-lg text-slate-400 hover:text-red-500 dark:hover:text-red-400 hover:bg-slate-100 dark:hover:bg-white/10 transition-colors"
+                        >
+                          <span className="material-symbols-outlined text-[16px]">delete</span>
+                        </button>
                       </div>
                     </td>
                   </tr>
