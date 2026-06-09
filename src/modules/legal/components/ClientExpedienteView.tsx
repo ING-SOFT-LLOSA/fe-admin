@@ -282,6 +282,24 @@ export default function ClientExpedienteView({ clientId }: ClientExpedienteViewP
   async function handleUpdateHito(uuidHito: string, nuevoEstado: string) {
     setUpdateError("");
     try {
+      if (nuevoEstado === "COMPLETADO" && stepper?.etapas) {
+        const targetEtapa = stepper.etapas.find(et => et.hitos?.some(h => h.uuidHitoComercial === uuidHito));
+        if (targetEtapa) {
+          const STAGE_ORDER = ["SEPARACION", "CONTRATO", "PAGO", "ENTREGA", "SANEAMIENTO"];
+          const targetIndex = STAGE_ORDER.indexOf(targetEtapa.etapa);
+          if (targetIndex > 0) {
+            for (let i = 0; i < targetIndex; i++) {
+              const prevStage = STAGE_ORDER[i];
+              const prevEtapa = stepper.etapas.find(et => et.etapa === prevStage);
+              const prevHito = prevEtapa?.hitos?.[0];
+              if (prevHito && prevHito.estado !== "COMPLETADO") {
+                await updateCommercialHitoEstado(prevHito.uuidHitoComercial, "COMPLETADO");
+              }
+            }
+          }
+        }
+      }
+
       await updateCommercialHitoEstado(uuidHito, nuevoEstado);
       if (contrato?.uuidUsuarioActivo) {
         const freshData = await fetchCommercialStepper(contrato.uuidUsuarioActivo);
