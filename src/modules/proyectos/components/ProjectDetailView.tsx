@@ -76,9 +76,19 @@ export default function ProjectDetailView({ projectId }: ProjectDetailViewProps)
     setIsSaving(true);
     setSuccessMessage("");
 
+    const trimmedValues = {
+      ...formValues,
+      nombre: formValues.nombre.trim(),
+      direccion: formValues.direccion.trim(),
+      departamento: formValues.departamento.trim(),
+      distrito: formValues.distrito.trim(),
+      linkRecorridoVirtual: formValues.linkRecorridoVirtual.trim(),
+    };
+
     try {
-      await updateProyecto(projectId, formValues);
+      await updateProyecto(projectId, trimmedValues);
       setSuccessMessage("Proyecto actualizado correctamente.");
+      setFormValues(trimmedValues);
     } catch (error) {
       console.error(error);
       alert("Hubo un error al guardar los cambios del proyecto.");

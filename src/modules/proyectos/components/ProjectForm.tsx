@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import type { ChangeEvent } from "react";
 import type { ProyectoCreateDTO } from "@/modules/proyectos/types";
 
@@ -31,10 +32,67 @@ export default function ProjectForm({
   onSubmit,
   isSaving,
 }: ProjectFormProps) {
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const validateForm = (data: ProyectoCreateDTO): Record<string, string> => {
+    const newErrors: Record<string, string> = {};
+
+    if (!data.nombre || !data.nombre.trim()) {
+      newErrors.nombre = "El nombre del proyecto es obligatorio.";
+    } else if (data.nombre.trim().length < 3) {
+      newErrors.nombre = "El nombre debe tener al menos 3 caracteres.";
+    }
+
+    if (!data.direccion || !data.direccion.trim()) {
+      newErrors.direccion = "La dirección es obligatoria.";
+    }
+
+    if (!data.departamento || !data.departamento.trim()) {
+      newErrors.departamento = "El departamento es obligatorio.";
+    }
+
+    if (!data.distrito || !data.distrito.trim()) {
+      newErrors.distrito = "El distrito es obligatorio.";
+    }
+
+    if (data.linkRecorridoVirtual && data.linkRecorridoVirtual.trim() !== "") {
+      const urlRegex = /^https?:\/\/\S+/i;
+      if (!urlRegex.test(data.linkRecorridoVirtual.trim())) {
+        newErrors.linkRecorridoVirtual = "El link del recorrido virtual debe ser una URL válida (ej. https://...).";
+      }
+    }
+
+    if (data.fechaInicio && data.fechaFin) {
+      const start = new Date(data.fechaInicio);
+      const end = new Date(data.fechaFin);
+      if (end < start) {
+        newErrors.fechaFin = "La fecha de fin no puede ser anterior a la fecha de inicio.";
+      }
+    }
+
+    return newErrors;
+  };
+
   const handleInputChange =
     (field: keyof ProyectoCreateDTO) =>
     (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
       onChange(field, event.target.value);
+      
+      if (errors[field]) {
+        setErrors((prev) => {
+          const next = { ...prev };
+          delete next[field];
+          return next;
+        });
+      }
+
+      if ((field === "fechaInicio" || field === "fechaFin") && errors.fechaFin) {
+        setErrors((prev) => {
+          const next = { ...prev };
+          delete next.fechaFin;
+          return next;
+        });
+      }
     };
 
   const handleCheckboxChange =
@@ -42,6 +100,22 @@ export default function ProjectForm({
     (event: ChangeEvent<HTMLInputElement>) => {
       onChange(field, event.target.checked);
     };
+
+  const handleSubmit = () => {
+    const validationErrors = validateForm(values);
+    if (Object.keys(validationErrors).length > 0) {
+      setErrors(validationErrors);
+      
+      const firstErrorKey = Object.keys(validationErrors)[0];
+      const element = document.getElementsByName(firstErrorKey)[0];
+      if (element) {
+        element.scrollIntoView({ behavior: "smooth", block: "center" });
+        element.focus();
+      }
+      return;
+    }
+    onSubmit();
+  };
 
   return (
     <section className="rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 p-6 shadow-sm">
@@ -51,26 +125,41 @@ export default function ProjectForm({
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
-        {textFields.map((field) => (
-          <label key={field.key} className={field.key === "direccion" || field.key === "linkRecorridoVirtual" ? "md:col-span-2" : ""}>
-            <span className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-white/60">
-              {field.label}
-            </span>
-            <input
-              type={field.type}
-              value={String(values[field.key])}
-              onChange={handleInputChange(field.key)}
-              placeholder={field.placeholder}
-              className="w-full rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 px-3 py-2.5 text-sm text-build-main dark:text-white outline-none transition-all focus:border-build-accent focus:ring-1 focus:ring-build-accent"
-            />
-          </label>
-        ))}
+        {textFields.map((field) => {
+          const hasError = !!errors[field.key];
+          return (
+            <label key={field.key} className={field.key === "direccion" || field.key === "linkRecorridoVirtual" ? "md:col-span-2" : ""}>
+              <span className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-white/60">
+                {field.label}
+                {["nombre", "direccion", "departamento", "distrito"].includes(field.key) && (
+                  <span className="text-red-500 ml-1">*</span>
+                )}
+              </span>
+              <input
+                type={field.type}
+                name={field.key}
+                value={String(values[field.key])}
+                onChange={handleInputChange(field.key)}
+                placeholder={field.placeholder}
+                className={`w-full rounded-xl border bg-white dark:bg-white/5 px-3 py-2.5 text-sm text-build-main dark:text-white outline-none transition-all focus:ring-1 ${
+                  hasError 
+                    ? "border-red-500 focus:border-red-600 focus:ring-red-500/20" 
+                    : "border-slate-200 dark:border-white/10 focus:border-build-accent focus:ring-build-accent"
+                }`}
+              />
+              {hasError && (
+                <p className="mt-1 text-xs font-semibold text-red-500 dark:text-red-400">{errors[field.key]}</p>
+              )}
+            </label>
+          );
+        })}
         
         <label className="md:col-span-2">
           <span className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-white/60">
             Descripción
           </span>
           <textarea
+            name="descripcion"
             value={values.descripcion}
             onChange={handleInputChange("descripcion")}
             placeholder="Breve descripción del proyecto..."
@@ -98,7 +187,7 @@ export default function ProjectForm({
       <div className="mt-6 flex justify-end">
         <button
           type="button"
-          onClick={onSubmit}
+          onClick={handleSubmit}
           disabled={isSaving}
           className="inline-flex items-center gap-2 rounded-xl bg-build-main px-6 py-2.5 text-sm font-bold text-white shadow-sm transition-all hover:bg-build-main/90 disabled:opacity-60"
         >
@@ -121,3 +210,4 @@ export default function ProjectForm({
     </section>
   );
 }
+
