@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { fetchDocumentosByReferencia, fetchSignedUrl, deleteDocumento, uploadDocument } from "@/lib/api/documents";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -200,12 +201,94 @@ const SEED_DOCS: Documento[] = [
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export default function ObraTabDocumentacion({ projectId: _projectId }: ObraTabDocumentacionProps) {
+export default function ObraTabDocumentacion({ projectId }: ObraTabDocumentacionProps) {
   const [activeCategoria, setActiveCategoria] = useState<DocCategoria | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [showUpload, setShowUpload] = useState(false);
+  const [documents, setDocuments] = useState<Documento[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const filteredDocs = SEED_DOCS.filter((d) => {
+  const loadDocuments = async () => {
+    if (!projectId) return;
+    setLoading(true);
+    setError(null);
+    try {
+      const dbDocs = await fetchDocumentosByReferencia(projectId);
+      const mapped = dbDocs.map((doc) => {
+        let categoria: DocCategoria = "planos";
+        let nombre = doc.nombreOriginal;
+        for (const cat of CATEGORIAS) {
+          if (doc.nombreOriginal.startsWith(`[${cat.id}] `)) {
+            categoria = cat.id;
+            nombre = doc.nombreOriginal.substring(cat.id.length + 3);
+            break;
+          }
+        }
+        
+        let tipo: Documento["tipo"] = "pdf";
+        const ext = doc.nombreOriginal.split(".").pop()?.toLowerCase();
+        if (ext === "dwg") tipo = "dwg";
+        else if (ext === "xlsx" || ext === "xls") tipo = "xlsx";
+        else if (ext === "docx" || ext === "doc") tipo = "docx";
+        else if (ext === "jpg" || ext === "jpeg" || ext === "png") tipo = "jpg";
+
+        return {
+          id: doc.id,
+          nombre,
+          categoria,
+          version: "v1.0",
+          fechaCarga: doc.createdAt ? doc.createdAt.split("T")[0] : new Date().toISOString().split("T")[0],
+          subidoPor: "Sistema",
+          tamanio: "—",
+          tipo,
+          estado: "vigente" as const
+        };
+      });
+      setDocuments([...mapped, ...SEED_DOCS]);
+    } catch (err) {
+      console.error("Error loading documents:", err);
+      setError(err instanceof Error ? err.message : "Error al cargar documentos.");
+      setDocuments(SEED_DOCS);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadDocuments();
+  }, [projectId]);
+
+  const handleDownload = async (docId: string) => {
+    if (docId.startsWith("DOC-")) {
+      alert("Descarga simulada para documento demo.");
+      return;
+    }
+    try {
+      const res = await fetchSignedUrl(docId);
+      window.open(res.url, "_blank");
+    } catch (err) {
+      console.error("Error fetching signed URL:", err);
+      alert("No se pudo obtener el enlace de descarga.");
+    }
+  };
+
+  const handleDeleteDoc = async (docId: string) => {
+    if (docId.startsWith("DOC-")) {
+      alert("No se pueden eliminar los documentos demo.");
+      return;
+    }
+    if (!confirm("¿Estás seguro de que deseas eliminar este documento?")) return;
+    try {
+      await deleteDocumento(docId);
+      await loadDocuments();
+    } catch (err) {
+      console.error("Error deleting document:", err);
+      alert(err instanceof Error ? err.message : "Error al eliminar el documento.");
+    }
+  };
+
+  const filteredDocs = documents.filter((d) => {
     if (activeCategoria && d.categoria !== activeCategoria) return false;
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
@@ -218,14 +301,20 @@ export default function ObraTabDocumentacion({ projectId: _projectId }: ObraTabD
     return true;
   });
 
-  const totalVigentes = SEED_DOCS.filter((d) => d.estado === "vigente").length;
-  const totalPendientes = SEED_DOCS.filter((d) => d.estado === "pendiente_revision").length;
+  const totalVigentes = documents.filter((d) => d.estado === "vigente").length;
+  const totalPendientes = documents.filter((d) => d.estado === "pendiente_revision").length;
 
   return (
     <div className="space-y-6">
+      {error && (
+        <div className="rounded-xl border border-red-200 bg-red-50 dark:bg-red-900/20 dark:border-red-900/40 px-4 py-3 text-sm text-red-700 dark:text-red-400">
+          {error}
+        </div>
+      )}
+
       {/* KPI row */}
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <KpiMini icon="folder_open" label="Total documentos" value={String(SEED_DOCS.length)} />
+        <KpiMini icon="folder_open" label="Total documentos" value={String(documents.length)} />
         <KpiMini icon="verified" label="Vigentes" value={String(totalVigentes)} accent="text-emerald-500" />
         <KpiMini icon="pending" label="Pend. revisión" value={String(totalPendientes)} accent="text-amber-500" />
         <KpiMini icon="category" label="Categorías" value={String(CATEGORIAS.length)} accent="text-blue-500" />
@@ -256,12 +345,18 @@ export default function ObraTabDocumentacion({ projectId: _projectId }: ObraTabD
       </div>
 
       {/* Upload panel */}
-      {showUpload && <UploadDocPanel onClose={() => setShowUpload(false)} />}
+      {showUpload && (
+        <UploadDocPanel
+          projectId={projectId}
+          onClose={() => setShowUpload(false)}
+          onUploadSuccess={loadDocuments}
+        />
+      )}
 
       {/* Category cards */}
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
         {CATEGORIAS.map((cat) => {
-          const count = SEED_DOCS.filter((d) => d.categoria === cat.id && d.estado === "vigente").length;
+          const count = documents.filter((d) => d.categoria === cat.id && d.estado === "vigente").length;
           const isActive = activeCategoria === cat.id;
           return (
             <button
@@ -333,7 +428,15 @@ export default function ObraTabDocumentacion({ projectId: _projectId }: ObraTabD
           )}
         </div>
 
-        {filteredDocs.length === 0 ? (
+        {loading && documents.length === 0 ? (
+          <div className="flex items-center justify-center py-12">
+            <svg className="animate-spin w-5 h-5 text-build-accent mr-3" viewBox="0 0 24 24" fill="none">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+            </svg>
+            <span className="text-sm text-slate-500 dark:text-white/40 font-medium">Cargando documentos...</span>
+          </div>
+        ) : filteredDocs.length === 0 ? (
           <div className="px-6 py-14 flex flex-col items-center gap-3 text-center">
             <span className="material-symbols-outlined text-[40px] text-slate-200 dark:text-white/20">
               folder_off
@@ -360,7 +463,7 @@ export default function ObraTabDocumentacion({ projectId: _projectId }: ObraTabD
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-white/5">
               {filteredDocs.map((doc) => {
-                const tipoInfo = TIPO_ICON[doc.tipo];
+                const tipoInfo = TIPO_ICON[doc.tipo] || TIPO_ICON.pdf;
                 const badge = ESTADO_BADGE[doc.estado];
                 const catLabel = CATEGORIAS.find((c) => c.id === doc.categoria)?.label ?? doc.categoria;
 
@@ -372,7 +475,7 @@ export default function ObraTabDocumentacion({ projectId: _projectId }: ObraTabD
                           {tipoInfo.icon}
                         </span>
                         <div className="min-w-0">
-                          <p className="text-sm font-semibold text-build-main dark:text-white truncate max-w-[260px]">
+                          <p className="text-sm font-semibold text-build-main dark:text-white truncate max-w-[260px]" title={doc.nombre}>
                             {doc.nombre}
                           </p>
                           <p className="text-[10px] text-slate-400 dark:text-white/30 uppercase">{doc.tipo.toUpperCase()}</p>
@@ -402,6 +505,7 @@ export default function ObraTabDocumentacion({ projectId: _projectId }: ObraTabD
                         <button
                           type="button"
                           title="Ver documento"
+                          onClick={() => handleDownload(doc.id)}
                           className="p-1.5 rounded-lg text-slate-400 hover:text-build-main dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/10 transition-colors"
                         >
                           <span className="material-symbols-outlined text-[16px]">visibility</span>
@@ -409,24 +513,21 @@ export default function ObraTabDocumentacion({ projectId: _projectId }: ObraTabD
                         <button
                           type="button"
                           title="Descargar"
+                          onClick={() => handleDownload(doc.id)}
                           className="p-1.5 rounded-lg text-slate-400 hover:text-build-main dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/10 transition-colors"
                         >
                           <span className="material-symbols-outlined text-[16px]">download</span>
                         </button>
-                        <button
-                          type="button"
-                          title="Subir nueva versión"
-                          className="p-1.5 rounded-lg text-slate-400 hover:text-build-main dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/10 transition-colors"
-                        >
-                          <span className="material-symbols-outlined text-[16px]">upload</span>
-                        </button>
-                        <button
-                          type="button"
-                          title="Más opciones"
-                          className="p-1.5 rounded-lg text-slate-400 hover:text-build-main dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/10 transition-colors"
-                        >
-                          <span className="material-symbols-outlined text-[16px]">more_vert</span>
-                        </button>
+                        {!doc.id.startsWith("DOC-") && (
+                          <button
+                            type="button"
+                            title="Eliminar"
+                            onClick={() => handleDeleteDoc(doc.id)}
+                            className="p-1.5 rounded-lg text-slate-400 hover:text-red-500 dark:hover:text-red-400 hover:bg-slate-100 dark:hover:bg-white/10 transition-colors"
+                          >
+                            <span className="material-symbols-outlined text-[16px]">delete</span>
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -442,14 +543,54 @@ export default function ObraTabDocumentacion({ projectId: _projectId }: ObraTabD
 
 // ─── Upload Panel ─────────────────────────────────────────────────────────────
 
-function UploadDocPanel({ onClose }: { onClose: () => void }) {
+type UploadDocPanelProps = {
+  projectId: string;
+  onClose: () => void;
+  onUploadSuccess: () => void;
+};
+
+function UploadDocPanel({ projectId, onClose, onUploadSuccess }: UploadDocPanelProps) {
   const [nombre, setNombre]       = useState("");
   const [categoria, setCategoria] = useState<DocCategoria>("planos");
   const [version, setVersion]     = useState("v1.0");
+  const [file, setFile]           = useState<File | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [error, setError]         = useState<string | null>(null);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const selectedFile = e.target.files[0];
+      setFile(selectedFile);
+      if (!nombre) {
+        const nameWithoutExt = selectedFile.name.substring(0, selectedFile.name.lastIndexOf("."));
+        setNombre(nameWithoutExt);
+      }
+    }
+  };
+
+  const handleUpload = async () => {
+    if (!file || !nombre.trim()) return;
+    setUploading(true);
+    setError(null);
+    try {
+      const ext = file.name.split(".").pop() || "";
+      const finalFileName = `[${categoria}] ${nombre.trim()}.${ext}`;
+      const renamedFile = new File([file], finalFileName, { type: file.type });
+      
+      await uploadDocument(projectId, renamedFile, "PDF_LEGAL");
+      onUploadSuccess();
+      onClose();
+    } catch (err) {
+      console.error("Error uploading project document:", err);
+      setError(err instanceof Error ? err.message : "Error al subir el documento.");
+    } finally {
+      setUploading(false);
+    }
+  };
 
   return (
-    <div className="rounded-xl border border-build-accent/30 bg-build-accent/5 dark:bg-build-accent/10 p-6 shadow-sm">
-      <div className="flex items-center justify-between mb-4">
+    <div className="rounded-xl border border-build-accent/30 bg-build-accent/5 dark:bg-build-accent/10 p-6 shadow-sm space-y-4">
+      <div className="flex items-center justify-between">
         <div>
           <h3 className="text-sm font-bold text-build-main dark:text-white flex items-center gap-2">
             <span className="material-symbols-outlined text-build-accent text-[18px]">upload_file</span>
@@ -462,11 +603,18 @@ function UploadDocPanel({ onClose }: { onClose: () => void }) {
         <button
           type="button"
           onClick={onClose}
-          className="p-1 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-white hover:bg-white/50 dark:hover:bg-white/10 transition-colors"
+          disabled={uploading}
+          className="p-1 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-white hover:bg-white/50 dark:hover:bg-white/10 transition-colors disabled:opacity-50"
         >
           <span className="material-symbols-outlined text-[18px]">close</span>
         </button>
       </div>
+
+      {error && (
+        <div className="rounded-xl border border-red-200 bg-red-50 dark:bg-red-900/20 dark:border-red-900/40 px-4 py-3 text-sm text-red-700 dark:text-red-400">
+          {error}
+        </div>
+      )}
 
       <div className="grid gap-4 md:grid-cols-4 items-end">
         <div className="md:col-span-2">
@@ -477,8 +625,9 @@ function UploadDocPanel({ onClose }: { onClose: () => void }) {
             type="text"
             value={nombre}
             onChange={(e) => setNombre(e.target.value)}
+            disabled={uploading}
             placeholder="Ej. Plano de Arquitectura — Planta Nivel 3"
-            className="w-full rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 px-3 py-2.5 text-sm text-build-main dark:text-white outline-none focus:border-build-accent focus:ring-1 focus:ring-build-accent transition"
+            className="w-full rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 px-3 py-2.5 text-sm text-build-main dark:text-white outline-none focus:border-build-accent focus:ring-1 focus:ring-build-accent transition disabled:opacity-50"
           />
         </div>
         <div>
@@ -488,7 +637,8 @@ function UploadDocPanel({ onClose }: { onClose: () => void }) {
           <select
             value={categoria}
             onChange={(e) => setCategoria(e.target.value as DocCategoria)}
-            className="w-full rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 px-3 py-2.5 text-sm text-build-main dark:text-white outline-none focus:border-build-accent focus:ring-1 focus:ring-build-accent transition"
+            disabled={uploading}
+            className="w-full rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 px-3 py-2.5 text-sm text-build-main dark:text-white outline-none focus:border-build-accent focus:ring-1 focus:ring-build-accent transition disabled:opacity-50"
           >
             {CATEGORIAS.map((c) => (
               <option key={c.id} value={c.id}>{c.label}</option>
@@ -503,25 +653,34 @@ function UploadDocPanel({ onClose }: { onClose: () => void }) {
             type="text"
             value={version}
             onChange={(e) => setVersion(e.target.value)}
+            disabled={uploading}
             placeholder="v1.0"
-            className="w-full rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 px-3 py-2.5 text-sm text-build-main dark:text-white outline-none focus:border-build-accent focus:ring-1 focus:ring-build-accent transition"
+            className="w-full rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 px-3 py-2.5 text-sm text-build-main dark:text-white outline-none focus:border-build-accent focus:ring-1 focus:ring-build-accent transition disabled:opacity-50"
           />
         </div>
       </div>
 
-      <div className="flex items-center gap-3 mt-4">
-        <label className="flex-1 cursor-pointer rounded-xl border-2 border-dashed border-slate-300 dark:border-white/20 bg-white dark:bg-white/5 px-6 py-4 flex items-center justify-center gap-3 text-sm font-semibold text-slate-500 dark:text-white/50 hover:border-build-accent hover:text-build-accent transition-colors">
+      <div className="flex flex-col sm:flex-row items-center gap-3 mt-2">
+        <label className="w-full flex-1 cursor-pointer rounded-xl border-2 border-dashed border-slate-300 dark:border-white/20 bg-white dark:bg-white/5 px-6 py-4 flex items-center justify-center gap-3 text-sm font-semibold text-slate-500 dark:text-white/50 hover:border-build-accent hover:text-build-accent transition-colors">
           <span className="material-symbols-outlined text-[22px]">cloud_upload</span>
-          <span>Seleccionar archivo (.pdf, .dwg, .xlsx, .docx)</span>
-          <input type="file" className="hidden" accept=".pdf,.dwg,.xlsx,.docx,.jpg,.png" />
+          <span className="truncate">{file ? file.name : "Seleccionar archivo (.pdf, .dwg, .xlsx, .docx, .jpg, .png)"}</span>
+          <input type="file" className="hidden" accept=".pdf,.dwg,.xlsx,.docx,.jpg,.png" disabled={uploading} onChange={handleFileChange} />
         </label>
         <button
           type="button"
-          disabled={!nombre.trim()}
-          className="rounded-xl bg-build-main px-6 py-3 text-sm font-bold text-white hover:bg-build-main/90 transition-all disabled:opacity-50 flex items-center gap-2"
+          onClick={handleUpload}
+          disabled={!nombre.trim() || !file || uploading}
+          className="w-full sm:w-auto rounded-xl bg-build-main px-6 py-3 text-sm font-bold text-white hover:bg-build-main/90 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
         >
-          <span className="material-symbols-outlined text-[16px]">publish</span>
-          Subir
+          {uploading ? (
+            <svg className="animate-spin w-4 h-4 text-white" viewBox="0 0 24 24" fill="none">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+            </svg>
+          ) : (
+            <span className="material-symbols-outlined text-[16px]">publish</span>
+          )}
+          <span>{uploading ? "Subiendo..." : "Subir"}</span>
         </button>
       </div>
     </div>

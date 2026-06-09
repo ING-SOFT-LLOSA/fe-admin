@@ -20,7 +20,7 @@ export interface SignedUrlResponse {
 }
 
 export async function uploadDocument(
-  usuarioActivoId: string,
+  idReferencia: string,
   file: File,
   tipoDocumento: "PDF_LEGAL" | "COMPROBANTE" | "FOTO_OBRA" | "VIDEO_OBRA"
 ): Promise<DocumentoResponse> {
@@ -38,7 +38,7 @@ export async function uploadDocument(
   );
   formData.append("data", requestBlob);
 
-  const res = await fetch(`${API_URL}/api/documentos/usuario-activo/${usuarioActivoId}`, {
+  const res = await fetch(`${API_URL}/api/documentos/${idReferencia}`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${token}`,
@@ -61,13 +61,15 @@ export async function uploadDocument(
   return res.json();
 }
 
-export async function fetchDocumentosByUsuarioActivo(
-  usuarioActivoId: string,
+export async function fetchDocumentosByReferencia(
+  idReferencia: string,
   tipoDocumento?: string
 ): Promise<DocumentoResponse[]> {
   const query = tipoDocumento ? `?tipoDocumento=${tipoDocumento}` : "";
-  return apiFetch<DocumentoResponse[]>(`/api/documentos/usuario-activo/${usuarioActivoId}${query}`);
+  return apiFetch<DocumentoResponse[]>(`/api/documentos/${idReferencia}${query}`);
 }
+
+export const fetchDocumentosByUsuarioActivo = fetchDocumentosByReferencia;
 
 export async function fetchSignedUrl(documentoId: string): Promise<SignedUrlResponse> {
   return apiFetch<SignedUrlResponse>(`/api/documentos/${documentoId}/signed-url`);
