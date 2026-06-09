@@ -101,7 +101,6 @@ export default function ObraTabReportes({ projectId, avance, project }: ObraTabR
   );
  
   const totalPublicados = reports.length;
-  const totalBorradores = 0;
  
   // If a report is selected, show detail view
   if (selectedReport) {
@@ -124,10 +123,9 @@ export default function ObraTabReportes({ projectId, avance, project }: ObraTabR
       )}
  
       {/* KPI row */}
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
         <KpiMini icon="description"  label="Total reportes" value={String(reports.length)} />
         <KpiMini icon="check_circle" label="Publicados"     value={String(totalPublicados)} accent="text-emerald-500" />
-        <KpiMini icon="edit_note"    label="Borradores"     value={String(totalBorradores)} accent="text-amber-500"   />
         <KpiMini icon="construction" label="Avance actual"  value={`${avance}%`}            accent="text-build-accent" />
       </div>
  
