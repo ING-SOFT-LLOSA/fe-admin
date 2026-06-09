@@ -24,6 +24,7 @@ export default function EditClienteModal({
     telefono: "",
     documentoIdentidad: "",
   });
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -41,6 +42,7 @@ export default function EditClienteModal({
         telefono: cliente.phone !== "—" ? cliente.phone : "",
         documentoIdentidad: cliente.dni !== "—" ? cliente.dni : "",
       });
+      setErrors({});
     }
   }, [cliente, open]);
 
@@ -51,12 +53,68 @@ export default function EditClienteModal({
     onClose();
   }
 
+  const validateForm = (data: typeof form): Record<string, string> => {
+    const newErrors: Record<string, string> = {};
+
+    if (!data.nombre || !data.nombre.trim()) {
+      newErrors.nombre = "El nombre es obligatorio.";
+    }
+
+    if (!data.apellidos || !data.apellidos.trim()) {
+      newErrors.apellidos = "Los apellidos son obligatorios.";
+    }
+
+    if (data.telefono && data.telefono.trim() !== "") {
+      const phoneTrimmed = data.telefono.trim();
+      const phoneRegex = /^\+?[0-9\s\-]{7,15}$/;
+      if (!phoneRegex.test(phoneTrimmed)) {
+        newErrors.telefono = "El número de teléfono no es válido (debe tener entre 7 y 15 dígitos).";
+      }
+    }
+
+    if (data.documentoIdentidad && data.documentoIdentidad.trim() !== "") {
+      const docTrimmed = data.documentoIdentidad.trim();
+      if (!/^[0-9]+$/.test(docTrimmed)) {
+        newErrors.documentoIdentidad = "El documento debe contener solo números.";
+      } else if (docTrimmed.length !== 8 && docTrimmed.length !== 11) {
+        newErrors.documentoIdentidad = "Debe ser un DNI (8 dígitos) o RUC (11 dígitos).";
+      }
+    }
+
+    return newErrors;
+  };
+
+  const handleFieldChange = (field: keyof typeof form, value: string) => {
+    setForm((prev) => ({ ...prev, [field]: value }));
+    if (errors[field]) {
+      setErrors((prev) => {
+        const next = { ...prev };
+        delete next[field];
+        return next;
+      });
+    }
+  };
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!cliente) return;
     
     setError(null);
     setSuccess(null);
+
+    const validationErrors = validateForm(form);
+    if (Object.keys(validationErrors).length > 0) {
+      setErrors(validationErrors);
+      
+      const firstErrorKey = Object.keys(validationErrors)[0];
+      const element = document.getElementsByName(firstErrorKey)[0];
+      if (element) {
+        element.scrollIntoView({ behavior: "smooth", block: "center" });
+        (element as HTMLInputElement).focus();
+      }
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -109,7 +167,7 @@ export default function EditClienteModal({
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="px-8 py-6 space-y-4">
+        <form onSubmit={handleSubmit} className="px-8 py-6 space-y-4" noValidate>
           {error && (
             <div className="rounded-xl border border-red-200 dark:border-red-900/50 bg-red-50 dark:bg-red-900/20 px-4 py-3 text-[13px] text-red-800 dark:text-red-400">
               {error}
@@ -122,68 +180,97 @@ export default function EditClienteModal({
           )}
 
           <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-[11px] font-bold text-slate-500 dark:text-white/60 uppercase tracking-wider mb-1.5">
+            <div className="space-y-1.5">
+              <label className="block text-[11px] font-bold text-slate-500 dark:text-white/60 uppercase tracking-wider">
                 Nombre *
               </label>
               <input
-                required
+                name="nombre"
                 value={form.nombre}
-                onChange={(e) => setForm((f) => ({ ...f, nombre: e.target.value }))}
-                className="w-full px-4 py-2.5 border border-slate-200 dark:border-white/10 rounded-xl text-sm text-build-main dark:text-white focus:outline-none focus:border-build-accent focus:ring-1 focus:ring-build-accent"
+                onChange={(e) => handleFieldChange("nombre", e.target.value)}
+                className={`w-full px-4 py-2.5 border rounded-xl text-sm text-build-main dark:text-white focus:outline-none transition-all ${
+                  errors.nombre 
+                    ? "border-red-500 focus:border-red-600 focus:ring-1 focus:ring-red-500/20" 
+                    : "border-slate-200 dark:border-white/10 focus:border-build-accent focus:ring-1 focus:ring-build-accent"
+                }`}
                 placeholder="Andre"
               />
+              {errors.nombre && (
+                <p className="text-xs font-semibold text-red-500 dark:text-red-400">{errors.nombre}</p>
+              )}
             </div>
-            <div>
-              <label className="block text-[11px] font-bold text-slate-500 dark:text-white/60 uppercase tracking-wider mb-1.5">
+            <div className="space-y-1.5">
+              <label className="block text-[11px] font-bold text-slate-500 dark:text-white/60 uppercase tracking-wider">
                 Apellidos *
               </label>
               <input
-                required
+                name="apellidos"
                 value={form.apellidos}
-                onChange={(e) => setForm((f) => ({ ...f, apellidos: e.target.value }))}
-                className="w-full px-4 py-2.5 border border-slate-200 dark:border-white/10 rounded-xl text-sm text-build-main dark:text-white focus:outline-none focus:border-build-accent focus:ring-1 focus:ring-build-accent"
+                onChange={(e) => handleFieldChange("apellidos", e.target.value)}
+                className={`w-full px-4 py-2.5 border rounded-xl text-sm text-build-main dark:text-white focus:outline-none transition-all ${
+                  errors.apellidos 
+                    ? "border-red-500 focus:border-red-600 focus:ring-1 focus:ring-red-500/20" 
+                    : "border-slate-200 dark:border-white/10 focus:border-build-accent focus:ring-1 focus:ring-build-accent"
+                }`}
                 placeholder="Contreras"
               />
+              {errors.apellidos && (
+                <p className="text-xs font-semibold text-red-500 dark:text-red-400">{errors.apellidos}</p>
+              )}
             </div>
           </div>
 
-          <div>
-            <label className="block text-[11px] font-bold text-slate-500 dark:text-white/60 uppercase tracking-wider mb-1.5">
+          <div className="space-y-1.5">
+            <label className="block text-[11px] font-bold text-slate-500 dark:text-white/60 uppercase tracking-wider">
               Correo electrónico *
             </label>
             <input
               type="email"
-              required
+              disabled
               value={form.email}
-              onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
-              className="w-full px-4 py-2.5 border border-slate-200 dark:border-white/10 rounded-xl text-sm text-build-main dark:text-white focus:outline-none focus:border-build-accent focus:ring-1 focus:ring-build-accent"
+              className="w-full px-4 py-2.5 border border-slate-200 dark:border-white/10 rounded-xl text-sm text-slate-400 dark:text-white/40 bg-slate-50 dark:bg-white/5 cursor-not-allowed outline-none"
               placeholder="cliente@ejemplo.com"
             />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-[11px] font-bold text-slate-500 dark:text-white/60 uppercase tracking-wider mb-1.5">
+            <div className="space-y-1.5">
+              <label className="block text-[11px] font-bold text-slate-500 dark:text-white/60 uppercase tracking-wider">
                 DNI / CE
               </label>
               <input
+                name="documentoIdentidad"
                 value={form.documentoIdentidad}
-                onChange={(e) => setForm((f) => ({ ...f, documentoIdentidad: e.target.value }))}
-                className="w-full px-4 py-2.5 border border-slate-200 dark:border-white/10 rounded-xl text-sm text-build-main dark:text-white focus:outline-none focus:border-build-accent focus:ring-1 focus:ring-build-accent"
+                onChange={(e) => handleFieldChange("documentoIdentidad", e.target.value)}
+                className={`w-full px-4 py-2.5 border rounded-xl text-sm text-build-main dark:text-white focus:outline-none transition-all ${
+                  errors.documentoIdentidad 
+                    ? "border-red-500 focus:border-red-600 focus:ring-1 focus:ring-red-500/20" 
+                    : "border-slate-200 dark:border-white/10 focus:border-build-accent focus:ring-1 focus:ring-build-accent"
+                }`}
                 placeholder="12345678"
               />
+              {errors.documentoIdentidad && (
+                <p className="text-xs font-semibold text-red-500 dark:text-red-400">{errors.documentoIdentidad}</p>
+              )}
             </div>
-            <div>
-              <label className="block text-[11px] font-bold text-slate-500 dark:text-white/60 uppercase tracking-wider mb-1.5">
+            <div className="space-y-1.5">
+              <label className="block text-[11px] font-bold text-slate-500 dark:text-white/60 uppercase tracking-wider">
                 Teléfono
               </label>
               <input
+                name="telefono"
                 value={form.telefono}
-                onChange={(e) => setForm((f) => ({ ...f, telefono: e.target.value }))}
-                className="w-full px-4 py-2.5 border border-slate-200 dark:border-white/10 rounded-xl text-sm text-build-main dark:text-white focus:outline-none focus:border-build-accent focus:ring-1 focus:ring-build-accent"
+                onChange={(e) => handleFieldChange("telefono", e.target.value)}
+                className={`w-full px-4 py-2.5 border rounded-xl text-sm text-build-main dark:text-white focus:outline-none transition-all ${
+                  errors.telefono 
+                    ? "border-red-500 focus:border-red-600 focus:ring-1 focus:ring-red-500/20" 
+                    : "border-slate-200 dark:border-white/10 focus:border-build-accent focus:ring-1 focus:ring-build-accent"
+                }`}
                 placeholder="+51 999 888 777"
               />
+              {errors.telefono && (
+                <p className="text-xs font-semibold text-red-500 dark:text-red-400">{errors.telefono}</p>
+              )}
             </div>
           </div>
 
