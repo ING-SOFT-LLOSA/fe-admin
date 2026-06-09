@@ -1,4 +1,4 @@
-import { getStoredToken } from "@/lib/auth/session";
+import { getStoredToken, getFreshToken } from "@/lib/auth/session";
 import { apiFetch } from "@/lib/api/http";
 
 const API_URL = (process.env.NEXT_PUBLIC_API_URL_LLOSA ?? "http://localhost:8080").replace(/\/$/, "");
@@ -24,7 +24,7 @@ export async function uploadDocument(
   file: File,
   tipoDocumento: "PDF_LEGAL" | "COMPROBANTE" | "FOTO_OBRA" | "VIDEO_OBRA"
 ): Promise<DocumentoResponse> {
-  const token = getStoredToken();
+  const token = await getFreshToken();
   if (!token) {
     throw new Error("No hay sesión activa. Inicia sesión de nuevo.");
   }
