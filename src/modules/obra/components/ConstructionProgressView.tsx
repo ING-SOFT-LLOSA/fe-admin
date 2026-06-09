@@ -15,7 +15,7 @@ import ObraTabDocumentacion from "./ObraTabDocumentacion";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-type Tab = "timeline" | "hitos" | "reportes" | "documentacion";
+type Tab = "hitos" | "reportes" | "documentacion";
 
 type ConstructionProgressViewProps = {
   projectId: string;
@@ -23,7 +23,6 @@ type ConstructionProgressViewProps = {
 };
 
 const TABS: { id: Tab; label: string; icon: string }[] = [
-  { id: "timeline",      label: "Timeline",      icon: "timeline"    },
   { id: "hitos",         label: "Hitos",         icon: "flag"        },
   { id: "reportes",      label: "Reportes",      icon: "bar_chart"   },
   { id: "documentacion", label: "Documentación", icon: "folder_open" },
@@ -40,7 +39,7 @@ export default function ConstructionProgressView({
   const [avance,    setAvance]    = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [error,     setError]     = useState("");
-  const [activeTab, setActiveTab] = useState<Tab>("timeline");
+  const [activeTab, setActiveTab] = useState<Tab>("hitos");
 
   // Helper to fetch floor-level hitos and correct master stages status dynamically
   async function fetchAndCorrectEtapas(projectId: string, rawEtapas: EtapaResponseDTO[]): Promise<EtapaResponseDTO[]> {
@@ -162,6 +161,9 @@ export default function ConstructionProgressView({
         </div>
       )}
 
+      {/* Timeline Horizontal Global */}
+      <ObraTabTimeline projectId={projectId} etapas={etapas} />
+
       {/* Tab bar */}
       <div className="flex gap-1 overflow-x-auto border-b border-slate-200 dark:border-white/10 scrollbar-none">
         {TABS.map((tab) => (
@@ -186,9 +188,6 @@ export default function ConstructionProgressView({
 
       {/* Tab content */}
       <div>
-        {activeTab === "timeline" && (
-          <ObraTabTimeline projectId={projectId} etapas={etapas} />
-        )}
         {activeTab === "hitos" && (
           <ObraTabHitos
             projectId={projectId}

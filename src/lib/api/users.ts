@@ -20,6 +20,10 @@ export function fetchUsuarios(): Promise<Usuario[]> {
   return apiFetch<Usuario[]>("/api/users");
 }
 
+export function fetchUsuarioPorId(id: number): Promise<Usuario> {
+  return apiFetch<Usuario>(`/api/users/${id}`);
+}
+
 export function fetchUsuariosPaginado(page = 0, size = 10, search = ""): Promise<Page<Usuario>> {
   return apiFetch<Page<Usuario>>(`/api/users/paginado?page=${page}&size=${size}&search=${encodeURIComponent(search)}`);
 }
@@ -78,17 +82,9 @@ function statusForUsuario(u: Usuario): { status: string; statusBg: string; rolNa
   const rolName = u.rol || "Empleado";
 
   if (!u.activo) {
-    return { status: "Inactivo", statusBg: "bg-[#eeeeef] text-[#41484c]", rolName };
+    return { status: "INACTIVO", statusBg: "bg-slate-100 text-slate-600 dark:bg-white/10 dark:text-white/50", rolName };
   }
-  if (u.tipoUsuario === "CLIENTE") {
-    return { status: "Registrado", statusBg: "bg-[#E8F5E9] text-[#2E7D32]", rolName };
-  }
-
-  return {
-    status: rolName,
-    statusBg: "bg-[#c2e8ff] text-[#001e2b]",
-    rolName,
-  };
+  return { status: "ACTIVO", statusBg: "bg-[#E8F5E9] text-[#2E7D32]", rolName };
 }
 
 export function mapUsuarioToClienteRow(u: Usuario): ClienteRow {

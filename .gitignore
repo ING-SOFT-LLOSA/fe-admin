@@ -46,3 +46,6 @@ docker-compose.override.yml
 
 *.md
 !README.md
+CLAUDE.md
+AGENTS.md
+#xd

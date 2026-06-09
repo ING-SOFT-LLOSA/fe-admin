@@ -20,6 +20,29 @@ export function getStoredToken(): string | null {
   return localStorage.getItem(TOKEN_KEY);
 }
 
+export async function getFreshToken(): Promise<string | null> {
+  let token = getStoredToken();
+  if (typeof window !== "undefined") {
+    try {
+      const { getFirebaseAuth } = await import("@/lib/firebase");
+      const auth = getFirebaseAuth();
+      if (auth.currentUser) {
+        const freshToken = await auth.currentUser.getIdToken(false);
+        if (freshToken) {
+          token = freshToken;
+          const perfil = getStoredPerfil();
+          if (perfil) {
+            saveSession(freshToken, perfil);
+          }
+        }
+      }
+    } catch (err) {
+      console.warn("No se pudo refrescar el token de Firebase:", err);
+    }
+  }
+  return token;
+}
+
 export function getStoredPerfil(): PerfilConPermisos | null {
   if (typeof window === "undefined") return null;
   const raw = localStorage.getItem(PERFIL_KEY);

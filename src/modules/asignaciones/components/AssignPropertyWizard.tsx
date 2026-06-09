@@ -68,7 +68,7 @@ export default function AssignPropertyWizard({ onClose, onSuccess, client }: Ass
       .then(page => {
         const availableUnits: UnitSelection[] = page.content.map(a => ({
           id: a.id,
-          name: `${a.tipo === 'ESTACIONAMIENTO' ? 'Estac.' : 'Dpto'} ${a.nro}`,
+          name: a.nro,
           type: a.tipo
         }));
         setUnits(availableUnits);
@@ -237,7 +237,6 @@ export default function AssignPropertyWizard({ onClose, onSuccess, client }: Ass
                             {isSelected && <span className="material-symbols-outlined text-[16px] text-build-main dark:text-white">check_circle</span>}
                           </div>
                           <h4 className={`text-[13px] font-bold leading-tight ${isSelected ? "text-build-main dark:text-white" : "text-build-main dark:text-white"}`}>{u.name}</h4>
-                          <p className="text-[10px] text-slate-400 dark:text-white/50 mt-1 font-mono truncate" title={u.id}>{u.id}</p>
                         </div>
                       );
                     })}

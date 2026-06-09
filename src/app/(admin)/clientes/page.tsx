@@ -15,9 +15,12 @@ export default function ClientsPage() {
   const [listError, setListError] = useState<string | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
   const [userToDelete, setUserToDelete] = useState<ClienteRow | null>(null);
-  const [selectedClient, setSelectedClient] = useState<ClienteRow | null>(null);
   const [selectedProject, setSelectedProject] = useState("");
   const [projects, setProjects] = useState<string[]>([]);
+  
+  const [totalCount, setTotalCount] = useState(0);
+  const [activeCount, setActiveCount] = useState(0);
+  const [inactiveCount, setInactiveCount] = useState(0);
 
   const [selectedStatus, setSelectedStatus] = useState("");
   // Pagination states
@@ -37,7 +40,7 @@ export default function ClientsPage() {
     setListError(null);
     try {
       const allUsers = await fetchUsuarios();
-      let filtered = allUsers;  
+      let filtered = allUsers.filter(u => u.tipoUsuario === "CLIENTE");  
       if (q) {
           filtered = filtered.filter(
             u =>
@@ -60,6 +63,11 @@ export default function ClientsPage() {
           return row.status === selectedStatus;
         });
       }
+
+      setTotalCount(filtered.length);
+      setActiveCount(filtered.filter(u => u.activo).length);
+      setInactiveCount(filtered.filter(u => !u.activo).length);
+
       const start = p * s;
       const paginated = filtered.slice(start, start + s);
 
@@ -117,25 +125,25 @@ export default function ClientsPage() {
             Clientes Totales
           </p>
           <p className="text-3xl font-bold text-build-main dark:text-white mt-2">
-            {totalElements}
+            {totalCount}
           </p>
         </div>
 
         <div className="bg-white dark:bg-white/5 rounded-2xl border border-slate-200 dark:border-white/10 p-5">
           <p className="text-xs uppercase font-bold text-slate-500">
-            Con unidades
+            Clientes Activos
           </p>
-          <p className="text-3xl font-bold text-build-main dark:text-white mt-2">
-            {clients.filter(c => c.project !== "Sin asignar").length}
+          <p className="text-3xl font-bold text-emerald-600 dark:text-emerald-400 mt-2">
+            {activeCount}
           </p>
         </div>
 
         <div className="bg-white dark:bg-white/5 rounded-2xl border border-slate-200 dark:border-white/10 p-5">
           <p className="text-xs uppercase font-bold text-slate-500">
-            Sin unidades
+            Clientes Inactivos
           </p>
-          <p className="text-3xl font-bold text-build-main dark:text-white mt-2">
-            {clients.filter(c => c.project === "Sin asignar").length}
+          <p className="text-3xl font-bold text-slate-500 mt-2">
+            {inactiveCount}
           </p>
         </div>
       </div>
@@ -193,7 +201,7 @@ export default function ClientsPage() {
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="border-b border-slate-200 dark:border-white/10 bg-white dark:bg-white/5">
-                {["Nombre", "Correo", "Teléfono", "Unidades asignadas", "Estado", "Acciones"].map(h => (
+                {["Nombre", "Correo", "Teléfono", "Activo/Inactivo", "Acciones"].map(h => (
                   <th key={h} className="py-4 px-6 text-[12px] font-semibold text-slate-500 dark:text-white/60 uppercase tracking-wider">{h}</th>
                 ))}
               </tr>
@@ -201,7 +209,7 @@ export default function ClientsPage() {
             <tbody className="text-sm text-build-main dark:text-white">
               {listLoading && (
                 <tr>
-                  <td colSpan={6} className="py-12 text-center text-build-accent">
+                  <td colSpan={5} className="py-12 text-center text-build-accent">
                     <span className="inline-flex items-center gap-2">
                       <svg className="animate-spin w-5 h-5" viewBox="0 0 24 24" fill="none">
                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
@@ -233,9 +241,6 @@ export default function ClientsPage() {
 
                 <td className="py-4 px-6 text-build-accent">{c.email}</td>
                 <td className="py-4 px-6 text-build-accent">{c.phone}</td>
-                <td className="py-4 px-6 font-medium text-build-main dark:text-white">
-                  {c.project}
-                </td>
 
                 <td className="py-4 px-6">
                   <span
