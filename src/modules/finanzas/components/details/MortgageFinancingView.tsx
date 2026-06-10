@@ -352,7 +352,7 @@ export default function MortgageFinancingView({ expediente, carta, stepper, onUp
                         <div className="flex items-center justify-between mb-6">
                             <h4 className="text-base font-bold text-build-main dark:text-white flex items-center gap-2">
                                 <span className="material-symbols-outlined text-build-accent">task_alt</span>
-                                Hitos de Desembolso
+                                Hitos
                             </h4>
                             <button
                                 onClick={() => setShowHitoForm(!showHitoForm)}

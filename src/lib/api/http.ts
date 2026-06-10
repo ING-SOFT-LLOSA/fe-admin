@@ -41,17 +41,8 @@ export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> 
     throw new Error("No hay sesión activa. Inicia sesión de nuevo.");
   }
 
-  console.log("🚀 API REQUEST:", {
-    method: init?.method || "GET",
-    url: `${API_URL}${path}`,
-    headers: {
-      Accept: "application/json",
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token?.substring(0, 20)}...`,
-      ...init?.headers,
-    },
-    body: init?.body,
-  });
+  const body = init?.body ? JSON.parse(init.body as string) : undefined;
+  console.log(`🚀 ${init?.method || "GET"} ${path}`, body || "");
 
   const res = await fetch(`${API_URL}${path}`, {
     ...init,
@@ -62,12 +53,6 @@ export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> 
       ...init?.headers,
     },
     cache: "no-store",
-  });
-
-  console.log("📥 API RESPONSE:", {
-    status: res.status,
-    statusText: res.statusText,
-    url: res.url,
   });
 
   if (!res.ok) {
@@ -98,12 +83,16 @@ export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> 
 
   const text = await res.text();
   if (!text) {
+    console.log(`📥 ${res.status} ${path}`);
     return undefined as T;
   }
 
   try {
-    return JSON.parse(text) as T;
+    const json = JSON.parse(text) as T;
+    console.log(`📥 ${res.status} ${path}`, json);
+    return json;
   } catch {
+    console.log(`📥 ${res.status} ${path}`, text);
     return text as unknown as T;
   }
 }
