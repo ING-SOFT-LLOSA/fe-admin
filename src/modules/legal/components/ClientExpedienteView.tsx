@@ -21,13 +21,13 @@ type Props = { clientId: number };
 export default function ClientExpedienteView({ clientId }: Props) {
   const { perfil } = useAuth();
 
-  const [client,              setClient]              = useState<Usuario | null>(null);
-  const [expedientes,         setExpedientes]         = useState<UsuarioActivoResponseDTO[]>([]);
-  const [selectedExpediente,  setSelectedExpediente]  = useState<UsuarioActivoResponseDTO | null>(null);
-  const [contrato,            setContrato]            = useState<UsuarioActivoResponseDTO | null>(null);
-  const [pageLoading,         setPageLoading]         = useState(true);
-  const [pageError,           setPageError]           = useState("");
-  const [activeTab,           setActiveTab]           = useState<Tab>("resumen");
+  const [client, setClient] = useState<Usuario | null>(null);
+  const [expedientes, setExpedientes] = useState<UsuarioActivoResponseDTO[]>([]);
+  const [selectedExpediente, setSelectedExpediente] = useState<UsuarioActivoResponseDTO | null>(null);
+  const [contrato, setContrato] = useState<UsuarioActivoResponseDTO | null>(null);
+  const [pageLoading, setPageLoading] = useState(true);
+  const [pageError, setPageError] = useState("");
+  const [activeTab, setActiveTab] = useState<Tab>("resumen");
 
   // ── Data layer ─────────────────────────────────────────────────────────────
 
@@ -35,15 +35,15 @@ export default function ClientExpedienteView({ clientId }: Props) {
     stepper,
     etapas,
     loading: stepperLoading,
-    error:   stepperError,
+    error: stepperError,
     updateHito,
   } = useCommercialStepper(contrato);
 
   const {
     sections,
-    loading:   docsLoading,
-    error:     docsError,
-    refresh:   refreshDocs,
+    loading: docsLoading,
+    error: docsError,
+    refresh: refreshDocs,
   } = useStageDocuments(contrato, stepper);
 
   // ── Bootstrap ──────────────────────────────────────────────────────────────
@@ -75,7 +75,7 @@ export default function ClientExpedienteView({ clientId }: Props) {
   useEffect(() => {
     if (selectedExpediente?.activo?.id) {
       fetchContratoActivo(selectedExpediente.activo.id)
-        .then(setContrato)
+        .then(data => setContrato(data.expediente))
         .catch(console.error);
     } else {
       setContrato(null);
@@ -84,9 +84,9 @@ export default function ClientExpedienteView({ clientId }: Props) {
 
   // ── Permissions ────────────────────────────────────────────────────────────
 
-  const isAdmin      = perfil?.rol === "ADMIN";
+  const isAdmin = perfil?.rol === "ADMIN";
   const canEditHitos = isAdmin || !!perfil?.funciones?.includes("CONTRATO_EDITAR");
-  const canUploadDocs= isAdmin || !!perfil?.funciones?.includes("DOCS_SUBIR");
+  const canUploadDocs = isAdmin || !!perfil?.funciones?.includes("DOCS_SUBIR");
   const canEditNotes = isAdmin || !!perfil?.funciones?.includes("CONTRATO_NOTAS_EDITAR");
 
   // ── Derived display values ─────────────────────────────────────────────────
@@ -99,7 +99,7 @@ export default function ClientExpedienteView({ clientId }: Props) {
   // ── Early returns ──────────────────────────────────────────────────────────
 
   if (pageLoading) return <LoadingSpinner label="Cargando expediente..." />;
-  if (pageError)   return <ErrorBanner message={pageError} />;
+  if (pageError) return <ErrorBanner message={pageError} />;
 
   // ── Render ─────────────────────────────────────────────────────────────────
 

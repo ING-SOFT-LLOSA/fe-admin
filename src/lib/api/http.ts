@@ -41,6 +41,18 @@ export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> 
     throw new Error("No hay sesión activa. Inicia sesión de nuevo.");
   }
 
+  console.log("🚀 API REQUEST:", {
+    method: init?.method || "GET",
+    url: `${API_URL}${path}`,
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token?.substring(0, 20)}...`,
+      ...init?.headers,
+    },
+    body: init?.body,
+  });
+
   const res = await fetch(`${API_URL}${path}`, {
     ...init,
     headers: {
@@ -50,6 +62,12 @@ export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> 
       ...init?.headers,
     },
     cache: "no-store",
+  });
+
+  console.log("📥 API RESPONSE:", {
+    status: res.status,
+    statusText: res.statusText,
+    url: res.url,
   });
 
   if (!res.ok) {

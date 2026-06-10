@@ -1,190 +1,110 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useState } from "react";
+import ClientSearchStep from "./steps/ClientSearchStep";
+import ContractSelectionStep from "./steps/ContractSelectionStep";
+import PaymentManagementStep from "./steps/PaymentManagementStep";
+import type { Usuario } from "@/types/user";
+import type { UsuarioActivoResponseDTO } from "@/lib/api/expedientes";
 
-import { fetchActivosPorProyecto } from "@/modules/inventario/services";
-import type { ActivoResponseDTO } from "@/modules/inventario/types";
-import { fetchProyectos } from "@/modules/proyectos/services";
-import type { Proyecto } from "@/modules/proyectos/types";
+type Step = "search" | "contracts" | "management";
 
-type FinancePaymentScheduleViewProps = {
-  initialProjectId?: string | null;
-};
+export default function FinancePaymentScheduleView() {
+  const [step, setStep] = useState<Step>("search");
+  const [selectedClient, setSelectedClient] = useState<Usuario | null>(null);
+  const [selectedExpediente, setSelectedExpediente] = useState<UsuarioActivoResponseDTO | null>(null);
 
-export default function FinancePaymentScheduleView({
-  initialProjectId = null,
-}: FinancePaymentScheduleViewProps) {
-  const [projects, setProjects] = useState<Proyecto[]>([]);
-  const [units, setUnits] = useState<ActivoResponseDTO[]>([]);
-  const [selectedProjectId, setSelectedProjectId] = useState(initialProjectId ?? "");
-  const [selectedUnitId, setSelectedUnitId] = useState("");
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState("");
+  const handleSelectClient = (client: Usuario) => {
+    setSelectedClient(client);
+    setStep("contracts");
+  };
 
-  useEffect(() => {
-    let mounted = true;
-    async function loadProjects() {
-      setIsLoading(true);
-      setError("");
-      try {
-        const rows = await fetchProyectos();
-        if (!mounted) return;
-        setProjects(rows);
-        setSelectedProjectId((current) => current || initialProjectId || rows[0]?.id || "");
-      } catch (loadError) {
-        if (mounted) {
-          setError(loadError instanceof Error ? loadError.message : "No se pudieron cargar los proyectos.");
-        }
-      } finally {
-        if (mounted) setIsLoading(false);
-      }
-    }
+  const handleSelectExpediente = (exp: UsuarioActivoResponseDTO) => {
+    setSelectedExpediente(exp);
+    setStep("management");
+  };
 
-    void loadProjects();
-    return () => {
-      mounted = false;
-    };
-  }, [initialProjectId]);
+  const handleBackToSearch = () => {
+    setSelectedClient(null);
+    setSelectedExpediente(null);
+    setStep("search");
+  };
 
-  useEffect(() => {
-    if (!selectedProjectId) {
-      setUnits([]);
-      return;
-    }
-
-    let mounted = true;
-    async function loadUnits() {
-      setError("");
-      try {
-        const page = await fetchActivosPorProyecto(selectedProjectId);
-        if (!mounted) return;
-        setUnits(page.content ?? []);
-        setSelectedUnitId((current) => current || page.content?.[0]?.id || "");
-      } catch (loadError) {
-        if (mounted) {
-          setError(loadError instanceof Error ? loadError.message : "No se pudieron cargar las unidades.");
-        }
-      }
-    }
-
-    void loadUnits();
-    return () => {
-      mounted = false;
-    };
-  }, [selectedProjectId]);
-
-  const selectedProject = projects.find((project) => project.id === selectedProjectId) ?? null;
-  const selectedUnit = units.find((unit) => unit.id === selectedUnitId) ?? units[0] ?? null;
-  const commercialValue = useMemo(
-    () => units.reduce((total, unit) => total + (unit.precio || 0), 0),
-    [units],
-  );
+  const handleBackToContracts = () => {
+    setSelectedExpediente(null);
+    setStep("contracts");
+  };
 
   return (
-    <section className="space-y-6">
+    <div className="space-y-6 pb-12">
+      {/* Título y Descripción */}
       <div>
         <h2 className="text-2xl md:text-3xl font-bold tracking-[-0.01em] text-build-main dark:text-white">
-          Pagos y Cronogramas
+          Pagos y Financiamiento
         </h2>
         <p className="mt-2 text-base text-slate-600 dark:text-white/70">
-          Cronogramas, cuotas, mora, vouchers, estado de cuenta y recaudación.
+          Registro administrativo y control de cobranzas por cliente.
         </p>
       </div>
 
-      {error ? (
-        <div className="rounded-xl border border-red-200 dark:border-red-900/50 bg-red-50 dark:bg-red-900/20 px-4 py-3 text-sm text-red-800 dark:text-red-400">
-          {error}
-        </div>
-      ) : null}
-
-      <section className="rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 p-6 shadow-sm">
-        <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_220px_220px]">
-          <div>
-            <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-white/60">
-              Proyecto
-            </label>
-            <select
-              value={selectedProjectId}
-              onChange={(event) => {
-                setSelectedProjectId(event.target.value);
-                setSelectedUnitId("");
-              }}
-              className="w-full rounded-xl border border-slate-200 dark:border-white/10 px-3 py-2.5 text-sm text-build-main dark:text-white outline-none focus:border-build-accent focus:ring-1 focus:ring-build-accent"
+      {/* Breadcrumbs / Pasos Visuales */}
+      <nav className="flex items-center gap-2 overflow-x-auto no-scrollbar py-2">
+        {[
+          { id: "search", label: "Buscar Cliente", active: step === "search", done: !!selectedClient },
+          { id: "contracts", label: "Contratos", active: step === "contracts", done: !!selectedExpediente },
+          { id: "management", label: "Gestión de Pagos", active: step === "management", done: false },
+        ].map((s, i) => (
+          <div key={s.id} className="flex items-center gap-2 flex-shrink-0">
+            {i > 0 && (
+              <span className="material-symbols-outlined text-slate-300 dark:text-white/10 text-[18px]">chevron_right</span>
+            )}
+            <button
+              disabled={(s.id === "contracts" && !selectedClient) || (s.id === "management" && !selectedExpediente)}
+              onClick={() => s.id === "search" ? handleBackToSearch() : s.id === "contracts" ? handleBackToContracts() : null}
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all ${s.active
+                  ? "bg-build-accent text-white font-bold shadow-sm"
+                  : s.done
+                    ? "text-build-main dark:text-white/80 hover:bg-slate-100 dark:hover:bg-white/5 font-semibold"
+                    : "text-slate-400 dark:text-white/20 cursor-not-allowed font-medium"
+                }`}
             >
-              {projects.map((project) => (
-                <option key={project.id} value={project.id}>
-                  {project.nombre}
-                </option>
-              ))}
-            </select>
+              <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] ${s.active ? "bg-white text-build-accent" : s.done ? "bg-build-accent text-white" : "bg-slate-200 dark:bg-white/10 text-slate-500"
+                }`}>
+                {s.done && !s.active ? "✓" : i + 1}
+              </span>
+              <span className="text-xs uppercase tracking-wider">{s.label}</span>
+            </button>
           </div>
+        ))}
+      </nav>
 
-          <div>
-            <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-white/60">
-              Unidad
-            </label>
-            <select
-              value={selectedUnit?.id ?? ""}
-              onChange={(event) => setSelectedUnitId(event.target.value)}
-              className="w-full rounded-xl border border-slate-200 dark:border-white/10 px-3 py-2.5 text-sm text-build-main dark:text-white outline-none focus:border-build-accent focus:ring-1 focus:ring-build-accent"
-            >
-              {units.map((unit) => (
-                <option key={unit.id} value={unit.id}>
-                  {unit.nro} · {unit.estadoComercial}
-                </option>
-              ))}
-            </select>
+      {/* Renderizado de Pasos */}
+      <main className="min-h-[500px]">
+        {step === "search" && (
+          <div className="animate-in fade-in slide-in-from-left-4 duration-500">
+            <ClientSearchStep onSelectClient={handleSelectClient} />
           </div>
+        )}
 
-          <div className="rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 px-4 py-3">
-            <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-white/60">Unidades</p>
-            <p className="mt-2 text-sm font-semibold text-build-main dark:text-white">{units.length}</p>
+        {step === "contracts" && selectedClient && (
+          <div className="animate-in fade-in slide-in-from-right-4 duration-500">
+            <ContractSelectionStep
+              client={selectedClient}
+              onSelectContract={handleSelectExpediente}
+              onBack={handleBackToSearch}
+            />
           </div>
+        )}
 
-          <div className="rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 px-4 py-3">
-            <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-white/60">Valor comercial</p>
-            <p className="mt-2 text-sm font-semibold text-build-main dark:text-white">
-              S/ {commercialValue.toLocaleString("es-PE")}
-            </p>
+        {step === "management" && selectedExpediente && (
+          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <PaymentManagementStep
+              expediente={selectedExpediente}
+              onBack={handleBackToContracts}
+            />
           </div>
-        </div>
-      </section>
-
-      <section className="rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 p-6 shadow-sm overflow-x-auto">
-        <h3 className="text-lg font-bold text-build-main dark:text-white mb-4">
-          Cronograma de Pagos (Mock)
-        </h3>
-        <table className="w-full text-left text-sm text-slate-600 dark:text-white/70">
-          <thead className="border-b border-slate-200 dark:border-white/10">
-            <tr>
-              <th className="pb-3 font-semibold text-slate-500">N° Cuota</th>
-              <th className="pb-3 font-semibold text-slate-500">Fecha Vencimiento</th>
-              <th className="pb-3 font-semibold text-slate-500">Monto</th>
-              <th className="pb-3 font-semibold text-slate-500">Estado</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-100 dark:divide-white/5">
-            {[1, 2, 3, 4, 5].map((cuota) => (
-              <tr key={cuota}>
-                <td className="py-3">{cuota}</td>
-                <td className="py-3">15/{cuota.toString().padStart(2, "0")}/2026</td>
-                <td className="py-3 font-medium text-build-main dark:text-white">
-                  S/ {(commercialValue / 5).toLocaleString("es-PE", { maximumFractionDigits: 2 })}
-                </td>
-                <td className="py-3">
-                  <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${
-                    cuota <= 2 
-                      ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
-                      : "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400"
-                  }`}>
-                    {cuota <= 2 ? "Pagado" : "Pendiente"}
-                  </span>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </section>
-    </section>
+        )}
+      </main>
+    </div>
   );
 }
