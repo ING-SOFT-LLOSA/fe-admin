@@ -9,7 +9,13 @@ import type { UsuarioActivoResponseDTO } from "@/lib/api/expedientes";
 
 type Step = "search" | "contracts" | "management";
 
-export default function FinancePaymentScheduleView() {
+type FinancePaymentScheduleViewProps = {
+  initialProjectId?: string | null;
+};
+
+export default function FinancePaymentScheduleView({
+  initialProjectId = null,
+}: FinancePaymentScheduleViewProps) {
   const [step, setStep] = useState<Step>("search");
   const [selectedClient, setSelectedClient] = useState<Usuario | null>(null);
   const [selectedExpediente, setSelectedExpediente] = useState<UsuarioActivoResponseDTO | null>(null);
