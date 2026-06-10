@@ -18,7 +18,7 @@ pipeline {
                 branch 'test'
             }
             steps {
-                sh 'npm install'
+                sh 'npm ci --prefer-offline'
                 sh 'npm run test:run'
             }
             post {
