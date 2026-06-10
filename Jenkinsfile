@@ -13,6 +13,24 @@ pipeline {
             }
         }
 
+        stage('Unit Tests') {
+            when {
+                branch 'test'
+            }
+            steps {
+                sh 'npm ci --prefer-offline'
+                sh 'npm run test:run'
+            }
+            post {
+                always {
+                    archiveArtifacts artifacts: 'coverage/**', allowEmptyArchive: true
+                }
+                failure {
+                    echo 'Unit tests failed — deploy aborted.'
+                }
+            }
+        }
+
         stage('Deploy Test (Docker Compose)') {
             when {
                 branch 'test'

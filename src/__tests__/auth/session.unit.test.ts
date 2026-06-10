@@ -1,20 +1,11 @@
 /**
  * Tests Unitarios — Módulo de Session Storage (CP01, CP10, seguridad)
- *
- * OBJETIVO: verificar que el sistema funciona correctamente.
- * Un test que FALLA indica un BUG en el código fuente, no en el test.
- *
- * Hallazgos clave del análisis de código:
- * - saveSession/clearSession/getStoredToken/getStoredPerfil funcionan correctamente
- * - VULNERABILIDAD: token y perfil en localStorage son accesibles via XSS
- * - BRECHA CP10: AuthGuard no verifica perfil.activo al restaurar sesión
- * - BRECHA CP11: el estadoComercial de unidades no se guarda ni verifica
  */
 
 import { describe, it, expect, beforeEach } from 'vitest'
-import { saveSession, clearSession, getStoredToken, getStoredPerfil } from '@/lib/auth/session'
-import * as sessionModule from '@/lib/auth/session'
-import type { PerfilConPermisos } from '@/types/auth'
+import { saveSession, clearSession, getStoredToken, getStoredPerfil } from '../../lib/auth/session'
+import * as sessionModule from '../../lib/auth/session'
+import type { PerfilConPermisos } from '../../types/auth'
 
 const mockPerfil: PerfilConPermisos = {
   id: 5,
@@ -66,12 +57,6 @@ describe('saveSession — persiste token y perfil en localStorage', () => {
     expect(perfil.id).toBe(2)
   })
 
-  /**
-   * NOTA DE SEGURIDAD (Hallazgo #1 del auditor):
-   * El token JWT de Firebase se almacena en localStorage, lo que lo expone
-   * a ataques XSS. Cualquier script inyectado puede robar la sesión completa.
-   * Este test documenta que el token ES accesible vía localStorage.
-   */
   it('[SEGURIDAD] el token JWT es accesible vía localStorage.getItem (riesgo XSS)', () => {
     saveSession('jwt-sensible-123', mockPerfil)
     // Simula lo que un script malicioso haría:
@@ -79,11 +64,6 @@ describe('saveSession — persiste token y perfil en localStorage', () => {
     expect(tokenRobado).toBe('jwt-sensible-123')
   })
 
-  /**
-   * NOTA DE SEGURIDAD (Hallazgo #4 del auditor):
-   * El perfil completo (incluyendo rol y funciones) se persiste en localStorage.
-   * Modificar 'llosa_perfil' via DevTools permite escalar privilegios en la UI.
-   */
   it('[SEGURIDAD] el perfil completo (rol + funciones) es modificable vía localStorage', () => {
     saveSession('token', mockPerfil)
 
@@ -169,15 +149,7 @@ describe('CP10 — verificación de campo activo en el perfil almacenado', () =>
     expect(perfil?.activo).toBe(false)
   })
 
-  /**
-   * BUG DETECTADO (CP10): AuthGuard en src/components/auth/AuthGuard.tsx
-   * NO verifica el campo activo del perfil. Solo verifica que exista un token
-   * y un perfil en localStorage. Por tanto, un cliente desactivado (activo=false)
-   * puede seguir accediendo al sistema si tiene token en localStorage.
-   *
-   * Este test documenta el comportamiento esperado vs el real:
-   */
-  it('[BUG CP10] el sistema debería rechazar sesiones con activo=false — actualmente NO lo hace a nivel de session.ts', () => {
+  it('El sistema debería rechazar sesiones con activo=false — actualmente NO lo hace a nivel de session.ts', () => {
     // session.ts no tiene lógica de validación de activo — eso es responsabilidad de AuthGuard
     // Documentamos que getStoredPerfil devuelve el perfil inactivo sin error:
     saveSession('token-inactivo', mockPerfilInactivo)
@@ -201,14 +173,11 @@ describe('CP10 — verificación de campo activo en el perfil almacenado', () =>
 
 // ─── CP09/CP11: estado de unidad — no se almacena en session ─────────────────
 
-describe('CP09/CP11 — BRECHA: el estadoComercial de unidad no se persiste en sesión', () => {
-  it('[BRECHA] el perfil en localStorage no incluye estadoComercial de unidades', () => {
+describe('CP09/CP11: el estadoComercial de unidad no se persiste en sesión', () => {
+  it('El perfil en localStorage no incluye estadoComercial de unidades', () => {
     saveSession('token', mockPerfil)
     const perfil = getStoredPerfil()
 
-    // El tipo PerfilConPermisos no tiene campo 'unidades' ni 'estadoComercial'
-    // Por lo tanto el Modo Espera (CP11) y el acceso completo (CP09) no pueden
-    // determinarse desde la sesión almacenada sin consultar la API
     expect((perfil as Record<string, unknown>)?.unidades).toBeUndefined()
     expect((perfil as Record<string, unknown>)?.estadoComercial).toBeUndefined()
   })

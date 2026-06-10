@@ -1,17 +1,5 @@
 /**
  * Pruebas E2E — RBAC y Gestión de Usuarios (CP06–CP08)
- *
- * OBJETIVO: verificar que el sistema funciona correctamente en el browser.
- * Un test que FALLA indica un BUG en la UI, no en el test.
- *
- * Prerequisito: servidor corriendo en http://localhost:3000 (`npm run dev`)
- *
- * Hallazgos clave del análisis de código:
- * - /configuracion requiere USER_GESTIONAR O ROL_GESTIONAR (OR, no AND) via PermissionGuard
- * - La UI de permisos granulares es readOnly — CP07 es una BRECHA funcional
- * - canEliminarUsuario protege auto-eliminación y eliminación entre admins
- * - BUG CP08: AuthGuard no verifica activo=false, tokens no se invalidan en tiempo real
- * - BUG SEGURIDAD: perfil en localStorage es manipulable para escalar privilegios
  */
 
 import { test, expect, type Page } from '@playwright/test'
@@ -24,6 +12,20 @@ async function injectSession(page: Page, perfil: Record<string, unknown>) {
     localStorage.setItem('llosa_id_token', 'mock-token-e2e-rbac')
     localStorage.setItem('llosa_perfil', JSON.stringify(p))
   }, perfil)
+}
+
+/**
+ * Verifica que el acceso a una ruta protegida esté bloqueado.
+ * Comprueba primero redirección a /login; si no ocurre, busca mensaje de acceso denegado.
+ */
+async function assertAccessBlocked(page: Page, timeout = 5_000) {
+  try {
+    await page.waitForURL(/login/, { timeout })
+  } catch {
+    await expect(
+      page.locator('text=/sin permiso|acceso denegado|no autorizado/i').first()
+    ).toBeVisible({ timeout })
+  }
 }
 
 async function mockAuthMe(page: Page, perfil: Record<string, unknown> | null) {
@@ -119,12 +121,7 @@ test.describe('CP06 — Admin puede acceder al módulo de gestión de usuarios',
     await page.goto('/configuracion')
 
     // Debe ser bloqueado (redirect o mensaje de acceso denegado)
-    const bloqueado = await Promise.race([
-      page.waitForURL(/login/, { timeout: 5_000 }).then(() => true).catch(() => false),
-      page.locator('text=/sin permiso|acceso denegado|no autorizado/i')
-        .waitFor({ timeout: 5_000 }).then(() => true).catch(() => false),
-    ])
-    expect(bloqueado).toBe(true)
+    await assertAccessBlocked(page)
   })
 
   test('empleado CON USER_GESTIONAR puede acceder a /configuracion', async ({ page }) => {
@@ -149,12 +146,8 @@ test.describe('CP06 — Admin puede acceder al módulo de gestión de usuarios',
 // ─── CP07: Permisos granulares ────────────────────────────────────────────────
 
 test.describe('CP07 — Asignación granular de permisos por módulo', () => {
-  test('[BRECHA CP07] los checkboxes de permisos son readOnly y no se pueden guardar individualmente', async ({ page }) => {
-    /**
-     * BRECHA: La UI de permisos en /configuracion muestra checkboxes con
-     * readOnly y cursor-not-allowed. No hay botón para guardar permisos individuales.
-     * handleSave() solo llama a asignarRol() — asigna el rol completo, no permisos individuales.
-     */
+  test('los checkboxes de permisos son readOnly y no se pueden guardar individualmente', async ({ page }) => {
+
     const perfilAdmin = {
       id: 1,
       email: 'admin@llosaedificaciones.com',
@@ -173,12 +166,9 @@ test.describe('CP07 — Asignación granular de permisos por módulo', () => {
     await page.locator('button:has-text("Crear"), button:has-text("usuario")').first().click().catch(() => {})
     await page.waitForTimeout(500)
 
-    // Los checkboxes de permisos deben ser interactivos (COMPORTAMIENTO ESPERADO)
-    // Actualmente son readOnly (BRECHA)
     const checkboxes = page.locator('input[type="checkbox"]:not([readonly]):not([disabled])')
     const interactiveCount = await checkboxes.count()
 
-    // ESTE TEST DEBE FALLAR: actualmente hay 0 checkboxes interactivos para permisos
     expect(interactiveCount).toBeGreaterThan(0)
   })
 
@@ -213,25 +203,14 @@ test.describe('CP07 — Asignación granular de permisos por módulo', () => {
     await injectSession(page, perfilSinFinanzas)
     await page.goto('/finanzas')
 
-    const bloqueado = await Promise.race([
-      page.waitForURL(/login/, { timeout: 5_000 }).then(() => true).catch(() => false),
-      page.locator('text=/sin permiso|acceso denegado|no autorizado/i')
-        .waitFor({ timeout: 5_000 }).then(() => true).catch(() => false),
-    ])
-    expect(bloqueado).toBe(true)
+    await assertAccessBlocked(page)
   })
 })
 
 // ─── CP08: Desactivación de usuario invalida sesión ──────────────────────────
 
 test.describe('CP08 — Desactivar usuario invalida su acceso activo', () => {
-  test('[BUG CP08] usuario con activo=false pero token válido debería perder acceso', async ({ page }) => {
-    /**
-     * BUG: AuthGuard verifica solo token + perfil en localStorage.
-     * Un usuario desactivado (activo=false) que tiene token en localStorage
-     * puede seguir navegando si el backend no rechaza /api/auth/me.
-     * Este test DEBE FALLAR para documentar el bug.
-     */
+  test('Usuario con activo=false pero token válido debería perder acceso', async ({ page }) => {
     const perfilDesactivado = {
       id: 15,
       email: 'exempleado@llosaedificaciones.com',
@@ -245,15 +224,7 @@ test.describe('CP08 — Desactivar usuario invalida su acceso activo', () => {
     await mockAuthMe(page, perfilDesactivado)
     await injectSession(page, perfilDesactivado)
     await page.goto('/obra')
-
-    // COMPORTAMIENTO ESPERADO: bloqueado (redirect a login o pantalla de acceso denegado)
-    // COMPORTAMIENTO ACTUAL (BUG): puede acceder porque AuthGuard no verifica activo
-    const bloqueado = await Promise.race([
-      page.waitForURL(/login/, { timeout: 5_000 }).then(() => true).catch(() => false),
-      page.locator('text=/cuenta desactivada|sesión expirada|sin acceso/i')
-        .waitFor({ timeout: 5_000 }).then(() => true).catch(() => false),
-    ])
-    expect(bloqueado).toBe(true)
+    await assertAccessBlocked(page)
   })
 
   test('cuando el backend devuelve 403, la sesión del usuario desactivado se limpia', async ({ page }) => {
@@ -280,13 +251,8 @@ test.describe('CP08 — Desactivar usuario invalida su acceso activo', () => {
 // ─── SEGURIDAD: Escalación de privilegios via localStorage ───────────────────
 
 test.describe('Seguridad — Escalación de privilegios via manipulación de localStorage', () => {
-  test('[VULNERABILIDAD CRÍTICA] empleado puede modificar localStorage para simular ser ADMIN', async ({ page }) => {
-    /**
-     * VULNERABILIDAD: El perfil en localStorage puede ser manipulado via DevTools.
-     * Un empleado básico puede cambiarse a rol ADMIN y pasar los PermissionGuard.
-     * Este test documenta la vulnerabilidad — DEBE FALLAR si el sistema es seguro.
-     * (Si falla, significa que el sistema detecta la manipulación.)
-     */
+  test('Empleado puede modificar localStorage para simular ser ADMIN', async ({ page }) => {
+
     const perfilReal = {
       id: 50,
       email: 'basico@llosaedificaciones.com',
@@ -314,9 +280,6 @@ test.describe('Seguridad — Escalación de privilegios via manipulación de loc
     })
 
     await page.goto('/configuracion')
-
-    // COMPORTAMIENTO ESPERADO: el sistema detecta la inconsistencia y bloquea
-    // COMPORTAMIENTO ACTUAL (VULNERABILIDAD): el PermissionGuard acepta el perfil manipulado
     await expect(page).toHaveURL(/login/, { timeout: 5_000 })
   })
 })

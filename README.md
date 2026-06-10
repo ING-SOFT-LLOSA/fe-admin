@@ -1,38 +1,88 @@
-# Proyecto Llosa Edificaciones
+# Llosa Edificaciones — Backoffice Admin
 
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+Frontend administrativo para la gestión de proyectos, clientes, finanzas, obra y expedientes de Llosa Edificaciones.
 
-## Getting Started
+**Rama:** `test` — entorno de pruebas y QA
 
-First, run the development server:
+---
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+## Stack
+
+- **Framework:** Next.js 16 (App Router)
+- **UI:** React 19 + Tailwind CSS 4
+- **Auth:** Firebase Auth (email/password + Google OAuth)
+- **Backend:** REST API en `NEXT_PUBLIC_API_URL_LLOSA`
+- **Testing:** Vitest (unit) + Playwright (E2E)
+
+---
+
+## Requisitos previos
+
+- Node.js via NVM
+- Variables de entorno en `.env.local`:
+
+```env
+NEXT_PUBLIC_FIREBASE_API_KEY_LLOSA=
+NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN_LLOSA=
+NEXT_PUBLIC_FIREBASE_PROJECT_ID_LLOSA=
+NEXT_PUBLIC_API_URL_LLOSA=
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+---
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Comandos
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+# Desarrollo
+npm run dev       # Servidor 
+npm run build     # Build de producción
+npm run lint      # ESLint
 
-## Learn More
+# Tests unitarios (Vitest)
+npm run test      # Modo watch
+npm run test:run  # Ejecución única (CI)
+npm run test:ui   # UI interactiva en el browser
 
-To learn more about Next.js, take a look at the following resources:
+# Tests E2E (Playwright) — requiere `npm run dev` corriendo
+npx playwright test                        # Todos los tests E2E
+npx playwright test src/__tests__/e2e/auth.e2e.test.ts     # Un archivo
+npx playwright test --headed               # Con browser visible
+npx playwright show-report                 # Ver reporte HTML
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+---
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Estructura de tests
 
-## Deploy on Vercel
+```
+src/__tests__/
+├── auth/                          # Tests unitarios (Vitest + jsdom)
+│   ├── login.unit.test.ts
+│   ├── permissions.unit.test.ts
+│   └── session.unit.test.ts
+└── e2e/                           # Tests E2E (Playwright)
+    ├── auth.e2e.test.ts           # CP01–CP05, CP09–CP11 — autenticación
+    ├── rbac.e2e.test.ts           # CP06–CP08 — permisos y roles
+    ├── clientes-crud.e2e.test.ts  # CRUD del módulo de clientes
+    ├── proyectos-crud.e2e.test.ts # Listado y detalle de proyectos
+    ├── portal-auth.e2e.test.ts    # Portal del cliente (CP09–CP11)
+    ├── security.e2e.test.ts       # Vulnerabilidades de seguridad documentadas
+    └── integration/
+        └── api-http.e2e.test.ts   # Comportamiento del cliente HTTP (apiFetch)
+```
+---
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Módulos y estado de integración
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+| Módulo | Ruta | Backend conectado |
+|---|---|---|
+| Autenticación | `/login`, `/login-empresa` | Sí (Firebase + `/api/auth/me`) |
+| Clientes | `/clientes` | Sí (`/api/users`) |
+| Proyectos | `/proyectos` | Sí (`/api/proyectos`) |
+| Obra | `/obra`, `/proyectos/[id]/obra` | Sí (`/api/activos`, `/api/torres`) |
+| Finanzas | `/finanzas` | Mock |
+| Agenda | `/agenda` | Mock |
+| Expedientes | `/clientes/[id]/expediente` | Parcial (mock de documentos) |
+| Configuración | `/configuracion` | Parcial (roles via `/api/roles`) |
+| Portal cliente | `/portal/mis-activos` | Parcial (`/api/expedientes/mis-activos`) |
+| Portal empleado | `/employee/*` | Mock |

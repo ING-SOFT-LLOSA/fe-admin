@@ -1,13 +1,5 @@
 /**
  * Tests Unitarios — Módulo de Login (CP01, CP02, CP04)
- *
- * OBJETIVO: verificar que el sistema funciona correctamente.
- * Un test que FALLA indica un BUG en el código fuente, no en el test.
- *
- * Hallazgos clave del análisis de código:
- * - loginWithEmail() NO valida el dominio @llosaedificaciones.com (CP01/CP02 BRECHA)
- * - La validación de dominio es delegada completamente al backend via fetchPerfil
- * - toAuthErrorMessage mapea correctamente los códigos de Firebase (CP04 OK)
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
@@ -22,8 +14,10 @@ vi.mock('firebase/auth', () => ({
   GoogleAuthProvider: vi.fn(),
 }))
 
+const mockFirebaseAuthInstance = process.env.FIREBASE_AUTH_INSTANCE || 'mock-firebase-auth-instance'
+
 vi.mock('@/lib/firebase', () => ({
-  getFirebaseAuth: vi.fn(() => ({ /* mock firebase auth instance */ })),
+  getFirebaseAuth: vi.fn(() => ({ instance: mockFirebaseAuthInstance })),
 }))
 
 vi.mock('@/lib/auth/api', () => ({
@@ -37,11 +31,11 @@ vi.mock('@/lib/auth/session', () => ({
 
 // ─── Imports reales (post-mock) ───────────────────────────────────────────────
 
-import { loginWithEmail, logout } from '@/lib/auth/login'
-import { toAuthErrorMessage } from '@/lib/auth/errors'
+import { loginWithEmail, logout } from '../../lib/auth/login'
+import { toAuthErrorMessage } from '../../lib/auth/errors'
 import { signInWithEmailAndPassword, signOut } from 'firebase/auth'
-import { fetchPerfil } from '@/lib/auth/api'
-import { clearSession, saveSession } from '@/lib/auth/session'
+import { fetchPerfil } from '../../lib/auth/api'
+import { clearSession, saveSession } from '../../lib/auth/session'
 
 const mockSignIn = vi.mocked(signInWithEmailAndPassword)
 const mockFetchPerfil = vi.mocked(fetchPerfil)
@@ -97,20 +91,10 @@ describe('CP01 — loginWithEmail con dominio corporativo válido', () => {
 describe('CP02 — loginWithEmail con dominio externo (@gmail.com)', () => {
   afterEach(() => vi.clearAllMocks())
 
-  /**
-   * BUG DETECTADO (CP02): loginWithEmail NO valida el dominio del correo.
-   * Acepta cualquier email y lo pasa directamente a Firebase.
-   * Si Firebase acepta el usuario (creado manualmente), el login PROCEDE.
-   *
-   * Este test documenta la AUSENCIA de validación de dominio en el frontend.
-   * DEBE FALLAR para evidenciar el bug si se ejecuta en el estado actual.
-   */
-  it('[BUG CP02] debería rechazar @gmail.com ANTES de llamar a Firebase — actualmente NO lo hace', async () => {
+  it('Debería rechazar @gmail.com ANTES de llamar a Firebase — actualmente NO lo hace', async () => {
     mockSignIn.mockResolvedValue({ user: mockUser } as never)
     mockFetchPerfil.mockResolvedValue({ ...mockPerfil, email: 'hacker@gmail.com' })
 
-    // En el estado actual del código, loginWithEmail llama a Firebase sin validar dominio
-    // La siguiente llamada NO debería llegar a Firebase, pero sí llega:
     await loginWithEmail('hacker@gmail.com', 'cualquierClave')
 
     // ESTA ASSERTION DEBE FALLAR — Firebase NO debería haber sido llamado
@@ -118,7 +102,7 @@ describe('CP02 — loginWithEmail con dominio externo (@gmail.com)', () => {
     expect(mockSignIn).not.toHaveBeenCalled()
   })
 
-  it('[BUG CP02] debería lanzar un error con mensaje de dominio no autorizado', async () => {
+  it('Debería lanzar un error con mensaje de dominio no autorizado', async () => {
     mockSignIn.mockResolvedValue({ user: mockUser } as never)
     mockFetchPerfil.mockResolvedValue({ ...mockPerfil, email: 'usuario@hotmail.com' })
 

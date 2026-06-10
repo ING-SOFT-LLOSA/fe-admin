@@ -1,22 +1,12 @@
 /**
  * Tests Unitarios — Módulo de Permisos RBAC (CP05, CP06, CP07, CP08)
- *
- * OBJETIVO: verificar que el sistema funciona correctamente.
- * Un test que FALLA indica un BUG en el código fuente, no en el test.
- *
- * Hallazgos clave del análisis de código:
- * - canGestionarUsuarios(): implementado correctamente (ADMIN | USER_GESTIONAR) — CP06 OK
- * - canEliminarUsuario(): implementado, protege contra auto-eliminación y entre admins — CP08 parcial
- * - BRECHA CP05: No existe canRecuperarContrasena() — el botón "Olvidé mi contraseña"
- *   se muestra a todos los roles incluyendo ADMIN
- * - BRECHA CP07: Los permisos granulares son de solo lectura en la UI — no hay guardado
  */
 
 import { describe, it, expect } from 'vitest'
-import { canGestionarUsuarios, canEliminarUsuario } from '@/lib/auth/permissions'
-import * as permissionsModule from '@/lib/auth/permissions'
-import type { PerfilConPermisos } from '@/types/auth'
-import type { ClienteRow } from '@/types/user'
+import { canGestionarUsuarios, canEliminarUsuario } from '../../lib/auth/permissions'
+import * as permissionsModule from '../../lib/auth/permissions'
+import type { PerfilConPermisos } from '../../types/auth'
+import type { ClienteRow } from '../../types/user'
 
 // ─── Fixtures ─────────────────────────────────────────────────────────────────
 
@@ -89,17 +79,8 @@ describe('CP06 — canGestionarUsuarios: acceso a módulo de creación de usuari
 // ─── CP05: Admin NO debería ver "Olvidé mi contraseña" ───────────────────────
 
 describe('CP05 — BRECHA: función canRecuperarContrasena no existe en el código', () => {
-  /**
-   * BUG DETECTADO (CP05): No existe ninguna función canRecuperarContrasena()
-   * en src/lib/auth/permissions.ts. El botón "¿Olvidaste tu contraseña?"
-   * en LoginForm.tsx se renderiza sin condicional de rol.
-   *
-   * Este describe documenta la brecha. El test falla porque la función no existe.
-   */
 
   it('[BRECHA CP05] canRecuperarContrasena debería devolver false para ADMIN', () => {
-    // BRECHA: esta función no existe en src/lib/auth/permissions.ts
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const permissions = permissionsModule as unknown as Record<string, unknown>
 
     expect(permissions.canRecuperarContrasena).toBeDefined()
@@ -107,8 +88,6 @@ describe('CP05 — BRECHA: función canRecuperarContrasena no existe en el códi
   })
 
   it('[BRECHA CP05] canRecuperarContrasena debería devolver true para rol ASESOR', () => {
-    // BRECHA: esta función no existe en src/lib/auth/permissions.ts
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const permissions = permissionsModule as unknown as Record<string, unknown>
     const asesor = makeEmpleado([], { rol: 'ASESOR' })
 
@@ -120,12 +99,6 @@ describe('CP05 — BRECHA: función canRecuperarContrasena no existe en el códi
 // ─── CP07: Permisos granulares por módulo ────────────────────────────────────
 
 describe('CP07 — Asignación granular de permisos: evaluación de funciones', () => {
-  /**
-   * La UI muestra checkboxes de permisos (readOnly). No hay función
-   * saveGranularPermisos() en el frontend — esto es una BRECHA de CP07.
-   * Lo que SÍ existe es la evaluación de funciones en canGestionarUsuarios.
-   * Documentamos el comportamiento esperado de evaluación de permisos.
-   */
 
   it('permiso USER_GESTIONAR sobrescribe las restricciones del rol base', () => {
     const empleadoConOverride = makeEmpleado(['USER_GESTIONAR'])
@@ -138,9 +111,7 @@ describe('CP07 — Asignación granular de permisos: evaluación de funciones', 
     expect(canGestionarUsuarios(empleadoSoloRol)).toBe(false)
   })
 
-  it('[BRECHA CP07] no existe función saveGranularPermisos en el módulo de permisos', () => {
-    // BRECHA: el guardado de permisos individuales no está implementado en el frontend
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  it('No existe función saveGranularPermisos en el módulo de permisos', () => {
     const permissions = permissionsModule as unknown as Record<string, unknown>
     expect(permissions.saveGranularPermisos).toBeUndefined()
   })
@@ -178,13 +149,7 @@ describe('CP08 — canEliminarUsuario: guardas de seguridad para desactivación'
     expect(canEliminarUsuario(null, target)).toBe(false)
   })
 
-  it('[BRECHA CP08] no existe función canDesactivarUsuario separada — solo canEliminarUsuario', () => {
-    /**
-     * CP08 habla de "desactivar" (estado Inactivo), pero la función disponible
-     * es canEliminarUsuario que apunta al endpoint DELETE /api/users/:id/hard.
-     * No hay distinción entre "desactivar" (soft) y "eliminar" (hard) en permissions.ts.
-     */
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  it('No existe función canDesactivarUsuario separada — solo canEliminarUsuario', () => {
     const permissions = permissionsModule as unknown as Record<string, unknown>
     expect(permissions.canDesactivarUsuario).toBeUndefined()
   })
@@ -193,26 +158,18 @@ describe('CP08 — canEliminarUsuario: guardas de seguridad para desactivación'
 // ─── Autenticación de cliente — CP09/CP10/CP11 (lógica de permisos) ──────────
 
 describe('CP09/CP10/CP11 — BRECHA: no existe lógica de permisos basada en estadoComercial', () => {
-  /**
-   * BUG DETECTADO (CP09-CP11): No existe ninguna función en permissions.ts
-   * que evalúe el estado de la unidad del cliente (Vendido/Inactivo/Separado)
-   * para determinar el nivel de acceso al portal.
-   */
 
   it('[BRECHA CP09] no existe canAccederPortalCompleto(perfil, estadoUnidad)', () => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const permissions = permissionsModule as unknown as Record<string, unknown>
     expect(permissions.canAccederPortalCompleto).toBeUndefined()
   })
 
   it('[BRECHA CP10] no existe isClienteActivo(perfil)', () => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const permissions = permissionsModule as unknown as Record<string, unknown>
     expect(permissions.isClienteActivo).toBeUndefined()
   })
 
   it('[BRECHA CP11] no existe isModoEspera(estadoUnidad)', () => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const permissions = permissionsModule as unknown as Record<string, unknown>
     expect(permissions.isModoEspera).toBeUndefined()
   })

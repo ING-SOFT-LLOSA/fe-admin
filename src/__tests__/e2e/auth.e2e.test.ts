@@ -1,20 +1,5 @@
 /**
- * Pruebas E2E — Módulo de Autenticación (CP01–CP05, CP09–CP11)
- *
- * OBJETIVO: verificar que el sistema funciona correctamente en el browser.
- * Un test que FALLA indica un BUG en la UI, no en el test.
- *
- * Prerequisito: servidor corriendo en http://localhost:3000 (`npm run dev`)
- *
- * Hallazgos clave del análisis de código:
- * - Login URL: /login-empresa (y /login — ambas usan el mismo LoginForm)
- * - Token en localStorage: "llosa_id_token"
- * - Perfil en localStorage: "llosa_perfil"
- * - AuthContext restaura sesión via GET /api/auth/me con el token almacenado
- * - BUG CP02: loginWithEmail no valida dominio antes de llamar a Firebase
- * - BUG CP05: botón "Olvidé mi contraseña" visible para ADMIN (sin condicional de rol)
- * - BUG CP10: AuthGuard no verifica campo activo del perfil
- * - BRECHA CP11: no existe componente "Modo de Espera" en el frontend
+ * Pruebas E2E — Módulo de Autenticación (CP01–CP04, CP09–CP11)
  */
 
 import { test, expect, type Page } from '@playwright/test'
@@ -132,16 +117,7 @@ test.describe('CP01 — Login corporativo exitoso con dominio @llosaedificacione
 // ─── CP02: Rechazo de dominio externo ────────────────────────────────────────
 
 test.describe('CP02 — Rechazo de dominio externo (@gmail.com)', () => {
-  /**
-   * BUG DETECTADO (CP02): loginWithEmail() en src/lib/auth/login.ts
-   * NO valida el dominio antes de llamar a Firebase.
-   * El frontend no puede mostrar un error de dominio específico sin implementarlo.
-   *
-   * Este test DEBE FALLAR en el estado actual del código:
-   * - No muestra mensaje específico de dominio (solo genérico si Firebase rechaza)
-   * - Firebase puede ser llamado antes del rechazo
-   */
-  test('[BUG CP02] gmail.com debería mostrar error de dominio no autorizado sin llamar a Firebase', async ({ page }) => {
+  test('gmail.com debería mostrar error de dominio no autorizado sin llamar a Firebase', async ({ page }) => {
     let firebaseCalled = false
     await page.route('**/identitytoolkit.googleapis.com/**', async (route) => {
       firebaseCalled = true
@@ -177,38 +153,20 @@ test.describe('CP02 — Rechazo de dominio externo (@gmail.com)', () => {
   })
 })
 
-// ─── CP03: Recuperación de contraseña ────────────────────────────────────────
+// ─── CP03: Recuperación de contraseña no existe en el backoffice ─────────────
 
-test.describe('CP03 — Recuperación de contraseña para usuarios no-admin', () => {
-  test('el botón "Olvidé mi contraseña" está visible en /login-empresa', async ({ page }) => {
+test.describe('CP03 — La opción de recuperar contraseña no existe en el backoffice', () => {
+
+  test('El formulario de /login-empresa no debe contener el botón de recuperar contraseña', async ({ page }) => {
     await page.goto('/login-empresa')
-    const btn = page.locator('button:has-text("Olvidé"), button:has-text("contraseña"), a:has-text("contraseña")')
-    await expect(btn.first()).toBeVisible()
+    const btn = page.locator('button:has-text("Olvidé"), button:has-text("Olvidaste"), a:has-text("contraseña"), button:has-text("contraseña")')
+    await expect(btn).toHaveCount(0)
   })
 
-  test('[BUG CP03] al hacer click en "Olvidé mi contraseña" debe ocurrir alguna acción', async ({ page }) => {
-    /**
-     * BUG: El botón en LoginForm.tsx:258 no tiene onClick handler.
-     * Es un <button type="button"> vacío que no ejecuta nada.
-     * Este test DEBE FALLAR para documentar el bug.
-     */
-    let resetEmailCalled = false
-    await page.route('**/identitytoolkit.googleapis.com/v1/accounts:sendOobCode**', async (route) => {
-      resetEmailCalled = true
-      await route.fulfill({ status: 200, json: { email: 'asesor@llosaedificaciones.com' } })
-    })
-
-    await page.goto('/login-empresa')
-    await page.fill('input[type="email"]', 'asesor@llosaedificaciones.com')
-
-    const btn = page.locator('button:has-text("Olvidé"), button:has-text("contraseña")').first()
-    await btn.click()
-
-    // Debe abrir un modal, mostrar un mensaje, o llamar a Firebase reset
-    const modalVisible = await page.locator('[role="dialog"], [aria-modal="true"]').count()
-    const msgVisible = await page.locator('text=/correo|enviado|restablecer|ingresa/i').count()
-
-    expect(modalVisible + msgVisible + (resetEmailCalled ? 1 : 0)).toBeGreaterThan(0)
+  test('El formulario de /login no debe contener el botón de recuperar contraseña', async ({ page }) => {
+    await page.goto('/login')
+    const btn = page.locator('button:has-text("Olvidé"), button:has-text("Olvidaste"), a:has-text("contraseña"), button:has-text("contraseña")')
+    await expect(btn).toHaveCount(0)
   })
 })
 
@@ -239,62 +197,11 @@ test.describe('CP04 — Rechazo de credenciales inválidas', () => {
   })
 })
 
-// ─── CP05: Admin NO ve "Olvidé mi contraseña" ────────────────────────────────
-
-test.describe('CP05 — Admin no debe ver la opción de recuperar contraseña', () => {
-  /**
-   * BUG DETECTADO (CP05): El botón "¿Olvidaste tu contraseña?" en LoginForm.tsx
-   * NO tiene condicional de rol. Se renderiza para TODOS los usuarios.
-   * Además, el rol se conoce DESPUÉS del login, no antes.
-   *
-   * Arquitectónicamente este CP no puede cumplirse en la pantalla de login
-   * sin una pantalla de login separada para admin o sin una pre-validación.
-   *
-   * Este test verifica si existe algún mecanismo post-login que oculte el botón.
-   */
-  test('[BUG CP05] la pantalla de login muestra "Olvidé mi contraseña" incluso para admin', async ({ page }) => {
-    await page.goto('/login-empresa')
-
-    // El botón está visible ANTES de saber si es admin (lo que es el bug)
-    const btn = page.locator('button:has-text("Olvidé"), button:has-text("contraseña")').first()
-    await expect(btn).toBeVisible()
-
-    // COMPORTAMIENTO ESPERADO: para un admin, este botón NO debería aparecer
-    // Como falla, dejamos el test para documentar la inconsistencia:
-    // El CP espera que admin NO vea el botón, pero el botón siempre está visible
-  })
-
-  test('[BUG CP05] en configuración/perfil de admin no debe aparecer opción de cambio de contraseña por email', async ({ page }) => {
-    const perfilAdmin = {
-      id: 1,
-      nombre: 'Admin Sistema',
-      email: 'admin@llosaedificaciones.com',
-      tipoUsuario: 'EMPLEADO',
-      rol: 'ADMIN',
-      activo: true,
-      funciones: [],
-    }
-
-    await mockAuthMe(page, perfilAdmin)
-    await injectSession(page, perfilAdmin)
-    await page.goto('/configuracion')
-
-    // En la pantalla de configuración, admin no debe ver enlace de recuperar contraseña
-    const resetLink = page.locator('text=/Olvidé|recuperar contraseña|enviar correo de reset/i')
-    await expect(resetLink).toHaveCount(0)
-  })
-})
-
 // ─── CP09: Cliente "Vendido" → acceso completo al portal ─────────────────────
 
 test.describe('CP09 — Cliente con unidad Vendido accede al portal sin restricciones', () => {
-  test('[BRECHA CP09] cliente con unidad Vendido es redirigido incorrectamente a /proyectos', async ({ page }) => {
-    /**
-     * BUG: LoginForm redirige siempre a redirectTo="/proyectos" sin importar el rol.
-     * Un cliente (tipoUsuario=CLIENTE) tras login va a /proyectos (vista admin),
-     * no al portal de cliente /portal/mis-activos.
-     * Este test documenta la redirección incorrecta.
-     */
+  test('Cliente con unidad Vendido es redirigido incorrectamente a /proyectos', async ({ page }) => {
+
     const perfilCliente = {
       id: 20,
       nombre: 'Cliente Vendido',
@@ -312,9 +219,6 @@ test.describe('CP09 — Cliente con unidad Vendido accede al portal sin restricc
     await page.fill('input[type="email"]', 'cliente@gmail.com')
     await page.fill('input[type="password"]', 'ClienteSeguro123!')
     await page.click('button[type="submit"]')
-
-    // COMPORTAMIENTO ESPERADO: redirigir a /portal/mis-activos
-    // COMPORTAMIENTO ACTUAL (BUG): redirige a /proyectos
     await expect(page).toHaveURL('/portal/mis-activos', { timeout: 8_000 })
   })
 
@@ -371,13 +275,7 @@ test.describe('CP10 — Cliente con perfil Inactivo no puede acceder al portal',
     await expect(page).toHaveURL(/login/, { timeout: 5_000 })
   })
 
-  test('[BUG CP10] cuando el backend NO rechaza pero activo=false, AuthGuard debería bloquear', async ({ page }) => {
-    /**
-     * BUG: AuthGuard solo verifica que exista token + perfil en localStorage.
-     * Si el backend acepta el token (no detecta la inactividad) pero el perfil
-     * local tiene activo=false, el usuario puede acceder al portal.
-     * Este test DEBE FALLAR para documentar el bug.
-     */
+  test('Cuando el backend NO rechaza pero activo=false, AuthGuard debería bloquear', async ({ page }) => {
     const perfilInactivo = {
       id: 30,
       email: 'desistio@gmail.com',
@@ -390,9 +288,6 @@ test.describe('CP10 — Cliente con perfil Inactivo no puede acceder al portal',
     await mockAuthMe(page, perfilInactivo) // Backend responde OK (no detecta inactividad)
     await injectSession(page, perfilInactivo)
     await page.goto('/portal/mis-activos')
-
-    // COMPORTAMIENTO ESPERADO: bloqueado aunque el backend diga OK
-    // COMPORTAMIENTO ACTUAL (BUG): permite el acceso porque AuthGuard no verifica activo
     await expect(page).toHaveURL(/login/, { timeout: 5_000 })
   })
 })
@@ -400,13 +295,8 @@ test.describe('CP10 — Cliente con perfil Inactivo no puede acceder al portal',
 // ─── CP11: Cliente "Separado" → Modo de Espera ───────────────────────────────
 
 test.describe('CP11 — Cliente con unidad Separado entra en Modo de Espera', () => {
-  test('[BRECHA CP11] el portal no muestra un "Modo de Espera" diferenciado para unidades Separadas', async ({ page }) => {
-    /**
-     * BRECHA: No existe ningún componente "Modo de Espera" en el frontend.
-     * src/app/portal/mis-activos/page.tsx muestra el estadoComercial como texto,
-     * pero no bloquea módulos ni muestra una UI diferente para "SEPARADO".
-     * Este test DEBE FALLAR para documentar la brecha.
-     */
+  test('El portal no muestra un "Modo de Espera" diferenciado para unidades Separadas', async ({ page }) => {
+ 
     const perfilSeparado = {
       id: 40,
       email: 'separado@gmail.com',
@@ -430,11 +320,7 @@ test.describe('CP11 — Cliente con unidad Separado entra en Modo de Espera', ()
 
     await injectSession(page, perfilSeparado)
     await page.goto('/portal/mis-activos')
-
-    // COMPORTAMIENTO ESPERADO: ver solo resumen de separación, módulos bloqueados
     await expect(page.locator('text=/modo de espera|en espera/i')).toBeVisible({ timeout: 5_000 })
-
-    // Los módulos de obra, finanzas y legal deben estar bloqueados
     await expect(page.locator('a[href*="obra"], button:has-text("Avance de Obra")')).toHaveCount(0)
     await expect(page.locator('a[href*="finanzas"], button:has-text("Finanzas")')).toHaveCount(0)
   })
