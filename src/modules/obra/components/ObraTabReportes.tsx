@@ -436,6 +436,7 @@ function NuevoReporteForm({ projectId, projectName, onClose, onSubmit }: NuevoRe
       .then((etapas) => {
         const hitos = etapas.map((e) => ({
           id: e.id,
+          proyectoId: projectId,
           titulo: e.nombre,
           orden: e.orden,
           tipo: "OBRA",

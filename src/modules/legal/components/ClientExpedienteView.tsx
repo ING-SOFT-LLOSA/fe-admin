@@ -73,12 +73,17 @@ export default function ClientExpedienteView({ clientId }: Props) {
   }, [clientId]);
 
   useEffect(() => {
-    if (selectedExpediente?.activo?.id) {
-      fetchContratoActivo(selectedExpediente.activo.id)
-        .then(data => setContrato(data.expediente))
-        .catch(console.error);
+    const activo = selectedExpediente?.activos?.[0];
+    if (activo?.id) {
+      fetchContratoActivo(activo.id)
+        .then(data => {
+          // Backend returns UsuarioActivoResponseDTO directly (not wrapped in {expediente})
+          const c = "expediente" in (data as any) ? (data as any).expediente : data;
+          setContrato(c ?? selectedExpediente);
+        })
+        .catch(() => setContrato(selectedExpediente));
     } else {
-      setContrato(null);
+      setContrato(selectedExpediente);
     }
   }, [selectedExpediente]);
 
@@ -127,17 +132,23 @@ export default function ClientExpedienteView({ clientId }: Props) {
         <div className="flex items-center gap-4 bg-white dark:bg-white/5 p-4 rounded-xl border border-slate-200 dark:border-white/10 shadow-sm">
           <label className="text-sm font-bold text-build-main dark:text-white whitespace-nowrap">Unidad:</label>
           <select
-            value={selectedExpediente?.activo?.id ?? ""}
+            value={selectedExpediente?.uuidUsuarioActivo ?? ""}
             onChange={(e) =>
-              setSelectedExpediente(expedientes.find((x) => x.activo?.id === e.target.value) ?? null)
+              setSelectedExpediente(expedientes.find((x) => x.uuidUsuarioActivo === e.target.value) ?? null)
             }
             className="flex-1 rounded-lg border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-[#111] px-3 py-2 text-sm focus:outline-none dark:text-white"
           >
-            {expedientes.map((exp) => (
-              <option key={exp.activo?.id} value={exp.activo?.id}>
-                {exp.activo?.proyectoNombre} — {exp.activo?.torreNombre} — Piso {exp.activo?.nroPiso} — {exp.activo?.tipo} {exp.activo?.nro}
-              </option>
-            ))}
+            {expedientes.map((exp) => {
+              const activo = exp.activos?.[0];
+              const label = activo
+                ? `${activo.proyectoNombre} — ${activo.torreNombre} — Piso ${activo.nroPiso} — ${activo.tipo} ${activo.nro}`
+                : `${exp.tipoFinanciamiento || "Contrato"} — ${exp.fechaAdquisicion?.split("T")[0] || "—"}`;
+              return (
+                <option key={exp.uuidUsuarioActivo} value={exp.uuidUsuarioActivo}>
+                  {label}
+                </option>
+              );
+            })}
           </select>
         </div>
       ) : (
@@ -155,15 +166,20 @@ export default function ClientExpedienteView({ clientId }: Props) {
           <div className="flex-1 min-w-0">
             <h3 className="text-lg font-bold text-build-main dark:text-white">{fullName}</h3>
             <p className="text-sm text-slate-500 dark:text-white/50 mt-0.5">{client?.email || "—"}</p>
+            {(() => {
+              const a = selectedExpediente?.activos?.[0];
+              return a ? (
+                <p className="text-xs text-build-accent font-semibold mt-1.5">
+                  {a.proyectoNombre} — {a.torreNombre} — Piso {a.nroPiso} — {a.tipo} {a.nro}
+                </p>
+              ) : null;
+            })()}
           </div>
           <div className="flex flex-wrap gap-2 sm:justify-end">
             <InfoChip icon="badge" label={client?.documentoIdentidad || "Sin DNI"} />
             <InfoChip icon="phone" label={client?.telefono || "Sin teléfono"} />
-            {selectedExpediente?.estadoTramiteLegal && (
-              <span className="inline-flex items-center gap-1.5 text-[11px] font-bold px-3 py-1.5 rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400">
-                <span className="material-symbols-outlined text-[13px]">pending</span>
-                {selectedExpediente.estadoTramiteLegal}
-              </span>
+            {selectedExpediente?.tipoFinanciamiento && (
+              <InfoChip icon="attach_money" label={selectedExpediente.tipoFinanciamiento} />
             )}
           </div>
         </div>

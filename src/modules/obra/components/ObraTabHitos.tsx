@@ -185,16 +185,22 @@ export default function ObraTabHitos({ projectId, etapas, onRefresh }: ObraTabHi
 
     try {
       for (let i = 0; i < HITOS_ESTANDAR.length; i++) {
-        await crearEtapaProyecto(projectId, {
+        const payload = {
           nombre: HITOS_ESTANDAR[i],
           descripcion: "Hito estándar de la industria",
           orden: i + 1,
-        });
+        };
+        console.log(`[handleGenerarEstandar] Creando hito ${i + 1}/${HITOS_ESTANDAR.length}:`, payload);
+        const response = await crearEtapaProyecto(projectId, payload);
+        console.log(`[handleGenerarEstandar] Respuesta del backend:`, response);
       }
       setSuccess("Secuencia estándar generada correctamente.");
+      console.log("[handleGenerarEstandar] Llamando onRefresh...");
       await onRefresh();
+      console.log("[handleGenerarEstandar] onRefresh completado.");
       setTimeout(() => setSuccess(""), 4000);
     } catch (err: unknown) {
+      console.error("[handleGenerarEstandar] Error:", err);
       setError(
         err instanceof Error
           ? err.message
@@ -466,11 +472,51 @@ export default function ObraTabHitos({ projectId, etapas, onRefresh }: ObraTabHi
               </div>
             ) : avances.length === 0 ? (
               <div className="px-6 py-10 text-center text-sm text-slate-400 dark:text-white/40">
-                No hay hitos registrados para este piso.
-                {etapas.length === 0 && (
-                  <p className="mt-2 text-xs">
-                    Primero carga los hitos maestros del proyecto desde la pestaña "Por proyecto".
-                  </p>
+                {etapas.length === 0 ? (
+                  <div className="space-y-3">
+                    <p className="font-semibold text-build-main dark:text-white">
+                      No hay hitos maestros configurados
+                    </p>
+                    <p className="text-xs max-w-xs mx-auto">
+                      Este proyecto aún no tiene hitos de obra registrados. 
+                      Primero debes generar los hitos maestros desde la pestaña <strong>"Por proyecto"</strong> para que se propaguen a todos los pisos.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => setNivel("proyecto")}
+                      className="inline-flex items-center gap-1.5 rounded-lg bg-build-accent px-4 py-2 text-xs font-bold text-white hover:bg-build-accent/90 transition-colors"
+                    >
+                      <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
+                      Ir a "Por proyecto"
+                    </button>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <p className="font-semibold text-build-main dark:text-white">
+                      Hitos maestros creados, pero sin datos de piso
+                    </p>
+                    <p className="text-xs max-w-xs mx-auto">
+                      Los hitos maestros existen, pero no se encontraron registros de avance para este piso específico.
+                      Esto puede deberse a que la sincronización del backend está pendiente.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const activoProxy = activos.find((a) => a.pisoId === Number(selectedPisoId));
+                        if (activoProxy) {
+                          setLoadingAvances(true);
+                          getAvancesActivo(activoProxy.id)
+                            .then((data) => setAvances(data))
+                            .catch((err) => setErrorPiso(err instanceof Error ? err.message : "Error al recargar"))
+                            .finally(() => setLoadingAvances(false));
+                        }
+                      }}
+                      className="inline-flex items-center gap-1.5 rounded-lg bg-build-accent px-4 py-2 text-xs font-bold text-white hover:bg-build-accent/90 transition-colors"
+                    >
+                      <span className="material-symbols-outlined text-[16px]">refresh</span>
+                      Reintentar carga
+                    </button>
+                  </div>
                 )}
               </div>
             ) : (

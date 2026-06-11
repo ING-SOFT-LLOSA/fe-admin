@@ -138,7 +138,7 @@ export default function LegalOverview() {
                 return (
                   <tr
                     key={client.id}
-                    onClick={() => router.push(`/clientes/${client.id}/expediente`)}
+                    onClick={() => router.push(`/legal/${client.id}/expediente`)}
                     className="group cursor-pointer hover:bg-slate-50 dark:hover:bg-white/[0.04] transition-colors"
                   >
                     {/* Cliente */}

@@ -11,6 +11,8 @@ interface PaymentManagementStepProps {
 }
 
 export default function PaymentManagementStep({ expediente, onBack }: PaymentManagementStepProps) {
+    const activo = expediente.activo || expediente.activos?.[0];
+    const selectedUnitId = activo?.id ?? null;
     const {
         expediente: refreshedExpediente,
         cronograma,
@@ -21,7 +23,7 @@ export default function PaymentManagementStep({ expediente, onBack }: PaymentMan
         isLoading,
         error,
         refresh
-    } = useFinancingData(expediente.activo?.id ?? null);
+    } = useFinancingData(selectedUnitId);
 
     // Priorizar el expediente refrescado por el hook, caer en el del prop si aún está cargando
     const activeExpediente = refreshedExpediente || expediente;

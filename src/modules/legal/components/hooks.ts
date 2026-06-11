@@ -12,6 +12,7 @@ import {
   createRequisito,
   type DocumentoItem,
 } from "@/lib/api/requisitos";
+import { ApiError } from "@/lib/api/http";
 
 import {
   DEFAULT_HITOS,
@@ -20,6 +21,7 @@ import {
   DOCUMENT_STAGES,
   PREDEFINED_REQUISITOS,
   type ProcesoEtapa,
+  type HitoItem,
   type StageId,
 } from "./constants";
 
@@ -87,12 +89,26 @@ export function useCommercialStepper(contrato: UsuarioActivoResponseDTO | null) 
             et.hitos?.some((h) => h.uuidHitoComercial === uuidHito)
           );
           if (targetEtapa) {
-            const targetIndex = STAGE_ORDER.indexOf(targetEtapa.etapa as typeof STAGE_ORDER[number]);
+            const targetHito = targetEtapa.hitos?.find((h) => h.uuidHitoComercial === uuidHito);
+            const targetIndex = STAGE_ORDER.indexOf(targetEtapa.etapa);
+
+            // Auto-complete ALL hitos of previous stages
             for (let i = 0; i < targetIndex; i++) {
               const prevEtapa = stepper.etapas.find((et) => et.etapa === STAGE_ORDER[i]);
-              const prevHito  = prevEtapa?.hitos?.[0];
-              if (prevHito && prevHito.estado !== "COMPLETADO") {
-                await updateCommercialHitoEstado(prevHito.uuidHitoComercial, "COMPLETADO");
+              for (const h of prevEtapa?.hitos ?? []) {
+                if (h.estado !== "COMPLETADO") {
+                  await updateCommercialHitoEstado(h.uuidHitoComercial, "COMPLETADO");
+                }
+              }
+            }
+
+            // Auto-complete hitos within same stage that come before target
+            if (targetHito) {
+              for (const h of targetEtapa.hitos ?? []) {
+                if (h.uuidHitoComercial === uuidHito) break;
+                if (h.estado !== "COMPLETADO") {
+                  await updateCommercialHitoEstado(h.uuidHitoComercial, "COMPLETADO");
+                }
               }
             }
           }
@@ -112,29 +128,31 @@ export function useCommercialStepper(contrato: UsuarioActivoResponseDTO | null) 
   const etapas: ProcesoEtapa[] = (stepper?.etapas ?? [])
     .filter((et) => et.etapa !== "PAGO")
     .map((et) => {
-      const meta     = STAGE_META[et.etapa as keyof typeof STAGE_META];
-      const mainHito = et.hitos?.[0];
+      const meta = STAGE_META[et.etapa as keyof typeof STAGE_META];
+      const hitos: HitoItem[] = (et.hitos ?? []).map((h) => ({
+        uuidHito: h.uuidHitoComercial,
+        nombre: h.nombreHito,
+        descripcion: h.descripcion,
+        orden: h.orden,
+        estado: h.estado,
+        fechaCompletado: h.fechaCompletado,
+        createdAt: h.createdAt,
+      }));
 
       let estado: ProcesoEtapa["estado"] = "pendiente";
       if (et.porcentajeAvance === 100) {
         estado = "completado";
-      } else if (et.porcentajeAvance > 0 || mainHito?.estado === "EN_PROGRESO") {
+      } else if (et.porcentajeAvance > 0 || hitos.some((h) => h.estado === "EN_PROGRESO")) {
         estado = "en_proceso";
       }
 
       return {
-        id:          et.etapa,
-        label:       meta?.label ?? et.etapa,
-        icon:        meta?.icon  ?? "circle",
+        id: et.etapa,
+        label: meta?.label ?? et.etapa,
+        icon: meta?.icon ?? "circle",
         estado,
-        fechaInicio: mainHito?.createdAt
-          ? new Date(mainHito.createdAt).toLocaleDateString("es-PE")
-          : undefined,
-        fechaFin: mainHito?.fechaCompletado
-          ? new Date(mainHito.fechaCompletado).toLocaleDateString("es-PE")
-          : undefined,
-        comentarios: mainHito?.descripcion ?? "",
-        uuidHito:    mainHito?.uuidHitoComercial,
+        hitos,
+        porcentajeAvance: et.porcentajeAvance,
       };
     });
 
@@ -228,12 +246,20 @@ async function loadStageSection(
     } else {
       const seedPromise = (async () => {
         for (const req of missing) {
-          await createRequisito({
-            hitoProcesoCompraId: hitoId,
-            titulo:      req.titulo,
-            descripcion: req.descripcion,
-            icono:       req.icono,
-          });
+          try {
+            await createRequisito({
+              hitoProcesoCompraId: hitoId,
+              titulo:      req.titulo,
+              descripcion: req.descripcion,
+              icono:       req.icono,
+            });
+          } catch (err) {
+            if (err instanceof ApiError && err.status === 403) {
+              console.warn(`Sin permisos para crear requisito "${req.titulo}" — se omite el seeding automático`);
+              return;
+            }
+            throw err;
+          }
         }
       })();
       seedingInProgress[lockKey] = seedPromise;

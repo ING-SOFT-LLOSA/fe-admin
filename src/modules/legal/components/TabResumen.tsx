@@ -6,28 +6,32 @@ import { ResumenKpi } from "./ui";
 
 type Props = {
   client:         Usuario | null;
-  expediente:     any;
+  expediente:     UsuarioActivoResponseDTO | null;
   contrato:       UsuarioActivoResponseDTO | null;
   etapas:         ProcesoEtapa[];
   loadingStepper: boolean;
 };
 
 export function TabResumen({ client, expediente, contrato, etapas, loadingStepper }: Props) {
+  const activo = expediente?.activos?.[0];
   const etapaActual =
     etapas.find((e) => e.estado === "en_proceso") ??
     etapas.find((e) => e.estado === "pendiente")  ??
     etapas[0];
 
-  const completadas = etapas.filter((e) => e.estado === "completado").length;
-  const fullName    = [client?.nombre, client?.apellidos].filter(Boolean).join(" ") || "—";
+  const completadas   = etapas.filter((e) => e.estado === "completado").length;
+  const fullName      = [client?.nombre, client?.apellidos].filter(Boolean).join(" ") || "—";
+  const currentHito   = etapaActual?.hitos?.find((h) => h.estado === "EN_PROGRESO") ?? etapaActual?.hitos?.[0];
+  const ultimaFecha   = currentHito?.fechaCompletado ?? currentHito?.createdAt ?? null;
 
   return (
     <div className="space-y-4">
       {/* KPI row */}
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <ResumenKpi icon="person"       label="Cliente"        value={fullName} />
-        <ResumenKpi icon="apartment"    label="Proyecto"       value={expediente?.activo?.proyectoNombre || "—"} />
-        <ResumenKpi icon="meeting_room" label="Unidad"         value={expediente?.activo ? `${expediente.activo.tipo} ${expediente.activo.nro}` : "—"} />
+        <ResumenKpi icon="apartment"    label="Proyecto"       value={activo?.proyectoNombre || "—"} />
+        <ResumenKpi icon="layers"       label="Torre / Piso"   value={activo ? `${activo.torreNombre} — Piso ${activo.nroPiso}` : "—"} />
+        <ResumenKpi icon="meeting_room" label="Unidad"         value={activo ? `${activo.tipo} ${activo.nro}` : "—"} />
         <ResumenKpi icon="attach_money" label="Financiamiento" value={contrato?.tipoFinanciamiento || "Pendiente"} />
       </div>
 
@@ -90,7 +94,7 @@ export function TabResumen({ client, expediente, contrato, etapas, loadingSteppe
                 </div>
                 <div>
                   <p className="text-sm font-bold text-build-main dark:text-white">{etapaActual.label}</p>
-                  <p className="text-xs text-slate-400 dark:text-white/40">{etapaActual.comentarios || "En proceso"}</p>
+                  <p className="text-xs text-slate-400 dark:text-white/40">{currentHito?.descripcion || "En proceso"}</p>
                 </div>
               </div>
             </div>
@@ -98,7 +102,7 @@ export function TabResumen({ client, expediente, contrato, etapas, loadingSteppe
             <div className="rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 p-5 shadow-sm">
               <p className="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-white/40 mb-2">Última actualización</p>
               <p className="text-sm font-semibold text-build-main dark:text-white">
-                {etapaActual.fechaFin ?? etapaActual.fechaInicio ?? "—"}
+                {ultimaFecha ? new Date(ultimaFecha).toLocaleDateString("es-PE") : "—"}
               </p>
             </div>
           </div>

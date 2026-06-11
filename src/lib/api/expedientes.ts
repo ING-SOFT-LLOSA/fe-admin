@@ -1,19 +1,48 @@
 import { apiFetch } from "@/lib/api/http";
+import { EtapaProceso } from "@/types/etapas";
+
+export interface CrearContratoPayload {
+  idsUsuarios: number[];
+  tipoFinanciamiento: string;
+  faseComercial: string;
+  estadoTramiteLegal?: string;
+  fechaAdquisicion: string;
+}
 
 export interface AsignarActivoPayload {
+  uuidUsuarioActivo: string;
+  idsActivo: string[];
+}
+
+export async function asignarActivo(payload: {
   idsUsuarios: number[];
   idActivo: string;
   tipoFinanciamiento: string;
   faseComercial: string;
   estadoTramiteLegal: string;
   fechaAdquisicion: string;
-}
-
-export function asignarActivo(payload: AsignarActivoPayload): Promise<void> {
-  return apiFetch<void>("/api/expedientes/asignar", {
+}): Promise<void> {
+  // Paso 1: crear el contrato sin unidades
+  const contrato = await apiFetch<UsuarioActivoResponseDTO>("/api/expedientes/crear", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
+    body: JSON.stringify({
+      idsUsuarios: payload.idsUsuarios,
+      tipoFinanciamiento: payload.tipoFinanciamiento,
+      faseComercial: payload.faseComercial,
+      estadoTramiteLegal: payload.estadoTramiteLegal,
+      fechaAdquisicion: payload.fechaAdquisicion,
+    }),
+  });
+
+  // Paso 2: vincular la unidad al contrato
+  await apiFetch<void>("/api/expedientes/asignar", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      uuidUsuarioActivo: contrato.uuidUsuarioActivo,
+      idsActivo: [payload.idActivo],
+    }),
   });
 }
 
@@ -28,6 +57,7 @@ export interface UsuarioActivoResponseDTO {
   estadoTramiteLegal: string;
   fechaAdquisicion: string;
   activo?: import("@/lib/api/proyectos").ActivoResponseDTO;
+  activos?: import("@/lib/api/proyectos").ActivoResponseDTO[];
 }
 
 export function fetchContratoActivo(uuidActivo: string): Promise<import("@/modules/finanzas/types").ContratoDetalleResponse> {
@@ -39,7 +69,7 @@ export function fetchContratoActivo(uuidActivo: string): Promise<import("@/modul
 export interface HitoComercialResponseDTO {
   uuidHitoComercial: string;
   uuidUsuarioActivo: string;
-  etapaProceso: "SEPARACION" | "CONTRATO" | "PAGO" | "ENTREGA" | "SANEAMIENTO";
+  etapaProceso: EtapaProceso;
   nombreHito: string;
   descripcion: string;
   orden: number;
@@ -49,7 +79,7 @@ export interface HitoComercialResponseDTO {
 }
 
 export interface EtapaStepperResponseDTO {
-  etapa: "SEPARACION" | "CONTRATO" | "PAGO" | "ENTREGA" | "SANEAMIENTO";
+  etapa: EtapaProceso;
   hitos: HitoComercialResponseDTO[];
   porcentajeAvance: number;
 }
@@ -65,7 +95,7 @@ export function fetchCommercialStepper(uuidUsuarioActivo: string): Promise<Stepp
 
 export function createCommercialHito(payload: {
   uuidUsuarioActivo: string;
-  etapaProceso: "SEPARACION" | "CONTRATO" | "PAGO" | "ENTREGA" | "SANEAMIENTO";
+  etapaProceso: string;
   nombreHito: string;
   descripcion: string;
   orden: number;
@@ -89,15 +119,28 @@ export function deleteCommercialHito(uuidHito: string): Promise<void> {
   });
 }
 
-export function updateCommercialHito(uuidHito: string, payload: {
+/**
+ * El backend no tiene endpoint PATCH para editar hitos comerciales.
+ * Se usa delete + create como workaround.
+ */
+export async function updateCommercialHito(uuidHito: string, payload: {
+  uuidUsuarioActivo: string;
   nombreHito: string;
   descripcion: string;
-  orden?: number;
+  orden: number;
+  etapaProceso: string;
 }): Promise<HitoComercialResponseDTO> {
-  return apiFetch<HitoComercialResponseDTO>(`/api/comercial/hitos/${uuidHito}`, {
-    method: "PATCH",
+  await apiFetch<void>(`/api/comercial/hitos/${uuidHito}`, { method: "DELETE" });
+  return apiFetch<HitoComercialResponseDTO>("/api/comercial/hitos", {
+    method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
+    body: JSON.stringify({
+      uuidUsuarioActivo: payload.uuidUsuarioActivo,
+      etapaProceso: payload.etapaProceso,
+      nombreHito: payload.nombreHito,
+      descripcion: payload.descripcion,
+      orden: payload.orden,
+    }),
   });
 }
 
