@@ -8,7 +8,7 @@ import { getAvanceGeneral } from "@/lib/api/obra";
 import type { Proyecto } from "@/modules/proyectos/types";
 
 type ProjectProgressRow = Proyecto & {
-  porcentajeAvance?: number;
+  avanceGlobal?: number;
 };
 
 export default function ObraOverview() {
@@ -28,9 +28,9 @@ export default function ObraOverview() {
           rows.map(async (project) => {
             try {
               const progress = await getAvanceGeneral(project.id);
-              return { ...project, porcentajeAvance: progress.porcentajeAvance };
+              return { ...project, avanceGlobal: progress.avanceGlobal };
             } catch {
-              return { ...project, porcentajeAvance: 0 };
+              return { ...project, avanceGlobal: 0 };
             }
           }),
         );
@@ -119,11 +119,11 @@ export default function ObraOverview() {
                       <div className="h-2 w-32 rounded-full bg-slate-100 dark:bg-white/10">
                         <div
                           className="h-2 rounded-full bg-build-accent transition-all"
-                          style={{ width: `${Math.min(project.porcentajeAvance ?? 0, 100)}%` }}
+                          style={{ width: `${Math.min(project.avanceGlobal ?? 0, 100)}%` }}
                         />
                       </div>
                       <span className="text-sm font-bold text-build-main dark:text-white">
-                        {project.porcentajeAvance ?? 0}%
+                        {project.avanceGlobal ?? 0}%
                       </span>
                     </div>
                   </td>

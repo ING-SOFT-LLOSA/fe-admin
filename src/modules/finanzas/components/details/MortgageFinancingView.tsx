@@ -4,7 +4,6 @@ import { useState, useEffect } from "react";
 import type { CartaAprobacionResponse } from "@/modules/finanzas/types";
 import type { CartaAprobacionPayload } from "@/lib/api/finanzas";
 import { createCartaAprobacion, updateCartaAprobacion, deleteCartaAprobacion } from "@/lib/api/finanzas";
-import { ApiError } from "@/lib/api/http";
 import type { StepperResponseDTO, HitoComercialResponseDTO } from "@/lib/api/expedientes";
 import { updateCommercialHitoEstado, createCommercialHito, deleteCommercialHito, updateCommercialHito } from "@/lib/api/expedientes";
 import type { UsuarioActivoResponseDTO } from "@/lib/api/expedientes";
@@ -90,13 +89,7 @@ export default function MortgageFinancingView({ expediente, carta, stepper, onUp
             onUpdate();
             setShowCartaForm(false);
         } catch (e) {
-            if (e instanceof ApiError && e.status === 409) {
-                alert("Ya existe una carta de aprobación para este expediente. Se recargarán los datos.");
-                onUpdate();
-                setShowCartaForm(false);
-            } else {
-                alert(e instanceof Error ? e.message : "Error al guardar carta");
-            }
+            alert(e instanceof Error ? e.message : "Error al guardar carta");
         } finally {
             setIsSaving(false);
         }
@@ -107,13 +100,9 @@ export default function MortgageFinancingView({ expediente, carta, stepper, onUp
         setIsSaving(true);
         try {
             if (editingHito) {
-                const currentHito = paymentEtapa?.hitos.find(h => h.uuidHitoComercial === editingHito);
                 await updateCommercialHito(editingHito, {
-                    uuidUsuarioActivo: expediente.uuidUsuarioActivo,
-                    etapaProceso: "PAGO",
                     nombreHito: hitoFormData.nombre,
                     descripcion: hitoFormData.descripcion,
-                    orden: currentHito?.orden ?? (paymentEtapa?.hitos.length ?? 0) + 1,
                 });
                 setEditingHito(null);
             } else {

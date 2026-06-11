@@ -4,26 +4,20 @@ export type Tab = "resumen" | "proceso" | "documentos";
 
 export type HitoEstado = "pendiente" | "en_proceso" | "observado" | "completado";
 
-export type HitoItem = {
-  uuidHito: string;
-  nombre: string;
-  descripcion: string;
-  orden: number;
-  estado: string;
-  fechaCompletado: string | null;
-  createdAt: string | null;
-};
-
 export type ProcesoEtapa = {
   id: string;
   label: string;
   icon: string;
   estado: HitoEstado;
-  hitos: HitoItem[];
-  porcentajeAvance: number;
+  fechaInicio?: string;
+  fechaFin?: string;
+  comentarios?: string;
+  uuidHito?: string;
 };
 
 export type StageId = "SEPARACION" | "CONTRATO" | "ENTREGA" | "SANEAMIENTO";
+
+export type BackendStageId = "SEPARACION" | "CONTRATO" | "PAGO" | "ENTREGA" | "SANEAMIENTO";
 
 // ─── Tab definitions ──────────────────────────────────────────────────────────
 
@@ -45,7 +39,7 @@ export const ESTADO_BADGE: Record<HitoEstado, { label: string; cls: string }> = 
 // ─── Default hitos to seed when backend returns empty stages ──────────────────
 
 export const DEFAULT_HITOS: {
-  etapaProceso: string;
+  etapaProceso: BackendStageId;
   nombreHito: string;
   orden: number;
   descripcion: string;
@@ -59,7 +53,7 @@ export const DEFAULT_HITOS: {
 
 // ─── Stage metadata for UI display ───────────────────────────────────────────
 
-export const STAGE_META: Record<string, { label: string; icon: string }> = {
+export const STAGE_META: Record<BackendStageId, { label: string; icon: string }> = {
   SEPARACION: { label: "Separación",      icon: "handshake"      },
   CONTRATO:   { label: "Contrato",        icon: "description"    },
   PAGO:       { label: "Escritura Pública", icon: "verified"     },
@@ -68,7 +62,7 @@ export const STAGE_META: Record<string, { label: string; icon: string }> = {
 };
 
 // Ordered list used for sequential completion enforcement
-export const STAGE_ORDER: string[] = [
+export const STAGE_ORDER: BackendStageId[] = [
   "SEPARACION",
   "CONTRATO",
   "PAGO",

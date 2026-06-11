@@ -39,14 +39,14 @@ export interface RequisitoUpdatePayload {
 
 /**
  * Fetch stage documents (requirements list) for a specific process stage.
- * GET /stage/{etapaProceso}/{uuidUsuarioActivo}
+ * GET /api/stage/{etapaProceso}/documents?uuidUsuarioActivo=xxx
  */
 export function fetchStageDocuments(
-  etapaProceso: string,
+  etapaProceso: "SEPARACION" | "CONTRATO" | "PAGO" | "ENTREGA" | "SANEAMIENTO",
   uuidUsuarioActivo: string
 ): Promise<StageDocumentResponse> {
   return apiFetch<StageDocumentResponse>(
-    `/stage/${etapaProceso}/${uuidUsuarioActivo}`
+    `/api/stage/${etapaProceso}/documents?uuidUsuarioActivo=${uuidUsuarioActivo}`
   );
 }
 

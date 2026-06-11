@@ -1,9 +1,9 @@
 import { apiFetch } from "@/lib/api/http";
 
 export interface DashboardProyectoDTO {
-  proyectoId: string; // UUID
-  nombre: string;
-  porcentajeAvance: number;
+  id: string; // UUID
+  nombreProyecto: string;
+  avanceGlobal: number;
 }
 
 export interface EtapaCreateDTO {
@@ -13,8 +13,7 @@ export interface EtapaCreateDTO {
 }
 
 export interface HitoResponseDTO {
-  id: string; // UUID
-  proyectoId: string;
+  id: number;
   titulo: string;
   orden: number;
   tipo: string;
@@ -23,7 +22,7 @@ export interface HitoResponseDTO {
 }
 
 export interface EtapaResponseDTO {
-  id: string;
+  id: number;
   nombre: string;
   descripcion: string;
   orden: number;
@@ -31,13 +30,12 @@ export interface EtapaResponseDTO {
   hitos: HitoResponseDTO[];
 }
 
-export interface HitoPisoResponseDTO {
-  id: string; // UUID
-  nombre: string;
+export interface HitoUnidadResponseDTO {
+  id: string; // uuid_hito_unidad
+  hitoNombre: string;
+  hitoDescripcion: string;
   estado: string;
   fechaCompletado: string | null;
-  createdAt: string | null;
-  updatedAt: string | null;
   observaciones: string | null;
 }
 
@@ -81,8 +79,8 @@ export function getEtapasByProyecto(uuid: string): Promise<EtapaResponseDTO[]> {
   );
 }
 
-export function getHitosActivo(uuid: string): Promise<HitoPisoResponseDTO[]> {
-  return apiFetch<HitoPisoResponseDTO[]>(`/api/activos/${uuid}/hitos`);
+export function getHitosActivo(uuid: string): Promise<HitoUnidadResponseDTO[]> {
+  return apiFetch<HitoUnidadResponseDTO[]>(`/api/activos/${uuid}/hitos`);
 }
 
 export function getAvancesActivo(uuid: string): Promise<AvanceUnidadResponseDTO[]> {

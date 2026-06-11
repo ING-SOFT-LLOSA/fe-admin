@@ -45,56 +45,27 @@ export function useFinancingData(selectedUnitId: string | null) {
         setHasExpediente(null);
         try {
             const data = await fetchContratoActivo(selectedUnitId);
-            let exp: UsuarioActivoResponseDTO | null = null;
-            let cronogramaData: CronogramaPagoResponse | null = null;
-            let resumenData: CronogramaResumenResponse | null = null;
-            let cartaAprobacionData: CartaAprobacionResponse | null = null;
-
-            if (Array.isArray(data)) {
-                const found = data.find((d: any) => d.activo?.id === selectedUnitId || d.activos?.some((a: any) => a.id === selectedUnitId)) || data[0];
-                exp = found ?? null;
-            } else {
-                exp = data.expediente ?? null;
-                cronogramaData = data.cronograma ?? null;
-                resumenData = data.resumen ?? null;
-                cartaAprobacionData = data.cartaAprobacion ?? null;
-            }
+            const exp = data.expediente;
 
             setExpediente(exp);
-            setHasExpediente(!!exp);
-            setCronograma(cronogramaData);
-            setResumen(resumenData);
-            setCartaAprobacion(cartaAprobacionData);
+            setHasExpediente(true);
 
-            if (!exp) {
-                throw new Error("No se pudo determinar el expediente del contrato");
-            }
+            // Usar datos ya presentes en el wrapper
+            setCronograma(data.cronograma);
+            setResumen(data.resumen);
+            setCartaAprobacion(data.cartaAprobacion);
 
             const uuid = exp.uuidUsuarioActivo;
             const rawType = (exp.tipoFinanciamiento || "").toLowerCase();
 
             // Solo fetch de lo que no viene en el wrapper (pagos y stepper)
             if (rawType.includes("directo")) {
-                if (cronogramaData) {
+                if (data.cronograma) {
                     try {
-                        const pagosList = await fetchPagos(cronogramaData.uuidCronograma);
+                        const pagosList = await fetchPagos(data.cronograma.uuidCronograma);
                         setPagos(pagosList);
                     } catch (e) {
                         console.warn("Error fetching payments", e);
-                        setPagos([]);
-                    }
-                } else {
-                    try {
-                        const cronograma = await fetchCronograma(uuid);
-                        setCronograma(cronograma);
-                        if (cronograma) {
-                            const pagosList = await fetchPagos(cronograma.uuidCronograma);
-                            setPagos(pagosList);
-                            const resumen = await fetchResumenPagos(cronograma.uuidCronograma);
-                            setResumen(resumen);
-                        }
-                    } catch (e) {
-                        console.warn("Error fetching cronograma or payments", e);
                         setPagos([]);
                     }
                 }
@@ -111,15 +82,6 @@ export function useFinancingData(selectedUnitId: string | null) {
                 setPagos([]);
                 setCronograma(null);
                 setResumen(null);
-                if (!cartaAprobacionData) {
-                    try {
-                        const carta = await fetchCartaAprobacion(uuid);
-                        setCartaAprobacion(carta);
-                    } catch (e) {
-                        console.warn("Error fetching carta aprobacion", e);
-                        setCartaAprobacion(null);
-                    }
-                }
             }
         } catch (err) {
             // 404 = la unidad no tiene expediente asignado → estado vacío, no error

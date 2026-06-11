@@ -108,7 +108,7 @@ export default function ConstructionProgressView({
         ]);
         if (!mounted) return;
         setProject(projects.find((p) => p.id === projectId) ?? null);
-        setAvance(progress?.porcentajeAvance ?? 0);
+        setAvance(progress?.avanceGlobal ?? 0);
 
         // Correct stages status using the floor data to workaround backend caching/state issue
         const corrected = await fetchAndCorrectEtapas(projectId, etapasRes);
