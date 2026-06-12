@@ -28,6 +28,9 @@ export interface UsuarioActivoResponseDTO {
   vigente:             boolean | null;
   clientes:            ClienteSimpleDTO[];
   activos:             ActivoResponseDTO[];  // Lista de activos vinculados
+  activo?:             ActivoResponseDTO;
+  faseComercial?:      string;
+  estadoTramiteLegal?: string;
 }
  
 // ─── Hitos Comerciales ────────────────────────────────────────────────────────
@@ -139,7 +142,12 @@ export function unlinkAssignment(uuid: string): Promise<void> {
  * Lista todos los expedientes (UsuarioActivo) de la empresa.
  */
 export function fetchTodosLosContratos(): Promise<UsuarioActivoResponseDTO[]> {
-  return apiFetch<UsuarioActivoResponseDTO[]>("/api/expedientes");
+  return apiFetch<UsuarioActivoResponseDTO[]>("/api/expedientes").then((list) =>
+    list.map((item) => ({
+      ...item,
+      activo: item.activo ?? item.activos?.[0],
+    }))
+  );
 }
  
 /**
@@ -149,7 +157,12 @@ export function fetchTodosLosContratos(): Promise<UsuarioActivoResponseDTO[]> {
 export function fetchExpedientesPorUsuario(
   idUsuario: number
 ): Promise<UsuarioActivoResponseDTO[]> {
-  return apiFetch<UsuarioActivoResponseDTO[]>(`/api/expedientes/${idUsuario}`);
+  return apiFetch<UsuarioActivoResponseDTO[]>(`/api/expedientes/${idUsuario}`).then((list) =>
+    list.map((item) => ({
+      ...item,
+      activo: item.activo ?? item.activos?.[0],
+    }))
+  );
 }
  
 /**
@@ -162,7 +175,10 @@ export function fetchContratoActivo(
 ): Promise<UsuarioActivoResponseDTO> {
   return apiFetch<UsuarioActivoResponseDTO>(
     `/api/expedientes/${uuidActivo}/contrato`
-  );
+  ).then((item) => ({
+    ...item,
+    activo: item.activo ?? item.activos?.[0],
+  }));
 }
  
 /**
@@ -184,7 +200,9 @@ export function fetchCommercialStepper(
  * Requiere autoridad CONTRATO_EDITAR.
  */
 export interface HitoComercialCreatePayload {
-  uuidEstapaExpediente: string; // Matches the backend's uuidEstapaExpediente typo
+  uuidEstapaExpediente?: string; // Matches the backend's uuidEstapaExpediente typo
+  uuidUsuarioActivo?: string;
+  etapaProceso?: "SEPARACION" | "CONTRATO" | "PAGO" | "ENTREGA" | "SANEAMIENTO";
   nombreHito:           string;
   descripcion:          string;
   orden:                number;
@@ -213,6 +231,27 @@ export function updateCommercialHitoEstado(
     `/api/comercial/hitos/${uuidHito}/estado?estado=${estado}`,
     { method: "PATCH" }
   );
+}
+
+export function deleteCommercialHito(uuidHito: string): Promise<void> {
+  return apiFetch<void>(`/api/comercial/hitos/${uuidHito}`, {
+    method: "DELETE",
+  });
+}
+
+export function updateCommercialHito(
+  uuidHito: string,
+  payload: {
+    nombreHito: string;
+    descripcion: string;
+    orden?: number;
+  }
+): Promise<HitoComercialResponseDTO> {
+  return apiFetch<HitoComercialResponseDTO>(`/api/comercial/hitos/${uuidHito}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
 }
 
 export interface EtapaExpedienteResponseDTO {
