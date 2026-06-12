@@ -6,7 +6,7 @@ export interface AsignarActivoPayload {
   tipoFinanciamiento: string;
   faseComercial: string;
   estadoTramiteLegal: string;
-  fechaAdquisicion: string; 
+  fechaAdquisicion: string;
 }
 
 export function asignarActivo(payload: AsignarActivoPayload): Promise<void> {
@@ -30,8 +30,8 @@ export interface UsuarioActivoResponseDTO {
   activo?: import("@/lib/api/proyectos").ActivoResponseDTO;
 }
 
-export function fetchContratoActivo(uuidActivo: string): Promise<UsuarioActivoResponseDTO> {
-  return apiFetch<UsuarioActivoResponseDTO>(`/api/expedientes/${uuidActivo}/contrato`);
+export function fetchContratoActivo(uuidActivo: string): Promise<import("@/modules/finanzas/types").ContratoDetalleResponse> {
+  return apiFetch<import("@/modules/finanzas/types").ContratoDetalleResponse>(`/api/expedientes/${uuidActivo}/contrato`);
 }
 
 // ─── Hitos Comerciales (Commercial milestones) ────────────────────────────────
@@ -80,6 +80,24 @@ export function createCommercialHito(payload: {
 export function updateCommercialHitoEstado(uuidHito: string, estado: string): Promise<HitoComercialResponseDTO> {
   return apiFetch<HitoComercialResponseDTO>(`/api/comercial/hitos/${uuidHito}/estado?estado=${estado}`, {
     method: "PATCH",
+  });
+}
+
+export function deleteCommercialHito(uuidHito: string): Promise<void> {
+  return apiFetch<void>(`/api/comercial/hitos/${uuidHito}`, {
+    method: "DELETE",
+  });
+}
+
+export function updateCommercialHito(uuidHito: string, payload: {
+  nombreHito: string;
+  descripcion: string;
+  orden?: number;
+}): Promise<HitoComercialResponseDTO> {
+  return apiFetch<HitoComercialResponseDTO>(`/api/comercial/hitos/${uuidHito}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
   });
 }
 
