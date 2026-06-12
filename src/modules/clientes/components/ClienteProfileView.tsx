@@ -2,9 +2,10 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 
 import { fetchUsuarioPorId, mapUsuarioToClienteRow } from "@/lib/api/users";
+import { fetchActivosPorUsuario, type ActivoUsuarioDTO } from "@/lib/api/expedientes";
 import type { ClienteRow } from "@/types/user";
 
 import AssignPropertyWizard from "@/modules/asignaciones/components/AssignPropertyWizard";
@@ -12,8 +13,8 @@ import EditClienteModal from "@/modules/clientes/components/EditClienteModal";
 import DeleteUsuarioModal from "@/modules/clientes/components/DeleteUsuarioModal";
 import ClientHeader from "./ClientHeader";
 import ClientKpis from "./ClientKpis";
+import ClientActivos from "./ClientActivos";
 import ClientActivity from "./ClientActivity";
-import ClientExpedients from "./ClientExpedients";
 
 type Modal = "edit" | "delete" | "assign" | null;
 
@@ -29,7 +30,7 @@ export default function ClienteProfileView({ clientId }: ClienteProfileViewProps
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeModal, setActiveModal] = useState<Modal>(null);
-  const [selectedAssignment, setSelectedAssignment] = useState<any | null>(null);
+  const [, setSelectedAssignment] = useState<any | null>(null);
   const [refreshCount, setRefreshCount] = useState(0);
 
   useEffect(() => {
@@ -38,31 +39,28 @@ export default function ClienteProfileView({ clientId }: ClienteProfileViewProps
 
     Promise.all([
       fetchUsuarioPorId(Number(clientId)),
-      import("@/lib/api/users").then(m => m.fetchExpedientesPorUsuario(Number(clientId)))
+      fetchActivosPorUsuario(Number(clientId)),
     ])
-      .then(([user, exps]) => {
+      .then(([user, activosData]) => {
         if (!mounted) return;
         setClient(user ? mapUsuarioToClienteRow(user) : null);
         
-        const mappedExps = (exps || []).map((exp: any) => {
-          const act = exp.activo;
-          const label = act
-            ? `${act.tipo === "ESTACIONAMIENTO" ? "Cochera" : act.tipo === "DEPOSITO" ? "Depósito" : "Dpto"} ${act.nro}`
-            : "Unidad Desconocida";
+        const mappedAssignments = (activosData || []).map((act: ActivoUsuarioDTO) => {
+          const label = `${act.tipo === "ESTACIONAMIENTO" ? "Cochera" : act.tipo === "DEPOSITO" ? "Depósito" : "Dpto"} ${act.nro}`;
           
           return {
             clientId: Number(clientId),
-            unitId: act?.id || exp.uuidUsuarioActivo || "unknown-unit",
+            unitId: act.id,
             unitLabel: label,
-            projectName: exp.projectName || "Proyecto Edificación",
-            financing: exp.tipoFinanciamiento === "CREDITO_DIRECTO" ? "Crédito Directo" : "Crédito Hipotecario",
-            assignedAt: exp.fechaAdquisicion ? exp.fechaAdquisicion.split("T")[0] : "",
-            status: exp.estadoTramiteLegal === "Desvinculada" ? "Desvinculado" : "Vigente",
-            estadoTramiteLegal: exp.estadoTramiteLegal,
-            uuidUsuarioActivo: exp.uuidUsuarioActivo,
+            projectName: act.proyectoNombre || "Proyecto",
+            financing: "Contrato",
+            assignedAt: new Date().toISOString().split("T")[0],
+            status: "Vigente",
+            estadoTramiteLegal: act.estadoComercial,
+            uuidUsuarioActivo: act.id,
           };
         });
-        setAssignments(mappedExps);
+        setAssignments(mappedAssignments);
       })
       .catch((err) => {
         if (mounted) setError(err instanceof Error ? err.message : "No se pudo cargar el cliente.");
@@ -81,13 +79,10 @@ export default function ClienteProfileView({ clientId }: ClienteProfileViewProps
     setSelectedAssignment(null);
   }
 
-
-
   function refresh() {
     setRefreshCount((c) => c + 1);
   }
 
-  // --- States ---
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
@@ -130,7 +125,7 @@ export default function ClienteProfileView({ clientId }: ClienteProfileViewProps
       </div>
 
       {/* Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         <div className="lg:col-span-1">
           <ClientHeader
             client={client}
@@ -141,9 +136,9 @@ export default function ClienteProfileView({ clientId }: ClienteProfileViewProps
           />
         </div>
 
-        <div className="lg:col-span-2 space-y-6">
+        <div className="lg:col-span-3 space-y-6">
           <ClientKpis assignments={assignments} />
-          <ClientExpedients assignments={assignments} />
+          <ClientActivos clientId={Number(clientId)} refreshKey={refreshCount} />
           <ClientActivity assignments={assignments} clientCreatedAt={client?.createdAt} />
         </div>
       </div>
@@ -170,8 +165,6 @@ export default function ClienteProfileView({ clientId }: ClienteProfileViewProps
           onSuccess={() => { closeModal(); refresh(); }}
         />
       )}
-
-
     </div>
   );
 }

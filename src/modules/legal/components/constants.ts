@@ -1,103 +1,308 @@
-// ─── Types ────────────────────────────────────────────────────────────────────
+// ── Tipos base ────────────────────────────────────────────────────────────────
 
-export type Tab = "resumen" | "proceso" | "documentos";
-
-export type HitoEstado = "pendiente" | "en_proceso" | "observado" | "completado";
-
-export type ProcesoEtapa = {
-  id: string;
-  label: string;
-  icon: string;
-  estado: HitoEstado;
-  fechaInicio?: string;
-  fechaFin?: string;
-  comentarios?: string;
-  uuidHito?: string;
-};
+export type EstadoHito = "pendiente" | "en_proceso" | "completado" | "observado";
 
 export type StageId = "SEPARACION" | "CONTRATO" | "ENTREGA" | "SANEAMIENTO";
 
-export type BackendStageId = "SEPARACION" | "CONTRATO" | "PAGO" | "ENTREGA" | "SANEAMIENTO";
+export type ProcesoEtapa = {
+  id:           string;
+  uuidHito?:    string;
+  label:        string;
+  etapaProceso: StageId;
+  orden:        number;
+  estado:       EstadoHito;
+  icon:         string;
+  fechaInicio?: string;
+  fechaFin?:    string;
+  comentarios?: string;
+};
 
-// ─── Tab definitions ──────────────────────────────────────────────────────────
+export type Tab = "resumen" | "proceso" | "documentos";
+
+// ── Tabs de navegación ────────────────────────────────────────────────────────
 
 export const TABS: { id: Tab; label: string; icon: string }[] = [
-  { id: "resumen",     label: "Resumen",       icon: "dashboard"    },
-  { id: "proceso",     label: "Proceso Legal", icon: "account_tree" },
-  { id: "documentos",  label: "Documentos",    icon: "folder_open"  },
+  { id: "resumen",    label: "Resumen",       icon: "dashboard"    },
+  { id: "proceso",    label: "Proceso Legal", icon: "account_tree" },
+  { id: "documentos", label: "Documentos",    icon: "folder_open"  },
 ];
 
-// ─── Status badge styles ──────────────────────────────────────────────────────
+// ── Badges de estado ──────────────────────────────────────────────────────────
 
-export const ESTADO_BADGE: Record<HitoEstado, { label: string; cls: string }> = {
-  pendiente:  { label: "Pendiente",  cls: "bg-slate-100 text-slate-500 dark:bg-white/10 dark:text-white/50"              },
-  en_proceso: { label: "En proceso", cls: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"             },
-  observado:  { label: "Observado",  cls: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"         },
-  completado: { label: "Completado", cls: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400" },
+export const ESTADO_BADGE: Record<EstadoHito, { label: string; cls: string }> = {
+  completado: {
+    label: "Completado",
+    cls: "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400",
+  },
+  en_proceso: {
+    label: "En proceso",
+    cls: "bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400",
+  },
+  pendiente: {
+    label: "Pendiente",
+    cls: "bg-slate-100 dark:bg-white/10 text-slate-500 dark:text-white/40",
+  },
+  observado: {
+    label: "Observado",
+    cls: "bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400",
+  },
 };
 
-// ─── Default hitos to seed when backend returns empty stages ──────────────────
+// ── Mapeo backend ↔ frontend ──────────────────────────────────────────────────
 
-export const DEFAULT_HITOS: {
-  etapaProceso: BackendStageId;
-  nombreHito: string;
-  orden: number;
-  descripcion: string;
-}[] = [
-  { etapaProceso: "SEPARACION", nombreHito: "Separación",      orden: 1, descripcion: "Comprobante de separación y ficha de cliente completada." },
-  { etapaProceso: "CONTRATO",   nombreHito: "Contrato",         orden: 2, descripcion: "Minuta firmada y contrato visado."                        },
-  { etapaProceso: "PAGO",       nombreHito: "Escritura Pública",orden: 3, descripcion: "Firma de escritura notarial y financiamiento."            },
-  { etapaProceso: "ENTREGA",    nombreHito: "Entrega",          orden: 4, descripcion: "Entrega física de llaves y conformidad."                  },
-  { etapaProceso: "SANEAMIENTO",nombreHito: "Saneamiento",      orden: 5, descripcion: "Inscripción en registros públicos (SUNARP)."              },
-];
-
-// ─── Stage metadata for UI display ───────────────────────────────────────────
-
-export const STAGE_META: Record<BackendStageId, { label: string; icon: string }> = {
-  SEPARACION: { label: "Separación",      icon: "handshake"      },
-  CONTRATO:   { label: "Contrato",        icon: "description"    },
-  PAGO:       { label: "Escritura Pública", icon: "verified"     },
-  ENTREGA:    { label: "Entrega",          icon: "key"           },
-  SANEAMIENTO:{ label: "Saneamiento",      icon: "domain_verified"},
+export const BACKEND_A_ESTADO: Record<string, EstadoHito> = {
+  COMPLETADO:  "completado",
+  EN_PROGRESO: "en_proceso",
+  PENDIENTE:   "pendiente",
 };
 
-// Ordered list used for sequential completion enforcement
-export const STAGE_ORDER: BackendStageId[] = [
+export const ESTADO_A_BACKEND: Record<EstadoHito, string> = {
+  completado: "COMPLETADO",
+  en_proceso: "EN_PROGRESO",
+  pendiente:  "PENDIENTE",
+  observado:  "PENDIENTE",
+};
+
+// ── Orden canónico de etapas ──────────────────────────────────────────────────
+
+export const STAGE_ORDER: StageId[] = [
   "SEPARACION",
   "CONTRATO",
-  "PAGO",
   "ENTREGA",
   "SANEAMIENTO",
 ];
 
-// Stages shown in the Documentos tab (PAGO is a process step, not a doc stage)
-export const DOCUMENT_STAGES: StageId[] = ["SEPARACION", "CONTRATO", "ENTREGA", "SANEAMIENTO"];
+// Etapas que tienen sección de documentos
+export const DOCUMENT_STAGES: StageId[] = [
+  "SEPARACION",
+  "CONTRATO",
+  "ENTREGA",
+  "SANEAMIENTO",
+];
 
-// ─── Predefined document requirements per stage ───────────────────────────────
+// ── Metadata de UI por etapa ──────────────────────────────────────────────────
 
-export const PREDEFINED_REQUISITOS: Record<StageId, { titulo: string; descripcion: string; icono: string }[]> = {
+export const STAGE_META: Record<StageId, { label: string; icon: string }> = {
+  SEPARACION:  { label: "Separación",  icon: "handshake"        },
+  CONTRATO:    { label: "Contrato",    icon: "description"      },
+  ENTREGA:     { label: "Entrega",     icon: "key"              },
+  SANEAMIENTO: { label: "Saneamiento", icon: "domain_verified"  },
+};
+
+// ── Hitos por defecto que se crean en el seed inicial ────────────────────────
+// El campo `orden` define la posición dentro de cada etapa.
+// El backend los crea con estado PENDIENTE por defecto.
+
+export type DefaultHito = {
+  etapaProceso: StageId;
+  nombreHito:   string;
+  descripcion:  string;
+  orden:        number;
+  icon:         string;
+};
+
+export const DEFAULT_HITOS: DefaultHito[] = [
+  // ── SEPARACION (4 hitos) ──────────────────────────────────────────────────
+  {
+    etapaProceso: "SEPARACION",
+    nombreHito:   "Proforma",
+    descripcion:  "Envío y aprobación de la proforma comercial.",
+    orden:        1,
+    icon:         "description",
+  },
+  {
+    etapaProceso: "SEPARACION",
+    nombreHito:   "Pago de separación",
+    descripcion:  "Registro del pago de separación del inmueble.",
+    orden:        2,
+    icon:         "payments",
+  },
+  {
+    etapaProceso: "SEPARACION",
+    nombreHito:   "Ficha del cliente",
+    descripcion:  "Datos del cliente completados y verificados.",
+    orden:        3,
+    icon:         "person",
+  },
+  {
+    etapaProceso: "SEPARACION",
+    nombreHito:   "Separación",
+    descripcion:  "Separación formal del inmueble confirmada.",
+    orden:        4,
+    icon:         "handshake",
+  },
+
+  // ── CONTRATO (5 hitos) ────────────────────────────────────────────────────
+  {
+    etapaProceso: "CONTRATO",
+    nombreHito:   "Separación",
+    descripcion:  "Confirmación de separación para iniciar el contrato.",
+    orden:        1,
+    icon:         "handshake",
+  },
+  {
+    etapaProceso: "CONTRATO",
+    nombreHito:   "Revisión del contrato",
+    descripcion:  "Revisión legal del borrador del contrato.",
+    orden:        2,
+    icon:         "manage_search",
+  },
+  {
+    etapaProceso: "CONTRATO",
+    nombreHito:   "Aprobación del contrato",
+    descripcion:  "Aprobación del contrato por ambas partes.",
+    orden:        3,
+    icon:         "task_alt",
+  },
+  {
+    etapaProceso: "CONTRATO",
+    nombreHito:   "Cuota Inicial",
+    descripcion:  "Registro del pago de la cuota inicial.",
+    orden:        4,
+    icon:         "payments",
+  },
+  {
+    etapaProceso: "CONTRATO",
+    nombreHito:   "Firma del Contrato",
+    descripcion:  "Firma del contrato de compraventa.",
+    orden:        5,
+    icon:         "draw",
+  },
+
+  // ── ENTREGA (5 hitos) ─────────────────────────────────────────────────────
+  {
+    etapaProceso: "ENTREGA",
+    nombreHito:   "Inmueble terminado",
+    descripcion:  "Confirmación de obra terminada y lista para inspección.",
+    orden:        1,
+    icon:         "home_work",
+  },
+  {
+    etapaProceso: "ENTREGA",
+    nombreHito:   "Inmueble cancelado",
+    descripcion:  "Saldo del inmueble cancelado en su totalidad.",
+    orden:        2,
+    icon:         "receipt_long",
+  },
+  {
+    etapaProceso: "ENTREGA",
+    nombreHito:   "Comunicación de fecha de entrega",
+    descripcion:  "Notificación formal de la fecha de entrega al cliente.",
+    orden:        3,
+    icon:         "mail",
+  },
+  {
+    etapaProceso: "ENTREGA",
+    nombreHito:   "Confirmación de fecha de entrega",
+    descripcion:  "Confirmación por parte del cliente de la fecha de entrega.",
+    orden:        4,
+    icon:         "event_available",
+  },
+  {
+    etapaProceso: "ENTREGA",
+    nombreHito:   "Entrega del inmueble",
+    descripcion:  "Entrega física del inmueble y llaves al cliente.",
+    orden:        5,
+    icon:         "key",
+  },
+
+  // ── SANEAMIENTO (7 hitos) ─────────────────────────────────────────────────
+  {
+    etapaProceso: "SANEAMIENTO",
+    nombreHito:   "Entrega del inmueble",
+    descripcion:  "Entrega física del inmueble al cliente tras el saneamiento.",
+    orden:        1,
+    icon:         "key",
+  },
+  {
+    etapaProceso: "SANEAMIENTO",
+    nombreHito:   "Conformidad de obra",
+    descripcion:  "Resolución municipal que certifica la construcción conforme a los planos y licencias aprobadas.",
+    orden:        2,
+    icon:         "verified",
+  },
+  {
+    etapaProceso: "SANEAMIENTO",
+    nombreHito:   "Declaratoria de fábrica",
+    descripcion:  "Inscripción en SUNARP de la edificación construida sobre el terreno con sus características técnicas.",
+    orden:        3,
+    icon:         "engineering",
+  },
+  {
+    etapaProceso: "SANEAMIENTO",
+    nombreHito:   "Independización municipal",
+    descripcion:  "Trámite de independización de la unidad ante la municipalidad.",
+    orden:        4,
+    icon:         "account_balance",
+  },
+  {
+    etapaProceso: "SANEAMIENTO",
+    nombreHito:   "Transferencia municipal",
+    descripcion:  "Transferencia de la propiedad registrada ante la municipalidad.",
+    orden:        5,
+    icon:         "swap_horiz",
+  },
+  {
+    etapaProceso: "SANEAMIENTO",
+    nombreHito:   "Independización SUNARP",
+    descripcion:  "Inscripción de la unidad como propiedad independiente en Registros Públicos.",
+    orden:        6,
+    icon:         "apartment",
+  },
+  {
+    etapaProceso: "SANEAMIENTO",
+    nombreHito:   "Transferencia registral",
+    descripcion:  "Inscripción de la transferencia de propiedad en SUNARP a nombre del cliente.",
+    orden:        7,
+    icon:         "domain_verification",
+  },
+];
+
+// ── Requisitos documentales predefinidos por etapa ───────────────────────────
+// Se crean automáticamente en el seed de documentos si no existen.
+
+export type RequisitoPredef = {
+  titulo:      string;
+  descripcion: string;
+  icono:       string;
+};
+
+export const PREDEFINED_REQUISITOS: Record<StageId, RequisitoPredef[]> = {
   SEPARACION: [
-    { titulo: "Proforma",                 descripcion: "Documento que detalla las condiciones preliminares de la compra: precio, forma de pago y características de la unidad.", icono: "receipt_long"  },
-    { titulo: "Comprobante de separación",descripcion: "Recibo o boleta que acredita que el cliente pagó el monto de separación de la unidad.",                                  icono: "payments"      },
-    { titulo: "Ficha del cliente",        descripcion: "Registro con los datos personales del comprador: nombre completo, DNI, teléfono, correo y datos del bien adquirido.",    icono: "person_check"  },
-    { titulo: "Recibo de Inicial",        descripcion: "Documento que acredita el pago de la cuota inicial acordada para la compra del inmueble.",                               icono: "receipt"       },
+    { titulo: "Proforma firmada",         descripcion: "Documento de proforma firmado por el cliente.",     icono: "description"  },
+    { titulo: "Voucher de separación",    descripcion: "Comprobante de pago de la separación.",             icono: "payments"     },
+    { titulo: "DNI del cliente",          descripcion: "Copia del documento de identidad del cliente.",     icono: "badge"        },
+    { titulo: "Ficha de datos",           descripcion: "Ficha con datos personales completos del cliente.", icono: "person"       },
   ],
   CONTRATO: [
-    { titulo: "Contrato de compraventa (CV)",   descripcion: "Documento legal que formaliza la compra de la unidad inmobiliaria entre el cliente y Llosa Edificaciones.",                                                                   icono: "gavel"           },
-    { titulo: "Carta de aprobación del banco",  descripcion: "Documento emitido por el banco que confirma que aprobó el crédito hipotecario del cliente, con el monto y condiciones. Solo aplica a crédito hipotecario.",                   icono: "account_balance" },
-    { titulo: "Adenda (Opcional)",              descripcion: "Documento que modifica o amplía el contrato original ya firmado. Puede cambiar montos, fechas u otras condiciones pactadas. Su inclusión es opcional.",                       icono: "note_add"        },
-    { titulo: "Cronograma de Pagos",            descripcion: "Documento que establece el plan de pagos detallado, incluyendo fechas de vencimiento, montos y conceptos de cada cuota asociada al contrato.",                               icono: "payments"        },
+    { titulo: "Borrador del contrato",    descripcion: "Borrador revisado por el área legal.",              icono: "manage_search" },
+    { titulo: "Contrato firmado",         descripcion: "Contrato de compraventa firmado por ambas partes.", icono: "draw"          },
+    { titulo: "Voucher cuota inicial",    descripcion: "Comprobante del pago de la cuota inicial.",         icono: "payments"      },
+    { titulo: "DNI cónyuge (si aplica)", descripcion: "Documento de identidad del cónyuge.",               icono: "badge"         },
+    { titulo: "Estado de cuenta",         descripcion: "Estado de cuenta bancario del cliente.",            icono: "account_balance" },
   ],
   ENTREGA: [
-    { titulo: "Planos \"As Built\"",  descripcion: "Planos finales del departamento tal como quedó construido, con arquitectura, estructuras, sanitarias, eléctricas, mecánicas y de gas.", icono: "architecture" },
-    { titulo: "Acta de entrega",      descripcion: "Documento firmado por el cliente y Llosa que certifica la entrega de la unidad en la fecha pactada y en condiciones acordadas.",       icono: "done_all"     },
-    { titulo: "Manual del propietario",descripcion: "Guía completa sobre el funcionamiento, mantenimiento y uso correcto de la unidad y sus instalaciones.",                               icono: "book"         },
-    { titulo: "Manual de convivencia", descripcion: "Reglamento interno del edificio con normas de uso de áreas comunes, horarios, restricciones y obligaciones de los residentes.",      icono: "groups"       },
+    { titulo: "Acta de entrega",          descripcion: "Acta firmada de entrega del inmueble.",             icono: "key"           },
+    { titulo: "Check list de inmueble",   descripcion: "Lista de verificación del estado del inmueble.",    icono: "checklist"     },
+    { titulo: "Voucher saldo cancelado",  descripcion: "Comprobante del saldo total cancelado.",            icono: "receipt_long"  },
+    { titulo: "Conformidad de entrega",   descripcion: "Documento de conformidad firmado por el cliente.",  icono: "task_alt"      },
+    { titulo: "Manual del propietario",   descripcion: "Manual de uso y mantenimiento del inmueble.",       icono: "menu_book"     },
   ],
   SANEAMIENTO: [
-    { titulo: "Conformidad de obra",                      descripcion: "Resolución municipal que certifica que la construcción del edificio fue realizada conforme a los planos y licencias aprobadas.",          icono: "verified"     },
-    { titulo: "Declaratoria de fábrica",                  descripcion: "Documento legal que inscribe en SUNARP la edificación construida sobre el terreno, con sus características técnicas.",                    icono: "gavel"        },
-    { titulo: "Reglamento interno",                       descripcion: "Documento que establece la división de áreas comunes y privadas del edificio, y las normas de convivencia entre propietarios.",          icono: "description"  },
-    { titulo: "Partida registral del inmueble independizado", descripcion: "Documento oficial emitido por SUNARP que acredita que la unidad está inscrita como propiedad independiente a nombre del cliente.", icono: "fingerprint"  },
+    { titulo: "Partida registral",        descripcion: "Copia literal de la partida en SUNARP.",            icono: "domain_verification" },
+    { titulo: "Escritura pública",        descripcion: "Copia de la escritura pública notarial.",           icono: "gavel"               },
+    { titulo: "HR y PU municipales",      descripcion: "Hoja de resumen y predios urbanos municipales.",    icono: "receipt"             },
+    { titulo: "Declaratoria de fábrica",  descripcion: "Inscripción de declaratoria de fábrica.",           icono: "engineering"         },
+    { titulo: "Independización",          descripcion: "Resolución de independización de la unidad.",       icono: "apartment"           },
+    { titulo: "Constancia de no adeudo",  descripcion: "Constancia de no adeudo de servicios.",             icono: "check_circle"        },
+    { titulo: "Minuta de compraventa",    descripcion: "Copia de la minuta de compraventa firmada.",        icono: "description"         },
   ],
 };
+
+// ── Opciones del select de estado (compartidas por todos los hitos) ───────────
+
+export const OPCIONES_ESTADO: { value: string; label: string }[] = [
+  { value: "PENDIENTE",   label: "Pendiente"  },
+  { value: "EN_PROGRESO", label: "En proceso" },
+  { value: "COMPLETADO",  label: "Completado" },
+];

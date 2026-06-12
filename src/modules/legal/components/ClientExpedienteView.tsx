@@ -1,53 +1,55 @@
 "use client";
-
+ 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-
-import { fetchUsuarios, fetchExpedientesPorUsuario } from "@/lib/api/users";
-import { fetchContratoActivo, type UsuarioActivoResponseDTO } from "@/lib/api/expedientes";
+ 
+import { fetchUsuarios } from "@/lib/api/users";
+import {
+  fetchExpedientesPorUsuario,
+  type UsuarioActivoResponseDTO,
+} from "@/lib/api/expedientes";
 import type { Usuario } from "@/types/user";
 import { useAuth } from "@/contexts/AuthContext";
-
+ 
 import { TABS, type Tab } from "./constants";
-import { useCommercialStepper } from "./hooks";
-import { useStageDocuments } from "./hooks";
+import { useCommercialStepper, useStageDocuments } from "./hooks";
 import { InfoChip, LoadingSpinner, ErrorBanner } from "./ui";
 import { TabResumen } from "./TabResumen";
 import { TabProceso } from "./TabProceso";
 import { TabDocumentos } from "./TabDocumentos";
-
+ 
 type Props = { clientId: number };
-
+ 
 export default function ClientExpedienteView({ clientId }: Props) {
   const { perfil } = useAuth();
-
-  const [client,              setClient]              = useState<Usuario | null>(null);
-  const [expedientes,         setExpedientes]         = useState<UsuarioActivoResponseDTO[]>([]);
-  const [selectedExpediente,  setSelectedExpediente]  = useState<UsuarioActivoResponseDTO | null>(null);
-  const [contrato,            setContrato]            = useState<UsuarioActivoResponseDTO | null>(null);
-  const [pageLoading,         setPageLoading]         = useState(true);
-  const [pageError,           setPageError]           = useState("");
-  const [activeTab,           setActiveTab]           = useState<Tab>("resumen");
-
-  // ── Data layer ─────────────────────────────────────────────────────────────
-
+ 
+  const [client,             setClient]             = useState<Usuario | null>(null);
+  const [expedientes,        setExpedientes]        = useState<UsuarioActivoResponseDTO[]>([]);
+  const [selectedExpediente, setSelectedExpediente] = useState<UsuarioActivoResponseDTO | null>(null);
+  const [pageLoading,        setPageLoading]        = useState(true);
+  const [pageError,          setPageError]          = useState("");
+  const [activeTab,          setActiveTab]          = useState<Tab>("resumen");
+ 
+  // ── Data layer ──────────────────────────────────────────────────────────────
+  // `selectedExpediente` ya ES el contrato — no hay segunda llamada.
+ 
   const {
     stepper,
     etapas,
     loading: stepperLoading,
     error:   stepperError,
     updateHito,
-  } = useCommercialStepper(contrato);
-
+  } = useCommercialStepper(selectedExpediente);
+ 
   const {
     sections,
-    loading:   docsLoading,
-    error:     docsError,
-    refresh:   refreshDocs,
-  } = useStageDocuments(contrato, stepper);
-
-  // ── Bootstrap ──────────────────────────────────────────────────────────────
-
+    loading:  docsLoading,
+    error:    docsError,
+    refresh:  refreshDocs,
+  } = useStageDocuments(selectedExpediente, stepper);
+ 
+  // ── Bootstrap ───────────────────────────────────────────────────────────────
+ 
   useEffect(() => {
     let mounted = true;
     async function load() {
@@ -63,7 +65,10 @@ export default function ClientExpedienteView({ clientId }: Props) {
         setExpedientes(exps);
         if (exps.length > 0) setSelectedExpediente(exps[0]);
       } catch (err) {
-        if (mounted) setPageError(err instanceof Error ? err.message : "No se pudo cargar el cliente.");
+        if (mounted)
+          setPageError(
+            err instanceof Error ? err.message : "No se pudo cargar el cliente."
+          );
       } finally {
         if (mounted) setPageLoading(false);
       }
@@ -71,38 +76,42 @@ export default function ClientExpedienteView({ clientId }: Props) {
     void load();
     return () => { mounted = false; };
   }, [clientId]);
-
-  useEffect(() => {
-    if (selectedExpediente?.activo?.id) {
-      fetchContratoActivo(selectedExpediente.activo.id)
-        .then(setContrato)
-        .catch(console.error);
-    } else {
-      setContrato(null);
-    }
-  }, [selectedExpediente]);
-
-  // ── Permissions ────────────────────────────────────────────────────────────
-
-  const isAdmin      = perfil?.rol === "ADMIN";
-  const canEditHitos = isAdmin || !!perfil?.funciones?.includes("CONTRATO_EDITAR");
-  const canUploadDocs= isAdmin || !!perfil?.funciones?.includes("DOCS_SUBIR");
-  const canEditNotes = isAdmin || !!perfil?.funciones?.includes("CONTRATO_NOTAS_EDITAR");
-
-  // ── Derived display values ─────────────────────────────────────────────────
-
-  const fullName = client
+ 
+  // ── Permisos ────────────────────────────────────────────────────────────────
+ 
+  const isAdmin       = perfil?.rol === "ADMIN";
+  const canEditHitos  = isAdmin || !!perfil?.funciones?.includes("CONTRATO_EDITAR");
+  const canUploadDocs = isAdmin || !!perfil?.funciones?.includes("DOCS_SUBIR");
+  const canEditNotes  = isAdmin || !!perfil?.funciones?.includes("CONTRATO_NOTAS_EDITAR");
+ 
+  // ── Valores derivados ───────────────────────────────────────────────────────
+ 
+  // Toma el primer cliente de la lista de copropietarios, o el que coincide con clientId
+  const clienteDTO =
+    selectedExpediente?.clientes?.find((c) => c.id === clientId) ??
+    selectedExpediente?.clientes?.[0] ??
+    null;
+ 
+  const fullName = clienteDTO
+    ? [clienteDTO.nombre, clienteDTO.apellidos].filter(Boolean).join(" ")
+    : client
     ? [client.nombre, client.apellidos].filter(Boolean).join(" ")
     : "Cliente no encontrado";
-  const initials = fullName.split(" ").slice(0, 2).map((w) => w[0]).join("").toUpperCase();
-
-  // ── Early returns ──────────────────────────────────────────────────────────
-
+ 
+  const initials = fullName
+    .split(" ")
+    .slice(0, 2)
+    .map((w) => w[0])
+    .join("")
+    .toUpperCase();
+ 
+  // ── Early returns ────────────────────────────────────────────────────────────
+ 
   if (pageLoading) return <LoadingSpinner label="Cargando expediente..." />;
   if (pageError)   return <ErrorBanner message={pageError} />;
-
-  // ── Render ─────────────────────────────────────────────────────────────────
-
+ 
+  // ── Render ───────────────────────────────────────────────────────────────────
+ 
   return (
     <section className="space-y-6">
       {/* Back + Header */}
@@ -121,23 +130,33 @@ export default function ClientExpedienteView({ clientId }: Props) {
           Proceso jurídico de la operación de compraventa.
         </p>
       </div>
-
-      {/* Unit selector */}
+ 
+      {/* Selector de unidad */}
       {expedientes.length > 0 ? (
         <div className="flex items-center gap-4 bg-white dark:bg-white/5 p-4 rounded-xl border border-slate-200 dark:border-white/10 shadow-sm">
-          <label className="text-sm font-bold text-build-main dark:text-white whitespace-nowrap">Unidad:</label>
+          <label className="text-sm font-bold text-build-main dark:text-white whitespace-nowrap">
+            Unidad:
+          </label>
           <select
-            value={selectedExpediente?.activo?.id ?? ""}
+            value={selectedExpediente?.uuidUsuarioActivo ?? ""}
             onChange={(e) =>
-              setSelectedExpediente(expedientes.find((x) => x.activo?.id === e.target.value) ?? null)
+              setSelectedExpediente(
+                expedientes.find((x) => x.uuidUsuarioActivo === e.target.value) ?? null
+              )
             }
             className="flex-1 rounded-lg border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-[#111] px-3 py-2 text-sm focus:outline-none dark:text-white"
           >
-            {expedientes.map((exp) => (
-              <option key={exp.activo?.id} value={exp.activo?.id}>
-                {exp.activo?.proyectoNombre} — {exp.activo?.torreNombre} — Piso {exp.activo?.nroPiso} — {exp.activo?.tipo} {exp.activo?.nro}
-              </option>
-            ))}
+            {expedientes.map((exp) => {
+              const firstAct = exp.activos?.[0];
+              const label = firstAct
+                ? `${firstAct.proyectoNombre ?? "Proyecto"} — ${firstAct.tipo} ${firstAct.nro}`
+                : `Contrato ${exp.uuidUsuarioActivo.slice(-6)}`;
+              return (
+                <option key={exp.uuidUsuarioActivo} value={exp.uuidUsuarioActivo}>
+                  {label}{exp.activos?.length > 1 ? ` (+${exp.activos.length - 1} más)` : ""}
+                </option>
+              );
+            })}
           </select>
         </div>
       ) : (
@@ -145,31 +164,47 @@ export default function ClientExpedienteView({ clientId }: Props) {
           Este cliente no tiene unidades asignadas en el sistema.
         </div>
       )}
-
-      {/* Client card */}
+ 
+      {/* Tarjeta del cliente */}
       <div className="rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 p-6 shadow-sm">
         <div className="flex flex-col sm:flex-row sm:items-center gap-4">
           <div className="w-14 h-14 rounded-full bg-build-main/10 dark:bg-white/10 flex items-center justify-center shrink-0">
-            <span className="text-lg font-bold text-build-main dark:text-white">{initials}</span>
+            <span className="text-lg font-bold text-build-main dark:text-white">
+              {initials}
+            </span>
           </div>
           <div className="flex-1 min-w-0">
             <h3 className="text-lg font-bold text-build-main dark:text-white">{fullName}</h3>
-            <p className="text-sm text-slate-500 dark:text-white/50 mt-0.5">{client?.email || "—"}</p>
+            <p className="text-sm text-slate-500 dark:text-white/50 mt-0.5">
+              {clienteDTO?.email ?? client?.email ?? "—"}
+            </p>
           </div>
           <div className="flex flex-wrap gap-2 sm:justify-end">
-            <InfoChip icon="badge" label={client?.documentoIdentidad || "Sin DNI"} />
-            <InfoChip icon="phone" label={client?.telefono || "Sin teléfono"} />
-            {selectedExpediente?.estadoTramiteLegal && (
-              <span className="inline-flex items-center gap-1.5 text-[11px] font-bold px-3 py-1.5 rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400">
-                <span className="material-symbols-outlined text-[13px]">pending</span>
-                {selectedExpediente.estadoTramiteLegal}
+            <InfoChip
+              icon="badge"
+              label={clienteDTO?.documentoIdentidad ?? client?.documentoIdentidad ?? "Sin DNI"}
+            />
+            <InfoChip
+              icon="phone"
+              label={clienteDTO?.telefono ?? client?.telefono ?? "Sin teléfono"}
+            />
+            {selectedExpediente && (
+              <span className={`inline-flex items-center gap-1.5 text-[11px] font-bold px-3 py-1.5 rounded-full ${
+                selectedExpediente.vigente !== false
+                  ? "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400"
+                  : "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400"
+              }`}>
+                <span className="material-symbols-outlined text-[13px]">
+                  {selectedExpediente.vigente !== false ? "check_circle" : "cancel"}
+                </span>
+                {selectedExpediente.vigente !== false ? "Vigente" : "Desvinculado"}
               </span>
             )}
           </div>
         </div>
       </div>
-
-      {/* Tab bar */}
+ 
+      {/* Barra de tabs */}
       <div className="flex gap-1 overflow-x-auto border-b border-slate-200 dark:border-white/10 scrollbar-none">
         {TABS.map((tab) => (
           <button
@@ -189,17 +224,16 @@ export default function ClientExpedienteView({ clientId }: Props) {
           </button>
         ))}
       </div>
-
-      {/* Stepper-level errors */}
+ 
       {stepperError && <ErrorBanner message={stepperError} />}
-
-      {/* Tab content */}
+ 
+      {/* Contenido del tab */}
       <div>
         {activeTab === "resumen" && (
           <TabResumen
             client={client}
             expediente={selectedExpediente}
-            contrato={contrato}
+            contrato={selectedExpediente}
             etapas={etapas}
             loadingStepper={stepperLoading}
           />
@@ -214,7 +248,7 @@ export default function ClientExpedienteView({ clientId }: Props) {
         )}
         {activeTab === "documentos" && (
           <TabDocumentos
-            contrato={contrato}
+            contrato={selectedExpediente}
             sections={sections}
             loading={docsLoading}
             loadError={docsError}

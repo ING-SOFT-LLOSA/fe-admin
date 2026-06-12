@@ -1,5 +1,8 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
+import { fetchUsuarios } from "@/lib/api/users";
+import type { Usuario } from "@/types/user";
+
 type CalEvent = {
   id: string;
   label: string;
@@ -20,51 +23,72 @@ type CalDay = {
   events: CalEvent[];
 };
 
-const INITIAL_CAL_DAYS: CalDay[] = [
-  { day: 30, grey: true, events: [] }, { day: 1, events: [] },
-  { day: 2, events: [{ id: "ee1", label: "Reunión Cliente - Torres", bg: "bg-[#c2e8ff]", dot: "bg-[#001e2b]", text: "text-[#001e2b]", time: "09:00", client: "Torres", type: "General" }] },
-  { day: 3, events: [] },
-  { day: 4, events: [{ id: "ee2", label: "Firma: Miraflores 402", bg: "bg-[#e9e0e1]", dot: "bg-[#1e1b1c]", text: "text-[#1e1b1c]", time: "14:30", client: "Miraflores", type: "Firma" }] },
-  { day: 5, grey: true, events: [] }, { day: 6, grey: true, events: [] },
-  { day: 7, events: [{ id: "ee3", label: "Inicio Proyecto: Torre Q", bg: "bg-[#ffdcbf]", dot: "bg-[#2d1600]", text: "text-[#2d1600]" }] },
-  {
-    day: 8, today: true, events: [
-      { id: "ee4", label: "Entrega Doc - Municipalidad", bg: "bg-[#eeeeef]", icon: "description", text: "text-[#41484c]", time: "09:00", type: "Admin" },
-      { id: "ee5", label: "Revisión Interna", bg: "bg-[#c2e8ff]", dot: "bg-[#001e2b]", text: "text-[#001e2b]", time: "14:30", type: "Revisión" }
-    ]
-  },
-  { day: 9, events: [] }, { day: 10, events: [] }, { day: 11, events: [] },
-  { day: 12, grey: true, events: [] }, { day: 13, grey: true, events: [] },
-  { day: 14, events: [] }, { day: 15, events: [] }, { day: 16, events: [] }, { day: 17, events: [] }, { day: 18, events: [] },
-  { day: 19, grey: true, events: [] }, { day: 20, grey: true, events: [] },
-];
-
 const EVENT_TYPES = [
-  "Recepción de departamento",
-  "Entrega de llaves",
-  "Revisión de observaciones",
-  "Firma de Contrato",
-  "Visita Técnica",
-  "Reunión General"
+  { value: "CONFIRMACION_FECHA_ENTREGA", label: "Confirmación de fecha de entrega" },
+  { value: "ENTREGA_LLAVES",              label: "Entrega de llaves" },
+  { value: "REVISION_OBSERVACIONES",      label: "Revisión de observaciones" },
+  { value: "FIRMA_MINUTA",                label: "Firma de Minuta" },
+  { value: "FIRMA_ESCRITURA",             label: "Firma de Escritura" },
+  { value: "INSPECCION_OBRA",             label: "Inspección de obra" },
+  { value: "JUNTA_PROPIETARIOS",          label: "Junta de propietarios" },
+  { value: "OTRO",                        label: "Otro" }
 ];
 
-import { fetchUsuarios } from "@/lib/api/users";
-import type { Usuario } from "@/types/user";
+function generateCalendarGrid(currentDate: Date) {
+  const year = currentDate.getFullYear();
+  const month = currentDate.getMonth();
+
+  const firstDayOfMonth = new Date(year, month, 1);
+  let startDayOfWeek = firstDayOfMonth.getDay() - 1;
+  if (startDayOfWeek === -1) startDayOfWeek = 6; // Sunday is 6 in 0-indexed Mon-Sun grid
+
+  const totalDays = new Date(year, month + 1, 0).getDate();
+  const prevMonthTotalDays = new Date(year, month, 0).getDate();
+
+  const grid: CalDay[] = [];
+
+  for (let i = startDayOfWeek - 1; i >= 0; i--) {
+    grid.push({
+      day: prevMonthTotalDays - i,
+      grey: true,
+      events: []
+    });
+  }
+
+  const today = new Date();
+  const isCurrentMonth = today.getFullYear() === year && today.getMonth() === month;
+  for (let day = 1; day <= totalDays; day++) {
+    grid.push({
+      day,
+      today: isCurrentMonth && today.getDate() === day,
+      events: []
+    });
+  }
+
+  const remainingCells = (grid.length % 7 === 0) ? 0 : 7 - (grid.length % 7);
+  for (let day = 1; day <= remainingCells; day++) {
+    grid.push({
+      day,
+      grey: true,
+      events: []
+    });
+  }
+
+  return grid;
+}
 
 export default function SchedulePage() {
-  const [calDays, setCalDays] = useState<CalDay[]>(INITIAL_CAL_DAYS);
+  const [currentDate, setCurrentDate] = useState(new Date());
+  const [calDays, setCalDays] = useState<CalDay[]>([]);
   const [modalOpen, setModalOpen] = useState(false);
   const [clients, setClients] = useState<Usuario[]>([]);
-
-  useEffect(() => {
-    fetchUsuarios().then((users) => {
-      setClients(users.filter(u => u.tipoUsuario === "CLIENTE"));
-    }).catch(console.error);
-  }, []);
+  const [clientUnits, setClientUnits] = useState<{ id: string; name: string }[]>([]);
+  const [loadingEvents, setLoadingEvents] = useState(false);
 
   // Form State
   const [clientId, setClientId] = useState("");
-  const [eventType, setEventType] = useState(EVENT_TYPES[0]);
+  const [selectedUnitId, setSelectedUnitId] = useState("");
+  const [eventType, setEventType] = useState(EVENT_TYPES[0].value);
   const [eventDate, setEventDate] = useState("");
   const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("");
@@ -79,9 +103,166 @@ export default function SchedulePage() {
 
   const selectedClient = clients.find(c => String(c.id) === clientId);
 
+  // Load clients
+  useEffect(() => {
+    fetchUsuarios()
+      .then((users) => {
+        setClients(users.filter(u => u.tipoUsuario === "CLIENTE"));
+      })
+      .catch(console.error);
+  }, []);
+
+  // Load client units when selected client changes
+  useEffect(() => {
+    if (!clientId) {
+      setClientUnits([]);
+      setSelectedUnitId("");
+      return;
+    }
+    setClientUnits([]);
+    setSelectedUnitId("");
+    
+    import("@/lib/api/users")
+      .then(m => m.fetchExpedientesPorUsuario(Number(clientId)))
+      .then(exps => {
+        const uList = (exps || []).flatMap(exp => 
+          (exp.activos || []).map(act => ({
+            id: act.id,
+            name: `${act.tipo === "ESTACIONAMIENTO" ? "Cochera" : act.tipo === "DEPOSITO" ? "Depósito" : "Dpto"} ${act.nro}`
+          }))
+        );
+        setClientUnits(uList);
+        if (uList.length > 0) {
+          setSelectedUnitId(uList[0].id);
+        }
+      })
+      .catch(console.error);
+  }, [clientId]);
+
+  // Generate grid cells base layout
+  const gridCells = useMemo(() => {
+    return generateCalendarGrid(currentDate);
+  }, [currentDate]);
+
+  // Fetch appointments for current grid
+  const fetchAppointments = React.useCallback(() => {
+    if (gridCells.length === 0) return;
+    
+    const firstCell = gridCells[0];
+    const lastCell = gridCells[gridCells.length - 1];
+    
+    const year = currentDate.getFullYear();
+    const month = currentDate.getMonth();
+    
+    let startYear = year;
+    let startMonth = month;
+    if (firstCell.grey && firstCell.day > 15) {
+      startMonth = month - 1;
+      if (startMonth < 0) {
+        startMonth = 11;
+        startYear = year - 1;
+      }
+    }
+    const startDateStr = `${startYear}-${String(startMonth + 1).padStart(2, "0")}-${String(firstCell.day).padStart(2, "0")}T00:00:00`;
+
+    let endYear = year;
+    let endMonth = month;
+    if (lastCell.grey && lastCell.day < 15) {
+      endMonth = month + 1;
+      if (endMonth > 11) {
+        endMonth = 0;
+        endYear = year + 1;
+      }
+    }
+    const endDateStr = `${endYear}-${String(endMonth + 1).padStart(2, "0")}-${String(lastCell.day).padStart(2, "0")}T23:59:59`;
+
+    setLoadingEvents(true);
+    
+    import("@/lib/api/agenda")
+      .then(m => m.fetchCitasCalendario(startDateStr, endDateStr))
+      .then(citas => {
+        const updatedGrid = gridCells.map(cell => {
+          let cellYear = year;
+          let cellMonth = month;
+          if (cell.grey) {
+            if (cell.day > 15) {
+              cellMonth = month - 1;
+              if (cellMonth < 0) { cellMonth = 11; cellYear = year - 1; }
+            } else {
+              cellMonth = month + 1;
+              if (cellMonth > 11) { cellMonth = 0; cellYear = year + 1; }
+            }
+          }
+          const cellDateStr = `${cellYear}-${String(cellMonth + 1).padStart(2, "0")}-${String(cell.day).padStart(2, "0")}`;
+
+          const dayEvents = citas
+            .filter(c => c.fechaInicio.startsWith(cellDateStr))
+            .map(c => {
+              const startL = c.fechaInicio.split("T")[1]?.slice(0, 5) || "";
+              
+              let bg = "bg-[#c2e8ff] text-[#001e2b]";
+              let dot = "bg-[#001e2b]";
+              if (c.estadoCita === "CANCELADA") {
+                bg = "bg-[#ffdad6] text-[#ba1a1a]";
+                dot = "bg-[#ba1a1a]";
+              } else if (c.estadoCita === "CONFIRMADA") {
+                bg = "bg-[#e8f5e9] text-[#2e7d32]";
+                dot = "bg-[#2e7d32]";
+              } else if (c.estadoCita === "COMPLETADA") {
+                bg = "bg-slate-100 text-slate-700 dark:bg-white/10 dark:text-white/60";
+                dot = "bg-slate-500";
+              }
+
+              return {
+                id: c.id,
+                label: `${c.titulo || c.tipoEvento}`,
+                bg,
+                dot,
+                text: bg.split(" ")[1] || "",
+                time: startL,
+                client: c.clienteNombre || "Cliente",
+                type: c.tipoEvento,
+                unit: ""
+              };
+            });
+
+          return {
+            ...cell,
+            events: dayEvents
+          };
+        });
+        
+        setCalDays(updatedGrid);
+      })
+      .catch(err => {
+        console.error("Error fetching calendar appointments:", err);
+      })
+      .finally(() => {
+        setLoadingEvents(false);
+      });
+  }, [gridCells, currentDate]);
+
+  useEffect(() => {
+    fetchAppointments();
+  }, [fetchAppointments]);
+
+  // Next/prev month handlers
+  const handlePrevMonth = () => {
+    setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1));
+  };
+
+  const handleNextMonth = () => {
+    setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1));
+  };
+
+  const handleGoToday = () => {
+    setCurrentDate(new Date());
+  };
+
   function resetForm() {
     setClientId("");
-    setEventType(EVENT_TYPES[0]);
+    setSelectedUnitId("");
+    setEventType(EVENT_TYPES[0].value);
     setEventDate("");
     setStartTime("");
     setEndTime("");
@@ -96,18 +277,26 @@ export default function SchedulePage() {
     setModalOpen(true);
   }
 
+  function handleCellClick(cell: CalDay) {
+    if (cell.grey) return;
+    handleOpenModal();
+    const cellYear = currentDate.getFullYear();
+    const cellMonth = currentDate.getMonth();
+    const dateStr = `${cellYear}-${String(cellMonth + 1).padStart(2, "0")}-${String(cell.day).padStart(2, "0")}`;
+    setEventDate(dateStr);
+  }
+
   function saveEvent(e: React.FormEvent) {
     e.preventDefault();
     setErrorMsg("");
     setSuccessMsg("");
     setWarningMsg("");
 
-    if (!clientId || !eventDate || !startTime || !endTime) {
+    if (!clientId || !selectedUnitId || !eventDate || !startTime || !endTime) {
       setErrorMsg("Por favor completa todos los campos requeridos.");
       return;
     }
 
-    // Validate past dates
     const selectedDateTime = new Date(`${eventDate}T${startTime}`);
     if (selectedDateTime < new Date()) {
       setErrorMsg("Error: No puedes agendar citas en fechas/horas pasadas.");
@@ -115,50 +304,62 @@ export default function SchedulePage() {
     }
 
     setIsSaving(true);
+    const startDateTimeStr = `${eventDate}T${startTime}:00`;
+    const endDateTimeStr = `${eventDate}T${endTime}:00`;
 
-    setTimeout(() => {
-      setIsSaving(false);
-
-      const newEvent: CalEvent = {
-        id: `EV_${Date.now()}`,
-        label: `${eventType} - ${selectedClient?.nombre || ""} ${selectedClient?.apellidos || ""}`,
-        bg: "bg-[#c2e8ff]",
-        dot: "bg-[#001e2b]",
-        text: "text-[#001e2b]",
-        time: startTime,
-        client: selectedClient?.nombre || "",
-        type: eventType,
-        unit: ""
-      };
-
-      // Find the day mapped to local grid (for demo, just push it to the actual day number)
-      // Since it's a mock grid, find by day number
-      const dayNum = parseInt(eventDate.split("-")[2], 10);
-
-      let updatedCalendar = false;
-      const newGrid = calDays.map(cd => {
-        if (cd.day === dayNum && !cd.grey) {
-          updatedCalendar = true;
-          return { ...cd, events: [...cd.events, newEvent] };
+    import("@/lib/api/agenda")
+      .then(m => {
+        const eventLabel = EVENT_TYPES.find(e => e.value === eventType)?.label || eventType;
+        return m.crearCita({
+          clienteId: Number(clientId),
+          activoId: selectedUnitId,
+          tipoEvento: eventType,
+          titulo: `${eventLabel} - ${selectedClient?.nombre || ""} ${selectedClient?.apellidos || ""}`,
+          descripcion: `Cita sobre unidad inmobiliaria`,
+          ubicacion: location,
+          fechaInicio: startDateTimeStr,
+          fechaFin: endDateTimeStr,
+          permiteReprogramacion: true,
+          clienteUsaGoogle: !simulateGoogleFail,
+          
+          // Positional fallbacks
+          arg0: Number(clientId),
+          arg1: selectedUnitId,
+          arg2: eventType,
+          arg3: `${eventLabel} - ${selectedClient?.nombre || ""} ${selectedClient?.apellidos || ""}`,
+          arg4: `Cita sobre unidad inmobiliaria`,
+          arg5: location,
+          arg6: startDateTimeStr,
+          arg7: endDateTimeStr,
+          arg8: true,
+          arg9: !simulateGoogleFail
+        });
+      })
+      .then(() => {
+        setIsSaving(false);
+        if (simulateGoogleFail) {
+          setWarningMsg("Cita guardada en el portal. La sincronización con Google Calendar experimentó un retraso y se reintentará en breve.");
+        } else {
+          setSuccessMsg("Cita agendada y notificada exitosamente al correo/calendario del cliente.");
         }
-        return cd;
+        setTimeout(() => {
+          setModalOpen(false);
+          fetchAppointments();
+        }, 3000);
+      })
+      .catch(err => {
+        setIsSaving(false);
+        setErrorMsg(err instanceof Error ? err.message : "Error al guardar la cita.");
       });
-
-      // If day is outside the visible grid simply set state (it won't render but that's fine for mock)
-      setCalDays(newGrid);
-
-      if (simulateGoogleFail) {
-        setWarningMsg("Cita guardada en el portal. La sincronización con Google Calendar experimentó un retraso y se reintentará en breve mediante un Worker.");
-      } else {
-        setSuccessMsg("Cita agendada y notificada exitosamente al correo/calendario del cliente.");
-      }
-
-      setTimeout(() => {
-        setModalOpen(false);
-      }, 3500);
-
-    }, 2000);
   }
+
+  // Get next 3 upcoming events
+  const upcomingEvents = useMemo(() => {
+    return calDays
+      .filter(d => !d.grey)
+      .flatMap(d => d.events)
+      .slice(0, 3);
+  }, [calDays]);
 
   return (
     <>
@@ -179,17 +380,28 @@ export default function SchedulePage() {
         <div className="lg:col-span-9 bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl shadow-sm overflow-hidden flex flex-col min-h-[600px] animate-fade-in">
           <div className="px-6 py-4 border-b border-slate-200 dark:border-white/10 flex items-center justify-between bg-white dark:bg-white/5">
             <div className="flex items-center gap-4">
-              <h3 className="text-[20px] font-bold text-build-main dark:text-white capitalize">{new Date().toLocaleString('es-ES', { month: 'long', year: 'numeric' })}</h3>
+              <h3 className="text-[20px] font-bold text-build-main dark:text-white capitalize">
+                {currentDate.toLocaleString('es-ES', { month: 'long', year: 'numeric' })}
+              </h3>
               <div className="flex items-center gap-1 bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-lg p-0.5">
-                <button className="p-1 rounded hover:bg-slate-50 dark:bg-white/5 text-slate-500 dark:text-white/60 transition-colors"><span className="material-symbols-outlined text-[18px]">chevron_left</span></button>
-                <button className="px-3 py-1 text-[12px] font-bold text-build-main dark:text-white hover:bg-slate-50 dark:bg-white/5 rounded transition-colors">Hoy</button>
-                <button className="p-1 rounded hover:bg-slate-50 dark:bg-white/5 text-slate-500 dark:text-white/60 transition-colors"><span className="material-symbols-outlined text-[18px]">chevron_right</span></button>
+                <button onClick={handlePrevMonth} className="p-1 rounded hover:bg-slate-50 dark:bg-white/5 text-slate-500 dark:text-white/60 transition-colors">
+                  <span className="material-symbols-outlined text-[18px]">chevron_left</span>
+                </button>
+                <button onClick={handleGoToday} className="px-3 py-1 text-[12px] font-bold text-build-main dark:text-white hover:bg-slate-50 dark:bg-white/5 rounded transition-colors">Hoy</button>
+                <button onClick={handleNextMonth} className="p-1 rounded hover:bg-slate-50 dark:bg-white/5 text-slate-500 dark:text-white/60 transition-colors">
+                  <span className="material-symbols-outlined text-[18px]">chevron_right</span>
+                </button>
               </div>
             </div>
-            <div className="flex bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-lg p-0.5">
-              <button className="px-4 py-1.5 text-[12px] font-bold bg-slate-100 dark:bg-white/10 text-build-main dark:text-white rounded-md transition-all shadow-sm">Mes</button>
-              <button className="px-4 py-1.5 text-[12px] font-bold text-slate-500 dark:text-white/60 hover:text-build-main dark:text-white rounded-md transition-all">Semana</button>
-            </div>
+            {loadingEvents && (
+              <span className="text-xs text-slate-400 flex items-center gap-1">
+                <svg className="animate-spin h-3.5 w-3.5 text-slate-400" viewBox="0 0 24 24" fill="none">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+                </svg>
+                Actualizando...
+              </span>
+            )}
           </div>
 
           <div className="flex-1 grid grid-cols-7 border-l border-slate-200 dark:border-white/10">
@@ -199,17 +411,21 @@ export default function SchedulePage() {
               </div>
             ))}
             {calDays.map((cell, idx) => (
-              <div key={idx} className={`min-h-[120px] border-b border-r border-slate-200 dark:border-white/10 p-2 flex flex-col gap-1 ${cell.grey ? "bg-slate-50 dark:bg-white/5/50" : "cursor-pointer hover:bg-slate-50 dark:bg-white/5 transition-colors"}`}>
+              <div 
+                key={idx} 
+                onClick={() => handleCellClick(cell)}
+                className={`min-h-[120px] border-b border-r border-slate-200 dark:border-white/10 p-2 flex flex-col gap-1 ${cell.grey ? "bg-slate-50 dark:bg-white/5/50" : "cursor-pointer hover:bg-slate-50 dark:bg-white/5 transition-colors"}`}
+              >
                 <span className={`text-sm pl-1 mb-1 ${cell.today ? "w-7 h-7 flex items-center justify-center bg-build-main text-white rounded-full font-bold shadow-sm" : cell.grey ? "text-slate-400 dark:text-white/50" : "text-build-main dark:text-white font-bold"}`}>
                   {cell.day}
                 </span>
                 {cell.events.map((ev, i) => (
-                  <div key={i} className={`${ev.bg} rounded px-2 py-1.5 flex items-center gap-1.5 shadow-sm border border-build-main/5`}>
-                    {ev.icon
-                      ? <span className={`material-symbols-outlined text-[14px] ${ev.text}`}>{ev.icon}</span>
-                      : <span className={`w-1.5 h-1.5 rounded-full ${ev.dot}`} />
-                    }
-                    <span className={`text-[11px] font-bold truncate ${ev.text}`}>{ev.label}</span>
+                  <div key={i} className={`${ev.bg} rounded px-2 py-1.5 flex flex-col gap-0.5 shadow-sm border border-build-main/5`}>
+                    <div className="flex items-center gap-1.5">
+                      <span className={`w-1.5 h-1.5 rounded-full ${ev.dot}`} />
+                      <span className="text-[11px] font-bold truncate">{ev.label}</span>
+                    </div>
+                    {ev.time && <span className="text-[9px] font-semibold opacity-75 pl-3">{ev.time}</span>}
                   </div>
                 ))}
               </div>
@@ -221,7 +437,7 @@ export default function SchedulePage() {
         <div className="lg:col-span-3 flex flex-col gap-6">
           <div className="bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl p-6 shadow-sm">
             <div className="flex justify-between items-center mb-6 border-b border-slate-200 dark:border-white/10 pb-4">
-            <h3 className="text-[18px] font-bold text-build-main dark:text-white">Estado de sincronización</h3>
+              <h3 className="text-[18px] font-bold text-build-main dark:text-white">Google Calendar Sinc</h3>
               <span className="material-symbols-outlined text-slate-500 dark:text-white/60">science</span>
             </div>
 
@@ -231,32 +447,37 @@ export default function SchedulePage() {
               </div>
               <div>
                 <p className="text-[13px] font-bold text-build-main dark:text-white leading-tight">Simular fallo de Google Calendar</p>
-                <p className="text-[11px] text-slate-500 dark:text-white/60 mt-1 pr-2">Si ocurre un fallo, la cita igual se guarda y se muestra una advertencia de reintento automático.</p>
+                <p className="text-[11px] text-slate-500 dark:text-white/60 mt-1 pr-2">Si ocurre un fallo, la cita se guardará solo localmente y se notificará el reintento.</p>
               </div>
             </label>
           </div>
 
           <div className="bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl p-6 shadow-sm">
             <h3 className="text-[18px] font-bold text-build-main dark:text-white mb-4">Próximos Eventos</h3>
-            {calDays.filter(d => !d.grey).flatMap(d => d.events).slice(0, 3).map(ev => (
-              <div key={ev.id} className="mb-4 last:mb-0">
-                <h4 className="text-[13px] font-bold text-build-main dark:text-white truncate">{ev.label}</h4>
-                <p className="text-[12px] text-slate-500 dark:text-white/60 flex items-center gap-1 mt-0.5">
-                  <span className="material-symbols-outlined text-[14px]">schedule</span> {ev.time || "Sin hora"} - {ev.type}
-                </p>
-              </div>
-            ))}
+            {upcomingEvents.length === 0 ? (
+              <p className="text-xs text-slate-400 dark:text-white/40">No hay eventos próximos en este período.</p>
+            ) : (
+              upcomingEvents.map(ev => (
+                <div key={ev.id} className="mb-4 last:mb-0 pb-3 border-b border-slate-100 last:border-b-0 dark:border-white/5">
+                  <h4 className="text-[13px] font-bold text-build-main dark:text-white truncate">{ev.label}</h4>
+                  <p className="text-[11px] text-slate-500 dark:text-white/60 mt-0.5">Cliente: {ev.client}</p>
+                  <p className="text-[12px] text-slate-500 dark:text-white/60 flex items-center gap-1 mt-1 font-semibold">
+                    <span className="material-symbols-outlined text-[14px]">schedule</span> {ev.time || "Sin hora"} - {ev.type}
+                  </p>
+                </div>
+              ))
+            )}
           </div>
         </div>
       </div>
 
       {modalOpen && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-[#050a0e]/60 backdrop-blur-sm p-4 animate-fade-in">
-          <form onSubmit={saveEvent} className="bg-white dark:bg-white/5 rounded-2xl shadow-2xl w-full max-w-lg flex flex-col relative overflow-hidden">
+          <form onSubmit={saveEvent} className="bg-white dark:bg-[#111] rounded-2xl shadow-2xl w-full max-w-lg flex flex-col relative overflow-hidden">
 
             {!successMsg && !warningMsg && (
               <>
-                <div className="px-6 py-5 border-b border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 flex justify-between items-center">
+                <div className="px-6 py-5 border-b border-slate-200 dark:border-white/10 bg-white dark:bg-[#111] flex justify-between items-center">
                   <h2 className="text-[20px] font-bold text-build-main dark:text-white flex items-center gap-2">
                     <span className="material-symbols-outlined text-build-accent">edit_calendar</span> Agendar cita
                   </h2>
@@ -274,50 +495,64 @@ export default function SchedulePage() {
                   )}
 
                   <div className="mb-4">
-                    <label className="block text-[11px] font-bold text-slate-500 dark:text-white/60 uppercase mb-1">Cliente y Unidad *</label>
+                    <label className="block text-[11px] font-bold text-slate-500 dark:text-white/60 uppercase mb-1">Cliente *</label>
                     <select
                       value={clientId}
                       onChange={e => setClientId(e.target.value)}
-                      className="w-full px-3 py-2.5 border border-slate-200 dark:border-white/10 rounded-xl text-sm text-build-main dark:text-white focus:outline-none focus:border-build-accent focus:ring-1 focus:ring-build-accent"
+                      className="w-full px-3 py-2.5 border border-slate-200 dark:border-white/10 rounded-xl text-sm text-build-main dark:text-white bg-white dark:bg-white/5 focus:outline-none focus:border-build-accent focus:ring-1 focus:ring-build-accent"
                     >
                       <option value="">-- Seleccionar Cliente --</option>
                       {clients.map((c) => <option key={c.id} value={String(c.id)}>{c.nombre} {c.apellidos}</option>)}
                     </select>
                   </div>
 
+                  {clientId && (
+                    <div className="mb-4">
+                      <label className="block text-[11px] font-bold text-slate-500 dark:text-white/60 uppercase mb-1">Unidad vinculada *</label>
+                      <select
+                        value={selectedUnitId}
+                        onChange={e => setSelectedUnitId(e.target.value)}
+                        className="w-full px-3 py-2.5 border border-slate-200 dark:border-white/10 rounded-xl text-sm text-build-main dark:text-white bg-white dark:bg-white/5 focus:outline-none focus:border-build-accent focus:ring-1 focus:ring-build-accent"
+                      >
+                        <option value="">-- Seleccionar Unidad --</option>
+                        {clientUnits.map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}
+                      </select>
+                    </div>
+                  )}
+
                   <div className="mb-4">
                     <label className="block text-[11px] font-bold text-slate-500 dark:text-white/60 uppercase mb-1">Tipo de Evento *</label>
                     <select
                       value={eventType}
                       onChange={e => setEventType(e.target.value)}
-                      className="w-full px-3 py-2.5 border border-slate-200 dark:border-white/10 rounded-xl text-sm text-build-main dark:text-white focus:outline-none focus:border-build-accent focus:ring-1 focus:ring-build-accent"
+                      className="w-full px-3 py-2.5 border border-slate-200 dark:border-white/10 rounded-xl text-sm text-build-main dark:text-white bg-white dark:bg-white/5 focus:outline-none focus:border-build-accent focus:ring-1 focus:ring-build-accent"
                     >
-                      {EVENT_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+                      {EVENT_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
                     </select>
                   </div>
 
                   <div className="grid grid-cols-2 gap-4 mb-4">
                     <div className="col-span-2">
                       <label className="block text-[11px] font-bold text-slate-500 dark:text-white/60 uppercase mb-1">Día Protocolar *</label>
-                      <input type="date" value={eventDate} onChange={e => setEventDate(e.target.value)} className="w-full px-3 py-2.5 border border-slate-200 dark:border-white/10 rounded-xl text-sm text-build-main dark:text-white focus:outline-none focus:border-build-accent focus:ring-1 focus:ring-build-accent" />
+                      <input type="date" value={eventDate} onChange={e => setEventDate(e.target.value)} className="w-full px-3 py-2.5 border border-slate-200 dark:border-white/10 rounded-xl text-sm text-build-main dark:text-white bg-white dark:bg-white/5 focus:outline-none focus:border-build-accent focus:ring-1 focus:ring-build-accent" />
                     </div>
                     <div>
                       <label className="block text-[11px] font-bold text-slate-500 dark:text-white/60 uppercase mb-1">Hora Inicio *</label>
-                      <input type="time" value={startTime} onChange={e => setStartTime(e.target.value)} className="w-full px-3 py-2.5 border border-slate-200 dark:border-white/10 rounded-xl text-sm text-build-main dark:text-white focus:outline-none focus:border-build-accent focus:ring-1 focus:ring-build-accent" />
+                      <input type="time" value={startTime} onChange={e => setStartTime(e.target.value)} className="w-full px-3 py-2.5 border border-slate-200 dark:border-white/10 rounded-xl text-sm text-build-main dark:text-white bg-white dark:bg-white/5 focus:outline-none focus:border-build-accent focus:ring-1 focus:ring-build-accent" />
                     </div>
                     <div>
                       <label className="block text-[11px] font-bold text-slate-500 dark:text-white/60 uppercase mb-1">Hora Fin *</label>
-                      <input type="time" value={endTime} onChange={e => setEndTime(e.target.value)} className="w-full px-3 py-2.5 border border-slate-200 dark:border-white/10 rounded-xl text-sm text-build-main dark:text-white focus:outline-none focus:border-build-accent focus:ring-1 focus:ring-build-accent" />
+                      <input type="time" value={endTime} onChange={e => setEndTime(e.target.value)} className="w-full px-3 py-2.5 border border-slate-200 dark:border-white/10 rounded-xl text-sm text-build-main dark:text-white bg-white dark:bg-white/5 focus:outline-none focus:border-build-accent focus:ring-1 focus:ring-build-accent" />
                     </div>
                   </div>
 
                   <div>
                     <label className="block text-[11px] font-bold text-slate-500 dark:text-white/60 uppercase mb-1">Lugar / Ubicación</label>
-                    <input type="text" value={location} onChange={e => setLocation(e.target.value)} className="w-full px-3 py-2.5 border border-slate-200 dark:border-white/10 rounded-xl text-sm text-build-main dark:text-white focus:outline-none focus:border-build-accent focus:ring-1 focus:ring-build-accent" />
+                    <input type="text" value={location} onChange={e => setLocation(e.target.value)} className="w-full px-3 py-2.5 border border-slate-200 dark:border-white/10 rounded-xl text-sm text-build-main dark:text-white bg-white dark:bg-white/5 focus:outline-none focus:border-build-accent focus:ring-1 focus:ring-build-accent" />
                   </div>
                 </div>
 
-                <div className="px-6 py-4 flex justify-end gap-3 bg-white dark:bg-white/5 border-t border-slate-200 dark:border-white/10">
+                <div className="px-6 py-4 flex justify-end gap-3 bg-white dark:bg-[#111] border-t border-slate-200 dark:border-white/10">
                   <button type="button" onClick={() => setModalOpen(false)} disabled={isSaving} className="px-5 py-2.5 text-sm font-bold text-slate-500 dark:text-white/60 hover:bg-slate-50 dark:bg-white/5 hover:text-build-main dark:text-white transition-colors rounded-xl">
                     Cancelar
                   </button>
@@ -337,15 +572,14 @@ export default function SchedulePage() {
                   <span className="material-symbols-outlined text-[64px] text-[#e65100] mb-4">sync_problem</span>
                 )}
                 <h3 className={`text-[18px] font-bold mb-2 ${successMsg ? "text-[#1c663b]" : "text-[#e65100]"}`}>
-                  {successMsg ? "Cita agendada y notificada" : "Aviso de sincronización"}
+                  {successMsg ? "Cita agendada" : "Aviso de sincronización"}
                 </h3>
-                <p className="text-[14px] text-[#41484c]">{successMsg || warningMsg}</p>
+                <p className="text-[14px] text-[#41484c] dark:text-white/70">{successMsg || warningMsg}</p>
               </div>
             )}
           </form>
         </div>
       )}
-
     </>
   );
 }

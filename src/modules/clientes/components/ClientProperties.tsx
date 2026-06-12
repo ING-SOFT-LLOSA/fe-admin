@@ -14,7 +14,7 @@ function getUnitIcon(label: string): string {
 }
 
 export default function ClientProperties({ assignments, onUnlink }: ClientPropertiesProps) {
-  const active = assignments.filter((a) => a.status === "Vigente" || a.estadoTramiteLegal !== "Desvinculada");
+  const active = assignments.filter((a) => a.status === "Vigente");
 
   return (
     <section className="rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 p-6 shadow-sm">

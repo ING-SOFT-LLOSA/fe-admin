@@ -35,7 +35,7 @@ export default function LegalOverview() {
               const { fetchExpedientesPorUsuario } = await import("@/lib/api/users");
               const exps = await fetchExpedientesPorUsuario(client.id);
               if (exps && exps.length > 0) {
-                statusMap[client.id] = exps[0].estadoTramiteLegal || "Por iniciar";
+                statusMap[client.id] = exps[0].vigente !== false ? "Vigente" : "Desvinculado";
               } else {
                 statusMap[client.id] = "Sin unidades";
               }
@@ -186,9 +186,12 @@ export default function LegalOverview() {
                           let icon = "pending";
                           
                           const normStatus = status.toLowerCase();
-                          if (normStatus.includes("firmad") || normStatus.includes("inscrit") || normStatus.includes("completad") || normStatus.includes("sunarp")) {
+                          if (normStatus === "vigente" || normStatus.includes("firmad") || normStatus.includes("inscrit") || normStatus.includes("completad") || normStatus.includes("sunarp")) {
                             badgeClass = "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400";
                             icon = "check_circle";
+                          } else if (normStatus === "desvinculado") {
+                            badgeClass = "bg-rose-100 dark:bg-rose-900/30 text-rose-700 dark:text-rose-400";
+                            icon = "cancel";
                           } else if (normStatus.includes("proces") || normStatus.includes("revision") || normStatus.includes("minuta") || normStatus.includes("firma")) {
                             badgeClass = "bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400";
                             icon = "progress_activity";

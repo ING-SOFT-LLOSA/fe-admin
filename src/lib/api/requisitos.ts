@@ -23,11 +23,12 @@ export interface StageDocumentResponse {
 }
 
 export interface RequisitoCreatePayload {
-  hitoProcesoCompraId: string;
-  titulo: string;
-  descripcion?: string;
-  notaCorporativa?: string;
-  icono?: string;
+  etapaProcesoCompraId: string;
+  titulo:               string;
+  descripcion?:         string;
+  notaCorporativa?:     string;
+  fechaEmision?:        string;
+  icono?:               string;
 }
 
 export interface RequisitoUpdatePayload {
