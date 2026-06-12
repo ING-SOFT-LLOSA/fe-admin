@@ -41,7 +41,6 @@ export type EtapaProceso =
   | "PAGO"
   | "ENTREGA"
   | "SANEAMIENTO";
- 
 export interface HitoComercialResponseDTO {
   uuidHitoComercial:   string;
   uuidEtapaExpediente: string;
@@ -298,4 +297,4 @@ export function fetchActivosPorUsuario(
     `/api/expedientes/usuario/${idUsuario}/activos`
   );
 }
- 
+

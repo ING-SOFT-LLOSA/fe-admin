@@ -91,7 +91,6 @@ export function useFinancingData(selectedUnitId: string | null) {
                     console.warn("Error fetching stepper", e);
                     setStepper(null);
                 }
-
                 try {
                     const carta = await fetchCartaAprobacion(uuid);
                     setCartaAprobacion(carta);
@@ -99,7 +98,6 @@ export function useFinancingData(selectedUnitId: string | null) {
                     console.warn("Error fetching carta", e);
                     setCartaAprobacion(null);
                 }
-
                 setPagos([]);
                 setCronograma(null);
                 setResumen(null);

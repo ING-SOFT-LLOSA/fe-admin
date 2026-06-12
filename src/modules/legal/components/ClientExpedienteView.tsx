@@ -22,7 +22,6 @@ type Props = { clientId: number };
  
 export default function ClientExpedienteView({ clientId }: Props) {
   const { perfil } = useAuth();
- 
   const [client,             setClient]             = useState<Usuario | null>(null);
   const [expedientes,        setExpedientes]        = useState<UsuarioActivoResponseDTO[]>([]);
   const [selectedExpediente, setSelectedExpediente] = useState<UsuarioActivoResponseDTO | null>(null);
@@ -32,12 +31,11 @@ export default function ClientExpedienteView({ clientId }: Props) {
  
   // ── Data layer ──────────────────────────────────────────────────────────────
   // `selectedExpediente` ya ES el contrato — no hay segunda llamada.
- 
   const {
     stepper,
     etapas,
     loading: stepperLoading,
-    error:   stepperError,
+    error: stepperError,
     updateHito,
   } = useCommercialStepper(selectedExpediente);
  
@@ -49,7 +47,6 @@ export default function ClientExpedienteView({ clientId }: Props) {
   } = useStageDocuments(selectedExpediente, stepper);
  
   // ── Bootstrap ───────────────────────────────────────────────────────────────
- 
   useEffect(() => {
     let mounted = true;
     async function load() {
@@ -76,7 +73,6 @@ export default function ClientExpedienteView({ clientId }: Props) {
     void load();
     return () => { mounted = false; };
   }, [clientId]);
- 
   // ── Permisos ────────────────────────────────────────────────────────────────
  
   const isAdmin       = perfil?.rol === "ADMIN";
@@ -111,7 +107,6 @@ export default function ClientExpedienteView({ clientId }: Props) {
   if (pageError)   return <ErrorBanner message={pageError} />;
  
   // ── Render ───────────────────────────────────────────────────────────────────
- 
   return (
     <section className="space-y-6">
       {/* Back + Header */}
