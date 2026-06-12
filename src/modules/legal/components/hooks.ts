@@ -5,8 +5,10 @@ import {
   createCommercialHito,
   updateCommercialHitoEstado,
   fetchEtapasExpediente,
+  fetchTodosLosContratos,
   type StepperResponseDTO,
   type UsuarioActivoResponseDTO,
+  type EtapaExpedienteResponseDTO,
 } from "@/lib/api/expedientes";
 import {
   fetchStageDocuments,
@@ -141,7 +143,6 @@ export function useCommercialStepper(contrato: UsuarioActivoResponseDTO | null) 
   // ── Mapea el backend a ProcesoEtapa[] plano (un item por hito) ────────────
   // Cada hito individual del backend se convierte en una fila del timeline.
   const etapas: ProcesoEtapa[] = (stepper?.etapas ?? [])
-    .filter((et) => et.etapa !== "PAGO")
     .flatMap((et) => {
       const stageId  = et.etapa as StageId;
       const stageMeta = STAGE_META[stageId];
@@ -240,8 +241,10 @@ export function useStageDocuments(
 const STAGE_DISPLAY: Record<StageId, { label: string; icon: string }> = {
   SEPARACION:  { label: "Separación",  icon: "handshake"       },
   CONTRATO:    { label: "Contrato",    icon: "description"     },
+  PAGO:        { label: "Pagos",       icon: "payments"        },
   ENTREGA:     { label: "Entrega",     icon: "key"             },
   SANEAMIENTO: { label: "Saneamiento", icon: "domain_verified" },
+  OTRO:        { label: "Otro",        icon: "folder"          },
 };
 
 async function loadStageSection(
@@ -302,4 +305,47 @@ async function loadStageSection(
   });
 
   return { id: stageId, ...display, docs };
+}
+
+// ─── useExpediente ───────────────────────────────────────────────────────────
+// Carga los datos del expediente y el resumen de etapas en paralelo.
+export function useExpediente(uuidUsuarioActivo: string | null) {
+  const [expediente, setExpediente] = useState<UsuarioActivoResponseDTO | null>(null);
+  const [stages, setStages] = useState<EtapaExpedienteResponseDTO[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  const refresh = useCallback(async () => {
+    if (!uuidUsuarioActivo) {
+      setExpediente(null);
+      setStages([]);
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
+    setError("");
+    try {
+      const [allContracts, stagesData] = await Promise.all([
+        fetchTodosLosContratos(),
+        fetchEtapasExpediente(uuidUsuarioActivo),
+      ]);
+      const found = allContracts.find((c) => c.uuidUsuarioActivo === uuidUsuarioActivo);
+      if (!found) {
+        throw new Error("Expediente no encontrado en el sistema.");
+      }
+      setExpediente(found);
+      setStages(stagesData);
+    } catch (err) {
+      console.error("useExpediente error:", err);
+      setError(err instanceof Error ? err.message : "Error al cargar el expediente");
+    } finally {
+      setLoading(false);
+    }
+  }, [uuidUsuarioActivo]);
+
+  useEffect(() => {
+    void refresh();
+  }, [refresh]);
+
+  return { expediente, stages, loading, error, refresh };
 }

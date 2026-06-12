@@ -133,6 +133,14 @@ export function fetchMisActivos(): Promise<ActivoResponseDTO[]> {
 export function unlinkAssignment(uuid: string): Promise<void> {
   return apiFetch<void>(`/api/expedientes/delete/${uuid}`, { method: "DELETE" });
 }
+
+/**
+ * GET /api/expedientes
+ * Lista todos los expedientes (UsuarioActivo) de la empresa.
+ */
+export function fetchTodosLosContratos(): Promise<UsuarioActivoResponseDTO[]> {
+  return apiFetch<UsuarioActivoResponseDTO[]>("/api/expedientes");
+}
  
 /**
  * GET /api/expedientes/{idUsuario}
@@ -212,6 +220,8 @@ export interface EtapaExpedienteResponseDTO {
   uuidUsuarioActivo:   string;
   etapaProceso:        EtapaProceso;
   estado:              string;
+  totalHitos?:         number;
+  totalRequisitos?:    number;
 }
 
 export function fetchEtapasExpediente(

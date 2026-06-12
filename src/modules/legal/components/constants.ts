@@ -2,7 +2,7 @@
 
 export type EstadoHito = "pendiente" | "en_proceso" | "completado" | "observado";
 
-export type StageId = "SEPARACION" | "CONTRATO" | "ENTREGA" | "SANEAMIENTO";
+export type StageId = "SEPARACION" | "CONTRATO" | "PAGO" | "ENTREGA" | "SANEAMIENTO" | "OTRO";
 
 export type ProcesoEtapa = {
   id:           string;
@@ -10,6 +10,7 @@ export type ProcesoEtapa = {
   label:        string;
   etapaProceso: StageId;
   orden:        number;
+  state?:       string; // optional state
   estado:       EstadoHito;
   icon:         string;
   fechaInicio?: string;
@@ -68,6 +69,7 @@ export const ESTADO_A_BACKEND: Record<EstadoHito, string> = {
 export const STAGE_ORDER: StageId[] = [
   "SEPARACION",
   "CONTRATO",
+  "PAGO",
   "ENTREGA",
   "SANEAMIENTO",
 ];
@@ -76,17 +78,21 @@ export const STAGE_ORDER: StageId[] = [
 export const DOCUMENT_STAGES: StageId[] = [
   "SEPARACION",
   "CONTRATO",
+  "PAGO",
   "ENTREGA",
   "SANEAMIENTO",
+  "OTRO",
 ];
 
 // ── Metadata de UI por etapa ──────────────────────────────────────────────────
 
 export const STAGE_META: Record<StageId, { label: string; icon: string }> = {
-  SEPARACION:  { label: "Separación",  icon: "handshake"        },
-  CONTRATO:    { label: "Contrato",    icon: "description"      },
-  ENTREGA:     { label: "Entrega",     icon: "key"              },
-  SANEAMIENTO: { label: "Saneamiento", icon: "domain_verified"  },
+  SEPARACION:  { label: "Separación",  icon: "description" },
+  CONTRATO:    { label: "Contrato",    icon: "edit_document" },
+  PAGO:        { label: "Pagos",       icon: "payments" },
+  ENTREGA:     { label: "Entrega",     icon: "key" },
+  SANEAMIENTO: { label: "Saneamiento", icon: "account_balance" },
+  OTRO:        { label: "Otro",        icon: "folder" },
 };
 
 // ── Hitos por defecto que se crean en el seed inicial ────────────────────────
@@ -278,9 +284,10 @@ export const PREDEFINED_REQUISITOS: Record<StageId, RequisitoPredef[]> = {
     { titulo: "Borrador del contrato",    descripcion: "Borrador revisado por el área legal.",              icono: "manage_search" },
     { titulo: "Contrato firmado",         descripcion: "Contrato de compraventa firmado por ambas partes.", icono: "draw"          },
     { titulo: "Voucher cuota inicial",    descripcion: "Comprobante del pago de la cuota inicial.",         icono: "payments"      },
-    { titulo: "DNI cónyuge (si aplica)", descripcion: "Documento de identidad del cónyuge.",               icono: "badge"         },
+    { titulo: "DNI cónyuge (si aplica)",  descripcion: "Documento de identidad del cónyuge.",               icono: "badge"         },
     { titulo: "Estado de cuenta",         descripcion: "Estado de cuenta bancario del cliente.",            icono: "account_balance" },
   ],
+  PAGO: [],
   ENTREGA: [
     { titulo: "Acta de entrega",          descripcion: "Acta firmada de entrega del inmueble.",             icono: "key"           },
     { titulo: "Check list de inmueble",   descripcion: "Lista de verificación del estado del inmueble.",    icono: "checklist"     },
@@ -297,6 +304,7 @@ export const PREDEFINED_REQUISITOS: Record<StageId, RequisitoPredef[]> = {
     { titulo: "Constancia de no adeudo",  descripcion: "Constancia de no adeudo de servicios.",             icono: "check_circle"        },
     { titulo: "Minuta de compraventa",    descripcion: "Copia de la minuta de compraventa firmada.",        icono: "description"         },
   ],
+  OTRO: [],
 };
 
 // ── Opciones del select de estado (compartidas por todos los hitos) ───────────
