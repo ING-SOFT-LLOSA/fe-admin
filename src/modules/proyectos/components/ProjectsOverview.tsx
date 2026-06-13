@@ -204,7 +204,7 @@ const filtered = useMemo(() => {
           </p>
           {hasFilters && (
             <button
-              onClick={() => { setSearch(""); setFilterEstado(""); }}
+              onClick={() => { setSearch(""); }}
               className="mt-4 text-xs font-semibold text-build-accent hover:underline"
             >
               Limpiar filtros

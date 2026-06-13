@@ -109,19 +109,19 @@ export default function LoginForm({ redirectTo = "/proyectos" }: LoginFormProps)
       </div>
 
       {/* ─── Right panel: Form ─── */}
-      <div className="flex-1 flex flex-col items-center justify-center p-6 bg-build-bg h-screen overflow-hidden w-full lg:w-[45%]">
-        {/* Mobile logo */}
-        <div className="mb-8 mt-6 lg:hidden flex justify-center">
-          <img
-            src="/logo_llosa.png"
-            alt="Llosa Logo"
-            className="h-12 w-auto object-contain invert dark:invert-0"
-          />
-        </div>
+      <div className="flex-1 flex flex-col items-center py-12 px-6 bg-build-bg h-screen overflow-y-auto w-full lg:w-[45%]">
+        <div className="w-full max-w-[448px] my-auto flex flex-col">
+          {/* Mobile logo */}
+          <div className="mb-8 mt-6 lg:hidden flex justify-center">
+            <img
+              src="/logo_llosa.png"
+              alt="Llosa Logo"
+              className="h-12 w-auto object-contain invert dark:invert-0"
+            />
+          </div>
 
-        <div className="w-full max-w-[448px]">
           {/* Card */}
-          <div className="bg-white dark:bg-white/5 rounded-2xl shadow-[0_8px_40px_rgba(0,22,41,0.08)] border border-white p-6">
+          <div className="bg-white dark:bg-white/5 rounded-2xl shadow-[0_8px_40px_rgba(0,22,41,0.08)] border border-slate-100 dark:border-white/10 p-6">
             <div className="mb-7">
               <h2 className="text-3xl font-bold text-build-main dark:text-white leading-tight" style={{ fontFamily: "'Outfit', sans-serif" }}>
                 Inicia sesión
@@ -150,7 +150,7 @@ export default function LoginForm({ redirectTo = "/proyectos" }: LoginFormProps)
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="usuario@correo.com"
-                  className="h-10 w-full px-4 rounded-xl border border-gray-200 bg-white dark:bg-white/5 text-[15px] text-build-main dark:text-white outline-none transition-all duration-200 focus:border-build-accent focus:ring-4 focus:ring-build-accent/20 box-border"
+                  className="h-10 w-full px-4 rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 text-[15px] text-build-main dark:text-white outline-none transition-all duration-200 focus:border-build-accent focus:ring-4 focus:ring-build-accent/20 box-border"
                 />
               </div>
 
@@ -167,7 +167,7 @@ export default function LoginForm({ redirectTo = "/proyectos" }: LoginFormProps)
                     value={pass}
                     onChange={(e) => setPass(e.target.value)}
                     placeholder="••••••••"
-                    className="h-10 w-full pl-4 pr-12 rounded-xl border border-gray-200 bg-white dark:bg-white/5 text-[15px] text-build-main dark:text-white outline-none transition-all duration-200 focus:border-build-accent focus:ring-4 focus:ring-build-accent/20 box-border"
+                    className="h-10 w-full pl-4 pr-12 rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 text-[15px] text-build-main dark:text-white outline-none transition-all duration-200 focus:border-build-accent focus:ring-4 focus:ring-build-accent/20 box-border"
                   />
                   <button
                     type="button"
@@ -222,7 +222,7 @@ export default function LoginForm({ redirectTo = "/proyectos" }: LoginFormProps)
                 disabled={loading}
                 onMouseEnter={() => setGoogleHover(true)}
                 onMouseLeave={() => setGoogleHover(false)}
-                className={`h-11 w-full border border-gray-200 rounded-xl text-[15px] font-semibold tracking-wide transition-all duration-300 flex items-center justify-center gap-2.5 text-build-main dark:text-white ${
+                className={`h-11 w-full border border-slate-200 dark:border-white/10 rounded-xl text-[15px] font-semibold tracking-wide transition-all duration-300 flex items-center justify-center gap-2.5 text-build-main dark:text-white ${
                   loading
                     ? "opacity-60 cursor-not-allowed bg-white dark:bg-white/5"
                     : googleHover
