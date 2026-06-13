@@ -1,103 +1,249 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import ProjectCard from "./ProjectCard";
 import { apiFetch } from "@/lib/api/http";
 import { Proyecto } from "../types/proyecto";
 
+// ─── Skeleton card shown during loading ───────────────────────────────────────
+function SkeletonCard() {
+  return (
+    <div className="rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 p-6">
+      <div className="mb-3 h-3 w-20 animate-pulse rounded bg-slate-100 dark:bg-white/10" />
+      <div className="mb-4 h-5 w-48 animate-pulse rounded bg-slate-100 dark:bg-white/10" />
+      <div className="grid gap-3 md:grid-cols-3">
+        {[1, 2, 3].map((i) => (
+          <div key={i} className="h-14 animate-pulse rounded-xl bg-slate-100 dark:bg-white/10" />
+        ))}
+      </div>
+    </div>
+  );
+}
 
 export default function ProjectsOverview() {
-  const [projects, setProjects] = useState<Proyecto[]>([]);
+  const [projects, setProjects]   = useState<Proyecto[]>([]);
+  const [contracts, setContracts] = useState<any[]>([]);
+  const [dptosCountMap, setDptosCountMap] = useState<Record<string, number>>({});
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError]         = useState("");
+  const [search, setSearch]       = useState("");
+  const [filterEstado, setFilterEstado] = useState("");
 
   useEffect(() => {
     let mounted = true;
-
-    async function loadProjects() {
+    async function loadData() {
+      setIsLoading(true);
+      setError("");
       try {
-        const data = await apiFetch<Proyecto[]>("/api/proyectos");
-        if (mounted) {
-          setProjects(data || []);
-          setIsLoading(false);
+        const [projData, contractsData] = await Promise.all([
+          apiFetch<Proyecto[]>("/api/proyectos"),
+          apiFetch<any>("/api/expedientes?unpaginated=true").catch(() => []),
+        ]);
+
+        if (!mounted) return;
+
+        setProjects(projData || []);
+        const list = Array.isArray(contractsData)
+          ? contractsData
+          : (contractsData?.content || []);
+        setContracts(list);
+
+        // Fetch assets for each project in parallel to get unit counts
+        const assetsMap: Record<string, number> = {};
+        if (projData && projData.length > 0) {
+          await Promise.all(
+            projData.map(async (p) => {
+              try {
+                const assetsPage = await apiFetch<any>(`/api/activos/proyecto/${p.id}?size=9999`);
+                const content = assetsPage?.content || [];
+                const dptosCount = content.filter((a: any) => a.tipo === "DEPARTAMENTO").length;
+                assetsMap[p.id] = dptosCount;
+              } catch (err) {
+                console.error(`Error loading assets for project ${p.id}:`, err);
+                assetsMap[p.id] = 0;
+              }
+            })
+          );
         }
-      } catch (error) {
-        console.error("Error loading projects:", error);
         if (mounted) {
-          setIsLoading(false);
+          setDptosCountMap(assetsMap);
         }
+      } catch (err) {
+        if (mounted) setError(err instanceof Error ? err.message : "No se pudieron cargar los proyectos.");
+      } finally {
+        if (mounted) setIsLoading(false);
       }
     }
-
-    loadProjects();
-
-    return () => {
-      mounted = false;
-    };
+    void loadData();
+    return () => { mounted = false; };
   }, []);
 
+  // ── Derived stats ────────────────────────────────────────────────────────────
+  const stats = useMemo(() => ({
+    total:     projects.length,
+    activos:   projects.filter((p) => (p as any).estado === "ACTIVO" || (p as any).activo !== false).length,
+    enObra:    projects.filter((p) => (p as any).estado === "EN_CONSTRUCCION").length,
+    entregados:projects.filter((p) => (p as any).estado === "ENTREGADO").length,
+  }), [projects]);
+
+  // ── Filtered list ─────────────────────────────────────────────────────────────
+  const filtered = useMemo(() => {
+    return projects.filter((p) => {
+      if (search && !p.nombre.toLowerCase().includes(search.toLowerCase())) return false;
+      if (filterEstado && (p as any).estado !== filterEstado) return false;
+      return true;
+    });
+  }, [projects, search, filterEstado]);
+
+  const hasFilters = !!(search || filterEstado);
+
   return (
-    <>
-      <section className="flex flex-col gap-6">
-        <header className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-          <div>
-            <h2 className="text-2xl md:text-3xl font-bold tracking-[-0.01em] text-build-main dark:text-white">
-              Proyectos
-            </h2>
-            <p className="mt-2 text-base text-slate-600 dark:text-white/70">
-              Visualiza todos los proyectos activos y entra al detalle para editar su informacion.
+    <section className="space-y-5">
+
+      {/* ── Header ── */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <h2 className="text-2xl font-bold tracking-tight text-build-main dark:text-white md:text-3xl">
+            Proyectos
+          </h2>
+          <p className="mt-1 text-sm text-slate-500 dark:text-white/60">
+            Proyectos activos — entra al detalle para editar información.
+          </p>
+        </div>
+        <Link
+          href="/proyectos/new"
+          className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-build-main px-4 py-2.5 text-sm font-semibold text-white hover:bg-build-main/90 transition-colors shadow-sm"
+        >
+          <span className="material-symbols-outlined text-[18px]">add</span>
+          Nuevo proyecto
+        </Link>
+      </div>
+
+      {/* ── Metric cards ── */}
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        {[
+          { label: "Total",      value: stats.total,      color: "text-build-main dark:text-white" },
+          { label: "Activos",    value: stats.activos,    color: "text-emerald-600 dark:text-emerald-400" },
+          { label: "En obra",    value: stats.enObra,     color: "text-amber-600 dark:text-amber-400" },
+          { label: "Entregados", value: stats.entregados, color: "text-slate-500 dark:text-white/50" },
+        ].map(({ label, value, color }) => (
+          <div key={label} className="rounded-xl bg-slate-50 dark:bg-white/[0.04] px-4 py-3">
+            <p className="text-xs text-slate-500 dark:text-white/50 mb-1">{label}</p>
+            <p className={`text-2xl font-semibold ${color}`}>
+              {isLoading
+                ? <span className="inline-block h-7 w-8 animate-pulse rounded bg-slate-200 dark:bg-white/10" />
+                : value
+              }
             </p>
-            <div className="mt-4">
-              <Link href="/proyectos/new" className="inline-flex items-center justify-center gap-2 rounded-xl bg-build-main px-6 py-2.5 text-sm font-bold text-white shadow-sm hover:bg-build-accent transition-colors">
-                <span className="material-symbols-outlined text-[18px]">add</span>
-                Crear Nuevo Proyecto
-              </Link>
-            </div>
           </div>
+        ))}
+      </div>
 
-          <div className="grid grid-cols-2 gap-3 lg:min-w-[320px]">
-            <div className="rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 p-5 shadow-sm">
-              <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-white/60">Total proyectos</p>
-              <p className="mt-2 text-[24px] font-bold text-build-main dark:text-white">{projects.length}</p>
-            </div>
-          
-          </div>
-        </header>
+      {/* ── Error ── */}
+      {error && (
+        <div className="rounded-xl border border-red-200 dark:border-red-900/50 bg-red-50 dark:bg-red-900/20 px-4 py-3 text-sm text-red-800 dark:text-red-400">
+          {error}
+        </div>
+      )}
 
-        <section className="space-y-4">
-          {isLoading ? (
-            Array.from({ length: 3 }).map((_, index) => (
-              <div
-                key={index}
-                className="rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 p-6 shadow-sm"
-              >
-                <div className="skeleton mb-3 h-4 w-24" />
-                <div className="skeleton mb-4 h-7 w-56" />
-                <div className="grid gap-3 md:grid-cols-3">
-                  <div className="skeleton h-14 w-full" />
-                  <div className="skeleton h-14 w-full" />
-                  <div className="skeleton h-14 w-full" />
-                </div>
-              </div>
-            ))
-          ) : projects.length === 0 ? (
-            <div className="rounded-2xl border border-dashed border-slate-300 dark:border-white/20 bg-white dark:bg-white/5 px-6 py-12 text-center">
-              <span className="material-symbols-outlined text-[32px] text-slate-400 dark:text-white/50">folder_open</span>
-              <h2 className="mt-3 text-lg font-bold text-build-main dark:text-white">No hay proyectos disponibles</h2>
-              <p className="mt-1 text-sm text-slate-500 dark:text-white/60">Cuando se registren proyectos aparecerán aquí.</p>
-            </div>
-          ) : (
-            <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-              {projects.map(project => (
-                <ProjectCard
-                  key={project.id}
-                  project={project}
-                />
-              ))}
-            </div>
+      {/* ── Filter bar ── */}
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="relative flex-1 min-w-[180px] max-w-xs">
+          <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[16px] text-slate-400 dark:text-white/30 pointer-events-none">
+            search
+          </span>
+          <input
+            type="text"
+            placeholder="Buscar proyecto…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 pl-8 pr-3 py-2 text-xs text-build-main dark:text-white outline-none focus:border-build-accent focus:ring-1 focus:ring-build-accent transition"
+          />
+        </div>
+
+        <select
+          value={filterEstado}
+          onChange={(e) => setFilterEstado(e.target.value)}
+          className="rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 px-3 py-2 text-xs text-build-main dark:text-white focus:outline-none focus:border-build-accent transition"
+        >
+          <option value="">Todos los estados</option>
+          <option value="ACTIVO">Activo</option>
+          <option value="EN_CONSTRUCCION">En construcción</option>
+          <option value="ENTREGADO">Entregado</option>
+          <option value="INACTIVO">Inactivo</option>
+        </select>
+
+        {hasFilters && (
+          <button
+            onClick={() => { setSearch(""); setFilterEstado(""); }}
+            className="flex items-center gap-1 rounded-lg border border-slate-200 dark:border-white/10 px-3 py-2 text-xs text-slate-500 dark:text-white/50 hover:bg-slate-50 dark:hover:bg-white/5 transition"
+          >
+            <span className="material-symbols-outlined text-[14px]">close</span>
+            Limpiar
+          </button>
+        )}
+
+        {!isLoading && (
+          <span className="ml-auto text-xs text-slate-400 dark:text-white/30 tabular-nums">
+            {filtered.length} proyecto{filtered.length !== 1 ? "s" : ""}
+          </span>
+        )}
+      </div>
+
+      {/* ── Grid ── */}
+      {isLoading ? (
+        <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+          {Array.from({ length: 3 }).map((_, i) => <SkeletonCard key={i} />)}
+        </div>
+      ) : filtered.length === 0 ? (
+        <div className="rounded-2xl border border-dashed border-slate-300 dark:border-white/20 bg-white dark:bg-white/5 px-6 py-14 text-center">
+          <span className="material-symbols-outlined text-[32px] text-slate-400 dark:text-white/40">
+            {hasFilters ? "search_off" : "folder_open"}
+          </span>
+          <h2 className="mt-3 text-base font-semibold text-build-main dark:text-white">
+            {hasFilters ? "Sin resultados" : "No hay proyectos"}
+          </h2>
+          <p className="mt-1 text-sm text-slate-500 dark:text-white/50">
+            {hasFilters
+              ? "Ningún proyecto coincide con los filtros aplicados."
+              : "Cuando se registren proyectos aparecerán aquí."}
+          </p>
+          {hasFilters && (
+            <button
+              onClick={() => { setSearch(""); setFilterEstado(""); }}
+              className="mt-4 text-xs font-semibold text-build-accent hover:underline"
+            >
+              Limpiar filtros
+            </button>
           )}
-        </section>
-      </section>
-    </>
+        </div>
+      ) : (
+        <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+          {filtered.map((project) => {
+            const dptosCount = dptosCountMap[project.id] ?? 0;
+            const projectClients = new Set<number>();
+            contracts.forEach((c) => {
+              const hasAssetInProject = c.activos?.some((a: any) => a.proyectoNombre === project.nombre);
+              if (hasAssetInProject) {
+                c.clientes?.forEach((client: any) => {
+                  projectClients.add(client.id);
+                });
+              }
+            });
+            const clientesCount = projectClients.size;
+
+            return (
+              <ProjectCard
+                key={project.id}
+                project={project}
+                clientesCount={clientesCount}
+                dptosCount={dptosCount}
+              />
+            );
+          })}
+        </div>
+      )}
+    </section>
   );
 }
