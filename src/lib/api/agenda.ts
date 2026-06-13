@@ -8,7 +8,7 @@ export interface CitaResponse {
   ubicacion: string;
   fechaInicio: string; // ISO string
   fechaFin: string; // ISO string
-  estadoCita: "PROGRAMADA" | "CONFIRMADA" | "CANCELADA" | "COMPLETADA";
+  estadoCita: "PROGRAMADA" | "CONFIRMADA" | "CANCELADA" | "COMPLETADA" | "REPROGRAMACION_PENDIENTE";
   confirmacionCliente: boolean | null;
   permiteReprogramacion: boolean;
   clienteUsaGoogle: boolean;
@@ -21,6 +21,7 @@ export interface CitaResponse {
   gestorNombre: string;
   activoId: string;
   activoNro: string;
+  disponibilidades?: DisponibilidadResponse[];
 }
 
 export interface CrearCitaPayload {

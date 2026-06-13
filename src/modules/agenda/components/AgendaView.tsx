@@ -2,6 +2,15 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { fetchUsuarios } from "@/lib/api/users";
 import type { Usuario } from "@/types/user";
+import {
+  fetchCitasCalendario,
+  crearCita,
+  cancelarCita,
+  actualizarCita,
+  seleccionarBloqueDisponibilidad,
+  forzarSincronizacionManual,
+  type CitaResponse,
+} from "@/lib/api/agenda";
 
 type CalEvent = {
   id: string;
@@ -101,6 +110,26 @@ export default function SchedulePage() {
   const [successMsg, setSuccessMsg] = useState("");
   const [warningMsg, setWarningMsg] = useState("");
 
+  // Detailed view & edit states
+  const [rawCitas, setRawCitas] = useState<CitaResponse[]>([]);
+  const [selectedCita, setSelectedCita] = useState<CitaResponse | null>(null);
+  const [detailModalOpen, setDetailModalOpen] = useState(false);
+  const [modalError, setModalError] = useState("");
+  const [isEditing, setIsEditing] = useState(false);
+  const [showCancelForm, setShowCancelForm] = useState(false);
+  const [motivoCancelacion, setMotivoCancelacion] = useState("");
+  const [isSyncing, setIsSyncing] = useState(false);
+
+  // Edit fields state
+  const [editTitle, setEditTitle] = useState("");
+  const [editDesc, setEditDesc] = useState("");
+  const [editLocation, setEditLocation] = useState("");
+  const [editDate, setEditDate] = useState("");
+  const [editStartTime, setEditStartTime] = useState("");
+  const [editEndTime, setEditEndTime] = useState("");
+  const [editEstado, setEditEstado] = useState<"PROGRAMADA" | "CONFIRMADA" | "CANCELADA" | "COMPLETADA" | "REPROGRAMACION_PENDIENTE">("PROGRAMADA");
+  const [editPermiteReprog, setEditPermiteReprog] = useState(false);
+
   const selectedClient = clients.find(c => String(c.id) === clientId);
 
   // Load clients
@@ -178,9 +207,9 @@ export default function SchedulePage() {
 
     setLoadingEvents(true);
     
-    import("@/lib/api/agenda")
-      .then(m => m.fetchCitasCalendario(startDateStr, endDateStr))
+    fetchCitasCalendario(startDateStr, endDateStr)
       .then(citas => {
+        setRawCitas(citas);
         const updatedGrid = gridCells.map(cell => {
           let cellYear = year;
           let cellMonth = month;
@@ -211,6 +240,9 @@ export default function SchedulePage() {
               } else if (c.estadoCita === "COMPLETADA") {
                 bg = "bg-slate-100 text-slate-700 dark:bg-white/10 dark:text-white/60";
                 dot = "bg-slate-500";
+              } else if (c.estadoCita === "REPROGRAMACION_PENDIENTE") {
+                bg = "bg-[#ffe0b2] text-[#e65100]";
+                dot = "bg-[#e65100]";
               }
 
               return {
@@ -286,6 +318,119 @@ export default function SchedulePage() {
     setEventDate(dateStr);
   }
 
+  const handleEventClick = (id: string) => {
+    const cita = rawCitas.find(c => c.id === id);
+    if (cita) {
+      setSelectedCita(cita);
+      setModalError("");
+      setShowCancelForm(false);
+      setMotivoCancelacion("");
+      setDetailModalOpen(true);
+    }
+  };
+
+  const handleStartEdit = () => {
+    if (!selectedCita) return;
+    setEditTitle(selectedCita.titulo);
+    setEditDesc(selectedCita.descripcion);
+    setEditLocation(selectedCita.ubicacion);
+    
+    const startStr = selectedCita.fechaInicio;
+    const endStr = selectedCita.fechaFin;
+    
+    const [startDatePart, startTimePart] = startStr.split("T");
+    const [, endTimePart] = endStr.split("T");
+    
+    setEditDate(startDatePart || "");
+    setEditStartTime(startTimePart?.slice(0, 5) || "");
+    setEditEndTime(endTimePart?.slice(0, 5) || "");
+    setEditEstado(selectedCita.estadoCita);
+    setEditPermiteReprog(selectedCita.permiteReprogramacion);
+    setIsEditing(true);
+  };
+
+  const handleSaveEdit = () => {
+    if (!selectedCita) return;
+    if (!editTitle.trim() || !editDate || !editStartTime || !editEndTime) {
+      setModalError("Por favor completa los campos requeridos.");
+      return;
+    }
+    
+    setIsSaving(true);
+    setModalError("");
+    const startStr = `${editDate}T${editStartTime}:00`;
+    const endStr = `${editDate}T${editEndTime}:00`;
+    
+    actualizarCita(selectedCita.id, {
+      titulo: editTitle,
+      descripcion: editDesc,
+      ubicacion: editLocation,
+      fechaInicio: startStr,
+      fechaFin: endStr,
+      estadoCita: editEstado,
+      permiteReprogramacion: editPermiteReprog
+    })
+      .then((updated) => {
+        setIsSaving(false);
+        setIsEditing(false);
+        setDetailModalOpen(false);
+        fetchAppointments();
+      })
+      .catch(err => {
+        setIsSaving(false);
+        setModalError(err instanceof Error ? err.message : "Error al actualizar la cita.");
+      });
+  };
+
+  const handleConfirmCancel = () => {
+    if (!selectedCita || !motivoCancelacion.trim()) return;
+    setIsSaving(true);
+    setModalError("");
+    
+    cancelarCita(selectedCita.id, motivoCancelacion)
+      .then(() => {
+        setIsSaving(false);
+        setShowCancelForm(false);
+        setDetailModalOpen(false);
+        fetchAppointments();
+      })
+      .catch(err => {
+        setIsSaving(false);
+        setModalError(err instanceof Error ? err.message : "Error al cancelar la cita.");
+      });
+  };
+
+  const handleConfirmBlock = (bloqueId: number) => {
+    if (!selectedCita) return;
+    setIsSaving(true);
+    setModalError("");
+    
+    seleccionarBloqueDisponibilidad(selectedCita.id, bloqueId)
+      .then(() => {
+        setIsSaving(false);
+        setDetailModalOpen(false);
+        fetchAppointments();
+      })
+      .catch(err => {
+        setIsSaving(false);
+        setModalError(err instanceof Error ? err.message : "Error al confirmar la fecha propuesta.");
+      });
+  };
+
+  const handleSyncManual = () => {
+    setIsSyncing(true);
+    forzarSincronizacionManual()
+      .then((res) => {
+        setIsSyncing(false);
+        alert(res.mensaje || "Sincronización forzada correctamente.");
+        fetchAppointments();
+      })
+      .catch(err => {
+        setIsSyncing(false);
+        alert(err instanceof Error ? err.message : "Error al sincronizar.");
+      });
+  };
+
   function saveEvent(e: React.FormEvent) {
     e.preventDefault();
     setErrorMsg("");
@@ -307,34 +452,31 @@ export default function SchedulePage() {
     const startDateTimeStr = `${eventDate}T${startTime}:00`;
     const endDateTimeStr = `${eventDate}T${endTime}:00`;
 
-    import("@/lib/api/agenda")
-      .then(m => {
-        const eventLabel = EVENT_TYPES.find(e => e.value === eventType)?.label || eventType;
-        return m.crearCita({
-          clienteId: Number(clientId),
-          activoId: selectedUnitId,
-          tipoEvento: eventType,
-          titulo: `${eventLabel} - ${selectedClient?.nombre || ""} ${selectedClient?.apellidos || ""}`,
-          descripcion: `Cita sobre unidad inmobiliaria`,
-          ubicacion: location,
-          fechaInicio: startDateTimeStr,
-          fechaFin: endDateTimeStr,
-          permiteReprogramacion: true,
-          clienteUsaGoogle: !simulateGoogleFail,
-          
-          // Positional fallbacks
-          arg0: Number(clientId),
-          arg1: selectedUnitId,
-          arg2: eventType,
-          arg3: `${eventLabel} - ${selectedClient?.nombre || ""} ${selectedClient?.apellidos || ""}`,
-          arg4: `Cita sobre unidad inmobiliaria`,
-          arg5: location,
-          arg6: startDateTimeStr,
-          arg7: endDateTimeStr,
-          arg8: true,
-          arg9: !simulateGoogleFail
-        });
-      })
+    const eventLabel = EVENT_TYPES.find(e => e.value === eventType)?.label || eventType;
+    crearCita({
+      clienteId: Number(clientId),
+      activoId: selectedUnitId,
+      tipoEvento: eventType,
+      titulo: `${eventLabel} - ${selectedClient?.nombre || ""} ${selectedClient?.apellidos || ""}`,
+      descripcion: `Cita sobre unidad inmobiliaria`,
+      ubicacion: location,
+      fechaInicio: startDateTimeStr,
+      fechaFin: endDateTimeStr,
+      permiteReprogramacion: true,
+      clienteUsaGoogle: !simulateGoogleFail,
+      
+      // Positional fallbacks
+      arg0: Number(clientId),
+      arg1: selectedUnitId,
+      arg2: eventType,
+      arg3: `${eventLabel} - ${selectedClient?.nombre || ""} ${selectedClient?.apellidos || ""}`,
+      arg4: `Cita sobre unidad inmobiliaria`,
+      arg5: location,
+      arg6: startDateTimeStr,
+      arg7: endDateTimeStr,
+      arg8: true,
+      arg9: !simulateGoogleFail
+    })
       .then(() => {
         setIsSaving(false);
         if (simulateGoogleFail) {
@@ -420,7 +562,14 @@ export default function SchedulePage() {
                   {cell.day}
                 </span>
                 {cell.events.map((ev, i) => (
-                  <div key={i} className={`${ev.bg} rounded px-2 py-1.5 flex flex-col gap-0.5 shadow-sm border border-build-main/5`}>
+                  <div 
+                    key={i}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleEventClick(ev.id);
+                    }}
+                    className={`${ev.bg} rounded px-2 py-1.5 flex flex-col gap-0.5 shadow-sm border border-build-main/5 hover:scale-[1.02] transition-transform`}
+                  >
                     <div className="flex items-center gap-1.5">
                       <span className={`w-1.5 h-1.5 rounded-full ${ev.dot}`} />
                       <span className="text-[11px] font-bold truncate">{ev.label}</span>
@@ -450,6 +599,15 @@ export default function SchedulePage() {
                 <p className="text-[11px] text-slate-500 dark:text-white/60 mt-1 pr-2">Si ocurre un fallo, la cita se guardará solo localmente y se notificará el reintento.</p>
               </div>
             </label>
+
+            <button
+              onClick={handleSyncManual}
+              disabled={isSyncing}
+              className="w-full mt-4 bg-build-main hover:bg-build-main/90 text-white text-xs font-semibold py-2 px-4 rounded-xl flex items-center justify-center gap-2 transition-all disabled:opacity-50"
+            >
+              <span className="material-symbols-outlined text-[16px]">sync</span>
+              {isSyncing ? "Sincronizando..." : "Forzar Sincronización Manual"}
+            </button>
           </div>
 
           <div className="bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl p-6 shadow-sm">
@@ -578,6 +736,291 @@ export default function SchedulePage() {
               </div>
             )}
           </form>
+        </div>
+      )}
+
+      {/* Cita Detail & Edit Modal */}
+      {detailModalOpen && selectedCita && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-[#050a0e]/60 backdrop-blur-sm p-4 animate-fade-in">
+          <div className="bg-white dark:bg-[#111] rounded-2xl shadow-2xl w-full max-w-lg flex flex-col relative overflow-hidden">
+            
+            {/* Header */}
+            <div className="px-6 py-5 border-b border-slate-200 dark:border-white/10 bg-white dark:bg-[#111] flex justify-between items-center">
+              <h2 className="text-[20px] font-bold text-build-main dark:text-white flex items-center gap-2">
+                <span className="material-symbols-outlined text-build-accent">info</span> 
+                {isEditing ? "Editar Cita" : "Detalle de la Cita"}
+              </h2>
+              <button 
+                type="button" 
+                onClick={() => { setDetailModalOpen(false); setIsEditing(false); }} 
+                className="text-slate-400 dark:text-white/50 hover:text-[#ba1a1a]"
+              >
+                <span className="material-symbols-outlined">close</span>
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="p-6 overflow-y-auto max-h-[70vh] space-y-4">
+              {modalError && (
+                <div className="p-3 bg-[#ffdad6] border border-[#ba1a1a]/20 rounded-lg flex gap-2 text-[#ba1a1a]">
+                  <span className="material-symbols-outlined text-[18px]">error</span>
+                  <p className="text-[12px] font-bold leading-tight">{modalError}</p>
+                </div>
+              )}
+
+              {isEditing ? (
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-500 dark:text-white/60 uppercase mb-1">Título</label>
+                    <input 
+                      type="text" 
+                      value={editTitle} 
+                      onChange={e => setEditTitle(e.target.value)} 
+                      className="w-full px-3 py-2 border border-slate-200 dark:border-white/10 rounded-xl text-sm bg-white dark:bg-white/5 text-build-main dark:text-white focus:outline-none focus:border-build-accent" 
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-500 dark:text-white/60 uppercase mb-1">Descripción</label>
+                    <textarea 
+                      value={editDesc} 
+                      onChange={e => setEditDesc(e.target.value)} 
+                      className="w-full px-3 py-2 border border-slate-200 dark:border-white/10 rounded-xl text-sm bg-white dark:bg-white/5 text-build-main dark:text-white focus:outline-none focus:border-build-accent h-20 resize-none" 
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-500 dark:text-white/60 uppercase mb-1">Ubicación</label>
+                    <input 
+                      type="text" 
+                      value={editLocation} 
+                      onChange={e => setEditLocation(e.target.value)} 
+                      className="w-full px-3 py-2 border border-slate-200 dark:border-white/10 rounded-xl text-sm bg-white dark:bg-white/5 text-build-main dark:text-white focus:outline-none focus:border-build-accent" 
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="col-span-2">
+                      <label className="block text-[11px] font-bold text-slate-500 dark:text-white/60 uppercase mb-1">Fecha</label>
+                      <input 
+                        type="date" 
+                        value={editDate} 
+                        onChange={e => setEditDate(e.target.value)} 
+                        className="w-full px-3 py-2 border border-slate-200 dark:border-white/10 rounded-xl text-sm bg-white dark:bg-white/5 text-build-main dark:text-white focus:outline-none focus:border-build-accent" 
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-500 dark:text-white/60 uppercase mb-1">Hora Inicio</label>
+                      <input 
+                        type="time" 
+                        value={editStartTime} 
+                        onChange={e => setEditStartTime(e.target.value)} 
+                        className="w-full px-3 py-2 border border-slate-200 dark:border-white/10 rounded-xl text-sm bg-white dark:bg-white/5 text-build-main dark:text-white focus:outline-none focus:border-build-accent" 
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-500 dark:text-white/60 uppercase mb-1">Hora Fin</label>
+                      <input 
+                        type="time" 
+                        value={editEndTime} 
+                        onChange={e => setEditEndTime(e.target.value)} 
+                        className="w-full px-3 py-2 border border-slate-200 dark:border-white/10 rounded-xl text-sm bg-white dark:bg-white/5 text-build-main dark:text-white focus:outline-none focus:border-build-accent" 
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-500 dark:text-white/60 uppercase mb-1">Estado Cita</label>
+                      <select 
+                        value={editEstado} 
+                        onChange={e => setEditEstado(e.target.value as any)} 
+                        className="w-full px-3 py-2.5 border border-slate-200 dark:border-white/10 rounded-xl text-sm bg-white dark:bg-white/5 text-build-main dark:text-white focus:outline-none focus:border-build-accent"
+                      >
+                        <option value="PROGRAMADA">PROGRAMADA</option>
+                        <option value="CONFIRMADA">CONFIRMADA</option>
+                        <option value="CANCELADA">CANCELADA</option>
+                        <option value="COMPLETADA">COMPLETADA</option>
+                        <option value="REPROGRAMACION_PENDIENTE">REPROGRAMACION_PENDIENTE</option>
+                      </select>
+                    </div>
+                    <div className="flex items-center pt-5">
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input 
+                          type="checkbox" 
+                          checked={editPermiteReprog} 
+                          onChange={e => setEditPermiteReprog(e.target.checked)} 
+                          className="w-4 h-4 accent-build-accent" 
+                        />
+                        <span className="text-[12px] font-semibold text-slate-600 dark:text-white/70">Permite Reprogramación</span>
+                      </label>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <div className="bg-slate-50 dark:bg-white/5 p-4 rounded-xl border border-slate-100 dark:border-white/5 space-y-2">
+                    <div className="flex justify-between items-start">
+                      <h3 className="text-base font-bold text-build-main dark:text-white">{selectedCita.titulo}</h3>
+                      <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
+                        selectedCita.estadoCita === "CONFIRMADA" ? "bg-green-100 text-green-800" :
+                        selectedCita.estadoCita === "CANCELADA" ? "bg-red-100 text-red-800" :
+                        selectedCita.estadoCita === "COMPLETADA" ? "bg-slate-200 text-slate-800" :
+                        selectedCita.estadoCita === "REPROGRAMACION_PENDIENTE" ? "bg-orange-100 text-orange-800" :
+                        "bg-blue-100 text-blue-800"
+                      }`}>
+                        {selectedCita.estadoCita}
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-500 dark:text-white/60">{selectedCita.descripcion}</p>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4 text-xs">
+                    <div>
+                      <span className="block text-slate-400 font-semibold mb-0.5">Cliente:</span>
+                      <span className="text-build-main dark:text-white font-bold">{selectedCita.clienteNombre}</span>
+                      <span className="block text-[10px] text-slate-400">{selectedCita.clienteEmail}</span>
+                    </div>
+                    <div>
+                      <span className="block text-slate-400 font-semibold mb-0.5">Unidad Inmobiliaria:</span>
+                      <span className="text-build-main dark:text-white font-bold">Dpto/Cochera {selectedCita.activoNro}</span>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4 text-xs">
+                    <div>
+                      <span className="block text-slate-400 font-semibold mb-0.5">Fecha y Hora:</span>
+                      <span className="text-build-main dark:text-white font-bold">
+                        {new Date(selectedCita.fechaInicio).toLocaleDateString("es-PE")}
+                      </span>
+                      <span className="block text-[11px] text-slate-500">
+                        {new Date(selectedCita.fechaInicio).toLocaleTimeString("es-PE", {hour: "2-digit", minute: "2-digit"})} - {new Date(selectedCita.fechaFin).toLocaleTimeString("es-PE", {hour: "2-digit", minute: "2-digit"})}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="block text-slate-400 font-semibold mb-0.5">Ubicación / Link:</span>
+                      <span className="text-build-main dark:text-white font-bold truncate block">{selectedCita.ubicacion || "Sin ubicación"}</span>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4 text-xs pt-2 border-t border-slate-100 dark:border-white/5">
+                    <div>
+                      <span className="block text-slate-400 font-semibold mb-0.5">Google Calendar Sync:</span>
+                      <span className="text-build-main dark:text-white font-bold">{selectedCita.estadoSincronizacion}</span>
+                    </div>
+                    <div>
+                      <span className="block text-slate-400 font-semibold mb-0.5">Confirmación del Cliente:</span>
+                      <span className="text-build-main dark:text-white font-bold">
+                        {selectedCita.confirmacionCliente === true ? "Confirmado ✓" : selectedCita.confirmacionCliente === false ? "Declinado ✕" : "Sin respuesta"}
+                      </span>
+                    </div>
+                  </div>
+
+                  {selectedCita.estadoCita === "REPROGRAMACION_PENDIENTE" && selectedCita.disponibilidades && selectedCita.disponibilidades.length > 0 && (
+                    <div className="pt-3 border-t border-slate-100 dark:border-white/5">
+                      <span className="block text-[11px] font-bold text-orange-500 uppercase tracking-wider mb-2">Bloques propuestos por el cliente</span>
+                      <div className="space-y-2">
+                        {selectedCita.disponibilidades.map(disp => (
+                          <div key={disp.id} className="flex items-center justify-between p-2.5 rounded-lg border border-orange-100 dark:border-orange-950/20 bg-orange-50/50 dark:bg-orange-950/10">
+                            <div className="text-xs">
+                              <span className="font-bold text-build-main dark:text-white">{new Date(disp.bloqueInicio).toLocaleDateString("es-PE")}</span>
+                              <span className="block text-[10px] text-slate-500">
+                                {new Date(disp.bloqueInicio).toLocaleTimeString("es-PE", {hour: "2-digit", minute: "2-digit"})} - {new Date(disp.bloqueFin).toLocaleTimeString("es-PE", {hour: "2-digit", minute: "2-digit"})}
+                              </span>
+                            </div>
+                            <button
+                              onClick={() => handleConfirmBlock(disp.id)}
+                              disabled={isSaving}
+                              className="bg-orange-500 hover:bg-orange-600 text-white text-[11px] font-bold px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50"
+                            >
+                              Confirmar
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {showCancelForm && (
+                    <div className="pt-3 border-t border-slate-100 dark:border-white/5 space-y-2">
+                      <label className="block text-[11px] font-bold text-red-500 uppercase">Motivo de cancelación *</label>
+                      <div className="flex gap-2">
+                        <input 
+                          type="text" 
+                          placeholder="Ej. Cambio de horario solicitado" 
+                          value={motivoCancelacion}
+                          onChange={e => setMotivoCancelacion(e.target.value)}
+                          className="flex-1 px-3 py-1.5 border border-red-200 rounded-xl text-xs bg-white dark:bg-white/5 focus:outline-none"
+                        />
+                        <button
+                          onClick={handleConfirmCancel}
+                          disabled={isSaving || !motivoCancelacion.trim()}
+                          className="bg-red-500 text-white text-xs font-bold px-4 py-1.5 rounded-xl hover:bg-red-600 disabled:opacity-50"
+                        >
+                          Confirmar
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="px-6 py-4 flex justify-between bg-white dark:bg-[#111] border-t border-slate-200 dark:border-white/10 shrink-0">
+              {isEditing ? (
+                <>
+                  <button 
+                    type="button" 
+                    onClick={() => setIsEditing(false)} 
+                    className="px-5 py-2 text-sm font-bold text-slate-500 dark:text-white/60 hover:bg-slate-50 dark:bg-white/5 rounded-xl"
+                  >
+                    Volver
+                  </button>
+                  <button 
+                    type="button" 
+                    onClick={handleSaveEdit} 
+                    disabled={isSaving}
+                    className="px-6 py-2 bg-build-main text-white rounded-xl text-sm font-bold hover:bg-build-main/90 transition-all disabled:opacity-50"
+                  >
+                    {isSaving ? "Guardando..." : "Guardar Cambios"}
+                  </button>
+                </>
+              ) : (
+                <>
+                  <div className="flex gap-2">
+                    {selectedCita.estadoCita !== "CANCELADA" && selectedCita.estadoCita !== "COMPLETADA" && (
+                      <button 
+                        type="button" 
+                        onClick={() => setShowCancelForm(v => !v)} 
+                        className="px-4 py-2 border border-red-200 text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20 rounded-xl text-xs font-bold transition-all"
+                      >
+                        Cancelar Cita
+                      </button>
+                    )}
+                  </div>
+                  <div className="flex gap-2">
+                    {selectedCita.estadoCita !== "CANCELADA" && selectedCita.estadoCita !== "COMPLETADA" && (
+                      <button 
+                        type="button" 
+                        onClick={handleStartEdit} 
+                        className="px-4 py-2 bg-build-main text-white hover:bg-build-main/90 rounded-xl text-xs font-bold transition-all"
+                      >
+                        Editar
+                      </button>
+                    )}
+                    <button 
+                      type="button" 
+                      onClick={() => setDetailModalOpen(false)} 
+                      className="px-4 py-2 bg-slate-100 dark:bg-white/5 text-slate-700 dark:text-white/70 rounded-xl text-xs font-bold hover:bg-slate-200 dark:hover:bg-white/10"
+                    >
+                      Cerrar
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
         </div>
       )}
     </>
