@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import {
   fetchTodosLosContratos,
   fetchEtapasExpediente,
+  fetchCommercialStepper,
   type UsuarioActivoResponseDTO,
   type EtapaExpedienteResponseDTO,
 } from "@/lib/api/expedientes";
@@ -40,8 +41,32 @@ export default function LegalOverview() {
         await Promise.all(
           list.map(async (c) => {
             try {
-              const stages = await fetchEtapasExpediente(c.uuidUsuarioActivo);
-              stagesMap[c.uuidUsuarioActivo] = stages;
+              const [stages, stepper] = await Promise.all([
+                fetchEtapasExpediente(c.uuidUsuarioActivo),
+                fetchCommercialStepper(c.uuidUsuarioActivo),
+              ]);
+              const correctedStages = stages.map((stage) => {
+                const stepperStage = stepper.etapas?.find((e) => e.etapa === stage.etapaProceso);
+                if (stepperStage) {
+                  const totalHitos = stepperStage.hitos?.length ?? 0;
+                  const completedHitos = stepperStage.hitos?.filter(h => h.estado === "COMPLETADO").length ?? 0;
+                  const inProgressHitos = stepperStage.hitos?.filter(h => h.estado === "EN_PROGRESO").length ?? 0;
+
+                  let estado = "PENDIENTE";
+                  if (completedHitos === totalHitos && totalHitos > 0) {
+                    estado = "COMPLETADO";
+                  } else if (completedHitos > 0 || inProgressHitos > 0) {
+                    estado = "EN_PROGRESO";
+                  }
+                  return {
+                    ...stage,
+                    estado,
+                    totalHitos,
+                  };
+                }
+                return stage;
+              });
+              stagesMap[c.uuidUsuarioActivo] = correctedStages;
             } catch (err) {
               console.error(`Error loading stages for ${c.uuidUsuarioActivo}:`, err);
             }

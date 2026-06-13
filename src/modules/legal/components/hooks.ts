@@ -325,16 +325,40 @@ export function useExpediente(uuidUsuarioActivo: string | null) {
     setLoading(true);
     setError("");
     try {
-      const [allContracts, stagesData] = await Promise.all([
+      const [allContracts, stagesData, stepperData] = await Promise.all([
         fetchTodosLosContratos(),
         fetchEtapasExpediente(uuidUsuarioActivo),
+        fetchCommercialStepper(uuidUsuarioActivo),
       ]);
       const found = allContracts.find((c) => c.uuidUsuarioActivo === uuidUsuarioActivo);
       if (!found) {
         throw new Error("Expediente no encontrado en el sistema.");
       }
       setExpediente(found);
-      setStages(stagesData);
+
+      const correctedStages = stagesData.map((stage) => {
+        const stepperStage = stepperData.etapas?.find((e) => e.etapa === stage.etapaProceso);
+        if (stepperStage) {
+          const totalHitos = stepperStage.hitos?.length ?? 0;
+          const completedHitos = stepperStage.hitos?.filter(h => h.estado === "COMPLETADO").length ?? 0;
+          const inProgressHitos = stepperStage.hitos?.filter(h => h.estado === "EN_PROGRESO").length ?? 0;
+
+          let estado = "PENDIENTE";
+          if (completedHitos === totalHitos && totalHitos > 0) {
+            estado = "COMPLETADO";
+          } else if (completedHitos > 0 || inProgressHitos > 0) {
+            estado = "EN_PROGRESO";
+          }
+          return {
+            ...stage,
+            estado,
+            totalHitos,
+          };
+        }
+        return stage;
+      });
+
+      setStages(correctedStages);
     } catch (err) {
       console.error("useExpediente error:", err);
       setError(err instanceof Error ? err.message : "Error al cargar el expediente");
