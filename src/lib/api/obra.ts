@@ -1,9 +1,9 @@
 import { apiFetch } from "@/lib/api/http";
 
 export interface DashboardProyectoDTO {
-  id: string; // UUID
-  nombreProyecto: string;
-  avanceGlobal: number;
+  proyectoId: string; // UUID
+  nombre: string;
+  porcentajeAvance: number;
 }
 
 export interface EtapaCreateDTO {

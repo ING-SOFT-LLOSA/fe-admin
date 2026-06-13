@@ -108,7 +108,7 @@ export default function ConstructionProgressView({
         ]);
         if (!mounted) return;
         setProject(projects.find((p) => p.id === projectId) ?? null);
-        setAvance(progress?.avanceGlobal ?? 0);
+        setAvance(progress?.porcentajeAvance ?? 0);
 
         // Correct stages status using the floor data to workaround backend caching/state issue
         const corrected = await fetchAndCorrectEtapas(projectId, etapasRes);
@@ -193,9 +193,15 @@ export default function ConstructionProgressView({
             projectId={projectId}
             etapas={etapas}
             onRefresh={async () => {
-              const updated = await getEtapasByProyecto(projectId).catch(() => etapas);
+              const [updated, progress] = await Promise.all([
+                getEtapasByProyecto(projectId).catch(() => etapas),
+                getAvanceGeneral(projectId).catch(() => null),
+              ]);
               const corrected = await fetchAndCorrectEtapas(projectId, updated);
               setEtapas(corrected);
+              if (progress) {
+                setAvance(progress.porcentajeAvance);
+              }
             }}
           />
         )}

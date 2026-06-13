@@ -8,6 +8,7 @@ import {
   fetchContratoActivo,
   type ActivoUsuarioDTO,
 } from "@/lib/api/expedientes";
+import { fetchProyectos, type Proyecto } from "@/lib/api/proyectos";
 
 type ClientActivosProps = {
   clientId: number;
@@ -60,6 +61,7 @@ function formatPrice(precio: number): string {
 export default function ClientActivos({ clientId, refreshKey = 0 }: ClientActivosProps) {
   const router = useRouter();
   const [activos, setActivos] = useState<ActivoUsuarioDTO[]>([]);
+  const [proyectos, setProyectos] = useState<Proyecto[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [loadingLegal, setLoadingLegal] = useState<Record<string, boolean>>({});
@@ -86,10 +88,14 @@ export default function ClientActivos({ clientId, refreshKey = 0 }: ClientActivo
     setLoading(true);
     setError(null);
 
-    fetchActivosPorUsuario(clientId)
-      .then((data) => {
+    Promise.all([
+      fetchActivosPorUsuario(clientId),
+      fetchProyectos().catch(() => [])
+    ])
+      .then(([activosData, proyectosData]) => {
         if (!mounted) return;
-        setActivos(data || []);
+        setActivos(activosData || []);
+        setProyectos(proyectosData || []);
       })
       .catch((err) => {
         if (!mounted) return;
@@ -99,7 +105,9 @@ export default function ClientActivos({ clientId, refreshKey = 0 }: ClientActivo
         if (mounted) setLoading(false);
       });
 
-    return () => { mounted = false; };
+    return () => {
+      mounted = false;
+    };
   }, [clientId, refreshKey]);
 
   // Group by project
@@ -169,6 +177,10 @@ export default function ClientActivos({ clientId, refreshKey = 0 }: ClientActivo
               <div className="space-y-2">
                 {projectActivos.map((activo) => {
                   const estadoBadge = getEstadoBadge(activo.estadoComercial);
+                  const matchedProyecto = proyectos.find(
+                    (p) => p.nombre.toLowerCase().trim() === projectName.toLowerCase().trim()
+                  );
+                  const proyectoId = matchedProyecto?.id;
                   return (
                     <div
                       key={activo.id}
@@ -218,7 +230,7 @@ export default function ClientActivos({ clientId, refreshKey = 0 }: ClientActivo
                           {loadingLegal[activo.id] ? "Cargando..." : "Ver expediente legal"}
                         </button>
                         <Link
-                          href={`/proyectos`}
+                          href={proyectoId ? `/proyectos/${proyectoId}/unidades/${activo.id}` : `/proyectos`}
                           className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 dark:text-white/50 hover:text-build-main dark:hover:text-white transition-colors px-3 py-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-white/10"
                         >
                           <span className="material-symbols-outlined text-[15px]">visibility</span>

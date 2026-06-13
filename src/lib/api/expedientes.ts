@@ -279,6 +279,7 @@ export interface ActivoUsuarioDTO {
   pisoId:           number;
   nroPiso:          number;
   torreNombre:      string;
+  proyectoId?:      string;
   proyectoNombre:   string;
   nro:              string;
   tipo:             string;   // DEPARTAMENTO | ESTACIONAMIENTO | DEPOSITO

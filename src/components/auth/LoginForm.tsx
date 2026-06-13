@@ -6,17 +6,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { toAuthErrorMessage } from "@/lib/auth/errors";
 
-function LlosaLogo({ size = 220, color = "white" }: { size?: number; color?: string }) {
-  return (
-    <svg width={size} viewBox="0 0 260 130" fill={color} xmlns="http://www.w3.org/2000/svg">
-      <rect x="0" y="0" width="22" height="86" rx="2" />
-      <rect x="30" y="16" width="22" height="70" rx="2" />
-      <rect x="0" y="87" width="52" height="5" rx="1" />
-      <text x="60" y="88" fontSize="72" fontWeight="800" fontFamily="Outfit, Manrope, Arial, sans-serif" letterSpacing="-3" fill={color}>osa</text>
-      <text x="1" y="118" fontSize="13" fontWeight="600" fontFamily="Outfit, Manrope, Arial, sans-serif" letterSpacing="5.5" fill={color} opacity="0.9">EDIFICACIONES</text>
-    </svg>
-  );
-}
+
 
 type LoginFormProps = {
   redirectTo?: string;
@@ -82,7 +72,7 @@ export default function LoginForm({ redirectTo = "/proyectos" }: LoginFormProps)
         {/* Logo */}
         <div className="relative z-10 mb-8">
           <img
-            src="/logo.jpg"
+            src="/logo_llosa.png"
             alt="Llosa Logo"
             className="w-[180px] object-contain"
           />
@@ -121,8 +111,12 @@ export default function LoginForm({ redirectTo = "/proyectos" }: LoginFormProps)
       {/* ─── Right panel: Form ─── */}
       <div className="flex-1 flex flex-col items-center justify-center p-6 bg-build-bg h-screen overflow-hidden w-full lg:w-[45%]">
         {/* Mobile logo */}
-        <div className="mb-8 mt-6 lg:hidden">
-          <LlosaLogo size={160} color="#3C3C3B" />
+        <div className="mb-8 mt-6 lg:hidden flex justify-center">
+          <img
+            src="/logo_llosa.png"
+            alt="Llosa Logo"
+            className="h-12 w-auto object-contain invert dark:invert-0"
+          />
         </div>
 
         <div className="w-full max-w-[448px]">

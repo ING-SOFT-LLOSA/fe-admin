@@ -34,6 +34,8 @@ export default function AssignPropertyWizard({ onClose, onSuccess, client }: Ass
   // Step: Inventory
   const [projects, setProjects] = useState<Proyecto[]>([]);
   const [selectedProjectId, setSelectedProjectId] = useState<string>("");
+  const [projectSearch, setProjectSearch] = useState("");
+  const [showProjectSuggestions, setShowProjectSuggestions] = useState(false);
   const [units, setUnits] = useState<UnitSelection[]>([]);
   const [selectedUnitIds, setSelectedUnitIds] = useState<string[]>([]);
   const [loadingUnits, setLoadingUnits] = useState(false);
@@ -53,6 +55,7 @@ export default function AssignPropertyWizard({ onClose, onSuccess, client }: Ass
       setProjects(data);
       if (data.length > 0) {
         setSelectedProjectId(data[0].id);
+        setProjectSearch(data[0].nombre);
       }
     }).catch(() => setErrorMsg("No se pudieron cargar los proyectos"));
     
@@ -199,6 +202,32 @@ export default function AssignPropertyWizard({ onClose, onSuccess, client }: Ass
     }
   }
 
+  function renderUnitCard(u: UnitSelection) {
+    const isSelected = selectedUnitIds.includes(u.id);
+    return (
+      <div
+        key={u.id}
+        onClick={() => {
+          if (isSelected) setSelectedUnitIds(prev => prev.filter(id => id !== u.id));
+          else setSelectedUnitIds(prev => [...prev, u.id]);
+          setErrorMsg("");
+        }}
+        className={`cursor-pointer border-2 rounded-xl p-4 transition-all ${isSelected
+          ? "border-build-main bg-build-main/5"
+          : "border-slate-200 dark:border-white/10 hover:border-build-accent bg-white dark:bg-white/5"
+          }`}
+      >
+        <div className="flex justify-between items-start mb-2">
+          <span className={`material-symbols-outlined text-[20px] ${isSelected ? "text-build-main dark:text-white" : "text-slate-400 dark:text-white/50"}`}>
+            {u.type === "ESTACIONAMIENTO" || u.type === "COCHERA" ? "directions_car" : u.type === "DEPOSITO" ? "inventory_2" : "apartment"}
+          </span>
+          {isSelected && <span className="material-symbols-outlined text-[16px] text-build-main dark:text-white">check_circle</span>}
+        </div>
+        <h4 className="text-[13px] font-bold leading-tight text-build-main dark:text-white">{u.name}</h4>
+      </div>
+    );
+  }
+
   const selectedProject = projects.find(p => p.id === selectedProjectId);
   const currentStep = getCurrentStep();
 
@@ -327,16 +356,53 @@ export default function AssignPropertyWizard({ onClose, onSuccess, client }: Ass
                 <p className="text-[13px] text-slate-500 dark:text-white/60">Elige un proyecto para consultar unidades disponibles.</p>
               </div>
 
-              <div>
+              <div className="relative">
                 <label className="block text-[11px] font-bold text-slate-500 dark:text-white/60 uppercase tracking-wider mb-2">Proyecto</label>
-                <select
-                  value={selectedProjectId}
-                  onChange={e => setSelectedProjectId(e.target.value)}
-                  className="w-full lg:w-1/2 px-4 py-2.5 bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl text-sm font-semibold focus:outline-none focus:border-build-accent focus:ring-1 focus:ring-build-accent"
-                >
-                  {projects.length === 0 && <option value="">Cargando proyectos...</option>}
-                  {projects.map(p => <option key={p.id} value={p.id}>{p.nombre}</option>)}
-                </select>
+                <div className="relative w-full lg:w-1/2">
+                  <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-white/50 text-[18px]">search</span>
+                  <input
+                    type="text"
+                    placeholder="Buscar proyecto por nombre..."
+                    value={projectSearch}
+                    onChange={(e) => {
+                      setProjectSearch(e.target.value);
+                      setShowProjectSuggestions(true);
+                    }}
+                    onFocus={() => setShowProjectSuggestions(true)}
+                    onBlur={() => {
+                      setTimeout(() => setShowProjectSuggestions(false), 200);
+                    }}
+                    className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl text-sm font-semibold focus:outline-none focus:border-build-accent focus:ring-1 focus:ring-build-accent"
+                  />
+                  {showProjectSuggestions && (
+                    <div className="absolute left-0 right-0 z-50 mt-1 max-h-[160px] overflow-y-auto rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900 shadow-lg divide-y divide-slate-100 dark:divide-white/5">
+                      {projects
+                        .filter(p => p.nombre.toLowerCase().includes(projectSearch.toLowerCase()))
+                        .length === 0 ? (
+                          <p className="text-xs text-slate-400 dark:text-white/40 p-3">No se encontraron proyectos.</p>
+                        ) : (
+                          projects
+                            .filter(p => p.nombre.toLowerCase().includes(projectSearch.toLowerCase()))
+                            .map(p => (
+                              <div
+                                key={p.id}
+                                onClick={() => {
+                                  setSelectedProjectId(p.id);
+                                  setProjectSearch(p.nombre);
+                                  setShowProjectSuggestions(false);
+                                }}
+                                className="px-4 py-2.5 text-sm cursor-pointer hover:bg-slate-50 dark:hover:bg-white/5 text-slate-700 dark:text-slate-200 flex justify-between items-center"
+                              >
+                                <span>{p.nombre}</span>
+                                {selectedProjectId === p.id && (
+                                  <span className="material-symbols-outlined text-[16px] text-build-main dark:text-white">check</span>
+                                )}
+                              </div>
+                            ))
+                        )}
+                    </div>
+                  )}
+                </div>
               </div>
 
               <div>
@@ -352,32 +418,42 @@ export default function AssignPropertyWizard({ onClose, onSuccess, client }: Ass
                 ) : units.length === 0 ? (
                   <p className="text-[13px] text-slate-500 dark:text-white/60 p-4 bg-slate-50 dark:bg-white/5 rounded-xl text-center">No hay unidades disponibles en este proyecto.</p>
                 ) : (
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                    {units.map(u => {
-                      const isSelected = selectedUnitIds.includes(u.id);
-                      return (
-                        <div
-                          key={u.id}
-                          onClick={() => {
-                            if (isSelected) setSelectedUnitIds(prev => prev.filter(id => id !== u.id));
-                            else setSelectedUnitIds(prev => [...prev, u.id]);
-                            setErrorMsg("");
-                          }}
-                          className={`cursor-pointer border-2 rounded-xl p-4 transition-all ${isSelected
-                            ? "border-build-main bg-build-main/5"
-                            : "border-slate-200 dark:border-white/10 hover:border-build-accent bg-white dark:bg-white/5"
-                            }`}
-                        >
-                          <div className="flex justify-between items-start mb-2">
-                            <span className={`material-symbols-outlined text-[20px] ${isSelected ? "text-build-main dark:text-white" : "text-slate-400 dark:text-white/50"}`}>
-                              {u.type === "ESTACIONAMIENTO" ? "directions_car" : u.type === "DEPOSITO" ? "inventory_2" : "apartment"}
-                            </span>
-                            {isSelected && <span className="material-symbols-outlined text-[16px] text-build-main dark:text-white">check_circle</span>}
-                          </div>
-                          <h4 className={`text-[13px] font-bold leading-tight ${isSelected ? "text-build-main dark:text-white" : "text-build-main dark:text-white"}`}>{u.name}</h4>
+                  <div className="space-y-6">
+                    {/* Departamentos */}
+                    {units.filter(u => u.type !== "ESTACIONAMIENTO" && u.type !== "COCHERA" && u.type !== "DEPOSITO").length > 0 && (
+                      <div>
+                        <h4 className="text-xs font-bold text-slate-400 dark:text-white/50 uppercase tracking-wider mb-3">Departamentos</h4>
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                          {units
+                            .filter(u => u.type !== "ESTACIONAMIENTO" && u.type !== "COCHERA" && u.type !== "DEPOSITO")
+                            .map(u => renderUnitCard(u))}
                         </div>
-                      );
-                    })}
+                      </div>
+                    )}
+
+                    {/* Estacionamientos */}
+                    {units.filter(u => u.type === "ESTACIONAMIENTO" || u.type === "COCHERA").length > 0 && (
+                      <div>
+                        <h4 className="text-xs font-bold text-slate-400 dark:text-white/50 uppercase tracking-wider mb-3">Estacionamientos</h4>
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                          {units
+                            .filter(u => u.type === "ESTACIONAMIENTO" || u.type === "COCHERA")
+                            .map(u => renderUnitCard(u))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Depósitos */}
+                    {units.filter(u => u.type === "DEPOSITO").length > 0 && (
+                      <div>
+                        <h4 className="text-xs font-bold text-slate-400 dark:text-white/50 uppercase tracking-wider mb-3">Depósitos</h4>
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                          {units
+                            .filter(u => u.type === "DEPOSITO")
+                            .map(u => renderUnitCard(u))}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
                 {errorMsg && <p className="text-[#ba1a1a] text-[12px] font-bold mt-3 animate-pulse">{errorMsg}</p>}
@@ -463,7 +539,7 @@ export default function AssignPropertyWizard({ onClose, onSuccess, client }: Ass
                       return (
                         <div key={id} className="flex items-center gap-2">
                           <span className="material-symbols-outlined text-[14px] text-slate-400">
-                            {u?.type === "ESTACIONAMIENTO" ? "directions_car" : u?.type === "DEPOSITO" ? "inventory_2" : "apartment"}
+                            {u?.type === "ESTACIONAMIENTO" || u?.type === "COCHERA" ? "directions_car" : u?.type === "DEPOSITO" ? "inventory_2" : "apartment"}
                           </span>
                           <span className="text-[13px] font-bold text-build-main dark:text-white">{u?.name}</span>
                         </div>

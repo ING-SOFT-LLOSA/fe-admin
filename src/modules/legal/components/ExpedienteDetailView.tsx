@@ -26,6 +26,7 @@ import {
   STAGE_META,
   OPCIONES_ESTADO,
   ESTADO_BADGE,
+  BACKEND_A_ESTADO,
   type EstadoHito,
   type StageId,
 } from "./constants";
@@ -132,7 +133,15 @@ export default function ExpedienteDetailView({ uuidUsuarioActivo }: Props) {
   const handleToggleHito = async (uuidHitoComercial: string, currentEstado: string, stageId: string) => {
     if (!stepper) return;
 
-    const nuevoEstado = currentEstado === "COMPLETADO" ? "PENDIENTE" : "COMPLETADO";
+    let nuevoEstado: "PENDIENTE" | "EN_PROGRESO" | "COMPLETADO" = "PENDIENTE";
+    if (currentEstado === "PENDIENTE") {
+      nuevoEstado = "EN_PROGRESO";
+    } else if (currentEstado === "EN_PROGRESO") {
+      nuevoEstado = "COMPLETADO";
+    } else {
+      nuevoEstado = "PENDIENTE";
+    }
+
     const previousStepper = JSON.parse(JSON.stringify(stepper)) as StepperResponseDTO;
 
     // Optimistic Update
@@ -681,7 +690,8 @@ function ProcesoLegalAccordion({
                         }
 
                         // State Badge
-                        const badgeInfo = ESTADO_BADGE[hito.estado.toLowerCase() as EstadoHito] || { label: hito.estado, cls: "" };
+                        const mappedEstado = BACKEND_A_ESTADO[hito.estado] || hito.estado.toLowerCase();
+                        const badgeInfo = ESTADO_BADGE[mappedEstado as EstadoHito] || { label: hito.estado, cls: "" };
 
                         return (
                           <div

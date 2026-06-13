@@ -236,6 +236,7 @@ export default function LegalOverview() {
   const [selectedTorre, setSelectedTorre]       = useState("");
   const [selectedEstado, setSelectedEstado]     = useState("");
   const [selectedEtapa, setSelectedEtapa]       = useState("");
+  const [ocultarDesistidos, setOcultarDesistidos] = useState(true);
 
   // ── Data loading ───────────────────────────────────────────────────────────
   useEffect(() => {
@@ -343,6 +344,9 @@ export default function LegalOverview() {
           const label = c.vigente !== false ? "Vigente" : "Desvinculado";
           if (label !== selectedEstado) return false;
         }
+        if (ocultarDesistidos && c.vigente === false) {
+          return false;
+        }
         if (selectedEtapa) {
           const stgs    = contractsStages[c.uuidUsuarioActivo];
           const label   = getEtapaActualLabel(stgs);
@@ -365,10 +369,10 @@ export default function LegalOverview() {
         }
         return true;
       }),
-    [contracts, contractsStages, selectedProyecto, selectedTorre, selectedEstado, selectedEtapa, search],
+    [contracts, contractsStages, selectedProyecto, selectedTorre, selectedEstado, selectedEtapa, search, ocultarDesistidos],
   );
 
-  const hasActiveFilters = !!(selectedProyecto || selectedTorre || selectedEstado || selectedEtapa || search);
+  const hasActiveFilters = !!(selectedProyecto || selectedTorre || selectedEstado || selectedEtapa || search || !ocultarDesistidos);
 
   // ── Render ─────────────────────────────────────────────────────────────────
   return (
@@ -465,6 +469,17 @@ export default function LegalOverview() {
           <option value="Saneamiento">Saneamiento</option>
         </select>
 
+        {/* Inactive / Canceled contracts quick filter switch */}
+        <label className="flex items-center gap-2 cursor-pointer select-none text-xs text-slate-600 dark:text-white/70 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-lg px-3 py-2 hover:bg-slate-100 dark:hover:bg-white/10 transition-colors">
+          <input
+            type="checkbox"
+            checked={ocultarDesistidos}
+            onChange={(e) => setOcultarDesistidos(e.target.checked)}
+            className="w-4 h-4 accent-build-accent rounded border-slate-300"
+          />
+          <span className="font-semibold text-slate-700 dark:text-white/80">Ocultar desistidos</span>
+        </label>
+
         {/* Clear filters — only shows when something is active */}
         {hasActiveFilters && (
           <button
@@ -474,6 +489,7 @@ export default function LegalOverview() {
               setSelectedTorre("");
               setSelectedEstado("");
               setSelectedEtapa("");
+              setOcultarDesistidos(true);
             }}
             className="flex items-center gap-1 rounded-lg border border-slate-200 dark:border-white/10 px-3 py-2 text-xs text-slate-500 dark:text-white/50 hover:bg-slate-50 dark:hover:bg-white/5 transition"
           >

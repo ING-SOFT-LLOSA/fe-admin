@@ -36,8 +36,8 @@ export const ESTADO_BADGE: Record<EstadoHito, { label: string; cls: string }> = 
     cls: "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400",
   },
   en_proceso: {
-    label: "En proceso",
-    cls: "bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400",
+    label: "En curso",
+    cls: "bg-amber-50 dark:bg-amber-950/20 text-amber-600 dark:text-amber-400 border border-amber-500/50",
   },
   pendiente: {
     label: "Pendiente",

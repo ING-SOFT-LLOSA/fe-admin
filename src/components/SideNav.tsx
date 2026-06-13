@@ -49,14 +49,12 @@ export default function SideNav() {
   return (
     <aside className="hidden md:flex fixed left-0 top-0 z-50 h-full w-72 flex-col border-r border-slate-200 dark:border-white/10 bg-build-bg px-6 py-8 shadow-sm" style={{ fontFamily: "'Outfit', sans-serif" }}>
       {/* Brand */}
-      <div className="mb-10 flex justify-center px-2">
-        <svg width="160" viewBox="0 0 260 130" fill="currentColor" className="text-build-main dark:text-white" xmlns="http://www.w3.org/2000/svg">
-          <rect x="0" y="0" width="22" height="86" rx="2" />
-          <rect x="30" y="16" width="22" height="70" rx="2" />
-          <rect x="0" y="87" width="52" height="5" rx="1" />
-          <text x="60" y="88" fontSize="72" fontWeight="800" fontFamily="Outfit, Arial, sans-serif" letterSpacing="-3" fill="currentColor">osa</text>
-          <text x="1" y="118" fontSize="13" fontWeight="600" fontFamily="Outfit, Arial, sans-serif" letterSpacing="5.5" fill="currentColor" opacity="0.9">EDIFICACIONES</text>
-        </svg>
+      <div className="mb-12 flex justify-center">
+        <img
+          src="/logo_llosa.png"
+          alt="Llosa Edificaciones"
+          className="h-30 w-auto object-contain invert"
+        />
       </div>
 
       {/* Nav */}
