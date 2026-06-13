@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   fetchActivosPorUsuario,
   fetchContratoActivo,
@@ -57,9 +58,28 @@ function formatPrice(precio: number): string {
 }
 
 export default function ClientActivos({ clientId, refreshKey = 0 }: ClientActivosProps) {
+  const router = useRouter();
   const [activos, setActivos] = useState<ActivoUsuarioDTO[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [loadingLegal, setLoadingLegal] = useState<Record<string, boolean>>({});
+
+  const handleVerExpediente = async (activoId: string) => {
+    setLoadingLegal((prev) => ({ ...prev, [activoId]: true }));
+    try {
+      const contrato = await fetchContratoActivo(activoId);
+      if (contrato?.uuidUsuarioActivo) {
+        router.push(`/legal/${contrato.uuidUsuarioActivo}`);
+      } else {
+        alert("No se encontró un expediente legal asociado para esta propiedad.");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Error al cargar el expediente legal.");
+    } finally {
+      setLoadingLegal((prev) => ({ ...prev, [activoId]: false }));
+    }
+  };
 
   useEffect(() => {
     let mounted = true;
@@ -188,13 +208,15 @@ export default function ClientActivos({ clientId, refreshKey = 0 }: ClientActivo
 
                       {/* Action links */}
                       <div className="flex items-center gap-2 pl-[52px] pt-2 border-t border-slate-100 dark:border-white/5">
-                        <Link
-                          href={`/clientes/${clientId}/expediente`}
-                          className="inline-flex items-center gap-1.5 text-xs font-semibold text-build-accent hover:text-build-main dark:hover:text-white transition-colors px-3 py-1.5 rounded-lg hover:bg-build-bg dark:hover:bg-white/10"
+                        <button
+                          type="button"
+                          onClick={() => handleVerExpediente(activo.id)}
+                          disabled={loadingLegal[activo.id]}
+                          className="inline-flex items-center gap-1.5 text-xs font-semibold text-build-accent hover:text-build-main dark:hover:text-white transition-colors px-3 py-1.5 rounded-lg hover:bg-build-bg dark:hover:bg-white/10 disabled:opacity-50"
                         >
                           <span className="material-symbols-outlined text-[15px]">gavel</span>
-                          Ver expediente legal
-                        </Link>
+                          {loadingLegal[activo.id] ? "Cargando..." : "Ver expediente legal"}
+                        </button>
                         <Link
                           href={`/proyectos`}
                           className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 dark:text-white/50 hover:text-build-main dark:hover:text-white transition-colors px-3 py-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-white/10"
