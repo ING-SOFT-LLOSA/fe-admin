@@ -69,3 +69,94 @@ export function cancelarCita(id: string, motivo: string): Promise<CitaResponse> 
 export function fetchCitasPorActivo(activoId: string): Promise<CitaResponse[]> {
   return apiFetch<CitaResponse[]>(`/api/agenda/empresa/citas/activo/${activoId}`);
 }
+
+// ─── PUT /api/agenda/empresa/citas/{id} ──────────────────────────────────────
+export interface ActualizarCitaPayload {
+  titulo?: string;
+  descripcion?: string;
+  ubicacion?: string;
+  fechaInicio?: string;
+  fechaFin?: string;
+  estadoCita?: "PROGRAMADA" | "CONFIRMADA" | "CANCELADA" | "COMPLETADA" | "REPROGRAMACION_PENDIENTE";
+  permiteReprogramacion?: boolean;
+  motivoCancelacion?: string;
+}
+
+export function actualizarCita(id: string, payload: ActualizarCitaPayload): Promise<CitaResponse> {
+  return apiFetch<CitaResponse>(`/api/agenda/empresa/citas/${id}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+}
+
+// ─── PATCH /api/agenda/empresa/citas/{id}/seleccionar-bloque ─────────────────
+export function seleccionarBloqueDisponibilidad(id: string, bloqueId: number): Promise<CitaResponse> {
+  return apiFetch<CitaResponse>(`/api/agenda/empresa/citas/${id}/seleccionar-bloque`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ bloqueId }),
+  });
+}
+
+// ─── GET /api/agenda/empresa/citas ───────────────────────────────────────────
+export function fetchTodasLasCitas(): Promise<CitaResponse[]> {
+  return apiFetch<CitaResponse[]>("/api/agenda/empresa/citas");
+}
+
+// ─── POST /api/agenda/empresa/sincronizar ─────────────────────────────────────
+export interface SincronizarManualResponse {
+  mensaje: string;
+  citasProcesadas: number;
+}
+
+export function forzarSincronizacionManual(): Promise<SincronizarManualResponse> {
+  return apiFetch<SincronizarManualResponse>("/api/agenda/empresa/sincronizar", {
+    method: "POST",
+  });
+}
+
+// ─── GET /api/agenda/cliente/citas ────────────────────────────────────────────
+export function fetchCitasCliente(): Promise<CitaResponse[]> {
+  return apiFetch<CitaResponse[]>("/api/agenda/cliente/citas");
+}
+
+// ─── GET /api/agenda/cliente/citas/proximas ───────────────────────────────────
+export function fetchProximasCitasCliente(): Promise<CitaResponse[]> {
+  return apiFetch<CitaResponse[]>("/api/agenda/cliente/citas/proximas");
+}
+
+// ─── PATCH /api/agenda/cliente/citas/{id}/respuesta ──────────────────────────
+export interface ResponderCitaPayload {
+  confirmado: boolean;
+  nota?: string;
+}
+
+export function responderCitaCliente(id: string, payload: ResponderCitaPayload): Promise<CitaResponse> {
+  return apiFetch<CitaResponse>(`/api/agenda/cliente/citas/${id}/respuesta`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+}
+
+// ─── POST /api/agenda/cliente/citas/{id}/disponibilidad ──────────────────────
+export interface BloqueHorario {
+  inicio: string; // ISO format
+  fin: string; // ISO format
+}
+
+export interface DisponibilidadResponse {
+  id: number;
+  bloqueInicio: string;
+  bloqueFin: string;
+  seleccionado: boolean;
+}
+
+export function proponerDisponibilidadCliente(id: string, bloques: BloqueHorario[]): Promise<DisponibilidadResponse[]> {
+  return apiFetch<DisponibilidadResponse[]>(`/api/agenda/cliente/citas/${id}/disponibilidad`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ bloques }),
+  });
+}
