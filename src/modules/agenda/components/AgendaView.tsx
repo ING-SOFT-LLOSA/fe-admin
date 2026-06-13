@@ -568,7 +568,7 @@ export default function SchedulePage() {
                       e.stopPropagation();
                       handleEventClick(ev.id);
                     }}
-                    className={`${ev.bg} rounded px-2 py-1.5 flex flex-col gap-0.5 shadow-sm border border-build-main/5 hover:scale-[1.02] transition-transform`}
+                    className={`${ev.bg} rounded px-2 py-1.5 flex flex-col gap-0.5 shadow-sm border border-build-main/5 hover:scale-[1.02] transition-transform cursor-pointer`}
                   >
                     <div className="flex items-center gap-1.5">
                       <span className={`w-1.5 h-1.5 rounded-full ${ev.dot}`} />
@@ -616,8 +616,12 @@ export default function SchedulePage() {
               <p className="text-xs text-slate-400 dark:text-white/40">No hay eventos próximos en este período.</p>
             ) : (
               upcomingEvents.map(ev => (
-                <div key={ev.id} className="mb-4 last:mb-0 pb-3 border-b border-slate-100 last:border-b-0 dark:border-white/5">
-                  <h4 className="text-[13px] font-bold text-build-main dark:text-white truncate">{ev.label}</h4>
+                <div 
+                  key={ev.id} 
+                  onClick={() => handleEventClick(ev.id)}
+                  className="mb-4 last:mb-0 pb-3 border-b border-slate-100 last:border-b-0 dark:border-white/5 cursor-pointer hover:bg-slate-50 dark:hover:bg-white/5 p-1 rounded-xl transition-all"
+                >
+                  <h4 className="text-[13px] font-bold text-build-main dark:text-white truncate hover:underline">{ev.label}</h4>
                   <p className="text-[11px] text-slate-500 dark:text-white/60 mt-0.5">Cliente: {ev.client}</p>
                   <p className="text-[12px] text-slate-500 dark:text-white/60 flex items-center gap-1 mt-1 font-semibold">
                     <span className="material-symbols-outlined text-[14px]">schedule</span> {ev.time || "Sin hora"} - {ev.type}
