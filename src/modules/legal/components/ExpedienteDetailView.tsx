@@ -119,7 +119,7 @@ export default function ExpedienteDetailView({ uuidUsuarioActivo }: Props) {
     } finally {
       setIsDocsLoading(false);
     }
-  }, [uuidUsuarioActivo]);
+  }, [uuidUsuarioActivo, stages]);
 
   // Load Documents data lazy when "documentos" tab is selected
   useEffect(() => {
