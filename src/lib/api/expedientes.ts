@@ -261,6 +261,7 @@ export interface EtapaExpedienteResponseDTO {
   estado:              string;
   totalHitos?:         number;
   totalRequisitos?:    number;
+  hitosCompletados?:   number;
 }
 
 export function fetchEtapasExpediente(

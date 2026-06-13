@@ -211,8 +211,12 @@ export function useStageDocuments(
     setError(null);
 
     try {
+      const activeStages = DOCUMENT_STAGES.filter((stageId) =>
+        stepper.etapas?.some((e) => e.etapa === stageId)
+      );
+
       const results = await Promise.all(
-        DOCUMENT_STAGES.map((stageId) =>
+        activeStages.map((stageId) =>
           loadStageSection(stageId, uuidUsuarioActivo, stepper)
         )
       );
@@ -353,6 +357,7 @@ export function useExpediente(uuidUsuarioActivo: string | null) {
             ...stage,
             estado,
             totalHitos,
+            hitosCompletados: completedHitos,
           };
         }
         return stage;

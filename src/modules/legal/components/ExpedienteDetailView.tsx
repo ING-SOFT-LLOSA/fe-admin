@@ -93,8 +93,12 @@ export default function ExpedienteDetailView({ uuidUsuarioActivo }: Props) {
     if (!uuidUsuarioActivo) return;
     setIsDocsLoading(true);
     try {
+      const activeStages = DOCUMENT_STAGES.filter((stage) =>
+        stages.some((s) => s.etapaProceso === stage)
+      );
+
       const results = await Promise.all(
-        DOCUMENT_STAGES.map(async (stage) => {
+        activeStages.map(async (stage) => {
           try {
             const res = await fetchStageDocuments(stage as any, uuidUsuarioActivo);
             return { stage, docs: res.documents ?? [] };
