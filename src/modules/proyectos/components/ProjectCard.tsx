@@ -9,6 +9,9 @@ type Props = {
 };
 
 export default function ProjectCard({ project, clientesCount, dptosCount }: Props) {
+  const showInicio = !!project.fechaInicio;
+  const showLocation = !!(project.distrito || project.departamento);
+
   return (
     <Link
       href={`/proyectos/${project.id}`}
@@ -22,9 +25,11 @@ export default function ProjectCard({ project, clientesCount, dptosCount }: Prop
           <h3 className="text-lg font-bold text-slate-500">
             {project.nombre}
           </h3>
-          <p className="text-sm text-slate-500">
-            {project.distrito || project.departamento}
-          </p>
+          {showLocation && (
+            <p className="text-sm text-slate-500">
+              {project.distrito || project.departamento}
+            </p>
+          )}
         </div>
         <div className="w-10 h-10 rounded-xl bg-build-bg flex items-center justify-center">
           <span className="material-symbols-outlined">
@@ -33,15 +38,15 @@ export default function ProjectCard({ project, clientesCount, dptosCount }: Prop
         </div>
       </div>
 
-      <div className="mt-4 grid grid-cols-3 gap-3">
-        <div>
-          <p className="text-[11px] text-slate-500 uppercase">Inicio</p>
-          <p className="font-medium">
-            {project.fechaInicio
-              ? formatProjectDate(new Date(project.fechaInicio))
-              : "-"}
-          </p>
-        </div>
+      <div className={`mt-4 grid ${showInicio ? "grid-cols-3" : "grid-cols-2"} gap-3`}>
+        {showInicio && (
+          <div>
+            <p className="text-[11px] text-slate-500 uppercase">Inicio</p>
+            <p className="font-medium">
+              {formatProjectDate(new Date(project.fechaInicio))}
+            </p>
+          </div>
+        )}
         <div>
           <p className="text-[11px] text-slate-500 uppercase">Clientes</p>
           <p className="font-medium">{clientesCount}</p>
