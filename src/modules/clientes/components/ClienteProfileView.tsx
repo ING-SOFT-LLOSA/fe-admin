@@ -12,7 +12,6 @@ import AssignPropertyWizard from "@/modules/asignaciones/components/AssignProper
 import EditClienteModal from "@/modules/clientes/components/EditClienteModal";
 import DeleteUsuarioModal from "@/modules/clientes/components/DeleteUsuarioModal";
 import ClientHeader from "./ClientHeader";
-import ClientKpis from "./ClientKpis";
 import ClientActivos from "./ClientActivos";
 import ClientActivity from "./ClientActivity";
 
@@ -132,12 +131,10 @@ export default function ClienteProfileView({ clientId }: ClienteProfileViewProps
             hasActiveProperties={activeAssignments.length > 0}
             onEdit={() => setActiveModal("edit")}
             onDelete={() => setActiveModal("delete")}
-            onAssign={() => setActiveModal("assign")}
           />
         </div>
 
         <div className="lg:col-span-3 space-y-6">
-          <ClientKpis assignments={assignments} />
           <ClientActivos clientId={Number(clientId)} refreshKey={refreshCount} />
           <ClientActivity assignments={assignments} clientCreatedAt={client?.createdAt} />
         </div>

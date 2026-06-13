@@ -7,7 +7,6 @@ type ClientHeaderProps = {
   hasActiveProperties: boolean;
   onEdit: () => void;
   onDelete: () => void;
-  onAssign: () => void;
 };
  
 export default function ClientHeader({
@@ -15,7 +14,6 @@ export default function ClientHeader({
   hasActiveProperties,
   onEdit,
   onDelete,
-  onAssign,
 }: ClientHeaderProps) {
   const initials = client.name
     .split(" ")
@@ -58,16 +56,6 @@ export default function ClientHeader({
  
       {/* Actions */}
       <div className="px-6 py-4 space-y-2">
-        {/* Assign property — primary */}
-        <button
-          type="button"
-          onClick={onAssign}
-          className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-build-main text-white rounded-xl text-sm font-bold hover:bg-build-main/90 transition-all shadow-sm"
-        >
-          <span className="material-symbols-outlined text-[18px]">add_home</span>
-          Asignar propiedad
-        </button>
- 
         {/* Edit — secondary */}
         <button
           type="button"
