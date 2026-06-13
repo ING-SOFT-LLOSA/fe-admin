@@ -588,9 +588,15 @@ function ProcesoLegalAccordion({
     return <ErrorBanner message="No se pudo cargar el proceso legal." />;
   }
 
+  const sortedEtapas = stepper.etapas
+    ? [...stepper.etapas].sort(
+        (a, b) => STAGE_ORDER.indexOf(a.etapa as StageId) - STAGE_ORDER.indexOf(b.etapa as StageId)
+      )
+    : [];
+
   return (
     <div className="space-y-4">
-      {stepper.etapas?.map((etapa) => {
+      {sortedEtapas.map((etapa) => {
         const stageId = etapa.etapa;
         const meta = STAGE_META[stageId as StageId] || { label: stageId, icon: "circle" };
         const isExpanded = !!expandedStages[stageId];
