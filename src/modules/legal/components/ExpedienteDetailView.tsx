@@ -62,9 +62,9 @@ export default function ExpedienteDetailView({ uuidUsuarioActivo }: Props) {
   const [docsLoaded, setDocsLoaded] = useState(false);
   const [selectedDocFilter, setSelectedDocFilter] = useState<string>("ALL");
 
-  // Load Stepper data lazy when "proceso" tab is selected
+  // Load Stepper data on mount to ensure summary cards display correct counts immediately
   useEffect(() => {
-    if (activeTab === "proceso" && !stepperLoaded && uuidUsuarioActivo) {
+    if (!stepperLoaded && uuidUsuarioActivo) {
       async function loadStepper() {
         setIsStepperLoading(true);
         try {
@@ -437,12 +437,13 @@ function EtapasResumen({
   stepper: StepperResponseDTO | null;
 }) {
   // Determine Stage stats (estimated or precise from stepper if loaded)
-  const totalHitos = stages.reduce((acc, st) => acc + (st.totalHitos ?? 0), 0);
-  
+  let totalHitos = 0;
   let completedHitos = 0;
   if (stepper) {
+    totalHitos = stepper.etapas?.reduce((acc, e) => acc + (e.hitos?.length ?? 0), 0) ?? 0;
     completedHitos = stepper.etapas?.flatMap((e) => e.hitos ?? []).filter((h) => h.estado === "COMPLETADO").length ?? 0;
   } else {
+    totalHitos = stages.reduce((acc, st) => acc + (st.totalHitos ?? 0), 0);
     // Estimations based on summary states
     completedHitos = stages.reduce((acc, st) => {
       if (st.estado === "COMPLETADO") return acc + (st.totalHitos ?? 0);
