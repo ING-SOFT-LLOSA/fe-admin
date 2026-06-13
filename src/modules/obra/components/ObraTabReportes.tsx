@@ -101,6 +101,7 @@ export default function ObraTabReportes({ projectId, avance, project }: ObraTabR
   );
  
   const totalPublicados = reports.length;
+  const totalBorradores = 0;
  
   // If a report is selected, show detail view
   if (selectedReport) {
@@ -123,9 +124,10 @@ export default function ObraTabReportes({ projectId, avance, project }: ObraTabR
       )}
  
       {/* KPI row */}
-      <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <KpiMini icon="description"  label="Total reportes" value={String(reports.length)} />
         <KpiMini icon="check_circle" label="Publicados"     value={String(totalPublicados)} accent="text-emerald-500" />
+        <KpiMini icon="edit_note"    label="Borradores"     value={String(totalBorradores)} accent="text-amber-500"   />
         <KpiMini icon="construction" label="Avance actual"  value={`${avance}%`}            accent="text-build-accent" />
       </div>
  
@@ -668,7 +670,7 @@ function KpiMini({
     <div className="rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 p-4 shadow-sm flex items-center gap-4">
       <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-white/10 flex items-center justify-center shrink-0">
         <span className="material-symbols-outlined text-build-accent text-[20px]">{icon}</span>
-      </div>
+      </div>  
       <div>
         <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-white/40">{label}</p>
         <p className={`text-xl font-bold tracking-tight ${accent}`}>{value}</p>

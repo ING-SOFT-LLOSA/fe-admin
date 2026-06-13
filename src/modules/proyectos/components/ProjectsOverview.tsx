@@ -29,7 +29,6 @@ export default function ProjectsOverview() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError]         = useState("");
   const [search, setSearch]       = useState("");
-  const [filterEstado, setFilterEstado] = useState("");
 
   useEffect(() => {
     let mounted = true;
@@ -96,15 +95,12 @@ export default function ProjectsOverview() {
   }), [projects]);
 
   // ── Filtered list ─────────────────────────────────────────────────────────────
-  const filtered = useMemo(() => {
-    return projects.filter((p) => {
-      if (search && !p.nombre.toLowerCase().includes(search.toLowerCase())) return false;
-      if (filterEstado && (p as any).estado !== filterEstado) return false;
-      return true;
-    });
-  }, [projects, search, filterEstado]);
-
-  const hasFilters = !!(search || filterEstado);
+const filtered = useMemo(() => {
+  return projects.filter((p) =>
+    p.nombre.toLowerCase().includes(search.toLowerCase())
+  );
+}, [projects, search]);
+  const hasFilters = !!search;
 
   return (
     <section className="space-y-5">
@@ -170,21 +166,10 @@ export default function ProjectsOverview() {
           />
         </div>
 
-        <select
-          value={filterEstado}
-          onChange={(e) => setFilterEstado(e.target.value)}
-          className="rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 px-3 py-2 text-xs text-build-main dark:text-white focus:outline-none focus:border-build-accent transition"
-        >
-          <option value="">Todos los estados</option>
-          <option value="ACTIVO">Activo</option>
-          <option value="EN_CONSTRUCCION">En construcción</option>
-          <option value="ENTREGADO">Entregado</option>
-          <option value="INACTIVO">Inactivo</option>
-        </select>
 
         {hasFilters && (
           <button
-            onClick={() => { setSearch(""); setFilterEstado(""); }}
+            onClick={() => {setSearch("");}}
             className="flex items-center gap-1 rounded-lg border border-slate-200 dark:border-white/10 px-3 py-2 text-xs text-slate-500 dark:text-white/50 hover:bg-slate-50 dark:hover:bg-white/5 transition"
           >
             <span className="material-symbols-outlined text-[14px]">close</span>

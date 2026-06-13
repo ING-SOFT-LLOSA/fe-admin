@@ -80,9 +80,7 @@ export default function ProjectCard({ project, clientesCount, dptosCount, avance
         </div>
       </div>
 
-      <div className="mt-4 text-right text-sm font-semibold text-build-accent">
-        Ver detalles →
-      </div>
+  
     </Link>
   );
 }

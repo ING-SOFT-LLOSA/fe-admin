@@ -32,12 +32,12 @@ export default function UnitsOverviewView({ projectId }: UnitsOverviewViewProps)
     let mounted = true;
 
     async function loadInventory() {
-      console.log("projectId:", projectId); // ← ¿llega bien?
+  
       setIsLoading(true);
       setError("");
       try {
         const activosPage = await fetchActivosPorProyecto(projectId);
-        console.log("respuesta:", activosPage); // ← ¿qué retorna?
+  
         if (mounted) setUnits(activosPage.content ?? []);
       } catch (loadError) {
         if (mounted) {
@@ -79,31 +79,7 @@ export default function UnitsOverviewView({ projectId }: UnitsOverviewViewProps)
         </div>
       ) : null}
 
-      <div className="grid gap-4 xl:grid-cols-4">
-        <div className="rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 p-5 shadow-sm">
-          <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-white/60">Total unidades</p>
-          <p className="mt-2 text-[28px] font-bold text-build-main dark:text-white">{units.length}</p>
-        </div>
-        <div className="rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 p-5 shadow-sm">
-          <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-white/60">Disponibles</p>
-          <p className="mt-2 text-[28px] font-bold text-[#1c663b]">
-            {units.filter((unit) => unit.estadoComercial === "DISPONIBLE").length}
-          </p>
-        </div>
-        <div className="rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 p-5 shadow-sm">
-          <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-white/60">Separadas</p>
-          <p className="mt-2 text-[28px] font-bold text-build-accent">
-            {units.filter((unit) => unit.estadoComercial === "SEPARADO").length}
-          </p>
-        </div>
-        <div className="rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 p-5 shadow-sm">
-          <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-white/60">Valor listado</p>
-          <p className="mt-2 text-[22px] font-bold text-build-main dark:text-white">
-            S/ {units.reduce((total, unit) => total + (unit.precio || 0), 0).toLocaleString("es-PE")}
-          </p>
-        </div>
-      </div>
-
+      
       <section className="rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 p-6 shadow-sm">
         <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_220px_220px]">
           <div>
