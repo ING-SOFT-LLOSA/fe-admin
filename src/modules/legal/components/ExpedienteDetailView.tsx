@@ -1040,12 +1040,26 @@ function DocumentosTab({
                 {/* Corporate Note (Styled Container) */}
                 {doc.notaCorporativa ? (
                   <div className="pl-13">
-                    <div className="rounded-xl border border-slate-100 dark:border-white/5 bg-slate-50/50 dark:bg-white/[0.02] p-3 text-xs text-slate-500 dark:text-white/50 leading-relaxed italic">
-                      <span className="font-bold not-italic text-slate-600 dark:text-white/60 block text-[10px] uppercase tracking-wider mb-1">
-                        Nota Corporativa:
-                      </span>
-                      {doc.notaCorporativa}
-                    </div>
+                    {!isCompleted ? (
+                      <div className="rounded-xl border border-amber-200 dark:border-amber-900/50 bg-amber-50 dark:bg-amber-950/20 p-3.5 text-xs text-amber-800 dark:text-amber-400 border-l-4 border-amber-500 leading-relaxed shadow-sm flex items-start gap-2.5">
+                        <span className="material-symbols-outlined text-amber-600 dark:text-amber-500 text-[18px] shrink-0 mt-0.5 select-none">
+                          warning
+                        </span>
+                        <div className="space-y-1">
+                          <span className="font-extrabold text-amber-900 dark:text-amber-300 block text-[10px] uppercase tracking-wider">
+                            Nota del Abogado (Observación):
+                          </span>
+                          <p className="font-medium">{doc.notaCorporativa}</p>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="rounded-xl border border-slate-100 dark:border-white/5 bg-slate-50/50 dark:bg-white/[0.02] p-3 text-xs text-slate-500 dark:text-white/50 leading-relaxed italic">
+                        <span className="font-bold not-italic text-slate-600 dark:text-white/60 block text-[10px] uppercase tracking-wider mb-1">
+                          Nota Corporativa:
+                        </span>
+                        {doc.notaCorporativa}
+                      </div>
+                    )}
                   </div>
                 ) : (
                   <div className="pl-13">

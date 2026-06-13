@@ -25,6 +25,7 @@ export default function ProjectsOverview() {
   const [projects, setProjects]   = useState<Proyecto[]>([]);
   const [contracts, setContracts] = useState<any[]>([]);
   const [dptosCountMap, setDptosCountMap] = useState<Record<string, number>>({});
+  const [avanceMap, setAvanceMap] = useState<Record<string, number>>({});
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError]         = useState("");
   const [search, setSearch]       = useState("");
@@ -49,25 +50,32 @@ export default function ProjectsOverview() {
           : (contractsData?.content || []);
         setContracts(list);
 
-        // Fetch assets for each project in parallel to get unit counts
+        // Fetch assets and physical progress for each project in parallel
         const assetsMap: Record<string, number> = {};
+        const progressMap: Record<string, number> = {};
         if (projData && projData.length > 0) {
           await Promise.all(
             projData.map(async (p) => {
               try {
-                const assetsPage = await apiFetch<any>(`/api/activos/proyecto/${p.id}?size=9999`);
+                const [assetsPage, progressData] = await Promise.all([
+                  apiFetch<any>(`/api/activos/proyecto/${p.id}?size=9999`),
+                  apiFetch<any>(`/api/proyectos/${p.id}/avance-general`).catch(() => null),
+                ]);
                 const content = assetsPage?.content || [];
                 const dptosCount = content.filter((a: any) => a.tipo === "DEPARTAMENTO").length;
                 assetsMap[p.id] = dptosCount;
+                progressMap[p.id] = progressData?.porcentajeAvance ?? 0;
               } catch (err) {
-                console.error(`Error loading assets for project ${p.id}:`, err);
+                console.error(`Error loading details for project ${p.id}:`, err);
                 assetsMap[p.id] = 0;
+                progressMap[p.id] = 0;
               }
             })
           );
         }
         if (mounted) {
           setDptosCountMap(assetsMap);
+          setAvanceMap(progressMap);
         }
       } catch (err) {
         if (mounted) setError(err instanceof Error ? err.message : "No se pudieron cargar los proyectos.");
@@ -239,6 +247,7 @@ export default function ProjectsOverview() {
                 project={project}
                 clientesCount={clientesCount}
                 dptosCount={dptosCount}
+                avance={avanceMap[project.id] ?? 0}
               />
             );
           })}

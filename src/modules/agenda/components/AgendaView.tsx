@@ -23,6 +23,8 @@ type CalEvent = {
   client?: string;
   type?: string;
   unit?: string;
+  rsvpDot?: string;
+  rsvpText?: string;
 };
 
 type CalDay = {
@@ -245,11 +247,27 @@ export default function SchedulePage() {
                 dot = "bg-[#e65100]";
               }
 
+              // RSVP Dot based on confirmacionCliente:
+              // true -> verde (bg-emerald-500)
+              // false -> rojo (bg-rose-500)
+              // null/undefined -> gris (bg-slate-400)
+              let rsvpDot = "bg-slate-400 dark:bg-slate-500";
+              let rsvpText = "Pendiente";
+              if (c.confirmacionCliente === true) {
+                rsvpDot = "bg-emerald-500 dark:bg-emerald-400";
+                rsvpText = "Confirmado";
+              } else if (c.confirmacionCliente === false) {
+                rsvpDot = "bg-rose-500 dark:bg-rose-400";
+                rsvpText = "Declinado";
+              }
+
               return {
                 id: c.id,
                 label: `${c.titulo || c.tipoEvento}`,
                 bg,
                 dot,
+                rsvpDot,
+                rsvpText,
                 text: bg.split(" ")[1] || "",
                 time: startL,
                 client: c.clienteNombre || "Cliente",
@@ -506,14 +524,26 @@ export default function SchedulePage() {
   return (
     <>
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
         <div>
           <h2 className="text-2xl md:text-3xl font-bold tracking-[-0.01em] text-build-main dark:text-white">Agenda y Citas</h2>
           <p className="text-base text-slate-600 dark:text-white/70 mt-2">Programa reuniones, firmas, entregas y eventos importantes con clientes.</p>
         </div>
-        <button onClick={handleOpenModal} className="bg-build-main text-white text-xs font-semibold px-4 py-2 rounded-xl flex items-center gap-2 hover:bg-build-main/90 transition-all shadow-sm">
-          <span className="material-symbols-outlined text-[18px]">event_available</span>Nueva cita
-        </button>
+        <div className="flex items-center gap-2.5 self-end md:self-auto">
+          <button
+            onClick={handleSyncManual}
+            disabled={isSyncing}
+            className="border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 hover:bg-slate-50 dark:hover:bg-white/10 text-build-main dark:text-white text-xs font-semibold px-4 py-2.5 rounded-xl flex items-center gap-2 transition-all shadow-sm disabled:opacity-50"
+          >
+            <span className={`material-symbols-outlined text-[18px] ${isSyncing ? "animate-spin" : ""}`}>
+              sync
+            </span>
+            {isSyncing ? "Sincronizando..." : "Sincronizar Google Calendar"}
+          </button>
+          <button onClick={handleOpenModal} className="bg-build-main text-white text-xs font-semibold px-4 py-2.5 rounded-xl flex items-center gap-2 hover:bg-build-main/90 transition-all shadow-sm">
+            <span className="material-symbols-outlined text-[18px]">event_available</span>Nueva cita
+          </button>
+        </div>
       </div>
 
       {/* Grid */}
@@ -571,7 +601,7 @@ export default function SchedulePage() {
                     className={`${ev.bg} rounded px-2 py-1.5 flex flex-col gap-0.5 shadow-sm border border-build-main/5 hover:scale-[1.02] transition-transform cursor-pointer`}
                   >
                     <div className="flex items-center gap-1.5">
-                      <span className={`w-1.5 h-1.5 rounded-full ${ev.dot}`} />
+                      <span className={`w-1.5 h-1.5 rounded-full ${ev.rsvpDot}`} title={`Confirmación: ${ev.rsvpText}`} />
                       <span className="text-[11px] font-bold truncate">{ev.label}</span>
                     </div>
                     {ev.time && <span className="text-[9px] font-semibold opacity-75 pl-3">{ev.time}</span>}
@@ -586,7 +616,7 @@ export default function SchedulePage() {
         <div className="lg:col-span-3 flex flex-col gap-6">
           <div className="bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl p-6 shadow-sm">
             <div className="flex justify-between items-center mb-6 border-b border-slate-200 dark:border-white/10 pb-4">
-              <h3 className="text-[18px] font-bold text-build-main dark:text-white">Google Calendar Sinc</h3>
+              <h3 className="text-[18px] font-bold text-build-main dark:text-white">Panel de Pruebas (Google Sync)</h3>
               <span className="material-symbols-outlined text-slate-500 dark:text-white/60">science</span>
             </div>
 
@@ -599,15 +629,6 @@ export default function SchedulePage() {
                 <p className="text-[11px] text-slate-500 dark:text-white/60 mt-1 pr-2">Si ocurre un fallo, la cita se guardará solo localmente y se notificará el reintento.</p>
               </div>
             </label>
-
-            <button
-              onClick={handleSyncManual}
-              disabled={isSyncing}
-              className="w-full mt-4 bg-build-main hover:bg-build-main/90 text-white text-xs font-semibold py-2 px-4 rounded-xl flex items-center justify-center gap-2 transition-all disabled:opacity-50"
-            >
-              <span className="material-symbols-outlined text-[16px]">sync</span>
-              {isSyncing ? "Sincronizando..." : "Forzar Sincronización Manual"}
-            </button>
           </div>
 
           <div className="bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl p-6 shadow-sm">
@@ -621,7 +642,10 @@ export default function SchedulePage() {
                   onClick={() => handleEventClick(ev.id)}
                   className="mb-4 last:mb-0 pb-3 border-b border-slate-100 last:border-b-0 dark:border-white/5 cursor-pointer hover:bg-slate-50 dark:hover:bg-white/5 p-1 rounded-xl transition-all"
                 >
-                  <h4 className="text-[13px] font-bold text-build-main dark:text-white truncate hover:underline">{ev.label}</h4>
+                  <div className="flex items-center justify-between gap-2">
+                    <h4 className="text-[13px] font-bold text-build-main dark:text-white truncate hover:underline">{ev.label}</h4>
+                    <span className={`w-2 h-2 rounded-full shrink-0 ${ev.rsvpDot}`} title={`Confirmación: ${ev.rsvpText}`} />
+                  </div>
                   <p className="text-[11px] text-slate-500 dark:text-white/60 mt-0.5">Cliente: {ev.client}</p>
                   <p className="text-[12px] text-slate-500 dark:text-white/60 flex items-center gap-1 mt-1 font-semibold">
                     <span className="material-symbols-outlined text-[14px]">schedule</span> {ev.time || "Sin hora"} - {ev.type}
