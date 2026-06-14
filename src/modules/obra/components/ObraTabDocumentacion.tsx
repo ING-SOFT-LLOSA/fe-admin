@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { fetchDocumentosByReferencia, fetchSignedUrl, deleteDocumento, uploadDocument } from "@/lib/api/documents";
 import DialogModal from "@/components/ui/DialogModal";
 
@@ -52,12 +52,20 @@ export default function ObraTabDocumentacion({ projectId }: ObraTabDocumentacion
     type: "info",
   });
 
-  const loadDocuments = async () => {
+  const lastProjectIdRef = useRef(projectId);
+
+  useEffect(() => {
+    lastProjectIdRef.current = projectId;
+  }, [projectId]);
+
+  const loadDocuments = useCallback(async () => {
     if (!projectId) return;
+    const currentProjectId = projectId;
     setLoading(true);
     setError(null);
     try {
-      const dbDocs = await fetchDocumentosByReferencia(projectId);
+      const dbDocs = await fetchDocumentosByReferencia(currentProjectId);
+      if (currentProjectId !== lastProjectIdRef.current) return;
       const mapped = dbDocs.map((doc) => {
         let categoria: DocCategoria = "planos";
         let nombre = doc.nombreOriginal;
@@ -77,16 +85,20 @@ export default function ObraTabDocumentacion({ projectId }: ObraTabDocumentacion
       });
       setDocuments(mapped);
     } catch (err) {
-      console.error("Error loading documents:", err);
-      setError(err instanceof Error ? err.message : "Error al cargar documentos.");
+      if (currentProjectId === lastProjectIdRef.current) {
+        console.error("Error loading documents:", err);
+        setError(err instanceof Error ? err.message : "Error al cargar documentos.");
+      }
     } finally {
-      setLoading(false);
+      if (currentProjectId === lastProjectIdRef.current) {
+        setLoading(false);
+      }
     }
-  };
+  }, [projectId]);
 
   useEffect(() => {
     loadDocuments();
-  }, [projectId]);
+  }, [loadDocuments]);
 
   const handleUploadClick = (categoria: DocCategoria) => {
     const input = document.createElement("input");

@@ -51,33 +51,48 @@ export default function AssignPropertyWizard({ onClose, onSuccess, client }: Ass
 
   // Load Projects on mount
   useEffect(() => {
+    let active = true;
     fetchProyectos().then(data => {
+      if (!active) return;
       setProjects(data);
       if (data.length > 0) {
         setSelectedProjectId(data[0].id);
         setProjectSearch(data[0].nombre);
       }
-    }).catch(() => setErrorMsg("No se pudieron cargar los proyectos"));
+    }).catch(() => {
+      if (active) setErrorMsg("No se pudieron cargar los proyectos");
+    });
     
     // Preload clients for search
     if (!client) {
       setClientsLoading(true);
       fetchUsuarios()
-        .then(data => setAllClients(data.filter(u => u.activo).map(mapUsuarioToClienteRow)))
+        .then(data => {
+          if (!active) return;
+          setAllClients(data.filter(u => u.activo).map(mapUsuarioToClienteRow));
+        })
         .catch(console.error)
-        .finally(() => setClientsLoading(false));
+        .finally(() => {
+          if (active) setClientsLoading(false);
+        });
     }
-  }, []);
+
+    return () => {
+      active = false;
+    };
+  }, [client]);
 
   // Load Units when project changes
   useEffect(() => {
     if (!selectedProjectId) return;
+    let active = true;
     setLoadingUnits(true);
     setUnits([]);
     setSelectedUnitIds([]);
     
     fetchActivosPorProyecto(selectedProjectId, "DISPONIBLE")
       .then(page => {
+        if (!active) return;
         const availableUnits: UnitSelection[] = page.content.map(a => ({
           id: a.id,
           name: a.nro,
@@ -85,8 +100,16 @@ export default function AssignPropertyWizard({ onClose, onSuccess, client }: Ass
         }));
         setUnits(availableUnits);
       })
-      .catch(() => setErrorMsg("Error cargando inventario del proyecto"))
-      .finally(() => setLoadingUnits(false));
+      .catch(() => {
+        if (active) setErrorMsg("Error cargando inventario del proyecto");
+      })
+      .finally(() => {
+        if (active) setLoadingUnits(false);
+      });
+
+    return () => {
+      active = false;
+    };
   }, [selectedProjectId]);
 
   // Filtered clients for search

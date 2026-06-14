@@ -1,6 +1,6 @@
 "use client";
  
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import type { Proyecto } from "@/modules/proyectos/types";
 import { uploadDocument } from "@/lib/api/documents";
@@ -57,24 +57,36 @@ export default function ObraTabReportes({ projectId, avance, project }: ObraTabR
  
   const canEdit = perfil?.rol === "ADMIN" || perfil?.funciones?.includes("OBRA_EDITAR");
  
-  const loadReports = async () => {
+  const lastProjectIdRef = useRef(projectId);
+
+  useEffect(() => {
+    lastProjectIdRef.current = projectId;
+  }, [projectId]);
+
+  const loadReports = useCallback(async () => {
     if (!projectId) return;
+    const currentProjectId = projectId;
     setLoading(true);
     setError(null);
     try {
-      const pageRes = await fetchReportesProyecto(projectId, 0, 100);
+      const pageRes = await fetchReportesProyecto(currentProjectId, 0, 100);
+      if (currentProjectId !== lastProjectIdRef.current) return;
       setReports(pageRes.content || []);
     } catch (err) {
-      console.error("Error loading reports:", err);
-      setError(err instanceof Error ? err.message : "Error al cargar reportes.");
+      if (currentProjectId === lastProjectIdRef.current) {
+        console.error("Error loading reports:", err);
+        setError(err instanceof Error ? err.message : "Error al cargar reportes.");
+      }
     } finally {
-      setLoading(false);
+      if (currentProjectId === lastProjectIdRef.current) {
+        setLoading(false);
+      }
     }
-  };
- 
+  }, [projectId]);
+
   useEffect(() => {
     loadReports();
-  }, [projectId]);
+  }, [loadReports]);
  
   const handleCreateReport = async (payload: ReporteCreatePayload, files: File[]) => {
     const report = await createReporte(payload);
