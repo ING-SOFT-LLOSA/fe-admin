@@ -7,12 +7,14 @@ export function saveSession(token: string, perfil: PerfilConPermisos): void {
   if (typeof window === "undefined") return;
   localStorage.setItem(TOKEN_KEY, token);
   localStorage.setItem(PERFIL_KEY, JSON.stringify(perfil));
+  document.cookie = `${TOKEN_KEY}=${token}; path=/; max-age=86400; SameSite=Lax`;
 }
 
 export function clearSession(): void {
   if (typeof window === "undefined") return;
   localStorage.removeItem(TOKEN_KEY);
   localStorage.removeItem(PERFIL_KEY);
+  document.cookie = `${TOKEN_KEY}=; path=/; max-age=0; SameSite=Lax`;
 }
 
 export function getStoredToken(): string | null {

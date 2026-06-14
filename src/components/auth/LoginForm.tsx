@@ -15,13 +15,19 @@ type LoginFormProps = {
 
 export default function LoginForm({ redirectTo = "/proyectos" }: LoginFormProps) {
   const router = useRouter();
-  const { loginEmail, loginGoogle, resetPassword, isAuthenticated, isLoading: authLoading } = useAuth();
+  const { loginEmail, loginGoogle, resetPassword, isAuthenticated, isLoading: authLoading, perfil, logout } = useAuth();
 
   useEffect(() => {
-    if (!authLoading && isAuthenticated) {
-      router.replace(redirectTo);
+    if (!authLoading && isAuthenticated && perfil) {
+      if (perfil.tipoUsuario === "CLIENTE") {
+        logout().then(() => {
+          setError("El acceso para clientes ha sido movido a un portal especializado.");
+        });
+      } else {
+        router.replace(redirectTo);
+      }
     }
-  }, [authLoading, isAuthenticated, redirectTo, router]);
+  }, [authLoading, isAuthenticated, perfil, redirectTo, router, logout]);
   const [email, setEmail] = useState("");
   const [pass, setPass] = useState("");
   const [loading, setLoading] = useState(false);
