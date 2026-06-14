@@ -119,44 +119,12 @@ export function useCommercialStepper(contrato: UsuarioActivoResponseDTO | null) 
   }, [refresh]);
 
   // ── Actualiza el estado de un hito individual ──────────────────────────────
-  // Al marcar COMPLETADO, auto-completa todos los hitos previos (de etapas
-  // anteriores) que aún estén pendientes.
   const updateHito = useCallback(
     async (uuidHito: string, nuevoEstado: string) => {
       if (!stepper?.etapas || !uuidUsuarioActivo) return;
       setError("");
 
       try {
-        if (nuevoEstado === "COMPLETADO") {
-          // Encuentra la etapa a la que pertenece el hito que se está completando
-          const targetEtapa = stepper.etapas.find((et) =>
-            et.hitos?.some((h) => h.uuidHitoComercial === uuidHito)
-          );
-
-          if (targetEtapa) {
-            const targetStageIdx = STAGE_ORDER.indexOf(
-              targetEtapa.etapa as StageId
-            );
-
-            // Auto-completa todos los hitos de etapas ANTERIORES que no lo estén
-            for (let i = 0; i < targetStageIdx; i++) {
-              const prevEtapa = stepper.etapas.find(
-                (et) => et.etapa === STAGE_ORDER[i]
-              );
-              if (!prevEtapa?.hitos) continue;
-
-              for (const hito of prevEtapa.hitos) {
-                if (hito.estado !== "COMPLETADO") {
-                  await updateCommercialHitoEstado(
-                    hito.uuidHitoComercial,
-                    "COMPLETADO"
-                  );
-                }
-              }
-            }
-          }
-        }
-
         await updateCommercialHitoEstado(uuidHito, nuevoEstado);
         await refresh();
       } catch (err) {
