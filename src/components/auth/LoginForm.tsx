@@ -17,6 +17,16 @@ export default function LoginForm({ redirectTo = "/proyectos" }: LoginFormProps)
   const router = useRouter();
   const { loginEmail, loginGoogle, resetPassword, isAuthenticated, isLoading: authLoading, perfil, logout } = useAuth();
 
+  const [email, setEmail] = useState("");
+  const [pass, setPass] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [showPass, setShowPass] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [submitHover, setSubmitHover] = useState(false);
+  const [googleHover, setGoogleHover] = useState(false);
+  const [isResetView, setIsResetView] = useState(false);
+  const [resetSuccess, setResetSuccess] = useState(false);
+
   useEffect(() => {
     if (!authLoading && isAuthenticated && perfil) {
       if (perfil.tipoUsuario === "CLIENTE") {
@@ -28,15 +38,6 @@ export default function LoginForm({ redirectTo = "/proyectos" }: LoginFormProps)
       }
     }
   }, [authLoading, isAuthenticated, perfil, redirectTo, router, logout]);
-  const [email, setEmail] = useState("");
-  const [pass, setPass] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [showPass, setShowPass] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [submitHover, setSubmitHover] = useState(false);
-  const [googleHover, setGoogleHover] = useState(false);
-  const [isResetView, setIsResetView] = useState(false);
-  const [resetSuccess, setResetSuccess] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
