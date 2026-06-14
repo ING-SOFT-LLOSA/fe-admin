@@ -10,6 +10,7 @@ import type { UsuarioActivoResponseDTO } from "@/lib/api/expedientes";
 
 import type { StageSection } from "./hooks";
 import { Spinner, ErrorBanner } from "./ui";
+import DialogModal from "@/components/ui/DialogModal";
 
 type Props = {
   contrato:      UsuarioActivoResponseDTO | null;
@@ -34,6 +35,20 @@ export function TabDocumentos({
   const [actionError,  setActionError]    = useState<string | null>(null);
   const [editingNota,  setEditingNota]    = useState<{ id: string; text: string } | null>(null);
   const [savingNotaId, setSavingNotaId]   = useState<string | null>(null);
+  const [dialog, setDialog] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    type: "info" | "success" | "warning" | "danger";
+    confirmText?: string;
+    cancelText?: string;
+    onConfirm?: () => void;
+  }>({
+    isOpen: false,
+    title: "",
+    message: "",
+    type: "info",
+  });
 
   if (!contrato) {
     return (
@@ -73,15 +88,25 @@ export function TabDocumentos({
     }
   }
 
-  async function handleDelete(requisitoId: string) {
-    if (!confirm("¿Estás seguro de que deseas eliminar este documento?")) return;
-    setActionError(null);
-    try {
-      await deleteRequisitoArchivo(requisitoId);
-      await onRefresh();
-    } catch (err) {
-      setActionError(err instanceof Error ? err.message : "Error al eliminar el documento.");
-    }
+  function handleDelete(requisitoId: string) {
+    setDialog({
+      isOpen: true,
+      title: "Eliminar Documento",
+      message: "¿Estás seguro de que deseas eliminar este documento?",
+      type: "danger",
+      confirmText: "Eliminar",
+      cancelText: "Cancelar",
+      onConfirm: async () => {
+        setDialog((prev) => ({ ...prev, isOpen: false }));
+        setActionError(null);
+        try {
+          await deleteRequisitoArchivo(requisitoId);
+          await onRefresh();
+        } catch (err) {
+          setActionError(err instanceof Error ? err.message : "Error al eliminar el documento.");
+        }
+      },
+    });
   }
 
   async function handleSaveNota(doc: DocumentoItem) {
@@ -160,6 +185,17 @@ export function TabDocumentos({
           </div>
         ))
       )}
+
+      <DialogModal
+        isOpen={dialog.isOpen}
+        title={dialog.title}
+        message={dialog.message}
+        type={dialog.type}
+        confirmText={dialog.confirmText}
+        cancelText={dialog.cancelText}
+        onConfirm={dialog.onConfirm}
+        onClose={() => setDialog((prev) => ({ ...prev, isOpen: false }))}
+      />
     </div>
   );
 }

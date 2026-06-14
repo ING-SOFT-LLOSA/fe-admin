@@ -34,6 +34,7 @@ import {
 import { InfoChip, ResumenKpi, LoadingSpinner, Spinner, ErrorBanner } from "./ui";
 
 import { useExpediente } from "./hooks";
+import DialogModal from "@/components/ui/DialogModal";
 
 type Props = {
   uuidUsuarioActivo: string;
@@ -62,6 +63,7 @@ export default function ExpedienteDetailView({ uuidUsuarioActivo }: Props) {
   const [isDocsLoading, setIsDocsLoading] = useState(false);
   const [docsLoaded, setDocsLoaded] = useState(false);
   const [selectedDocFilter, setSelectedDocFilter] = useState<string>("ALL");
+
 
   // Load Stepper data on mount to ensure summary cards display correct counts immediately
   useEffect(() => {
@@ -791,6 +793,20 @@ function DocumentosTab({
   const [uploadingDocId, setUploadingDocId] = useState<string | null>(null);
   const [deletingDocId, setDeletingDocId] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [dialog, setDialog] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    type: "info" | "success" | "warning" | "danger";
+    confirmText?: string;
+    cancelText?: string;
+    onConfirm?: () => void;
+  }>({
+    isOpen: false,
+    title: "",
+    message: "",
+    type: "info",
+  });
 
   // Flatten and filter documents list
   const allDocs = Object.keys(documents).flatMap((stageKey) => {
@@ -880,18 +896,28 @@ function DocumentosTab({
   };
 
   // Delete Handler
-  const handleDeleteClick = async (docId: string) => {
-    if (!confirm("¿Estás seguro de que deseas eliminar el archivo de este requisito?")) return;
-    setDeletingDocId(docId);
-    setActionError(null);
-    try {
-      await deleteRequisitoArchivo(docId);
-      await onRefresh();
-    } catch (err) {
-      setActionError(err instanceof Error ? err.message : "Error al eliminar el archivo.");
-    } finally {
-      setDeletingDocId(null);
-    }
+  const handleDeleteClick = (docId: string) => {
+    setDialog({
+      isOpen: true,
+      title: "Eliminar Archivo de Requisito",
+      message: "¿Estás seguro de que deseas eliminar el archivo de este requisito?",
+      type: "danger",
+      confirmText: "Eliminar",
+      cancelText: "Cancelar",
+      onConfirm: async () => {
+        setDialog((prev) => ({ ...prev, isOpen: false }));
+        setDeletingDocId(docId);
+        setActionError(null);
+        try {
+          await deleteRequisitoArchivo(docId);
+          await onRefresh();
+        } catch (err) {
+          setActionError(err instanceof Error ? err.message : "Error al eliminar el archivo.");
+        } finally {
+          setDeletingDocId(null);
+        }
+      },
+    });
   };
 
   return (
@@ -1181,6 +1207,17 @@ function DocumentosTab({
           </div>
         </div>
       )}
+
+      <DialogModal
+        isOpen={dialog.isOpen}
+        title={dialog.title}
+        message={dialog.message}
+        type={dialog.type}
+        confirmText={dialog.confirmText}
+        cancelText={dialog.cancelText}
+        onConfirm={dialog.onConfirm}
+        onClose={() => setDialog((prev) => ({ ...prev, isOpen: false }))}
+      />
     </div>
   );
 }

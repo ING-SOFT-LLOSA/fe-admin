@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { fetchDocumentosByReferencia, fetchSignedUrl, deleteDocumento, uploadDocument } from "@/lib/api/documents";
+import DialogModal from "@/components/ui/DialogModal";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -36,6 +37,20 @@ export default function ObraTabDocumentacion({ projectId }: ObraTabDocumentacion
   const [error, setError] = useState<string | null>(null);
   const [uploadingCat, setUploadingCat] = useState<DocCategoria | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [dialog, setDialog] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    type: "info" | "success" | "warning" | "danger";
+    confirmText?: string;
+    cancelText?: string;
+    onConfirm?: () => void;
+  }>({
+    isOpen: false,
+    title: "",
+    message: "",
+    type: "info",
+  });
 
   const loadDocuments = async () => {
     if (!projectId) return;
@@ -108,20 +123,36 @@ export default function ObraTabDocumentacion({ projectId }: ObraTabDocumentacion
       window.open(res.url, "_blank");
     } catch (err) {
       console.error("Error fetching signed URL:", err);
-      alert("No se pudo obtener el enlace de descarga.");
+      setDialog({
+        isOpen: true,
+        title: "Error de Descarga",
+        message: "No se pudo obtener el enlace de descarga.",
+        type: "danger",
+        confirmText: "Aceptar",
+      });
     }
   };
 
-  const handleDelete = async (docId: string) => {
-    if (!confirm("¿Estás seguro de que deseas eliminar este documento?")) return;
-    setActionError(null);
-    try {
-      await deleteDocumento(docId);
-      await loadDocuments();
-    } catch (err) {
-      console.error("Error deleting document:", err);
-      setActionError(err instanceof Error ? err.message : "Error al eliminar el documento.");
-    }
+  const handleDelete = (docId: string) => {
+    setDialog({
+      isOpen: true,
+      title: "Eliminar Documento",
+      message: "¿Estás seguro de que deseas eliminar este documento?",
+      type: "danger",
+      confirmText: "Eliminar",
+      cancelText: "Cancelar",
+      onConfirm: async () => {
+        setDialog((prev) => ({ ...prev, isOpen: false }));
+        setActionError(null);
+        try {
+          await deleteDocumento(docId);
+          await loadDocuments();
+        } catch (err) {
+          console.error("Error deleting document:", err);
+          setActionError(err instanceof Error ? err.message : "Error al eliminar el documento.");
+        }
+      },
+    });
   };
 
   return (
@@ -236,6 +267,17 @@ export default function ObraTabDocumentacion({ projectId }: ObraTabDocumentacion
           )}
         </div>
       </div>
+
+      <DialogModal
+        isOpen={dialog.isOpen}
+        title={dialog.title}
+        message={dialog.message}
+        type={dialog.type}
+        confirmText={dialog.confirmText}
+        cancelText={dialog.cancelText}
+        onConfirm={dialog.onConfirm}
+        onClose={() => setDialog((prev) => ({ ...prev, isOpen: false }))}
+      />
     </div>
   );
 }

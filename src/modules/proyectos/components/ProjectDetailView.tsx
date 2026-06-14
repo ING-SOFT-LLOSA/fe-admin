@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import ProjectForm from "@/modules/proyectos/components/ProjectForm";
 import { deleteProyecto, updateProyecto } from "@/modules/proyectos/services";
 import type { ProyectoCreateDTO } from "@/modules/proyectos/types";
+import DialogModal from "@/components/ui/DialogModal";
 
 type ProjectDetailViewProps = {
   projectId: string;
@@ -27,6 +28,20 @@ export default function ProjectDetailView({ projectId }: ProjectDetailViewProps)
   const [isSaving, setIsSaving] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
+  const [dialog, setDialog] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    type: "info" | "success" | "warning" | "danger";
+    confirmText?: string;
+    cancelText?: string;
+    onConfirm?: () => void;
+  }>({
+    isOpen: false,
+    title: "",
+    message: "",
+    type: "info",
+  });
 
   useEffect(() => {
     let mounted = true;
@@ -88,31 +103,54 @@ export default function ProjectDetailView({ projectId }: ProjectDetailViewProps)
       setFormValues(trimmedValues);
     } catch (error) {
       console.error(error);
-      alert("Hubo un error al guardar los cambios del proyecto.");
+      setDialog({
+        isOpen: true,
+        title: "Error de Guardado",
+        message: "Hubo un error al guardar los cambios del proyecto.",
+        type: "danger",
+        confirmText: "Aceptar",
+      });
     } finally {
       setIsSaving(false);
     }
   }
 
-  async function handleDelete() {
-    if (
-      !confirm(
-        "¿Estás completamente seguro de que deseas eliminar este proyecto? Esta acción no se puede deshacer y borrará todas las unidades y etapas asociadas.",
-      )
-    ) {
-      return;
-    }
-
-    setIsDeleting(true);
-    try {
-      await deleteProyecto(projectId);
-      alert("Proyecto eliminado correctamente.");
-      router.push("/proyectos");
-    } catch (error) {
-      console.error(error);
-      alert("Ocurrió un error al intentar eliminar el proyecto.");
-      setIsDeleting(false);
-    }
+  function handleDelete() {
+    setDialog({
+      isOpen: true,
+      title: "Eliminar Proyecto",
+      message: "¿Estás completamente seguro de que deseas eliminar este proyecto? Esta acción no se puede deshacer y borrará todas las unidades y etapas asociadas.",
+      type: "danger",
+      confirmText: "Eliminar",
+      cancelText: "Cancelar",
+      onConfirm: async () => {
+        setDialog((prev) => ({ ...prev, isOpen: false }));
+        setIsDeleting(true);
+        try {
+          await deleteProyecto(projectId);
+          setDialog({
+            isOpen: true,
+            title: "Proyecto Eliminado",
+            message: "Proyecto eliminado correctamente.",
+            type: "success",
+            confirmText: "Aceptar",
+            onConfirm: () => {
+              router.push("/proyectos");
+            },
+          });
+        } catch (error) {
+          console.error(error);
+          setDialog({
+            isOpen: true,
+            title: "Error al Eliminar",
+            message: "Ocurrió un error al intentar eliminar el proyecto.",
+            type: "danger",
+            confirmText: "Aceptar",
+          });
+          setIsDeleting(false);
+        }
+      },
+    });
   }
 
   if (isLoading) {
@@ -156,6 +194,17 @@ export default function ProjectDetailView({ projectId }: ProjectDetailViewProps)
           </button>
         </div>
       </section>
+
+      <DialogModal
+        isOpen={dialog.isOpen}
+        title={dialog.title}
+        message={dialog.message}
+        type={dialog.type}
+        confirmText={dialog.confirmText}
+        cancelText={dialog.cancelText}
+        onConfirm={dialog.onConfirm}
+        onClose={() => setDialog((prev) => ({ ...prev, isOpen: false }))}
+      />
     </section>
   );
 }
