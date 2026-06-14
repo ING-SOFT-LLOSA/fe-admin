@@ -4,11 +4,6 @@ export default function Footer() {
       <p className="text-xs tracking-wide uppercase text-slate-400 dark:text-white/50">
         © 2026 Llosa Edificaciones. Todos los derechos reservados.
       </p>
-      <div className="flex gap-6">
-        <a href="#" className="text-xs tracking-wide uppercase text-slate-400 dark:text-white/50 hover:text-slate-900 dark:text-white underline transition-colors">Privacidad</a>
-        <a href="#" className="text-xs tracking-wide uppercase text-slate-400 dark:text-white/50 hover:text-slate-900 dark:text-white underline transition-colors">Términos</a>
-        <a href="#" className="text-xs tracking-wide uppercase text-slate-400 dark:text-white/50 hover:text-slate-900 dark:text-white underline transition-colors">Soporte</a>
-      </div>
     </footer>
   );
 }

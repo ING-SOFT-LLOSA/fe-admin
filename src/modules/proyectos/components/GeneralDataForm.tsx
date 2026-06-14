@@ -32,12 +32,7 @@ export default function GeneralDataForm({ initialData, onSubmit, onCancel }: Pro
       newErrors.distrito = "El distrito es obligatorio.";
     }
 
-    if (data.linkRecorridoVirtual && data.linkRecorridoVirtual.trim() !== "") {
-      const urlRegex = /^https?:\/\/\S+/i;
-      if (!urlRegex.test(data.linkRecorridoVirtual.trim())) {
-        newErrors.linkRecorridoVirtual = "El link del recorrido virtual debe ser una URL válida (ej. https://...).";
-      }
-    }
+
 
     if (data.fechaInicio && data.fechaFin) {
       const start = new Date(data.fechaInicio);
@@ -101,7 +96,6 @@ export default function GeneralDataForm({ initialData, onSubmit, onCancel }: Pro
       direccion: formData.direccion.trim(),
       departamento: formData.departamento.trim(),
       distrito: formData.distrito.trim(),
-      linkRecorridoVirtual: formData.linkRecorridoVirtual.trim(),
     });
   };
 
@@ -213,24 +207,7 @@ export default function GeneralDataForm({ initialData, onSubmit, onCancel }: Pro
           )}
         </div>
 
-        <div className="space-y-2 md:col-span-2">
-          <label className="text-sm font-semibold text-slate-700 dark:text-white/80">Link Recorrido Virtual 3D</label>
-          <input 
-            type="text" 
-            name="linkRecorridoVirtual"
-            value={formData.linkRecorridoVirtual}
-            onChange={handleChange}
-            placeholder="https://my.matterport.com/show/?m=..."
-            className={`w-full rounded-xl border bg-slate-50 dark:bg-white/5 px-4 py-2.5 text-sm outline-none transition-all ${
-              errors.linkRecorridoVirtual 
-                ? "border-red-500 focus:border-red-600 focus:bg-white focus:ring-1 focus:ring-red-500/20" 
-                : "border-slate-200 dark:border-white/10 focus:border-build-main focus:bg-white"
-            }`}
-          />
-          {errors.linkRecorridoVirtual && (
-            <p className="text-xs font-semibold text-red-500 dark:text-red-400">{errors.linkRecorridoVirtual}</p>
-          )}
-        </div>
+
 
         <div className="space-y-2 md:col-span-2">
           <label className="text-sm font-semibold text-slate-700 dark:text-white/80">Descripción del Proyecto</label>

@@ -20,9 +20,7 @@ export default function UnitDetailView({ projectId, unitId }: UnitDetailViewProp
     estadoComercial: "DISPONIBLE",
     precio: 0,
     descripcion: "",
-    linkRecorridoVirtual: "",
   });
-  const [showTour, setShowTour] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [message, setMessage] = useState("");
@@ -47,7 +45,6 @@ export default function UnitDetailView({ projectId, unitId }: UnitDetailViewProp
             estadoComercial: selectedUnit.estadoComercial,
             precio: selectedUnit.precio,
             descripcion: selectedUnit.descripcion ?? "",
-            linkRecorridoVirtual: selectedUnit.linkRecorridoVirtual ?? "",
           });
         }
       } catch (loadError) {
@@ -172,26 +169,6 @@ export default function UnitDetailView({ projectId, unitId }: UnitDetailViewProp
         </section>
 
         <div className="space-y-6">
-          {unit.linkRecorridoVirtual && (
-            <section className="rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 p-6 shadow-sm">
-              <h2 className="text-[20px] font-bold text-build-main dark:text-white flex items-center gap-2">
-                <span className="material-symbols-outlined text-build-accent">3d_rotation</span>
-                Tour Virtual 3D
-              </h2>
-              <p className="mt-2 text-sm text-slate-500 dark:text-white/60">
-                Esta unidad cuenta con un recorrido virtual interactivo en 3D para previsualizar acabados y distribución.
-              </p>
-              <button
-                type="button"
-                onClick={() => setShowTour(true)}
-                className="mt-5 w-full inline-flex items-center justify-center gap-2 rounded-xl bg-build-accent px-4 py-2 text-sm font-bold text-build-main hover:bg-build-accent/90 transition-all shadow-sm"
-              >
-                <span className="material-symbols-outlined text-[18px]">open_in_new</span>
-                Ver Recorrido 3D
-              </button>
-            </section>
-          )}
-
           <section className="rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 p-6 shadow-sm">
             <h2 className="text-[20px] font-bold text-build-main dark:text-white">Asignaciones</h2>
             <p className="mt-2 text-sm text-slate-500 dark:text-white/60">
@@ -204,30 +181,6 @@ export default function UnitDetailView({ projectId, unitId }: UnitDetailViewProp
           </section>
         </div>
       </div>
-
-      {showTour && unit.linkRecorridoVirtual && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#050a0e]/75 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-5xl rounded-2xl bg-white dark:bg-[#111827] shadow-2xl overflow-hidden flex flex-col h-[80vh]">
-            <div className="flex items-center justify-between border-b border-slate-200 dark:border-white/10 px-6 py-4">
-              <h3 className="text-lg font-bold text-build-main dark:text-white flex items-center gap-2">
-                <span className="material-symbols-outlined text-build-accent">3d_rotation</span>
-                Recorrido Virtual 3D - Unidad {unit.nro}
-              </h3>
-              <button onClick={() => setShowTour(false)} className="text-slate-400 hover:text-build-main dark:hover:text-white transition-colors">
-                <span className="material-symbols-outlined">close</span>
-              </button>
-            </div>
-            <div className="flex-1 bg-black">
-              <iframe
-                src={unit.linkRecorridoVirtual}
-                className="w-full h-full border-0"
-                allowFullScreen
-                allow="xr-spatial-tracking"
-              />
-            </div>
-          </div>
-        </div>
-      )}
     </section>
   );
 }

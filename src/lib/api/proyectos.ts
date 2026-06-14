@@ -12,7 +12,6 @@ export interface ProyectoCreateDTO {
   nombre: string;
   descripcion: string;
   precertificacionEdgeLeed: boolean;
-  linkRecorridoVirtual: string;
   departamento: string;
   distrito: string;
   direccion: string;
@@ -45,7 +44,6 @@ export interface ActivoResponseDTO {
   estadoComercial: string;
   precio: number;
   descripcion: string;
-  linkRecorridoVirtual?: string;
 }
 
 export interface TorreResponseDTO {
@@ -101,7 +99,6 @@ export interface ActivoRequestDTO {
   estadoComercial: string;
   precio: number;
   descripcion: string;
-  linkRecorridoVirtual?: string;
 }
 
 export function createActivo(idPiso: number, data: ActivoRequestDTO): Promise<ActivoResponseDTO> {

@@ -260,7 +260,7 @@ export default function LoginForm({ redirectTo = "/proyectos" }: LoginFormProps)
           </div>
 
           <p className="text-center text-[12px] text-gray-400 mt-6">
-            © 2026 Llosa Edificaciones · <span className="hover:text-gray-600 cursor-pointer transition-colors duration-200">Privacidad</span>
+            © 2026 Llosa Edificaciones
           </p>
         </div>
       </div>

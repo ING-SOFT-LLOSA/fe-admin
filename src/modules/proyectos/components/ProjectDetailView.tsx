@@ -17,7 +17,6 @@ export default function ProjectDetailView({ projectId }: ProjectDetailViewProps)
     nombre: "",
     descripcion: "",
     precertificacionEdgeLeed: false,
-    linkRecorridoVirtual: "",
     departamento: "",
     distrito: "",
     direccion: "",
@@ -48,7 +47,6 @@ export default function ProjectDetailView({ projectId }: ProjectDetailViewProps)
           nombre: backendProject.nombre || "",
           descripcion: backendProject.descripcion || "",
           precertificacionEdgeLeed: backendProject.precertificacionEdgeLeed || false,
-          linkRecorridoVirtual: backendProject.linkRecorridoVirtual || "",
           departamento: backendProject.departamento || "",
           distrito: backendProject.distrito || "",
           direccion: backendProject.direccion || "",
@@ -82,7 +80,6 @@ export default function ProjectDetailView({ projectId }: ProjectDetailViewProps)
       direccion: formValues.direccion.trim(),
       departamento: formValues.departamento.trim(),
       distrito: formValues.distrito.trim(),
-      linkRecorridoVirtual: formValues.linkRecorridoVirtual.trim(),
     };
 
     try {
