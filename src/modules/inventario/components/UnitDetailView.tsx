@@ -162,10 +162,6 @@ export default function UnitDetailView({ projectId, unitId }: UnitDetailViewProp
               <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-white/60">Características técnicas</label>
               <textarea rows={4} value={form.descripcion} onChange={(event) => setForm({ ...form, descripcion: event.target.value })} className="w-full rounded-xl border border-slate-200 dark:border-white/10 px-3 py-2 text-sm outline-none focus:border-build-accent focus:ring-1 focus:ring-build-accent" />
             </div>
-            <div className="md:col-span-2">
-              <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-white/60">Enlace Recorrido Virtual 3D</label>
-              <input value={form.linkRecorridoVirtual} onChange={(event) => setForm({ ...form, linkRecorridoVirtual: event.target.value })} className="w-full rounded-xl border border-slate-200 dark:border-white/10 px-3 py-2 text-sm outline-none focus:border-build-accent focus:ring-1 focus:ring-build-accent" placeholder="https://my.matterport.com/show/?m=..." />
-            </div>
           </div>
 
           <div className="mt-6 flex justify-end">
