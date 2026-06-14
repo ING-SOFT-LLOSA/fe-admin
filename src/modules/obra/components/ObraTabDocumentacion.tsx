@@ -132,7 +132,7 @@ export default function ObraTabDocumentacion({ projectId }: ObraTabDocumentacion
   const handleDownload = async (docId: string) => {
     try {
       const res = await fetchSignedUrl(docId);
-      window.open(res.url, "_blank");
+      window.open(res.url, "_blank", "noopener,noreferrer");
     } catch (err) {
       console.error("Error fetching signed URL:", err);
       setDialog({

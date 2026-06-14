@@ -173,7 +173,7 @@ export function TabDocumentos({
                     canEditNotes={canEditNotes}
                     onUploadClick={() => handleUploadClick(doc.id)}
                     onDelete={() => handleDelete(doc.id)}
-                    onDownload={() => doc.downloadUrl && window.open(doc.downloadUrl, "_blank")}
+                    onDownload={() => doc.downloadUrl && window.open(doc.downloadUrl, "_blank", "noopener,noreferrer")}
                     onEditNotaStart={() => setEditingNota({ id: doc.id, text: doc.notaCorporativa ?? "" })}
                     onEditNotaChange={(text) => setEditingNota({ id: doc.id, text })}
                     onSaveNota={() => handleSaveNota(doc)}

@@ -1017,7 +1017,7 @@ function DocumentosTab({
                     {/* Download Button */}
                     {hasUrl && (
                       <button
-                        onClick={() => window.open(doc.downloadUrl!, "_blank")}
+                        onClick={() => window.open(doc.downloadUrl!, "_blank", "noopener,noreferrer")}
                         className="flex items-center justify-center w-8 h-8 rounded-lg hover:bg-slate-100 dark:hover:bg-white/10 text-slate-500 hover:text-build-accent dark:text-white/60 dark:hover:text-white transition"
                         title="Descargar / Ver Archivo"
                       >

@@ -452,7 +452,7 @@ function ReporteDetail({
               return (
                 <div
                   key={media.id}
-                  onClick={() => media.urlAcceso && window.open(media.urlAcceso, "_blank")}
+                  onClick={() => media.urlAcceso && window.open(media.urlAcceso, "_blank", "noopener,noreferrer")}
                   className="aspect-video rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 flex flex-col items-center justify-center gap-2 text-center hover:border-build-accent hover:bg-slate-100 dark:hover:bg-white/10 transition-colors cursor-pointer overflow-hidden relative group"
                 >
                   {isImage && media.urlAcceso ? (

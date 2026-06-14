@@ -159,7 +159,7 @@ export default function DirectFinancingView({ expediente, cronograma, pagos, res
     const handleDownloadVoucher = async (uuidComprobante: string) => {
         try {
             const { url } = await fetchSignedUrl(uuidComprobante);
-            window.open(url, "_blank");
+            window.open(url, "_blank", "noopener,noreferrer");
         } catch {
             alert("No se pudo obtener el enlace del comprobante.");
         }
