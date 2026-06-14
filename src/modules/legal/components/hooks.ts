@@ -55,21 +55,52 @@ export function useCommercialStepper(contrato: UsuarioActivoResponseDTO | null) 
         data.etapas?.reduce((acc, e) => acc + (e.hitos?.length ?? 0), 0) ?? 0;
 
       if (totalHitos === 0) {
-        // Fetch the stages to get their uuidEtapaExpediente
-        const etapasExp = await fetchEtapasExpediente(uuidUsuarioActivo);
-        // Seed: crea todos los hitos definidos en DEFAULT_HITOS en orden
-        for (const h of DEFAULT_HITOS) {
-          const stage = etapasExp.find((e) => e.etapaProceso === h.etapaProceso);
-          if (stage) {
-            await createCommercialHito({
-              uuidEstapaExpediente: stage.uuidEtapaExpediente,
-              nombreHito:           h.nombreHito,
-              descripcion:          h.descripcion,
-              orden:                h.orden,
-            });
-          }
+        const lockKey = `seeding_hitos_${uuidUsuarioActivo}`;
+
+        // Espera si otra pestaña del navegador ya está sembrando los hitos
+        let attempts = 0;
+        while (localStorage.getItem(lockKey) === "true" && attempts < 10) {
+          await new Promise((resolve) => setTimeout(resolve, 500));
+          attempts++;
         }
-        data = await fetchCommercialStepper(uuidUsuarioActivo);
+
+        // Volver a consultar después de la espera
+        const doubleCheck = await fetchCommercialStepper(uuidUsuarioActivo);
+        const checkTotal = doubleCheck.etapas?.reduce((acc, e) => acc + (e.hitos?.length ?? 0), 0) ?? 0;
+
+        if (checkTotal > 0) {
+          data = doubleCheck;
+        } else {
+          localStorage.setItem(lockKey, "true");
+          try {
+            // Fetch the stages to get their uuidEtapaExpediente
+            const etapasExp = await fetchEtapasExpediente(uuidUsuarioActivo);
+            
+            // Seed: crea todos los hitos definidos en DEFAULT_HITOS en orden
+            for (const h of DEFAULT_HITOS) {
+              const stage = etapasExp.find((e) => e.etapaProceso === h.etapaProceso);
+              if (stage) {
+                // Doble chequeo contra el backend para evitar duplicados en la iteración secuencial
+                const freshStepper = await fetchCommercialStepper(uuidUsuarioActivo);
+                const hitoExists = freshStepper.etapas?.some(e =>
+                  e.etapa === h.etapaProceso && e.hitos?.some(existH => existH.nombreHito === h.nombreHito)
+                );
+
+                if (!hitoExists) {
+                  await createCommercialHito({
+                    uuidEstapaExpediente: stage.uuidEtapaExpediente,
+                    nombreHito:           h.nombreHito,
+                    descripcion:          h.descripcion,
+                    orden:                h.orden,
+                  });
+                }
+              }
+            }
+          } finally {
+            localStorage.removeItem(lockKey);
+          }
+          data = await fetchCommercialStepper(uuidUsuarioActivo);
+        }
       }
 
       setStepper(data);
@@ -277,23 +308,63 @@ async function loadStageSection(
 
   if (missing.length > 0 && etapaId) {
     const lockKey = `${uuidUsuarioActivo}_${stageId}`;
+    const storageLockKey = `seeding_req_${uuidUsuarioActivo}_${stageId}`;
 
-    if (seedingInProgress[lockKey]) {
-      await seedingInProgress[lockKey];
-    } else {
-      const seedPromise = (async () => {
-        for (const req of missing) {
-          await createRequisito({
-            etapaProcesoCompraId: etapaId,
-            titulo:               req.titulo,
-            descripcion:          req.descripcion,
-            icono:                req.icono,
-          });
+    // Espera si otra pestaña está sembrando los requerimientos de esta etapa
+    let attempts = 0;
+    while (localStorage.getItem(storageLockKey) === "true" && attempts < 10) {
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      attempts++;
+    }
+
+    // Recargar documentos después de la espera
+    const doubleCheckRes = await fetchStageDocuments(stageId, uuidUsuarioActivo);
+    const doubleCheckExisting = doubleCheckRes.documents ?? [];
+    const stillMissing = predefs.filter(
+      (p) =>
+        !doubleCheckExisting.some(
+          (doc) =>
+            doc.title.toLowerCase().trim() === p.titulo.toLowerCase().trim()
+        )
+    );
+
+    if (stillMissing.length > 0) {
+      localStorage.setItem(storageLockKey, "true");
+
+      if (seedingInProgress[lockKey]) {
+        try {
+          await seedingInProgress[lockKey];
+        } finally {
+          localStorage.removeItem(storageLockKey);
         }
-      })();
-      seedingInProgress[lockKey] = seedPromise;
-      await seedPromise;
-      delete seedingInProgress[lockKey];
+      } else {
+        const seedPromise = (async () => {
+          try {
+            for (const req of stillMissing) {
+              // Doble chequeo contra el backend antes de crear este requisito específico
+              const freshRes = await fetchStageDocuments(stageId, uuidUsuarioActivo);
+              const freshDocs = freshRes.documents ?? [];
+              const exists = freshDocs.some(
+                (d) => d.title.toLowerCase().trim() === req.titulo.toLowerCase().trim()
+              );
+
+              if (!exists) {
+                await createRequisito({
+                  etapaProcesoCompraId: etapaId,
+                  titulo:               req.titulo,
+                  descripcion:          req.descripcion,
+                  icono:                req.icono,
+                });
+              }
+            }
+          } finally {
+            localStorage.removeItem(storageLockKey);
+          }
+        })();
+        seedingInProgress[lockKey] = seedPromise;
+        await seedPromise;
+        delete seedingInProgress[lockKey];
+      }
     }
 
     res = await fetchStageDocuments(stageId, uuidUsuarioActivo);
