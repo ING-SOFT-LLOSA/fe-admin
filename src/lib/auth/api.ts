@@ -1,6 +1,7 @@
 import type { PerfilConPermisos } from "@/types/auth";
 // Removed mock imports
 
+
 const API_URL = (process.env.NEXT_PUBLIC_API_URL_LLOSA ?? "http://localhost:8080").replace(/\/$/, "");
 
 export async function fetchPerfil(token: string): Promise<PerfilConPermisos> {
@@ -16,13 +17,13 @@ export async function fetchPerfil(token: string): Promise<PerfilConPermisos> {
 
   if (!res.ok) {
     const detail = await res.text().catch(() => "");
-    let message = detail;
+    let message = "";
 
     try {
-      const json = JSON.parse(detail) as { error?: string };
-      if (json.error) message = json.error;
+      const json = JSON.parse(detail) as { error?: string; message?: string };
+      message = json.message || json.error || detail;
     } catch {
-      /* body no es JSON */
+      message = detail;
     }
 
     if (res.status === 503) {
@@ -33,7 +34,12 @@ export async function fetchPerfil(token: string): Promise<PerfilConPermisos> {
     }
 
     if (res.status === 403) {
-      throw new Error(message || "Sesión inválida. Vuelve a iniciar sesión.");
+      const isGeneric = !message || message.toLowerCase() === "forbidden" || message.toLowerCase() === "access denied";
+      throw new Error(
+        isGeneric
+          ? "Tu cuenta de usuario está inactiva o deshabilitada. Si crees que es un error, por favor contacta al administrador del sistema."
+          : message
+      );
     }
 
     throw new Error(
