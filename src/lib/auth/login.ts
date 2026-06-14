@@ -3,6 +3,7 @@ import {
   signInWithEmailAndPassword,
   signInWithPopup,
   signOut,
+  sendPasswordResetEmail,
   type User,
 } from "firebase/auth";
 
@@ -43,4 +44,7 @@ export async function logout(): Promise<void> {
   } catch {
     /* sin sesión Firebase activa */
   }
+}
+export async function resetPassword(email: string): Promise<void> {
+  await sendPasswordResetEmail(getFirebaseAuth(), email);
 }

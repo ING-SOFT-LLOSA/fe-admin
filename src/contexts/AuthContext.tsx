@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import {
   createContext,
@@ -18,6 +18,7 @@ import {
   loginWithEmail,
   loginWithGoogle,
   logout as authLogout,
+  resetPassword as authResetPassword,
 } from "@/lib/auth/login";
 import {
   clearSession,
@@ -37,6 +38,7 @@ interface AuthContextValue {
   loginEmail: (email: string, password: string) => Promise<PerfilConPermisos>;
   loginGoogle: () => Promise<PerfilConPermisos>;
   logout: () => Promise<void>;
+  resetPassword: (email: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -127,6 +129,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setToken(null);
   }, []);
 
+  const resetPassword = useCallback(async (email: string) => {
+    await authResetPassword(email);
+  }, []);
+
   const value = useMemo<AuthContextValue>(
     () => ({
       perfil,
@@ -136,8 +142,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       loginEmail,
       loginGoogle,
       logout,
+      resetPassword,
     }),
-    [perfil, token, isLoading, loginEmail, loginGoogle, logout],
+    [perfil, token, isLoading, loginEmail, loginGoogle, logout, resetPassword],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
