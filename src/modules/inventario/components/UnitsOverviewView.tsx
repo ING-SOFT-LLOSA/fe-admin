@@ -68,8 +68,8 @@ export default function UnitsOverviewView({ projectId }: UnitsOverviewViewProps)
     });
   }, [deferredSearch, statusFilter, typeFilter, units]);
 
-  const unitTypes = Array.from(new Set(units.map((unit) => unit.tipo))).sort();
-  const unitStatuses = Array.from(new Set(units.map((unit) => unit.estadoComercial))).sort();
+  const unitTypes = Array.from(new Set(units.map((unit) => unit.tipo))).sort((a, b) => a.localeCompare(b));
+  const unitStatuses = Array.from(new Set(units.map((unit) => unit.estadoComercial))).sort((a, b) => a.localeCompare(b));
 
   return (
     <section className="space-y-6">

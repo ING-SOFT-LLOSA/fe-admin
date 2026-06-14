@@ -20,6 +20,32 @@ interface UnitSelection {
   type: string;
 }
 
+interface UnitCardProps {
+  unit: UnitSelection;
+  isSelected: boolean;
+  onToggle: (id: string) => void;
+}
+
+function UnitCard({ unit, isSelected, onToggle }: UnitCardProps) {
+  return (
+    <div
+      onClick={() => onToggle(unit.id)}
+      className={`cursor-pointer border-2 rounded-xl p-4 transition-all ${isSelected
+        ? "border-build-main bg-build-main/5"
+        : "border-slate-200 dark:border-white/10 hover:border-build-accent bg-white dark:bg-white/5"
+        }`}
+    >
+      <div className="flex justify-between items-start mb-2">
+        <span className={`material-symbols-outlined text-[20px] ${isSelected ? "text-build-main dark:text-white" : "text-slate-400 dark:text-white/50"}`}>
+          {unit.type === "ESTACIONAMIENTO" || unit.type === "COCHERA" ? "directions_car" : unit.type === "DEPOSITO" ? "inventory_2" : "apartment"}
+        </span>
+        {isSelected && <span className="material-symbols-outlined text-[16px] text-build-main dark:text-white">check_circle</span>}
+      </div>
+      <h4 className="text-[13px] font-bold leading-tight text-build-main dark:text-white">{unit.name}</h4>
+    </div>
+  );
+}
+
 export default function AssignPropertyWizard({ onClose, onSuccess, client }: AssignPropertyWizardProps) {
   // Steps:
   // From main page (no client): 1=Select Clients → 2=Select Units → 3=Confirm
@@ -225,30 +251,13 @@ export default function AssignPropertyWizard({ onClose, onSuccess, client }: Ass
     }
   }
 
-  function renderUnitCard(u: UnitSelection) {
-    const isSelected = selectedUnitIds.includes(u.id);
-    return (
-      <div
-        key={u.id}
-        onClick={() => {
-          if (isSelected) setSelectedUnitIds(prev => prev.filter(id => id !== u.id));
-          else setSelectedUnitIds(prev => [...prev, u.id]);
-          setErrorMsg("");
-        }}
-        className={`cursor-pointer border-2 rounded-xl p-4 transition-all ${isSelected
-          ? "border-build-main bg-build-main/5"
-          : "border-slate-200 dark:border-white/10 hover:border-build-accent bg-white dark:bg-white/5"
-          }`}
-      >
-        <div className="flex justify-between items-start mb-2">
-          <span className={`material-symbols-outlined text-[20px] ${isSelected ? "text-build-main dark:text-white" : "text-slate-400 dark:text-white/50"}`}>
-            {u.type === "ESTACIONAMIENTO" || u.type === "COCHERA" ? "directions_car" : u.type === "DEPOSITO" ? "inventory_2" : "apartment"}
-          </span>
-          {isSelected && <span className="material-symbols-outlined text-[16px] text-build-main dark:text-white">check_circle</span>}
-        </div>
-        <h4 className="text-[13px] font-bold leading-tight text-build-main dark:text-white">{u.name}</h4>
-      </div>
+  function handleToggleUnit(unitId: string) {
+    setSelectedUnitIds(prev =>
+      prev.includes(unitId)
+        ? prev.filter(id => id !== unitId)
+        : [...prev, unitId]
     );
+    setErrorMsg("");
   }
 
   const selectedProject = projects.find(p => p.id === selectedProjectId);
@@ -449,7 +458,14 @@ export default function AssignPropertyWizard({ onClose, onSuccess, client }: Ass
                         <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                           {units
                             .filter(u => u.type !== "ESTACIONAMIENTO" && u.type !== "COCHERA" && u.type !== "DEPOSITO")
-                            .map(u => renderUnitCard(u))}
+                            .map(u => (
+                              <UnitCard
+                                key={u.id}
+                                unit={u}
+                                isSelected={selectedUnitIds.includes(u.id)}
+                                onToggle={handleToggleUnit}
+                              />
+                            ))}
                         </div>
                       </div>
                     )}
@@ -461,7 +477,14 @@ export default function AssignPropertyWizard({ onClose, onSuccess, client }: Ass
                         <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                           {units
                             .filter(u => u.type === "ESTACIONAMIENTO" || u.type === "COCHERA")
-                            .map(u => renderUnitCard(u))}
+                            .map(u => (
+                              <UnitCard
+                                key={u.id}
+                                unit={u}
+                                isSelected={selectedUnitIds.includes(u.id)}
+                                onToggle={handleToggleUnit}
+                              />
+                            ))}
                         </div>
                       </div>
                     )}
@@ -473,7 +496,14 @@ export default function AssignPropertyWizard({ onClose, onSuccess, client }: Ass
                         <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                           {units
                             .filter(u => u.type === "DEPOSITO")
-                            .map(u => renderUnitCard(u))}
+                            .map(u => (
+                              <UnitCard
+                                key={u.id}
+                                unit={u}
+                                isSelected={selectedUnitIds.includes(u.id)}
+                                onToggle={handleToggleUnit}
+                              />
+                            ))}
                         </div>
                       </div>
                     )}

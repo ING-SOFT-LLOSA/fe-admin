@@ -5,21 +5,20 @@ const PERFIL_KEY = "llosa_perfil";
 
 export function saveSession(token: string, perfil: PerfilConPermisos): void {
   if (typeof window === "undefined") return;
-  localStorage.setItem(TOKEN_KEY, token);
-  localStorage.setItem(PERFIL_KEY, JSON.stringify(perfil));
   document.cookie = `${TOKEN_KEY}=${token}; path=/; max-age=86400; SameSite=Lax`;
 }
 
 export function clearSession(): void {
   if (typeof window === "undefined") return;
-  localStorage.removeItem(TOKEN_KEY);
-  localStorage.removeItem(PERFIL_KEY);
+  localStorage.removeItem(TOKEN_KEY); // Legacy cleanup
+  localStorage.removeItem(PERFIL_KEY); // Legacy cleanup
   document.cookie = `${TOKEN_KEY}=; path=/; max-age=0; SameSite=Lax`;
 }
 
 export function getStoredToken(): string | null {
   if (typeof window === "undefined") return null;
-  return localStorage.getItem(TOKEN_KEY);
+  const match = document.cookie.match(new RegExp('(^| )' + TOKEN_KEY + '=([^;]+)'));
+  return match ? match[2] : null;
 }
 
 export async function getFreshToken(): Promise<string | null> {
@@ -43,8 +42,8 @@ export async function getFreshToken(): Promise<string | null> {
     if (freshToken) {
       const stored = getStoredToken();
       if (freshToken !== stored) {
-        const perfil = getStoredPerfil();
-        if (perfil) saveSession(freshToken, perfil);
+        // We only care about the token here since we don't persist the profile anymore
+        saveSession(freshToken, null as any); // We can pass null because we removed PERFIL storage
       }
     }
 
@@ -55,13 +54,4 @@ export async function getFreshToken(): Promise<string | null> {
   }
 }
 
-export function getStoredPerfil(): PerfilConPermisos | null {
-  if (typeof window === "undefined") return null;
-  const raw = localStorage.getItem(PERFIL_KEY);
-  if (!raw) return null;
-  try {
-    return JSON.parse(raw) as PerfilConPermisos;
-  } catch {
-    return null;
-  }
-}
+

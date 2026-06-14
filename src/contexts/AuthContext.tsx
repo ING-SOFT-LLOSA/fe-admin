@@ -22,7 +22,6 @@ import {
 } from "@/lib/auth/login";
 import {
   clearSession,
-  getStoredPerfil,
   getStoredToken,
   saveSession,
 } from "@/lib/auth/session";
@@ -73,18 +72,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setPerfil(fresh);
       } catch {
         // fetchPerfil failed (network error, backend down, etc.).
-        // Fall back to the stored profile so the user isn't ejected on
-        // a transient error, but clear the session if there's nothing stored.
-        const cached = getStoredPerfil();
-        if (cached) {
-          const storedToken = getStoredToken();
-          setPerfil(cached);
-          setToken(storedToken);
-        } else {
-          clearSession();
-          setPerfil(null);
-          setToken(null);
-        }
+        // We do not fallback to a stored profile anymore to avoid RBAC bypass.
+        clearSession();
+        setPerfil(null);
+        setToken(null);
       } finally {
         setIsLoading(false);
       }
