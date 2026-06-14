@@ -117,12 +117,12 @@ export default function ClientsPage() {
           >
             <span className="material-symbols-outlined text-[18px]">add_home</span>Asignar propiedad
           </button>
-          <Link
-            href="/clientes/new"
-            className="px-4 py-2 border border-build-accent rounded-xl text-build-main dark:text-white text-xs font-semibold hover:bg-build-bg transition-colors flex items-center gap-2"
+          <button
+            onClick={() => setCreateOpen(true)}
+            className="px-4 py-2 border border-build-accent rounded-xl text-build-main dark:text-white text-xs font-semibold hover:bg-build-bg transition-colors flex items-center gap-2 shadow-sm"
           >
             <span className="material-symbols-outlined text-[18px]">person_add</span>Crear cliente
-          </Link>
+          </button>
         </div>
       </div>
 
