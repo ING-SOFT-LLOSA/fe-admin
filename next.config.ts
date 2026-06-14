@@ -32,7 +32,7 @@ const nextConfig: NextConfig = {
     const isProd = process.env.NODE_ENV === "production";
 
     const scriptSrc = isProd
-      ? "script-src 'self' https://apis.google.com https://www.gstatic.com;"
+      ? "script-src 'self' 'unsafe-inline' https://apis.google.com https://www.gstatic.com;"
       : "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://apis.google.com https://www.gstatic.com;";
 
     const connectSrc = isProd
