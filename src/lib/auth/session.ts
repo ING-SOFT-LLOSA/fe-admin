@@ -29,10 +29,14 @@ export async function getFreshToken(): Promise<string | null> {
       if (auth.currentUser) {
         const freshToken = await auth.currentUser.getIdToken(false);
         if (freshToken) {
-          token = freshToken;
-          const perfil = getStoredPerfil();
-          if (perfil) {
-            saveSession(freshToken, perfil);
+          if (freshToken !== token) {
+            token = freshToken;
+            const perfil = getStoredPerfil();
+            if (perfil) {
+              saveSession(freshToken, perfil);
+            }
+          } else {
+            token = freshToken;
           }
         }
       }

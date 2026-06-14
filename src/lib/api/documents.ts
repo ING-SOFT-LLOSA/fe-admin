@@ -65,7 +65,7 @@ export async function fetchDocumentosByReferencia(
   idReferencia: string,
   tipoDocumento?: string
 ): Promise<DocumentoResponse[]> {
-  const query = tipoDocumento ? `?tipoDocumento=${tipoDocumento}` : "";
+  const query = tipoDocumento ? `?tipoDocumento=${encodeURIComponent(tipoDocumento)}` : "";
   return apiFetch<DocumentoResponse[]>(`/api/documentos/${idReferencia}${query}`);
 }
 
