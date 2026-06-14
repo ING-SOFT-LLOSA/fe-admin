@@ -30,6 +30,7 @@ export function createCronograma(payload: {
 }
 
 export function updateCronograma(uuidCronograma: string, payload: {
+    uuidUsuarioActivo: string;
     totalPactado: number;
     cuotaInicial: number;
     numeroCuotas: number;

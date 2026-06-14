@@ -44,30 +44,42 @@ export function useFinancingData(selectedUnitId: string | null) {
         setError(null);
         setHasExpediente(null);
         try {
-            const data = await fetchContratoActivo(selectedUnitId);
-            const exp = data.expediente;
-
+            const exp = await fetchContratoActivo(selectedUnitId);
             setExpediente(exp);
             setHasExpediente(true);
-
-            // Usar datos ya presentes en el wrapper
-            setCronograma(data.cronograma);
-            setResumen(data.resumen);
-            setCartaAprobacion(data.cartaAprobacion);
 
             const uuid = exp.uuidUsuarioActivo;
             const rawType = (exp.tipoFinanciamiento || "").toLowerCase();
 
-            // Solo fetch de lo que no viene en el wrapper (pagos y stepper)
             if (rawType.includes("directo")) {
-                if (data.cronograma) {
+                let cronoData: CronogramaPagoResponse | null = null;
+                try {
+                    cronoData = await fetchCronograma(uuid);
+                    setCronograma(cronoData);
+                } catch (e) {
+                    console.warn("Error fetching cronograma", e);
+                    setCronograma(null);
+                }
+
+                if (cronoData) {
                     try {
-                        const pagosList = await fetchPagos(data.cronograma.uuidCronograma);
+                        const resumenData = await fetchResumenPagos(cronoData.uuidCronograma);
+                        setResumen(resumenData);
+                    } catch (e) {
+                        console.warn("Error fetching resumen", e);
+                        setResumen(null);
+                    }
+
+                    try {
+                        const pagosList = await fetchPagos(cronoData.uuidCronograma);
                         setPagos(pagosList);
                     } catch (e) {
                         console.warn("Error fetching payments", e);
                         setPagos([]);
                     }
+                } else {
+                    setResumen(null);
+                    setPagos([]);
                 }
                 setStepper(null);
                 setCartaAprobacion(null);
@@ -78,6 +90,13 @@ export function useFinancingData(selectedUnitId: string | null) {
                 } catch (e) {
                     console.warn("Error fetching stepper", e);
                     setStepper(null);
+                }
+                try {
+                    const carta = await fetchCartaAprobacion(uuid);
+                    setCartaAprobacion(carta);
+                } catch (e) {
+                    console.warn("Error fetching carta", e);
+                    setCartaAprobacion(null);
                 }
                 setPagos([]);
                 setCronograma(null);

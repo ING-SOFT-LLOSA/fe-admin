@@ -23,11 +23,12 @@ export interface StageDocumentResponse {
 }
 
 export interface RequisitoCreatePayload {
-  hitoProcesoCompraId: string;
-  titulo: string;
-  descripcion?: string;
-  notaCorporativa?: string;
-  icono?: string;
+  etapaProcesoCompraId: string;
+  titulo:               string;
+  descripcion?:         string;
+  notaCorporativa?:     string;
+  fechaEmision?:        string;
+  icono?:               string;
 }
 
 export interface RequisitoUpdatePayload {
@@ -35,6 +36,8 @@ export interface RequisitoUpdatePayload {
   descripcion?: string;
   notaCorporativa?: string;
   estado?: string;
+  fechaEmision?: string;
+  icono?: string;
 }
 
 /**
@@ -42,7 +45,7 @@ export interface RequisitoUpdatePayload {
  * GET /api/stage/{etapaProceso}/documents?uuidUsuarioActivo=xxx
  */
 export function fetchStageDocuments(
-  etapaProceso: "SEPARACION" | "CONTRATO" | "PAGO" | "ENTREGA" | "SANEAMIENTO",
+  etapaProceso: "SEPARACION" | "CONTRATO" | "PAGO" | "ENTREGA" | "SANEAMIENTO" | "OTRO",
   uuidUsuarioActivo: string
 ): Promise<StageDocumentResponse> {
   return apiFetch<StageDocumentResponse>(

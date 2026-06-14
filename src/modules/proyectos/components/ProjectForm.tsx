@@ -23,7 +23,6 @@ const textFields: Array<{
   { key: "direccion", label: "Dirección", type: "text", placeholder: "Dirección completa" },
   { key: "fechaInicio", label: "Fecha de inicio", type: "date" },
   { key: "fechaFin", label: "Fecha de fin estimada", type: "date" },
-  { key: "linkRecorridoVirtual", label: "Link recorrido virtual", type: "text", placeholder: "https://..." },
 ];
 
 export default function ProjectForm({
@@ -55,12 +54,7 @@ export default function ProjectForm({
       newErrors.distrito = "El distrito es obligatorio.";
     }
 
-    if (data.linkRecorridoVirtual && data.linkRecorridoVirtual.trim() !== "") {
-      const urlRegex = /^https?:\/\/\S+/i;
-      if (!urlRegex.test(data.linkRecorridoVirtual.trim())) {
-        newErrors.linkRecorridoVirtual = "El link del recorrido virtual debe ser una URL válida (ej. https://...).";
-      }
-    }
+
 
     if (data.fechaInicio && data.fechaFin) {
       const start = new Date(data.fechaInicio);
@@ -128,7 +122,7 @@ export default function ProjectForm({
         {textFields.map((field) => {
           const hasError = !!errors[field.key];
           return (
-            <label key={field.key} className={field.key === "direccion" || field.key === "linkRecorridoVirtual" ? "md:col-span-2" : ""}>
+            <label key={field.key} className={field.key === "direccion" ? "md:col-span-2" : ""}>
               <span className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-white/60">
                 {field.label}
                 {["nombre", "direccion", "departamento", "distrito"].includes(field.key) && (

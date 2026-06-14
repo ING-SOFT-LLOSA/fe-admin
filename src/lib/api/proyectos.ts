@@ -12,7 +12,6 @@ export interface ProyectoCreateDTO {
   nombre: string;
   descripcion: string;
   precertificacionEdgeLeed: boolean;
-  linkRecorridoVirtual: string;
   departamento: string;
   distrito: string;
   direccion: string;

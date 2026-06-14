@@ -5,12 +5,13 @@ import React, { useEffect, useMemo, useState } from "react";
 import PermissionGuard from "@/components/auth/PermissionGuard";
 import { asignarRol, desactivarUsuario, fetchRoles, fetchUsuarios, registerEmpleado } from "@/lib/api/users";
 import type { Rol, Usuario } from "@/types/user";
+import { useAuth } from "@/contexts/AuthContext";
 
 type TabKey = "usuarios" | "roles" | "permisos";
 
 const ROLE_LABELS: Record<string, string> = {
   ADMIN: "Admin",
-  COMERCIAL: "Comercial",
+  ASESOR: "Asesor (Comercial)",
   LEGAL: "Legal",
   TECNICO: "Tecnico",
   POSTVENTA: "Postventa",
@@ -32,6 +33,7 @@ function permissionLabels(roles: Rol[]) {
 }
 
 export default function EmployeeManagementPage() {
+  const { perfil } = useAuth();
   const [users, setUsers] = useState<Usuario[]>([]);
   const [roles, setRoles] = useState<Rol[]>([]);
   const [activeTab, setActiveTab] = useState<TabKey>("usuarios");
@@ -45,13 +47,14 @@ export default function EmployeeManagementPage() {
     nombres: "",
     apellidos: "",
     email: "",
-    rol: "COMERCIAL",
+    rol: "ASESOR",
   });
 
   const employees = useMemo(() => users.filter((user) => user.tipoUsuario === "EMPLEADO"), [users]);
   const selectedUser = employees.find((user) => user.id === selectedUserId) ?? employees[0] ?? null;
   const selectedRole = roles.find((role) => role.nombre === selectedUser?.rol) ?? null;
   const allPermissions = useMemo(() => permissionLabels(roles), [roles]);
+  const employeeRoles = useMemo(() => roles.filter((role) => role.nombre !== "CLIENTE"), [roles]);
 
   async function loadData() {
     setLoading(true);
@@ -73,7 +76,7 @@ export default function EmployeeManagementPage() {
   function openCreateModal() {
     setError(null);
     setSuccess(null);
-    setForm({ nombres: "", apellidos: "", email: "", rol: roles[1]?.nombre ?? roles[0]?.nombre ?? "COMERCIAL" });
+    setForm({ nombres: "", apellidos: "", email: "", rol: employeeRoles[0]?.nombre ?? "ASESOR" });
     setModalOpen(true);
   }
 
@@ -105,22 +108,42 @@ export default function EmployeeManagementPage() {
   }
 
   async function changeRole(user: Usuario, roleName: string) {
+    if (perfil && perfil.id === user.id) {
+      setError("No puedes cambiar tu propio rol ni degradar tu cuenta administrativa.");
+      return;
+    }
     const role = roles.find((item) => item.nombre === roleName);
     if (!role) return;
+    setError(null);
     setSaving(true);
-    await asignarRol(user.id, role.idRol);
-    await loadData();
-    setSelectedUserId(user.id);
-    setSaving(false);
+    try {
+      await asignarRol(user.id, role.idRol);
+      await loadData();
+      setSelectedUserId(user.id);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Error al cambiar el rol.");
+    } finally {
+      setSaving(false);
+    }
   }
 
   async function deactivate(user: Usuario) {
     if (!user.activo) return;
+    if (perfil && perfil.id === user.id) {
+      setError("No puedes desactivar tu propia cuenta.");
+      return;
+    }
+    setError(null);
     setSaving(true);
-    await desactivarUsuario(user.id);
-    await loadData();
-    setSelectedUserId(user.id);
-    setSaving(false);
+    try {
+      await desactivarUsuario(user.id);
+      await loadData();
+      setSelectedUserId(user.id);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Error al desactivar el usuario.");
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (
@@ -223,9 +246,9 @@ export default function EmployeeManagementPage() {
                                   event.stopPropagation();
                                   deactivate(user);
                                 }}
-                                disabled={!user.activo || saving}
+                                disabled={!user.activo || saving || perfil?.id === user.id}
                                 className="rounded-md p-1.5 text-[#ba1a1a] hover:bg-[#ffdad6] disabled:opacity-40"
-                                title="Desactivar usuario"
+                                title={perfil && perfil.id === user.id ? "No puedes desactivar tu propio usuario" : "Desactivar usuario"}
                               >
                                 <span className="material-symbols-outlined text-[18px]">person_off</span>
                               </button>
@@ -270,10 +293,10 @@ export default function EmployeeManagementPage() {
                         <select
                           value={String(selectedUser.rol ?? "")}
                           onChange={(event) => changeRole(selectedUser, event.target.value)}
-                          disabled={!selectedUser.activo || saving}
-                          className="mt-3 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm font-semibold text-build-main focus:outline-none focus:border-build-accent dark:bg-white/5 dark:border-white/10 dark:text-white"
+                          disabled={!selectedUser.activo || saving || perfil?.id === selectedUser.id}
+                          className="mt-3 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm font-semibold text-build-main focus:outline-none focus:border-build-accent dark:bg-white/5 dark:border-white/10 dark:text-white disabled:opacity-60 disabled:cursor-not-allowed"
                         >
-                          {roles.map((role) => (
+                          {employeeRoles.map((role) => (
                             <option key={role.idRol} value={role.nombre}>{ROLE_LABELS[role.nombre] ?? role.nombre}</option>
                           ))}
                         </select>
@@ -381,7 +404,7 @@ export default function EmployeeManagementPage() {
                 <div>
                   <label className="mb-1.5 block text-xs font-bold uppercase text-slate-500">Rol base</label>
                   <select value={form.rol} onChange={(event) => setForm({ ...form, rol: event.target.value })} className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm font-semibold focus:outline-none focus:border-build-accent dark:bg-white/5 dark:border-white/10 dark:text-white">
-                    {roles.map((role) => (
+                    {employeeRoles.map((role) => (
                       <option key={role.idRol} value={role.nombre}>{ROLE_LABELS[role.nombre] ?? role.nombre}</option>
                     ))}
                   </select>

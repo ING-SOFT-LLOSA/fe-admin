@@ -3,10 +3,11 @@
 import { useState } from "react";
 
 import { unlinkAssignment } from "@/lib/api/users";
+import { ClienteAssignment } from "@/types/user";
 
 type UnlinkPropertyModalProps = {
   open: boolean;
-  assignment: any | null;
+  assignment: ClienteAssignment | null;
   onClose: () => void;
   onUnlinked: () => void;
 };
@@ -26,7 +27,7 @@ export default function UnlinkPropertyModal({
     setError(null);
     setLoading(true);
     try {
-      await unlinkAssignment(assignment!.uuidUsuarioActivo);
+      await unlinkAssignment(String(assignment!.uuidUsuarioActivo));
       onUnlinked();
     } catch (err) {
       setError(err instanceof Error ? err.message : "No se pudo desvincular la propiedad.");
@@ -54,7 +55,7 @@ export default function UnlinkPropertyModal({
           <p className="text-[14px] text-slate-600 dark:text-white/70 mb-1">
             ¿Desvincular{" "}
             <span className="font-semibold text-build-main dark:text-white">
-              {assignment.propertyName ?? `Propiedad #${assignment.propertyId}`}
+              {assignment.projectName ?? `Propiedad #${assignment.unitId}`}
             </span>
             ?
           </p>

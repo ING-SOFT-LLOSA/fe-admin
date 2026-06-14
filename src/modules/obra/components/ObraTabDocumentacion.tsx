@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { fetchDocumentosByReferencia, fetchSignedUrl, deleteDocumento, uploadDocument } from "@/lib/api/documents";
+import DialogModal from "@/components/ui/DialogModal";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -36,13 +37,35 @@ export default function ObraTabDocumentacion({ projectId }: ObraTabDocumentacion
   const [error, setError] = useState<string | null>(null);
   const [uploadingCat, setUploadingCat] = useState<DocCategoria | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [dialog, setDialog] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    type: "info" | "success" | "warning" | "danger";
+    confirmText?: string;
+    cancelText?: string;
+    onConfirm?: () => void;
+  }>({
+    isOpen: false,
+    title: "",
+    message: "",
+    type: "info",
+  });
 
-  const loadDocuments = async () => {
+  const lastProjectIdRef = useRef(projectId);
+
+  useEffect(() => {
+    lastProjectIdRef.current = projectId;
+  }, [projectId]);
+
+  const loadDocuments = useCallback(async () => {
     if (!projectId) return;
+    const currentProjectId = projectId;
     setLoading(true);
     setError(null);
     try {
-      const dbDocs = await fetchDocumentosByReferencia(projectId);
+      const dbDocs = await fetchDocumentosByReferencia(currentProjectId);
+      if (currentProjectId !== lastProjectIdRef.current) return;
       const mapped = dbDocs.map((doc) => {
         let categoria: DocCategoria = "planos";
         let nombre = doc.nombreOriginal;
@@ -62,16 +85,20 @@ export default function ObraTabDocumentacion({ projectId }: ObraTabDocumentacion
       });
       setDocuments(mapped);
     } catch (err) {
-      console.error("Error loading documents:", err);
-      setError(err instanceof Error ? err.message : "Error al cargar documentos.");
+      if (currentProjectId === lastProjectIdRef.current) {
+        console.error("Error loading documents:", err);
+        setError(err instanceof Error ? err.message : "Error al cargar documentos.");
+      }
     } finally {
-      setLoading(false);
+      if (currentProjectId === lastProjectIdRef.current) {
+        setLoading(false);
+      }
     }
-  };
+  }, [projectId]);
 
   useEffect(() => {
     loadDocuments();
-  }, [projectId]);
+  }, [loadDocuments]);
 
   const handleUploadClick = (categoria: DocCategoria) => {
     const input = document.createElement("input");
@@ -105,23 +132,39 @@ export default function ObraTabDocumentacion({ projectId }: ObraTabDocumentacion
   const handleDownload = async (docId: string) => {
     try {
       const res = await fetchSignedUrl(docId);
-      window.open(res.url, "_blank");
+      window.open(res.url, "_blank", "noopener,noreferrer");
     } catch (err) {
       console.error("Error fetching signed URL:", err);
-      alert("No se pudo obtener el enlace de descarga.");
+      setDialog({
+        isOpen: true,
+        title: "Error de Descarga",
+        message: "No se pudo obtener el enlace de descarga.",
+        type: "danger",
+        confirmText: "Aceptar",
+      });
     }
   };
 
-  const handleDelete = async (docId: string) => {
-    if (!confirm("¿Estás seguro de que deseas eliminar este documento?")) return;
-    setActionError(null);
-    try {
-      await deleteDocumento(docId);
-      await loadDocuments();
-    } catch (err) {
-      console.error("Error deleting document:", err);
-      setActionError(err instanceof Error ? err.message : "Error al eliminar el documento.");
-    }
+  const handleDelete = (docId: string) => {
+    setDialog({
+      isOpen: true,
+      title: "Eliminar Documento",
+      message: "¿Estás seguro de que deseas eliminar este documento?",
+      type: "danger",
+      confirmText: "Eliminar",
+      cancelText: "Cancelar",
+      onConfirm: async () => {
+        setDialog((prev) => ({ ...prev, isOpen: false }));
+        setActionError(null);
+        try {
+          await deleteDocumento(docId);
+          await loadDocuments();
+        } catch (err) {
+          console.error("Error deleting document:", err);
+          setActionError(err instanceof Error ? err.message : "Error al eliminar el documento.");
+        }
+      },
+    });
   };
 
   return (
@@ -236,6 +279,17 @@ export default function ObraTabDocumentacion({ projectId }: ObraTabDocumentacion
           )}
         </div>
       </div>
+
+      <DialogModal
+        isOpen={dialog.isOpen}
+        title={dialog.title}
+        message={dialog.message}
+        type={dialog.type}
+        confirmText={dialog.confirmText}
+        cancelText={dialog.cancelText}
+        onConfirm={dialog.onConfirm}
+        onClose={() => setDialog((prev) => ({ ...prev, isOpen: false }))}
+      />
     </div>
   );
 }

@@ -168,16 +168,18 @@ export default function UnitDetailView({ projectId, unitId }: UnitDetailViewProp
           </div>
         </section>
 
-        <section className="rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 p-6 shadow-sm">
-          <h2 className="text-[20px] font-bold text-build-main dark:text-white">Asignaciones</h2>
-          <p className="mt-2 text-sm text-slate-500 dark:text-white/60">
-            La asignación y desasignación de clientes pertenece al módulo Clientes y Asignaciones.
-          </p>
-          <Link href="/clientes" className="mt-5 inline-flex items-center gap-2 rounded-xl bg-build-main px-4 py-2 text-sm font-bold text-white hover:bg-build-main/90">
-            <span className="material-symbols-outlined text-[18px]">group</span>
-            Ir a asignaciones
-          </Link>
-        </section>
+        <div className="space-y-6">
+          <section className="rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 p-6 shadow-sm">
+            <h2 className="text-[20px] font-bold text-build-main dark:text-white">Asignaciones</h2>
+            <p className="mt-2 text-sm text-slate-500 dark:text-white/60">
+              La asignación y desasignación de clientes pertenece al módulo Clientes y Asignaciones.
+            </p>
+            <Link href="/clientes" className="mt-5 inline-flex items-center gap-2 rounded-xl bg-build-main px-4 py-2 text-sm font-bold text-white hover:bg-build-main/90">
+              <span className="material-symbols-outlined text-[18px]">group</span>
+              Ir a asignaciones
+            </Link>
+          </section>
+        </div>
       </div>
     </section>
   );

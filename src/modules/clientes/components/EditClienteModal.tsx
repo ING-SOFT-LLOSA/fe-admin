@@ -65,10 +65,10 @@ export default function EditClienteModal({
     }
 
     if (data.telefono && data.telefono.trim() !== "") {
-      const phoneTrimmed = data.telefono.trim();
-      const phoneRegex = /^\+?[0-9\s\-]{7,15}$/;
-      if (!phoneRegex.test(phoneTrimmed)) {
-        newErrors.telefono = "El número de teléfono no es válido (debe tener entre 7 y 15 dígitos).";
+      const phoneClean = data.telefono.replace(/\s+/g, "");
+      const phoneRegex = /^\+519\d{8}$/;
+      if (!phoneRegex.test(phoneClean)) {
+        newErrors.telefono = "El teléfono debe iniciar con '+51' y tener 9 números (ej. +51 999 888 777).";
       }
     }
 
@@ -122,7 +122,7 @@ export default function EditClienteModal({
         nombre: form.nombre.trim(),
         apellidos: form.apellidos.trim(),
         email: form.email.trim(),
-        telefono: form.telefono.trim() || undefined,
+        telefono: form.telefono.trim() ? form.telefono.replace(/\s+/g, "") : undefined,
         documentoIdentidad: form.documentoIdentidad.trim() || undefined,
         tipoUsuario: "CLIENTE",
       });

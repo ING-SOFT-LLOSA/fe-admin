@@ -1,5 +1,4 @@
-import { getStoredToken } from "@/lib/auth/session";
-import { getFirebaseAuth } from "@/lib/firebase";
+import { clearSession, getFreshToken } from "@/lib/auth/session";
 
 const API_URL = (process.env.NEXT_PUBLIC_API_URL_LLOSA ?? "http://localhost:8080").replace(/\/$/, "");
 
@@ -16,33 +15,14 @@ export class ApiError extends Error {
 }
 
 export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
-  let token = getStoredToken();
-
-  if (typeof window !== "undefined") {
-    try {
-      const auth = getFirebaseAuth();
-      if (auth.currentUser) {
-        const freshToken = await auth.currentUser.getIdToken(false);
-        if (freshToken) {
-          token = freshToken;
-          const { saveSession, getStoredPerfil } = await import("@/lib/auth/session");
-          const perfil = getStoredPerfil();
-          if (perfil) {
-            saveSession(freshToken, perfil);
-          }
-        }
-      }
-    } catch (err) {
-      console.warn("No se pudo refrescar el token de Firebase:", err);
-    }
-  }
+  const token = await getFreshToken();
 
   if (!token) {
     throw new Error("No hay sesión activa. Inicia sesión de nuevo.");
   }
 
   const body = init?.body ? JSON.parse(init.body as string) : undefined;
-  console.log(`🚀 ${init?.method || "GET"} ${path}`, body || "");
+
 
   const res = await fetch(`${API_URL}${path}`, {
     ...init,
@@ -65,6 +45,20 @@ export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> 
       /* no JSON */
     }
 
+    if (res.status === 401) {
+      // Token expired or invalid — purge local session and signal the
+      // AuthContext to wipe React state so AuthGuard redirects to /login.
+      clearSession();
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new Event("llosa:unauthorized"));
+      }
+      throw new ApiError(
+        "Tu sesión ha expirado. Por favor, inicia sesión de nuevo.",
+        res.status,
+        path,
+      );
+    }
+
     if (res.status === 403) {
       throw new ApiError(
         message ||
@@ -83,16 +77,16 @@ export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> 
 
   const text = await res.text();
   if (!text) {
-    console.log(`📥 ${res.status} ${path}`);
+
     return undefined as T;
   }
 
   try {
     const json = JSON.parse(text) as T;
-    console.log(`📥 ${res.status} ${path}`, json);
+
     return json;
   } catch {
-    console.log(`📥 ${res.status} ${path}`, text);
+
     return text as unknown as T;
   }
 }

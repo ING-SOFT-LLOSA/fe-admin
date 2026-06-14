@@ -1,17 +1,15 @@
-// Removed mock import
+import { ClienteAssignment } from "@/types/user";
 
 type ClientKpisProps = {
-  assignments: any[];
+  assignments: ClienteAssignment[];
 };
 
 export default function ClientKpis({ assignments }: ClientKpisProps) {
   const activeCount = assignments.filter((a) => a.status === "Vigente").length;
   const projectNames = new Set(assignments.filter((a) => a.status === "Vigente").map((a) => a.projectName));
-  const expedientCount = activeCount; // 1 expediente por asignación activa
 
   const kpis = [
     { title: "Propiedades", value: activeCount, icon: "domain" },
-    { title: "Expedientes", value: expedientCount, icon: "folder_open" },
     { title: "Proyectos", value: projectNames.size, icon: "apartment" },
     {
       title: "Estado",
@@ -21,7 +19,7 @@ export default function ClientKpis({ assignments }: ClientKpisProps) {
   ];
 
   return (
-    <section className="grid grid-cols-2 md:grid-cols-4 gap-4">
+    <section className="grid grid-cols-3 gap-4">
       {kpis.map((kpi) => (
         <div
           key={kpi.title}

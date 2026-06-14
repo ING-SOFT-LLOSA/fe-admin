@@ -110,7 +110,12 @@ export function mapUsuarioToClienteRow(u: Usuario): ClienteRow {
 }
 
 export function fetchExpedientesPorUsuario(idUsuario: number): Promise<UsuarioActivoResponseDTO[]> {
-  return apiFetch<UsuarioActivoResponseDTO[]>(`/api/expedientes/${idUsuario}`);
+  return apiFetch<UsuarioActivoResponseDTO[]>(`/api/expedientes/${idUsuario}`).then((list) =>
+    list.map((item) => ({
+      ...item,
+      activo: item.activo ?? item.activos?.[0],
+    }))
+  );
 }
 
 export function unlinkAssignment(uuid: string): Promise<void> {

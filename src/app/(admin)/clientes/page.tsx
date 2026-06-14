@@ -2,6 +2,7 @@
 import Link from "next/link";
 import React, { useEffect, useState } from "react";
 import CreateClienteModal from "@/modules/clientes/components/CreateClienteModal";
+import AssignPropertyWizard from "@/modules/asignaciones/components/AssignPropertyWizard";
 import { useAuth } from "@/contexts/AuthContext";
 import { canEliminarUsuario } from "@/lib/auth/permissions";
 import { fetchUsuarios, mapUsuarioToClienteRow } from "@/lib/api/users";
@@ -14,6 +15,7 @@ export default function ClientsPage() {
   const [listLoading, setListLoading] = useState(true);
   const [listError, setListError] = useState<string | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
+  const [assignOpen, setAssignOpen] = useState(false);
   const [userToDelete, setUserToDelete] = useState<ClienteRow | null>(null);
   const [selectedProject, setSelectedProject] = useState("");
   const [projects, setProjects] = useState<string[]>([]);
@@ -109,12 +111,18 @@ export default function ClientsPage() {
           <p className="text-base text-slate-600 dark:text-white/70 mt-2">Registra clientes, gestiona sus datos y vincula unidades a su perfil.</p>
         </div>
         <div className="flex gap-3">
-          <Link
-            href="/clientes/new"
-            className="px-4 py-2 border border-build-accent rounded-xl text-build-main dark:text-white text-xs font-semibold hover:bg-build-bg transition-colors flex items-center gap-2"
+          <button
+            onClick={() => setAssignOpen(true)}
+            className="px-4 py-2 bg-build-main text-white rounded-xl text-xs font-bold hover:bg-build-main/90 transition-all flex items-center gap-2 shadow-sm"
+          >
+            <span className="material-symbols-outlined text-[18px]">add_home</span>Asignar propiedad
+          </button>
+          <button
+            onClick={() => setCreateOpen(true)}
+            className="px-4 py-2 border border-build-accent rounded-xl text-build-main dark:text-white text-xs font-semibold hover:bg-build-bg transition-colors flex items-center gap-2 shadow-sm"
           >
             <span className="material-symbols-outlined text-[18px]">person_add</span>Crear cliente
-          </Link>
+          </button>
         </div>
       </div>
 
@@ -288,7 +296,12 @@ export default function ClientsPage() {
         onCreated={() => reloadClients(false)}
       />
 
-
+      {assignOpen && (
+        <AssignPropertyWizard
+          onClose={() => setAssignOpen(false)}
+          onSuccess={() => { setAssignOpen(false); reloadClients(false); }}
+        />
+      )}
 
     </>
   );

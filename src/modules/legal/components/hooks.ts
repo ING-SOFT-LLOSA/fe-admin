@@ -1,11 +1,14 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 
 import {
   fetchCommercialStepper,
   createCommercialHito,
   updateCommercialHitoEstado,
+  fetchEtapasExpediente,
+  fetchTodosLosContratos,
   type StepperResponseDTO,
   type UsuarioActivoResponseDTO,
+  type EtapaExpedienteResponseDTO,
 } from "@/lib/api/expedientes";
 import {
   fetchStageDocuments,
@@ -19,17 +22,19 @@ import {
   STAGE_ORDER,
   DOCUMENT_STAGES,
   PREDEFINED_REQUISITOS,
+  BACKEND_A_ESTADO,
   type ProcesoEtapa,
   type StageId,
 } from "./constants";
 
 // ─── useCommercialStepper ─────────────────────────────────────────────────────
-// Loads (and seeds if empty) the commercial milestones for a given contrato.
+// Carga (y hace seed si está vacío) los hitos comerciales de un contrato.
+// Ahora soporta N hitos por etapa en lugar de 1.
 
 export function useCommercialStepper(contrato: UsuarioActivoResponseDTO | null) {
-  const [stepper, setStepper]     = useState<StepperResponseDTO | null>(null);
-  const [loading, setLoading]     = useState(false);
-  const [error, setError]         = useState("");
+  const [stepper, setStepper] = useState<StepperResponseDTO | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error,   setError]   = useState("");
 
   const uuidUsuarioActivo = contrato?.uuidUsuarioActivo ?? null;
 
@@ -45,27 +50,65 @@ export function useCommercialStepper(contrato: UsuarioActivoResponseDTO | null) 
     try {
       let data = await fetchCommercialStepper(uuidUsuarioActivo);
 
-      const totalHitos = data.etapas?.reduce((acc, e) => acc + (e.hitos?.length ?? 0), 0) ?? 0;
+      // Cuenta hitos existentes en el backend
+      const totalHitos =
+        data.etapas?.reduce((acc, e) => acc + (e.hitos?.length ?? 0), 0) ?? 0;
 
       if (totalHitos === 0) {
-        await Promise.all(
-          DEFAULT_HITOS.map((h) =>
-            createCommercialHito({
-              uuidUsuarioActivo,
-              etapaProceso: h.etapaProceso,
-              nombreHito:   h.nombreHito,
-              descripcion:  h.descripcion,
-              orden:        h.orden,
-            })
-          )
-        );
-        data = await fetchCommercialStepper(uuidUsuarioActivo);
+        const lockKey = `seeding_hitos_${uuidUsuarioActivo}`;
+
+        // Espera si otra pestaña del navegador ya está sembrando los hitos
+        let attempts = 0;
+        while (localStorage.getItem(lockKey) === "true" && attempts < 10) {
+          await new Promise((resolve) => setTimeout(resolve, 500));
+          attempts++;
+        }
+
+        // Volver a consultar después de la espera
+        const doubleCheck = await fetchCommercialStepper(uuidUsuarioActivo);
+        const checkTotal = doubleCheck.etapas?.reduce((acc, e) => acc + (e.hitos?.length ?? 0), 0) ?? 0;
+
+        if (checkTotal > 0) {
+          data = doubleCheck;
+        } else {
+          localStorage.setItem(lockKey, "true");
+          try {
+            // Fetch the stages to get their uuidEtapaExpediente
+            const etapasExp = await fetchEtapasExpediente(uuidUsuarioActivo);
+            
+            // Seed: crea todos los hitos definidos en DEFAULT_HITOS en orden
+            for (const h of DEFAULT_HITOS) {
+              const stage = etapasExp.find((e) => e.etapaProceso === h.etapaProceso);
+              if (stage) {
+                // Doble chequeo contra el backend para evitar duplicados en la iteración secuencial
+                const freshStepper = await fetchCommercialStepper(uuidUsuarioActivo);
+                const hitoExists = freshStepper.etapas?.some(e =>
+                  e.etapa === h.etapaProceso && e.hitos?.some(existH => existH.nombreHito === h.nombreHito)
+                );
+
+                if (!hitoExists) {
+                  await createCommercialHito({
+                    uuidEstapaExpediente: stage.uuidEtapaExpediente,
+                    nombreHito:           h.nombreHito,
+                    descripcion:          h.descripcion,
+                    orden:                h.orden,
+                  });
+                }
+              }
+            }
+          } finally {
+            localStorage.removeItem(lockKey);
+          }
+          data = await fetchCommercialStepper(uuidUsuarioActivo);
+        }
       }
 
       setStepper(data);
     } catch (err) {
       console.error("useCommercialStepper:", err);
-      setError(err instanceof Error ? err.message : "Error al cargar el proceso legal.");
+      setError(
+        err instanceof Error ? err.message : "Error al cargar el proceso legal."
+      );
     } finally {
       setLoading(false);
     }
@@ -75,83 +118,79 @@ export function useCommercialStepper(contrato: UsuarioActivoResponseDTO | null) 
     void refresh();
   }, [refresh]);
 
-  // ── Update a single hito, auto-completing all predecessors ──
+  // ── Actualiza el estado de un hito individual ──────────────────────────────
   const updateHito = useCallback(
     async (uuidHito: string, nuevoEstado: string) => {
       if (!stepper?.etapas || !uuidUsuarioActivo) return;
       setError("");
 
       try {
-        if (nuevoEstado === "COMPLETADO") {
-          const targetEtapa = stepper.etapas.find((et) =>
-            et.hitos?.some((h) => h.uuidHitoComercial === uuidHito)
-          );
-          if (targetEtapa) {
-            const targetIndex = STAGE_ORDER.indexOf(targetEtapa.etapa as typeof STAGE_ORDER[number]);
-            for (let i = 0; i < targetIndex; i++) {
-              const prevEtapa = stepper.etapas.find((et) => et.etapa === STAGE_ORDER[i]);
-              const prevHito  = prevEtapa?.hitos?.[0];
-              if (prevHito && prevHito.estado !== "COMPLETADO") {
-                await updateCommercialHitoEstado(prevHito.uuidHitoComercial, "COMPLETADO");
-              }
-            }
-          }
-        }
-
         await updateCommercialHitoEstado(uuidHito, nuevoEstado);
         await refresh();
       } catch (err) {
         console.error("updateHito:", err);
-        setError(err instanceof Error ? err.message : "Error al actualizar el estado del hito.");
+        setError(
+          err instanceof Error
+            ? err.message
+            : "Error al actualizar el estado del hito."
+        );
       }
     },
     [stepper, uuidUsuarioActivo, refresh]
   );
 
-  // ── Map raw backend stages to UI-ready etapas ──
+  // ── Mapea el backend a ProcesoEtapa[] plano (un item por hito) ────────────
+  // Cada hito individual del backend se convierte en una fila del timeline.
   const etapas: ProcesoEtapa[] = (stepper?.etapas ?? [])
-    .filter((et) => et.etapa !== "PAGO")
-    .map((et) => {
-      const meta     = STAGE_META[et.etapa as keyof typeof STAGE_META];
-      const mainHito = et.hitos?.[0];
+    .flatMap((et) => {
+      const stageId  = et.etapa as StageId;
+      const stageMeta = STAGE_META[stageId];
 
-      let estado: ProcesoEtapa["estado"] = "pendiente";
-      if (et.porcentajeAvance === 100) {
-        estado = "completado";
-      } else if (et.porcentajeAvance > 0 || mainHito?.estado === "EN_PROGRESO") {
-        estado = "en_proceso";
-      }
+      // Hitos definidos localmente para esta etapa (tienen icon e índice)
+      const defaultsForStage = DEFAULT_HITOS.filter(
+        (d) => d.etapaProceso === stageId
+      );
 
-      return {
-        id:          et.etapa,
-        label:       meta?.label ?? et.etapa,
-        icon:        meta?.icon  ?? "circle",
-        estado,
-        fechaInicio: mainHito?.createdAt
-          ? new Date(mainHito.createdAt).toLocaleDateString("es-PE")
-          : undefined,
-        fechaFin: mainHito?.fechaCompletado
-          ? new Date(mainHito.fechaCompletado).toLocaleDateString("es-PE")
-          : undefined,
-        comentarios: mainHito?.descripcion ?? "",
-        uuidHito:    mainHito?.uuidHitoComercial,
-      };
+      return (et.hitos ?? []).map((hito, idx): ProcesoEtapa => {
+        // Busca el default por orden (backend devuelve en orden de creación)
+        const def = defaultsForStage.find((d) => d.orden === (hito.orden ?? idx + 1))
+          ?? defaultsForStage[idx];
+
+        const estadoRaw = BACKEND_A_ESTADO[hito.estado] ?? "pendiente";
+
+        return {
+          id:           hito.uuidHitoComercial,
+          uuidHito:     hito.uuidHitoComercial,
+          label:        hito.nombreHito ?? def?.nombreHito ?? stageMeta?.label ?? stageId,
+          etapaProceso: stageId,
+          orden:        hito.orden ?? idx + 1,
+          estado:       estadoRaw,
+          icon:         def?.icon ?? stageMeta?.icon ?? "circle",
+          fechaInicio:  hito.createdAt
+            ? new Date(hito.createdAt).toLocaleDateString("es-PE")
+            : undefined,
+          fechaFin:     hito.fechaCompletado
+            ? new Date(hito.fechaCompletado).toLocaleDateString("es-PE")
+            : undefined,
+          comentarios:  hito.descripcion ?? "",
+        };
+      });
     });
 
   return { stepper, etapas, loading, error, refresh, updateHito };
 }
 
 // ─── useStageDocuments ────────────────────────────────────────────────────────
-// Loads (and seeds if empty) documents for all 4 document stages.
+// Carga (y hace seed si está vacío) los documentos de las 4 etapas.
 
 export interface StageSection {
-  id: StageId;
+  id:    StageId;
   label: string;
-  icon: string;
-  docs: DocumentoItem[];
+  icon:  string;
+  docs:  DocumentoItem[];
 }
 
-// Module-level lock to avoid concurrent seeding for the same stage
+// Lock por etapa para evitar seeds concurrentes duplicados
 const seedingInProgress: Record<string, Promise<void> | undefined> = {};
 
 export function useStageDocuments(
@@ -171,15 +210,23 @@ export function useStageDocuments(
     setError(null);
 
     try {
+      const activeStages = DOCUMENT_STAGES.filter((stageId) =>
+        stepper.etapas?.some((e) => e.etapa === stageId)
+      );
+
       const results = await Promise.all(
-        DOCUMENT_STAGES.map((stageId) =>
+        activeStages.map((stageId) =>
           loadStageSection(stageId, uuidUsuarioActivo, stepper)
         )
       );
       setSections(results);
     } catch (err) {
       console.error("useStageDocuments:", err);
-      setError(err instanceof Error ? err.message : "Error al cargar documentos del expediente.");
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Error al cargar documentos del expediente."
+      );
     } finally {
       setLoading(false);
     }
@@ -192,60 +239,107 @@ export function useStageDocuments(
   return { sections, loading, error, refresh: load };
 }
 
-// ─── Private helpers ──────────────────────────────────────────────────────────
+// ─── Helper privado ───────────────────────────────────────────────────────────
 
 const STAGE_DISPLAY: Record<StageId, { label: string; icon: string }> = {
-  SEPARACION:  { label: "Separación", icon: "handshake"       },
-  CONTRATO:    { label: "Contrato",   icon: "description"     },
-  ENTREGA:     { label: "Entrega",    icon: "key"             },
-  SANEAMIENTO: { label: "Saneamiento",icon: "domain_verified" },
+  SEPARACION:  { label: "Separación",  icon: "handshake"       },
+  CONTRATO:    { label: "Contrato",    icon: "description"     },
+  PAGO:        { label: "Pagos",       icon: "payments"        },
+  ENTREGA:     { label: "Entrega",     icon: "key"             },
+  SANEAMIENTO: { label: "Saneamiento", icon: "domain_verified" },
+  OTRO:        { label: "Otro",        icon: "folder"          },
 };
 
 async function loadStageSection(
-  stageId: StageId,
+  stageId:           StageId,
   uuidUsuarioActivo: string,
-  stepper: StepperResponseDTO
+  stepper:           StepperResponseDTO
 ): Promise<StageSection> {
   const display = STAGE_DISPLAY[stageId];
-  const hitoId  = stepper.etapas
-    ?.find((e) => e.etapa === stageId)
-    ?.hitos?.[0]?.uuidHitoComercial;
 
   let res = await fetchStageDocuments(stageId, uuidUsuarioActivo);
 
-  const predefs = PREDEFINED_REQUISITOS[stageId];
+  const predefs  = PREDEFINED_REQUISITOS[stageId];
+  const existing = res.documents ?? [];
+
   const missing = predefs.filter(
-    (p) => !res.documents?.some(
-      (doc) => doc.title.toLowerCase().trim() === p.titulo.toLowerCase().trim()
-    )
+    (p) =>
+      !existing.some(
+        (doc) =>
+          doc.title.toLowerCase().trim() === p.titulo.toLowerCase().trim()
+      )
   );
 
-  if (missing.length > 0 && hitoId) {
-    const lockKey = `${uuidUsuarioActivo}_${stageId}`;
+  const etapaId = stepper.etapas
+    ?.find((e) => e.etapa === stageId)
+    ?.hitos?.[0]?.uuidEtapaExpediente;
 
-    if (seedingInProgress[lockKey]) {
-      await seedingInProgress[lockKey];
-    } else {
-      const seedPromise = (async () => {
-        for (const req of missing) {
-          await createRequisito({
-            hitoProcesoCompraId: hitoId,
-            titulo:      req.titulo,
-            descripcion: req.descripcion,
-            icono:       req.icono,
-          });
+  if (missing.length > 0 && etapaId) {
+    const lockKey = `${uuidUsuarioActivo}_${stageId}`;
+    const storageLockKey = `seeding_req_${uuidUsuarioActivo}_${stageId}`;
+
+    // Espera si otra pestaña está sembrando los requerimientos de esta etapa
+    let attempts = 0;
+    while (localStorage.getItem(storageLockKey) === "true" && attempts < 10) {
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      attempts++;
+    }
+
+    // Recargar documentos después de la espera
+    const doubleCheckRes = await fetchStageDocuments(stageId, uuidUsuarioActivo);
+    const doubleCheckExisting = doubleCheckRes.documents ?? [];
+    const stillMissing = predefs.filter(
+      (p) =>
+        !doubleCheckExisting.some(
+          (doc) =>
+            doc.title.toLowerCase().trim() === p.titulo.toLowerCase().trim()
+        )
+    );
+
+    if (stillMissing.length > 0) {
+      localStorage.setItem(storageLockKey, "true");
+
+      if (seedingInProgress[lockKey]) {
+        try {
+          await seedingInProgress[lockKey];
+        } finally {
+          localStorage.removeItem(storageLockKey);
         }
-      })();
-      seedingInProgress[lockKey] = seedPromise;
-      await seedPromise;
-      delete seedingInProgress[lockKey];
+      } else {
+        const seedPromise = (async () => {
+          try {
+            for (const req of stillMissing) {
+              // Doble chequeo contra el backend antes de crear este requisito específico
+              const freshRes = await fetchStageDocuments(stageId, uuidUsuarioActivo);
+              const freshDocs = freshRes.documents ?? [];
+              const exists = freshDocs.some(
+                (d) => d.title.toLowerCase().trim() === req.titulo.toLowerCase().trim()
+              );
+
+              if (!exists) {
+                await createRequisito({
+                  etapaProcesoCompraId: etapaId,
+                  titulo:               req.titulo,
+                  descripcion:          req.descripcion,
+                  icono:                req.icono,
+                });
+              }
+            }
+          } finally {
+            localStorage.removeItem(storageLockKey);
+          }
+        })();
+        seedingInProgress[lockKey] = seedPromise;
+        await seedPromise;
+        delete seedingInProgress[lockKey];
+      }
     }
 
     res = await fetchStageDocuments(stageId, uuidUsuarioActivo);
   }
 
-  // Deduplicate by title (guards against pre-existing duplicates in DB)
-  const seen  = new Set<string>();
+  // Deduplica por título (protección ante duplicados previos en DB)
+  const seen = new Set<string>();
   const docs  = (res.documents ?? []).filter((doc) => {
     const norm = doc.title.toLowerCase().trim();
     if (seen.has(norm)) return false;
@@ -254,4 +348,72 @@ async function loadStageSection(
   });
 
   return { id: stageId, ...display, docs };
+}
+
+// ─── useExpediente ───────────────────────────────────────────────────────────
+// Carga los datos del expediente y el resumen de etapas en paralelo.
+export function useExpediente(uuidUsuarioActivo: string | null) {
+  const [expediente, setExpediente] = useState<UsuarioActivoResponseDTO | null>(null);
+  const [stages, setStages] = useState<EtapaExpedienteResponseDTO[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  const refresh = useCallback(async () => {
+    if (!uuidUsuarioActivo) {
+      setExpediente(null);
+      setStages([]);
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
+    setError("");
+    try {
+      const [allContracts, stagesData, stepperData] = await Promise.all([
+        fetchTodosLosContratos(),
+        fetchEtapasExpediente(uuidUsuarioActivo),
+        fetchCommercialStepper(uuidUsuarioActivo),
+      ]);
+      const found = allContracts.find((c) => c.uuidUsuarioActivo === uuidUsuarioActivo);
+      if (!found) {
+        throw new Error("Expediente no encontrado en el sistema.");
+      }
+      setExpediente(found);
+
+      const correctedStages = stagesData.map((stage) => {
+        const stepperStage = stepperData.etapas?.find((e) => e.etapa === stage.etapaProceso);
+        if (stepperStage) {
+          const totalHitos = stepperStage.hitos?.length ?? 0;
+          const completedHitos = stepperStage.hitos?.filter(h => h.estado === "COMPLETADO").length ?? 0;
+          const inProgressHitos = stepperStage.hitos?.filter(h => h.estado === "EN_PROGRESO").length ?? 0;
+
+          let estado = "PENDIENTE";
+          if (completedHitos === totalHitos && totalHitos > 0) {
+            estado = "COMPLETADO";
+          } else if (completedHitos > 0 || inProgressHitos > 0) {
+            estado = "EN_PROGRESO";
+          }
+          return {
+            ...stage,
+            estado,
+            totalHitos,
+            hitosCompletados: completedHitos,
+          };
+        }
+        return stage;
+      });
+
+      setStages(correctedStages);
+    } catch (err) {
+      console.error("useExpediente error:", err);
+      setError(err instanceof Error ? err.message : "Error al cargar el expediente");
+    } finally {
+      setLoading(false);
+    }
+  }, [uuidUsuarioActivo]);
+
+  useEffect(() => {
+    void refresh();
+  }, [refresh]);
+
+  return { expediente, stages, loading, error, refresh };
 }

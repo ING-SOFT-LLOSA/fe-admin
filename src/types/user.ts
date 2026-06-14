@@ -58,3 +58,16 @@ export interface ClienteRow {
   rol: string | null;
   createdAt?: string;
 }
+
+export interface ClienteAssignment {
+  clientId: number;
+  unitId: string | number;
+  unitLabel: string;
+  projectName: string;
+  financing: string;
+  assignedAt: string;
+  status: string;
+  estadoTramiteLegal: string;
+  uuidUsuarioActivo: string | number;
+}
+

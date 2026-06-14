@@ -147,7 +147,7 @@ export default function ContractSelectionStep({ client, onSelectContract, onBack
                                         {exp.tipoFinanciamiento}
                                     </span>
                                     <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-slate-100 text-slate-600 dark:bg-white/10 dark:text-white/60">
-                                        {phaseLabel[exp.faseComercial] ?? exp.faseComercial}
+                                        {exp.faseComercial ? (phaseLabel[exp.faseComercial] ?? exp.faseComercial) : "—"}
                                     </span>
                                     {activo && (
                                         <span className="text-[11px] text-slate-400 dark:text-white/40 ml-auto">

@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-
 import { registerCliente } from "@/lib/api/users";
 
 type CreateClienteModalProps = {
@@ -24,6 +23,7 @@ export default function CreateClienteModal({
   onCreated,
 }: CreateClienteModalProps) {
   const [form, setForm] = useState(EMPTY_FORM);
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -31,15 +31,69 @@ export default function CreateClienteModal({
   function handleClose() {
     if (loading) return;
     setForm(EMPTY_FORM);
+    setErrors({});
     setError(null);
     setSuccess(null);
     onClose();
   }
 
+  const validateForm = (data: typeof form): Record<string, string> => {
+    const newErrors: Record<string, string> = {};
+
+    if (!data.nombre || !data.nombre.trim()) {
+      newErrors.nombre = "El nombre es obligatorio.";
+    }
+
+    if (!data.apellidos || !data.apellidos.trim()) {
+      newErrors.apellidos = "Los apellidos son obligatorios.";
+    }
+
+    if (!data.email || !data.email.trim()) {
+      newErrors.email = "El correo electrónico es obligatorio.";
+    }
+
+    if (data.telefono && data.telefono.trim() !== "") {
+      const phoneClean = data.telefono.replace(/\s+/g, "");
+      const phoneRegex = /^\+519\d{8}$/;
+      if (!phoneRegex.test(phoneClean)) {
+        newErrors.telefono = "El teléfono debe iniciar con '+51' y tener 9 números (ej. +51 999 888 777).";
+      }
+    }
+
+    if (data.documentoIdentidad && data.documentoIdentidad.trim() !== "") {
+      const docTrimmed = data.documentoIdentidad.trim();
+      if (!/^[0-9]+$/.test(docTrimmed)) {
+        newErrors.documentoIdentidad = "El documento debe contener solo números.";
+      } else if (docTrimmed.length !== 8 && docTrimmed.length !== 11) {
+        newErrors.documentoIdentidad = "Debe ser un DNI (8 dígitos) o RUC (11 dígitos).";
+      }
+    }
+
+    return newErrors;
+  };
+
+  const handleFieldChange = (field: keyof typeof form, value: string) => {
+    setForm((prev) => ({ ...prev, [field]: value }));
+    if (errors[field]) {
+      setErrors((prev) => {
+        const next = { ...prev };
+        delete next[field];
+        return next;
+      });
+    }
+  };
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
     setSuccess(null);
+
+    const validationErrors = validateForm(form);
+    if (Object.keys(validationErrors).length > 0) {
+      setErrors(validationErrors);
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -47,7 +101,7 @@ export default function CreateClienteModal({
         nombre: form.nombre.trim(),
         apellidos: form.apellidos.trim(),
         email: form.email.trim(),
-        telefono: form.telefono.trim() || undefined,
+        telefono: form.telefono.trim() ? form.telefono.replace(/\s+/g, "") : undefined,
         documentoIdentidad: form.documentoIdentidad.trim() || undefined,
         tipoUsuario: "CLIENTE",
       });
@@ -102,68 +156,103 @@ export default function CreateClienteModal({
           )}
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-[11px] font-bold text-slate-500 dark:text-white/60 uppercase tracking-wider mb-1.5">
+            <div className="space-y-1.5">
+              <label className="block text-[11px] font-bold text-slate-500 dark:text-white/60 uppercase tracking-wider">
                 Nombres *
               </label>
               <input
                 required
                 value={form.nombre}
-                onChange={(e) => setForm((f) => ({ ...f, nombre: e.target.value }))}
-                className="w-full px-4 py-2.5 border border-slate-200 dark:border-white/10 rounded-lg text-sm text-build-main dark:text-white focus:outline-none focus:border-build-accent focus:ring-1 focus:ring-build-accent"
+                onChange={(e) => handleFieldChange("nombre", e.target.value)}
+                className={`w-full px-4 py-2.5 border rounded-lg text-sm text-build-main dark:text-white focus:outline-none transition-all ${
+                  errors.nombre
+                    ? "border-red-500 focus:border-red-600 focus:ring-1 focus:ring-red-500/20"
+                    : "border-slate-200 dark:border-white/10 focus:border-build-accent focus:ring-1 focus:ring-build-accent"
+                }`}
                 placeholder="Carlos"
               />
+              {errors.nombre && (
+                <p className="text-xs font-semibold text-red-500 dark:text-red-400 mt-1">{errors.nombre}</p>
+              )}
             </div>
-            <div>
-              <label className="block text-[11px] font-bold text-slate-500 dark:text-white/60 uppercase tracking-wider mb-1.5">
+            <div className="space-y-1.5">
+              <label className="block text-[11px] font-bold text-slate-500 dark:text-white/60 uppercase tracking-wider">
                 Apellidos *
               </label>
               <input
                 required
                 value={form.apellidos}
-                onChange={(e) => setForm((f) => ({ ...f, apellidos: e.target.value }))}
-                className="w-full px-4 py-2.5 border border-slate-200 dark:border-white/10 rounded-lg text-sm text-build-main dark:text-white focus:outline-none focus:border-build-accent focus:ring-1 focus:ring-build-accent"
+                onChange={(e) => handleFieldChange("apellidos", e.target.value)}
+                className={`w-full px-4 py-2.5 border rounded-lg text-sm text-build-main dark:text-white focus:outline-none transition-all ${
+                  errors.apellidos
+                    ? "border-red-500 focus:border-red-600 focus:ring-1 focus:ring-red-500/20"
+                    : "border-slate-200 dark:border-white/10 focus:border-build-accent focus:ring-1 focus:ring-build-accent"
+                }`}
                 placeholder="Ruiz"
               />
+              {errors.apellidos && (
+                <p className="text-xs font-semibold text-red-500 dark:text-red-400 mt-1">{errors.apellidos}</p>
+              )}
             </div>
           </div>
 
-          <div>
-            <label className="block text-[11px] font-bold text-slate-500 dark:text-white/60 uppercase tracking-wider mb-1.5">
-              Correo electronico *
+          <div className="space-y-1.5">
+            <label className="block text-[11px] font-bold text-slate-500 dark:text-white/60 uppercase tracking-wider">
+              Correo electrónico *
             </label>
             <input
               type="email"
               required
               value={form.email}
-              onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
-              className="w-full px-4 py-2.5 border border-slate-200 dark:border-white/10 rounded-lg text-sm text-build-main dark:text-white focus:outline-none focus:border-build-accent focus:ring-1 focus:ring-build-accent"
+              onChange={(e) => handleFieldChange("email", e.target.value)}
+              className={`w-full px-4 py-2.5 border rounded-lg text-sm text-build-main dark:text-white focus:outline-none transition-all ${
+                errors.email
+                  ? "border-red-500 focus:border-red-600 focus:ring-1 focus:ring-red-500/20"
+                  : "border-slate-200 dark:border-white/10 focus:border-build-accent focus:ring-1 focus:ring-build-accent"
+              }`}
               placeholder="cliente@ejemplo.com"
             />
+            {errors.email && (
+              <p className="text-xs font-semibold text-red-500 dark:text-red-400 mt-1">{errors.email}</p>
+            )}
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-[11px] font-bold text-slate-500 dark:text-white/60 uppercase tracking-wider mb-1.5">
+            <div className="space-y-1.5">
+              <label className="block text-[11px] font-bold text-slate-500 dark:text-white/60 uppercase tracking-wider">
                 DNI / CE
               </label>
               <input
                 value={form.documentoIdentidad}
-                onChange={(e) => setForm((f) => ({ ...f, documentoIdentidad: e.target.value }))}
-                className="w-full px-4 py-2.5 border border-slate-200 dark:border-white/10 rounded-lg text-sm text-build-main dark:text-white focus:outline-none focus:border-build-accent focus:ring-1 focus:ring-build-accent"
+                onChange={(e) => handleFieldChange("documentoIdentidad", e.target.value)}
+                className={`w-full px-4 py-2.5 border rounded-lg text-sm text-build-main dark:text-white focus:outline-none transition-all ${
+                  errors.documentoIdentidad
+                    ? "border-red-500 focus:border-red-600 focus:ring-1 focus:ring-red-500/20"
+                    : "border-slate-200 dark:border-white/10 focus:border-build-accent focus:ring-1 focus:ring-build-accent"
+                }`}
                 placeholder="Opcional"
               />
+              {errors.documentoIdentidad && (
+                <p className="text-xs font-semibold text-red-500 dark:text-red-400 mt-1">{errors.documentoIdentidad}</p>
+              )}
             </div>
-            <div>
-              <label className="block text-[11px] font-bold text-slate-500 dark:text-white/60 uppercase tracking-wider mb-1.5">
-                Telefono
+            <div className="space-y-1.5">
+              <label className="block text-[11px] font-bold text-slate-500 dark:text-white/60 uppercase tracking-wider">
+                Teléfono
               </label>
               <input
                 value={form.telefono}
-                onChange={(e) => setForm((f) => ({ ...f, telefono: e.target.value }))}
-                className="w-full px-4 py-2.5 border border-slate-200 dark:border-white/10 rounded-lg text-sm text-build-main dark:text-white focus:outline-none focus:border-build-accent focus:ring-1 focus:ring-build-accent"
-                placeholder="Opcional"
+                onChange={(e) => handleFieldChange("telefono", e.target.value)}
+                className={`w-full px-4 py-2.5 border rounded-lg text-sm text-build-main dark:text-white focus:outline-none transition-all ${
+                  errors.telefono
+                    ? "border-red-500 focus:border-red-600 focus:ring-1 focus:ring-red-500/20"
+                    : "border-slate-200 dark:border-white/10 focus:border-build-accent focus:ring-1 focus:ring-build-accent"
+                }`}
+                placeholder="+51 999 888 777"
               />
+              {errors.telefono && (
+                <p className="text-xs font-semibold text-red-500 dark:text-red-400 mt-1">{errors.telefono}</p>
+              )}
             </div>
           </div>
 

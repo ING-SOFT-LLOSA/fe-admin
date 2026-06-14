@@ -145,14 +145,14 @@
   }
 
   /* Scrollbar */
-  ::-webkit-scrollbar        { width: 8px; height: 8px; }
-  ::-webkit-scrollbar-track  { background: #f8f9fa; }
-  ::-webkit-scrollbar-thumb  { background: #C49E5D; border-radius: 4px; }
-  ::-webkit-scrollbar-thumb:hover { background: #755A26; }
+  ::-webkit-scrollbar              { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-track        { background: transparent; }
+  ::-webkit-scrollbar-thumb        { background: rgba(196, 158, 93, 0.25); border-radius: 99px; }
+  ::-webkit-scrollbar-thumb:hover  { background: rgba(196, 158, 93, 0.5); }
   
-  .dark ::-webkit-scrollbar-track  { background: #0d0b0c; }
-  .dark ::-webkit-scrollbar-thumb  { background: #d4b572; border-radius: 4px; }
-  .dark ::-webkit-scrollbar-thumb:hover { background: #c49e5d; }
+  .dark ::-webkit-scrollbar-track  { background: transparent; }
+  .dark ::-webkit-scrollbar-thumb  { background: rgba(212, 181, 114, 0.25); border-radius: 99px; }
+  .dark ::-webkit-scrollbar-thumb:hover { background: rgba(212, 181, 114, 0.5); }
 }
 
 @layer utilities {

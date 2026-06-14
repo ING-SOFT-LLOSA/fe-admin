@@ -1,6 +1,6 @@
 "use client";
  
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import type { Proyecto } from "@/modules/proyectos/types";
 import { uploadDocument } from "@/lib/api/documents";
@@ -11,6 +11,7 @@ import {
   type ReporteResponse,
   type ReporteCreatePayload
 } from "@/lib/api/reportes";
+import DialogModal from "@/components/ui/DialogModal";
 import { getEtapasByProyecto, type HitoResponseDTO } from "@/lib/api/obra";
  
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -38,28 +39,54 @@ export default function ObraTabReportes({ projectId, avance, project }: ObraTabR
  
   const [reports, setReports] = useState<ReporteResponse[]>([]);
   const [loading, setLoading] = useState(false);
+  const [dialog, setDialog] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    type: "info" | "success" | "warning" | "danger";
+    confirmText?: string;
+    cancelText?: string;
+    onConfirm?: () => void;
+  }>({
+    isOpen: false,
+    title: "",
+    message: "",
+    type: "info",
+  });
   const [error, setError] = useState<string | null>(null);
  
   const canEdit = perfil?.rol === "ADMIN" || perfil?.funciones?.includes("OBRA_EDITAR");
  
-  const loadReports = async () => {
+  const lastProjectIdRef = useRef(projectId);
+
+  useEffect(() => {
+    lastProjectIdRef.current = projectId;
+  }, [projectId]);
+
+  const loadReports = useCallback(async () => {
     if (!projectId) return;
+    const currentProjectId = projectId;
     setLoading(true);
     setError(null);
     try {
-      const pageRes = await fetchReportesProyecto(projectId, 0, 100);
+      const pageRes = await fetchReportesProyecto(currentProjectId, 0, 100);
+      if (currentProjectId !== lastProjectIdRef.current) return;
       setReports(pageRes.content || []);
     } catch (err) {
-      console.error("Error loading reports:", err);
-      setError(err instanceof Error ? err.message : "Error al cargar reportes.");
+      if (currentProjectId === lastProjectIdRef.current) {
+        console.error("Error loading reports:", err);
+        setError(err instanceof Error ? err.message : "Error al cargar reportes.");
+      }
     } finally {
-      setLoading(false);
+      if (currentProjectId === lastProjectIdRef.current) {
+        setLoading(false);
+      }
     }
-  };
- 
+  }, [projectId]);
+
   useEffect(() => {
     loadReports();
-  }, [projectId]);
+  }, [loadReports]);
  
   const handleCreateReport = async (payload: ReporteCreatePayload, files: File[]) => {
     const report = await createReporte(payload);
@@ -77,23 +104,45 @@ export default function ObraTabReportes({ projectId, avance, project }: ObraTabR
         }
       }
       if (failedUploads > 0) {
-        alert(`Se creó el reporte, pero falló la subida de ${failedUploads} archivo(s).\nError del servidor: ${lastErrorMessage}`);
+        setDialog({
+          isOpen: true,
+          title: "Advertencia de Subida",
+          message: `Se creó el reporte, pero falló la subida de ${failedUploads} archivo(s).\nError del servidor: ${lastErrorMessage}`,
+          type: "warning",
+          confirmText: "Aceptar",
+        });
       }
     }
     setShowForm(false);
     await loadReports();
   };
  
-  const handleDeleteReport = async (id: string) => {
-    if (!confirm("¿Estás seguro de que deseas eliminar este reporte de avance?")) return;
-    try {
-      await deleteReporte(id);
-      setSelectedReport(null);
-      await loadReports();
-    } catch (err) {
-      console.error("Error deleting report:", err);
-      alert(err instanceof Error ? err.message : "Error al eliminar el reporte.");
-    }
+  const handleDeleteReport = (id: string) => {
+    setDialog({
+      isOpen: true,
+      title: "Eliminar Reporte de Avance",
+      message: "¿Estás seguro de que deseas eliminar este reporte de avance?",
+      type: "danger",
+      confirmText: "Eliminar",
+      cancelText: "Cancelar",
+      onConfirm: async () => {
+        setDialog((prev) => ({ ...prev, isOpen: false }));
+        try {
+          await deleteReporte(id);
+          setSelectedReport(null);
+          await loadReports();
+        } catch (err) {
+          console.error("Error deleting report:", err);
+          setDialog({
+            isOpen: true,
+            title: "Error al Eliminar",
+            message: err instanceof Error ? err.message : "Error al eliminar el reporte.",
+            type: "danger",
+            confirmText: "Aceptar",
+          });
+        }
+      },
+    });
   };
  
   const sorted = [...reports].sort(
@@ -101,16 +150,29 @@ export default function ObraTabReportes({ projectId, avance, project }: ObraTabR
   );
  
   const totalPublicados = reports.length;
+  const totalBorradores = 0;
  
   // If a report is selected, show detail view
   if (selectedReport) {
     return (
-      <ReporteDetail
-        report={selectedReport}
-        onBack={() => setSelectedReport(null)}
-        onDelete={() => handleDeleteReport(selectedReport.id)}
-        canDelete={canEdit}
-      />
+      <>
+        <ReporteDetail
+          report={selectedReport}
+          onBack={() => setSelectedReport(null)}
+          onDelete={() => handleDeleteReport(selectedReport.id)}
+          canDelete={canEdit}
+        />
+        <DialogModal
+          isOpen={dialog.isOpen}
+          title={dialog.title}
+          message={dialog.message}
+          type={dialog.type}
+          confirmText={dialog.confirmText}
+          cancelText={dialog.cancelText}
+          onConfirm={dialog.onConfirm}
+          onClose={() => setDialog((prev) => ({ ...prev, isOpen: false }))}
+        />
+      </>
     );
   }
  
@@ -123,9 +185,10 @@ export default function ObraTabReportes({ projectId, avance, project }: ObraTabR
       )}
  
       {/* KPI row */}
-      <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <KpiMini icon="description"  label="Total reportes" value={String(reports.length)} />
         <KpiMini icon="check_circle" label="Publicados"     value={String(totalPublicados)} accent="text-emerald-500" />
+        <KpiMini icon="edit_note"    label="Borradores"     value={String(totalBorradores)} accent="text-amber-500"   />
         <KpiMini icon="construction" label="Avance actual"  value={`${avance}%`}            accent="text-build-accent" />
       </div>
  
@@ -193,6 +256,17 @@ export default function ObraTabReportes({ projectId, avance, project }: ObraTabR
           </div>
         )}
       </div>
+
+      <DialogModal
+        isOpen={dialog.isOpen}
+        title={dialog.title}
+        message={dialog.message}
+        type={dialog.type}
+        confirmText={dialog.confirmText}
+        cancelText={dialog.cancelText}
+        onConfirm={dialog.onConfirm}
+        onClose={() => setDialog((prev) => ({ ...prev, isOpen: false }))}
+      />
     </div>
   );
 }
@@ -378,7 +452,7 @@ function ReporteDetail({
               return (
                 <div
                   key={media.id}
-                  onClick={() => media.urlAcceso && window.open(media.urlAcceso, "_blank")}
+                  onClick={() => media.urlAcceso && window.open(media.urlAcceso, "_blank", "noopener,noreferrer")}
                   className="aspect-video rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 flex flex-col items-center justify-center gap-2 text-center hover:border-build-accent hover:bg-slate-100 dark:hover:bg-white/10 transition-colors cursor-pointer overflow-hidden relative group"
                 >
                   {isImage && media.urlAcceso ? (
@@ -668,7 +742,7 @@ function KpiMini({
     <div className="rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 p-4 shadow-sm flex items-center gap-4">
       <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-white/10 flex items-center justify-center shrink-0">
         <span className="material-symbols-outlined text-build-accent text-[20px]">{icon}</span>
-      </div>
+      </div>  
       <div>
         <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-white/40">{label}</p>
         <p className={`text-xl font-bold tracking-tight ${accent}`}>{value}</p>

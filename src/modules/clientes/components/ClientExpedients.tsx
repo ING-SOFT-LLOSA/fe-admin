@@ -1,8 +1,8 @@
 import Link from "next/link";
-// Removed mock import
+import { ClienteAssignment } from "@/types/user";
 
 type ClientExpedientsProps = {
-  assignments: any[];
+  assignments: ClienteAssignment[];
 };
 
 export default function ClientExpedients({ assignments }: ClientExpedientsProps) {
@@ -32,7 +32,7 @@ export default function ClientExpedients({ assignments }: ClientExpedientsProps)
                 </div>
                 <div>
                   <p className="text-sm font-bold text-build-main dark:text-white">
-                    EXP-{item.unitId.slice(-3).toUpperCase()}
+                    EXP-{String(item.unitId).slice(-3).toUpperCase()}
                   </p>
                   <p className="text-xs text-slate-500 dark:text-white/50">
                     {item.unitLabel} · {item.projectName}
