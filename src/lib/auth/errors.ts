@@ -6,6 +6,7 @@ const FIREBASE_MESSAGES: Record<string, string> = {
   "auth/wrong-password": "Contraseña incorrecta.",
   "auth/too-many-requests": "Demasiados intentos. Espera un momento.",
   "auth/popup-closed-by-user": "Inicio con Google cancelado.",
+  "auth/user-disabled": "Tu cuenta de usuario está inactiva o deshabilitada. Si crees que es un error, por favor contacta al administrador del sistema.",
 };
 
 export function toAuthErrorMessage(error: unknown): string {

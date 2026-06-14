@@ -12,6 +12,9 @@ describe("toAuthErrorMessage", () => {
 
     const error3 = new FirebaseError("auth/popup-closed-by-user", "Popup closed");
     expect(toAuthErrorMessage(error3)).toBe("Inicio con Google cancelado.");
+
+    const error4 = new FirebaseError("auth/user-disabled", "User disabled");
+    expect(toAuthErrorMessage(error4)).toBe("Tu cuenta de usuario está inactiva o deshabilitada. Si crees que es un error, por favor contacta al administrador del sistema.");
   });
 
   it("should return the fallback error message for unknown FirebaseError codes", () => {
