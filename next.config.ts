@@ -29,6 +29,16 @@ const nextConfig: NextConfig = {
     ];
   },
   async headers() {
+    const isProd = process.env.NODE_ENV === "production";
+
+    const scriptSrc = isProd
+      ? "script-src 'self' https://apis.google.com https://www.gstatic.com;"
+      : "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://apis.google.com https://www.gstatic.com;";
+
+    const connectSrc = isProd
+      ? "connect-src 'self' https://*.ingsoftware.lat https://*.googleapis.com https://*.firebaseapp.com wss://*.firebaseio.com https://*.firebaseio.com;"
+      : "connect-src 'self' http://localhost:* ws://localhost:* wss://localhost:* https://*.ingsoftware.lat https://*.googleapis.com https://*.firebaseapp.com wss://*.firebaseio.com https://*.firebaseio.com;";
+
     return [
       {
         source: "/(.*)",
@@ -49,11 +59,11 @@ const nextConfig: NextConfig = {
             key: "Content-Security-Policy",
             value: [
               "default-src 'self';",
-              "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://apis.google.com https://www.gstatic.com;",
+              scriptSrc,
               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;",
               "img-src 'self' blob: data: https://lh3.googleusercontent.com https://*.googleapis.com https://*.firebaseapp.com;",
               "font-src 'self' data: https://fonts.gstatic.com;",
-              "connect-src 'self' http://localhost:* ws://localhost:* wss://localhost:* https://*.ingsoftware.lat https://*.googleapis.com https://*.firebaseapp.com wss://*.firebaseio.com https://*.firebaseio.com;",
+              connectSrc,
               "frame-src 'self' https://*.firebaseapp.com;",
               "object-src 'none';",
               "base-uri 'self';",
