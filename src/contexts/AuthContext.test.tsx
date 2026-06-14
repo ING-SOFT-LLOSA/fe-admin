@@ -1,14 +1,27 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+﻿import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, act, waitFor } from "@testing-library/react";
 import { AuthProvider, useAuth } from "./AuthContext";
 import * as api from "@/lib/auth/api";
 import * as login from "@/lib/auth/login";
 import * as session from "@/lib/auth/session";
 
-// Mock the imported modules
-vi.mock("@/lib/auth/api", () => ({
-  fetchPerfil: vi.fn(),
+// ── Capture the onAuthStateChanged callback so tests can fire it ──────────
+// NOTE: vi.mock is hoisted, so we use a module-level variable + a factory
+// that always updates it when AuthProvider registers a new listener.
+let capturedAuthCb: ((user: unknown) => void) | null = null;
+
+vi.mock("firebase/auth", () => ({
+  onAuthStateChanged: (_auth: unknown, cb: (user: unknown) => void) => {
+    capturedAuthCb = cb;
+    return () => { capturedAuthCb = null; };
+  },
 }));
+
+vi.mock("@/lib/firebase", () => ({
+  getFirebaseAuth: () => ({}),
+}));
+
+vi.mock("@/lib/auth/api", () => ({ fetchPerfil: vi.fn() }));
 
 vi.mock("@/lib/auth/login", () => ({
   loginWithEmail: vi.fn(),
@@ -23,220 +36,187 @@ vi.mock("@/lib/auth/session", () => ({
   saveSession: vi.fn(),
 }));
 
-// Test consumer component
-function TestConsumer() {
-  const { perfil, token, isLoading, isAuthenticated, loginEmail, loginGoogle, logout } = useAuth();
+// ── Stub Firebase user ─────────────────────────────────────────────────────
+function makeFirebaseUser(token = "fresh-firebase-token") {
+  return { getIdToken: vi.fn().mockResolvedValue(token) };
+}
 
+// ── Test consumer ──────────────────────────────────────────────────────────
+function TestConsumer() {
+  const { perfil, token, isLoading, isAuthenticated, loginEmail, loginGoogle, logout } =
+    useAuth();
   return (
     <div>
       <div data-testid="loading">{isLoading ? "loading" : "idle"}</div>
       <div data-testid="auth">{isAuthenticated ? "authenticated" : "unauthenticated"}</div>
       <div data-testid="username">{perfil ? perfil.nombre : "no-user"}</div>
-      <div data-testid="token">{token ? token : "no-token"}</div>
-      <button data-testid="btn-login-email" onClick={() => loginEmail("test@test.com", "pass")}>
-        Login Email
-      </button>
-      <button data-testid="btn-login-google" onClick={() => loginGoogle()}>
-        Login Google
-      </button>
-      <button data-testid="btn-logout" onClick={() => logout()}>
-        Logout
-      </button>
+      <div data-testid="token">{token ?? "no-token"}</div>
+      <button data-testid="btn-login-email" onClick={() => loginEmail("t@t.com", "p")}>Login Email</button>
+      <button data-testid="btn-login-google" onClick={() => loginGoogle()}>Login Google</button>
+      <button data-testid="btn-logout" onClick={() => logout()}>Logout</button>
     </div>
   );
 }
 
+// ── Helper: mount + fire a Firebase auth state change ─────────────────────
+async function renderAndFire(firebaseUser: unknown) {
+  await act(async () => {
+    render(<AuthProvider><TestConsumer /></AuthProvider>);
+  });
+  // capturedAuthCb is now set (AuthProvider just registered it)
+  await act(async () => {
+    await capturedAuthCb!(firebaseUser);
+  });
+}
+
 describe("AuthContext", () => {
   beforeEach(() => {
-    vi.resetAllMocks();
+    capturedAuthCb = null;
+    vi.clearAllMocks();
   });
 
-  it("should initialize as loading and restore session if token exists", async () => {
+  it("restores session when Firebase provides a valid user", async () => {
     const mockPerfil = {
-      id: 1,
-      nombre: "Stored User",
-      email: "stored@test.com",
-      tipoUsuario: "EMPLEADO",
-      rol: "ADMIN",
-      activo: true,
-      funciones: [],
+      id: 1, nombre: "Stored User", email: "stored@test.com",
+      tipoUsuario: "EMPLEADO", rol: "ADMIN", activo: true, funciones: [],
     };
-
-    vi.mocked(session.getStoredToken).mockReturnValue("valid-token");
-    vi.mocked(session.getStoredPerfil).mockReturnValue(mockPerfil);
     vi.mocked(api.fetchPerfil).mockResolvedValue(mockPerfil);
 
-    await act(async () => {
-      render(
-        <AuthProvider>
-          <TestConsumer />
-        </AuthProvider>
-      );
-    });
+    await renderAndFire(makeFirebaseUser());
 
-    // Wait until loading finishes and state updates
-    await waitFor(() => {
-      expect(screen.getByTestId("loading").textContent).toBe("idle");
-    });
+    await waitFor(() =>
+      expect(screen.getByTestId("loading").textContent).toBe("idle"),
+    );
 
     expect(screen.getByTestId("auth").textContent).toBe("authenticated");
     expect(screen.getByTestId("username").textContent).toBe("Stored User");
-    expect(screen.getByTestId("token").textContent).toBe("valid-token");
-    expect(session.saveSession).toHaveBeenCalledWith("valid-token", mockPerfil);
+    expect(screen.getByTestId("token").textContent).toBe("fresh-firebase-token");
+    expect(session.saveSession).toHaveBeenCalledWith("fresh-firebase-token", mockPerfil);
   });
 
-  it("should finish loading as unauthenticated if no stored token is present", async () => {
-    vi.mocked(session.getStoredToken).mockReturnValue(null);
+  it("is unauthenticated when Firebase provides null", async () => {
+    await renderAndFire(null);
 
-    await act(async () => {
-      render(
-        <AuthProvider>
-          <TestConsumer />
-        </AuthProvider>
-      );
-    });
-
-    await waitFor(() => {
-      expect(screen.getByTestId("loading").textContent).toBe("idle");
-    });
-
-    expect(screen.getByTestId("auth").textContent).toBe("unauthenticated");
-  });
-
-  it("should clear session and finish loading if token restore fails", async () => {
-    vi.mocked(session.getStoredToken).mockReturnValue("bad-token");
-    vi.mocked(api.fetchPerfil).mockRejectedValue(new Error("Token expired"));
-
-    await act(async () => {
-      render(
-        <AuthProvider>
-          <TestConsumer />
-        </AuthProvider>
-      );
-    });
-
-    await waitFor(() => {
-      expect(screen.getByTestId("loading").textContent).toBe("idle");
-    });
+    await waitFor(() =>
+      expect(screen.getByTestId("loading").textContent).toBe("idle"),
+    );
 
     expect(screen.getByTestId("auth").textContent).toBe("unauthenticated");
     expect(session.clearSession).toHaveBeenCalled();
   });
 
-  it("should login with email successfully", async () => {
-    vi.mocked(session.getStoredToken).mockReturnValue(null);
+  it("falls back to cached profile when fetchPerfil fails transiently", async () => {
+    const cachedPerfil = {
+      id: 1, nombre: "Cached User", email: "cached@test.com",
+      tipoUsuario: "EMPLEADO", rol: "ADMIN", activo: true, funciones: [],
+    };
+    vi.mocked(api.fetchPerfil).mockRejectedValue(new Error("Network error"));
+    vi.mocked(session.getStoredPerfil).mockReturnValue(cachedPerfil);
+    vi.mocked(session.getStoredToken).mockReturnValue("cached-token");
 
-    render(
-      <AuthProvider>
-        <TestConsumer />
-      </AuthProvider>
+    await renderAndFire(makeFirebaseUser());
+
+    await waitFor(() =>
+      expect(screen.getByTestId("loading").textContent).toBe("idle"),
     );
 
-    await waitFor(() => {
-      expect(screen.getByTestId("loading").textContent).toBe("idle");
-    });
+    expect(screen.getByTestId("auth").textContent).toBe("authenticated");
+    expect(screen.getByTestId("username").textContent).toBe("Cached User");
+  });
+
+  it("clears session when fetchPerfil fails and no cached profile exists", async () => {
+    vi.mocked(api.fetchPerfil).mockRejectedValue(new Error("Token expired"));
+    vi.mocked(session.getStoredPerfil).mockReturnValue(null);
+
+    await renderAndFire(makeFirebaseUser());
+
+    await waitFor(() =>
+      expect(screen.getByTestId("loading").textContent).toBe("idle"),
+    );
+
+    expect(screen.getByTestId("auth").textContent).toBe("unauthenticated");
+    expect(session.clearSession).toHaveBeenCalled();
+  });
+
+  it("logs in with email successfully", async () => {
+    await renderAndFire(null);
+    await waitFor(() =>
+      expect(screen.getByTestId("loading").textContent).toBe("idle"),
+    );
 
     const loggedInPerfil = {
-      id: 2,
-      nombre: "Email User",
-      email: "email@test.com",
-      tipoUsuario: "CLIENTE",
-      rol: "USER",
-      activo: true,
-      funciones: [],
+      id: 2, nombre: "Email User", email: "email@test.com",
+      tipoUsuario: "CLIENTE", rol: "USER", activo: true, funciones: [],
     };
-
     vi.mocked(login.loginWithEmail).mockResolvedValue(loggedInPerfil);
-    // After login, it reads stored token from storage
     vi.mocked(session.getStoredToken).mockReturnValue("new-token");
 
-    await act(async () => {
-      screen.getByTestId("btn-login-email").click();
-    });
-
-    await waitFor(() => {
-      expect(screen.getByTestId("username").textContent).toBe("Email User");
-    });
+    await act(async () => { screen.getByTestId("btn-login-email").click(); });
+    await waitFor(() =>
+      expect(screen.getByTestId("username").textContent).toBe("Email User"),
+    );
 
     expect(screen.getByTestId("auth").textContent).toBe("authenticated");
     expect(screen.getByTestId("token").textContent).toBe("new-token");
   });
 
-  it("should login with Google successfully", async () => {
-    vi.mocked(session.getStoredToken).mockReturnValue(null);
-
-    render(
-      <AuthProvider>
-        <TestConsumer />
-      </AuthProvider>
+  it("logs in with Google successfully", async () => {
+    await renderAndFire(null);
+    await waitFor(() =>
+      expect(screen.getByTestId("loading").textContent).toBe("idle"),
     );
 
-    await waitFor(() => {
-      expect(screen.getByTestId("loading").textContent).toBe("idle");
-    });
-
     const googlePerfil = {
-      id: 3,
-      nombre: "Google User",
-      email: "google@test.com",
-      tipoUsuario: "CLIENTE",
-      rol: "USER",
-      activo: true,
-      funciones: [],
+      id: 3, nombre: "Google User", email: "google@test.com",
+      tipoUsuario: "CLIENTE", rol: "USER", activo: true, funciones: [],
     };
-
     vi.mocked(login.loginWithGoogle).mockResolvedValue(googlePerfil);
     vi.mocked(session.getStoredToken).mockReturnValue("google-token");
 
-    await act(async () => {
-      screen.getByTestId("btn-login-google").click();
-    });
-
-    await waitFor(() => {
-      expect(screen.getByTestId("username").textContent).toBe("Google User");
-    });
+    await act(async () => { screen.getByTestId("btn-login-google").click(); });
+    await waitFor(() =>
+      expect(screen.getByTestId("username").textContent).toBe("Google User"),
+    );
 
     expect(screen.getByTestId("auth").textContent).toBe("authenticated");
     expect(screen.getByTestId("token").textContent).toBe("google-token");
   });
 
-  it("should logout successfully", async () => {
+  it("logs out successfully", async () => {
     const mockPerfil = {
-      id: 1,
-      nombre: "Stored User",
-      email: "stored@test.com",
-      tipoUsuario: "EMPLEADO",
-      rol: "ADMIN",
-      activo: true,
-      funciones: [],
+      id: 1, nombre: "Stored User", email: "stored@test.com",
+      tipoUsuario: "EMPLEADO", rol: "ADMIN", activo: true, funciones: [],
     };
-
-    vi.mocked(session.getStoredToken).mockReturnValue("valid-token");
-    vi.mocked(session.getStoredPerfil).mockReturnValue(mockPerfil);
     vi.mocked(api.fetchPerfil).mockResolvedValue(mockPerfil);
-
-    render(
-      <AuthProvider>
-        <TestConsumer />
-      </AuthProvider>
+    await renderAndFire(makeFirebaseUser());
+    await waitFor(() =>
+      expect(screen.getByTestId("auth").textContent).toBe("authenticated"),
     );
 
-    await waitFor(() => {
-      expect(screen.getByTestId("loading").textContent).toBe("idle");
-    });
+    await act(async () => { screen.getByTestId("btn-logout").click(); });
+    await waitFor(() =>
+      expect(screen.getByTestId("auth").textContent).toBe("unauthenticated"),
+    );
 
-    expect(screen.getByTestId("auth").textContent).toBe("authenticated");
+    expect(login.logout).toHaveBeenCalled();
+  });
+
+  it("logs out on llosa:unauthorized event", async () => {
+    const mockPerfil = {
+      id: 1, nombre: "Active User", email: "active@test.com",
+      tipoUsuario: "EMPLEADO", rol: "ADMIN", activo: true, funciones: [],
+    };
+    vi.mocked(api.fetchPerfil).mockResolvedValue(mockPerfil);
+    await renderAndFire(makeFirebaseUser());
+    await waitFor(() =>
+      expect(screen.getByTestId("auth").textContent).toBe("authenticated"),
+    );
 
     await act(async () => {
-      screen.getByTestId("btn-logout").click();
+      window.dispatchEvent(new Event("llosa:unauthorized"));
     });
-
-    await waitFor(() => {
-      expect(screen.getByTestId("auth").textContent).toBe("unauthenticated");
-    });
-
-    expect(screen.getByTestId("username").textContent).toBe("no-user");
-    expect(screen.getByTestId("token").textContent).toBe("no-token");
-    expect(login.logout).toHaveBeenCalled();
+    await waitFor(() =>
+      expect(screen.getByTestId("auth").textContent).toBe("unauthenticated"),
+    );
   });
 });

@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
 
 import { fetchUsuarioPorId, mapUsuarioToClienteRow } from "@/lib/api/users";
 import { fetchActivosPorUsuario, type ActivoUsuarioDTO } from "@/lib/api/expedientes";
-import type { ClienteRow } from "@/types/user";
+import type { ClienteRow, ClienteAssignment } from "@/types/user";
 
 import AssignPropertyWizard from "@/modules/asignaciones/components/AssignPropertyWizard";
 import EditClienteModal from "@/modules/clientes/components/EditClienteModal";
@@ -25,11 +25,11 @@ export default function ClienteProfileView({ clientId }: ClienteProfileViewProps
   const router = useRouter();
 
   const [client, setClient] = useState<ClienteRow | null>(null);
-  const [assignments, setAssignments] = useState<any[]>([]);
+  const [assignments, setAssignments] = useState<ClienteAssignment[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeModal, setActiveModal] = useState<Modal>(null);
-  const [, setSelectedAssignment] = useState<any | null>(null);
+  const [, setSelectedAssignment] = useState<ClienteAssignment | null>(null);
   const [refreshCount, setRefreshCount] = useState(0);
 
   useEffect(() => {

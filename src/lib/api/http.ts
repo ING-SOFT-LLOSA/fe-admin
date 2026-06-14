@@ -1,5 +1,4 @@
-import { getFreshToken } from "@/lib/auth/session";
-import { getFirebaseAuth } from "@/lib/firebase";
+import { clearSession, getFreshToken } from "@/lib/auth/session";
 
 const API_URL = (process.env.NEXT_PUBLIC_API_URL_LLOSA ?? "http://localhost:8080").replace(/\/$/, "");
 
@@ -44,6 +43,20 @@ export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> 
       message = json.error ?? json.message ?? detail;
     } catch {
       /* no JSON */
+    }
+
+    if (res.status === 401) {
+      // Token expired or invalid — purge local session and signal the
+      // AuthContext to wipe React state so AuthGuard redirects to /login.
+      clearSession();
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new Event("llosa:unauthorized"));
+      }
+      throw new ApiError(
+        "Tu sesión ha expirado. Por favor, inicia sesión de nuevo.",
+        res.status,
+        path,
+      );
     }
 
     if (res.status === 403) {

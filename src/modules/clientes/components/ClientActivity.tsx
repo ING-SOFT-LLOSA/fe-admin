@@ -1,7 +1,7 @@
-// Removed mock import
+import { ClienteAssignment } from "@/types/user";
 
 type ClientActivityProps = {
-  assignments: any[];
+  assignments: ClienteAssignment[];
   clientCreatedAt?: string;
 };
 
@@ -12,7 +12,7 @@ interface ActivityEvent {
   color: string; // dot color
 }
 
-function buildTimeline(assignments: any[], clientCreatedAt?: string): ActivityEvent[] {
+function buildTimeline(assignments: ClienteAssignment[], clientCreatedAt?: string): ActivityEvent[] {
   const events: ActivityEvent[] = [];
 
   // Assignment events

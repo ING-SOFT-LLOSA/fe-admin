@@ -48,7 +48,7 @@ export default function GeneralDataForm({ initialData, onSubmit, onCancel }: Pro
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
     
-    let parsedValue: any = value;
+    let parsedValue: string | boolean = value;
     if (type === "checkbox") {
       parsedValue = (e.target as HTMLInputElement).checked;
     }

@@ -1,7 +1,7 @@
-// Removed mock import
+import { ClienteAssignment } from "@/types/user";
 
 type ClientKpisProps = {
-  assignments: any[];
+  assignments: ClienteAssignment[];
 };
 
 export default function ClientKpis({ assignments }: ClientKpisProps) {

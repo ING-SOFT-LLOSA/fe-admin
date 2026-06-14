@@ -1,10 +1,11 @@
 import Link from "next/link";
-import type { MockAssignment } from "@/modules/clientes/types";
+import { ClienteAssignment } from "@/types/user";
 
 type ClientPropertiesProps = {
-  assignments: any[];
-  onUnlink: (assignment: any) => void;
+  assignments: ClienteAssignment[];
+  onUnlink: (assignment: ClienteAssignment) => void;
 };
+
 
 function getUnitIcon(label: string): string {
   const lower = label.toLowerCase();
