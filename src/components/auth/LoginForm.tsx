@@ -53,33 +53,17 @@ type LoginFormProps = {
   redirectTo?: string;
 };
 
-export default function LoginForm({ redirectTo = "/proyectos" }: LoginFormProps) {
+function useLoginFormLogic(redirectTo: string) {
   const router = useRouter();
   const { loginEmail, loginGoogle, resetPassword, isAuthenticated, isLoading: authLoading, perfil, logout } = useAuth();
 
-  const [email, setEmail]           = useState("");
-  const [pass, setPass]             = useState("");
-  const [loading, setLoading]       = useState(false);
-  const [showPass, setShowPass]     = useState(false);
-  const [error, setError]           = useState<string | null>(null);
-  const [submitHover, setSubmitHover] = useState(false);
-  const [googleHover, setGoogleHover] = useState(false);
+  const [email, setEmail] = useState("");
+  const [pass, setPass] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [showPass, setShowPass] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [isResetView, setIsResetView] = useState(false);
   const [resetSuccess, setResetSuccess] = useState(false);
-
-  // ✅ Variables pre-calculadas — eliminan ternarios del JSX
-  const formTitle        = isResetView ? "Recuperar contraseña" : "Inicia sesión";
-  const backLinkLabel    = isResetView ? "Volver al inicio de sesión" : "¿Olvidaste tu contraseña?";
-  const inputType        = showPass ? "text" : "password";
-  const visibilityIcon   = showPass ? "visibility_off" : "visibility";
-  const isSubmitDisabled = loading || !email || (!isResetView && !pass);
-  const handleFormSubmit = isResetView ? handleResetPassword : handleSubmit;
-
-  const googleBgClass = loading
-    ? "opacity-60 cursor-not-allowed bg-white dark:bg-white/5"
-    : googleHover
-    ? "bg-slate-50 dark:bg-white/5"
-    : "bg-white dark:bg-white/5";
 
   useEffect(() => {
     if (!authLoading && isAuthenticated && perfil) {
@@ -135,6 +119,64 @@ export default function LoginForm({ redirectTo = "/proyectos" }: LoginFormProps)
       setLoading(false);
     }
   }
+
+  return {
+    email,
+    setEmail,
+    pass,
+    setPass,
+    loading,
+    setLoading,
+    showPass,
+    setShowPass,
+    error,
+    setError,
+    isResetView,
+    setIsResetView,
+    resetSuccess,
+    setResetSuccess,
+    handleSubmit,
+    handleResetPassword,
+    handleGoogleLogin,
+  };
+}
+
+export default function LoginForm({ redirectTo = "/proyectos" }: LoginFormProps) {
+  const {
+    email,
+    setEmail,
+    pass,
+    setPass,
+    loading,
+    showPass,
+    setShowPass,
+    error,
+    setError,
+    isResetView,
+    setIsResetView,
+    resetSuccess,
+    setResetSuccess,
+    handleSubmit,
+    handleResetPassword,
+    handleGoogleLogin,
+  } = useLoginFormLogic(redirectTo);
+
+  const [submitHover, setSubmitHover] = useState(false);
+  const [googleHover, setGoogleHover] = useState(false);
+
+  // ✅ Variables pre-calculadas — eliminan ternarios del JSX
+  const formTitle        = isResetView ? "Recuperar contraseña" : "Inicia sesión";
+  const backLinkLabel    = isResetView ? "Volver al inicio de sesión" : "¿Olvidaste tu contraseña?";
+  const inputType        = showPass ? "text" : "password";
+  const visibilityIcon   = showPass ? "visibility_off" : "visibility";
+  const isSubmitDisabled = loading || !email || (!isResetView && !pass);
+  const handleFormSubmit = isResetView ? handleResetPassword : handleSubmit;
+
+  const googleBgClass = loading
+    ? "opacity-60 cursor-not-allowed bg-white dark:bg-white/5"
+    : googleHover
+    ? "bg-slate-50 dark:bg-white/5"
+    : "bg-white dark:bg-white/5";
 
   return (
     <div className="h-screen w-full flex overflow-hidden" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
