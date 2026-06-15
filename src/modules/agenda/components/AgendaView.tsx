@@ -88,6 +88,110 @@ function generateCalendarGrid(currentDate: Date) {
   return grid;
 }
 
+function getStartAndEndDateStr(gridCells: CalDay[], currentDate: Date) {
+  const firstCell = gridCells[0];
+  const lastCell = gridCells[gridCells.length - 1];
+  
+  const year = currentDate.getFullYear();
+  const month = currentDate.getMonth();
+  
+  let startYear = year;
+  let startMonth = month;
+  if (firstCell.grey && firstCell.day > 15) {
+    startMonth = month - 1;
+    if (startMonth < 0) {
+      startMonth = 11;
+      startYear = year - 1;
+    }
+  }
+  const startDateStr = `${startYear}-${String(startMonth + 1).padStart(2, "0")}-${String(firstCell.day).padStart(2, "0")}T00:00:00`;
+
+  let endYear = year;
+  let endMonth = month;
+  if (lastCell.grey && lastCell.day < 15) {
+    endMonth = month + 1;
+    if (endMonth > 11) {
+      endMonth = 0;
+      endYear = year + 1;
+    }
+  }
+  const endDateStr = `${endYear}-${String(endMonth + 1).padStart(2, "0")}-${String(lastCell.day).padStart(2, "0")}T23:59:59`;
+  
+  return { startDateStr, endDateStr };
+}
+
+function mapCitaToEvent(c: CitaResponse): CalEvent {
+  const startL = c.fechaInicio.split("T")[1]?.slice(0, 5) || "";
+  let bg = "bg-[#c2e8ff] text-[#001e2b]";
+  let dot = "bg-[#001e2b]";
+  if (c.estadoCita === "CANCELADA") {
+    bg = "bg-[#ffdad6] text-[#ba1a1a]";
+    dot = "bg-[#ba1a1a]";
+  } else if (c.estadoCita === "CONFIRMADA") {
+    bg = "bg-[#e8f5e9] text-[#2e7d32]";
+    dot = "bg-[#2e7d32]";
+  } else if (c.estadoCita === "COMPLETADA") {
+    bg = "bg-slate-100 text-slate-700 dark:bg-white/10 dark:text-white/60";
+    dot = "bg-slate-500";
+  } else if (c.estadoCita === "REPROGRAMACION_PENDIENTE") {
+    bg = "bg-[#ffe0b2] text-[#e65100]";
+    dot = "bg-[#e65100]";
+  }
+
+  let rsvpDot = "bg-slate-400 dark:bg-slate-500";
+  let rsvpText = "Pendiente";
+  if (c.confirmacionCliente === true) {
+    rsvpDot = "bg-emerald-500 dark:bg-emerald-400";
+    rsvpText = "Confirmado";
+  } else if (c.confirmacionCliente === false) {
+    rsvpDot = "bg-rose-500 dark:bg-rose-400";
+    rsvpText = "Declinado";
+  }
+
+  return {
+    id: c.id,
+    label: `${c.titulo || c.tipoEvento}`,
+    bg,
+    dot,
+    rsvpDot,
+    rsvpText,
+    text: bg.split(" ")[1] || "",
+    time: startL,
+    client: c.clienteNombre || "Cliente",
+    type: c.tipoEvento,
+    unit: ""
+  };
+}
+
+function mapCitasToGrid(citas: CitaResponse[], gridCells: CalDay[], currentDate: Date) {
+  const year = currentDate.getFullYear();
+  const month = currentDate.getMonth();
+  
+  return gridCells.map(cell => {
+    let cellYear = year;
+    let cellMonth = month;
+    if (cell.grey) {
+      if (cell.day > 15) {
+        cellMonth = month - 1;
+        if (cellMonth < 0) { cellMonth = 11; cellYear = year - 1; }
+      } else {
+        cellMonth = month + 1;
+        if (cellMonth > 11) { cellMonth = 0; cellYear = year + 1; }
+      }
+    }
+    const cellDateStr = `${cellYear}-${String(cellMonth + 1).padStart(2, "0")}-${String(cell.day).padStart(2, "0")}`;
+
+    const dayEvents = citas
+      .filter(c => c.fechaInicio.startsWith(cellDateStr))
+      .map(mapCitaToEvent);
+
+    return {
+      ...cell,
+      events: dayEvents
+    };
+  });
+}
+
 export default function SchedulePage() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [calDays, setCalDays] = useState<CalDay[]>([]);
@@ -179,109 +283,13 @@ export default function SchedulePage() {
   const fetchAppointments = React.useCallback(() => {
     if (gridCells.length === 0) return;
     
-    const firstCell = gridCells[0];
-    const lastCell = gridCells[gridCells.length - 1];
-    
-    const year = currentDate.getFullYear();
-    const month = currentDate.getMonth();
-    
-    let startYear = year;
-    let startMonth = month;
-    if (firstCell.grey && firstCell.day > 15) {
-      startMonth = month - 1;
-      if (startMonth < 0) {
-        startMonth = 11;
-        startYear = year - 1;
-      }
-    }
-    const startDateStr = `${startYear}-${String(startMonth + 1).padStart(2, "0")}-${String(firstCell.day).padStart(2, "0")}T00:00:00`;
-
-    let endYear = year;
-    let endMonth = month;
-    if (lastCell.grey && lastCell.day < 15) {
-      endMonth = month + 1;
-      if (endMonth > 11) {
-        endMonth = 0;
-        endYear = year + 1;
-      }
-    }
-    const endDateStr = `${endYear}-${String(endMonth + 1).padStart(2, "0")}-${String(lastCell.day).padStart(2, "0")}T23:59:59`;
-
+    const { startDateStr, endDateStr } = getStartAndEndDateStr(gridCells, currentDate);
     setLoadingEvents(true);
     
     fetchCitasCalendario(startDateStr, endDateStr)
       .then(citas => {
         setRawCitas(citas);
-        const updatedGrid = gridCells.map(cell => {
-          let cellYear = year;
-          let cellMonth = month;
-          if (cell.grey) {
-            if (cell.day > 15) {
-              cellMonth = month - 1;
-              if (cellMonth < 0) { cellMonth = 11; cellYear = year - 1; }
-            } else {
-              cellMonth = month + 1;
-              if (cellMonth > 11) { cellMonth = 0; cellYear = year + 1; }
-            }
-          }
-          const cellDateStr = `${cellYear}-${String(cellMonth + 1).padStart(2, "0")}-${String(cell.day).padStart(2, "0")}`;
-
-          const dayEvents = citas
-            .filter(c => c.fechaInicio.startsWith(cellDateStr))
-            .map(c => {
-              const startL = c.fechaInicio.split("T")[1]?.slice(0, 5) || "";
-              
-              let bg = "bg-[#c2e8ff] text-[#001e2b]";
-              let dot = "bg-[#001e2b]";
-              if (c.estadoCita === "CANCELADA") {
-                bg = "bg-[#ffdad6] text-[#ba1a1a]";
-                dot = "bg-[#ba1a1a]";
-              } else if (c.estadoCita === "CONFIRMADA") {
-                bg = "bg-[#e8f5e9] text-[#2e7d32]";
-                dot = "bg-[#2e7d32]";
-              } else if (c.estadoCita === "COMPLETADA") {
-                bg = "bg-slate-100 text-slate-700 dark:bg-white/10 dark:text-white/60";
-                dot = "bg-slate-500";
-              } else if (c.estadoCita === "REPROGRAMACION_PENDIENTE") {
-                bg = "bg-[#ffe0b2] text-[#e65100]";
-                dot = "bg-[#e65100]";
-              }
-
-              // RSVP Dot based on confirmacionCliente:
-              // true -> verde (bg-emerald-500)
-              // false -> rojo (bg-rose-500)
-              // null/undefined -> gris (bg-slate-400)
-              let rsvpDot = "bg-slate-400 dark:bg-slate-500";
-              let rsvpText = "Pendiente";
-              if (c.confirmacionCliente === true) {
-                rsvpDot = "bg-emerald-500 dark:bg-emerald-400";
-                rsvpText = "Confirmado";
-              } else if (c.confirmacionCliente === false) {
-                rsvpDot = "bg-rose-500 dark:bg-rose-400";
-                rsvpText = "Declinado";
-              }
-
-              return {
-                id: c.id,
-                label: `${c.titulo || c.tipoEvento}`,
-                bg,
-                dot,
-                rsvpDot,
-                rsvpText,
-                text: bg.split(" ")[1] || "",
-                time: startL,
-                client: c.clienteNombre || "Cliente",
-                type: c.tipoEvento,
-                unit: ""
-              };
-            });
-
-          return {
-            ...cell,
-            events: dayEvents
-          };
-        });
-        
+        const updatedGrid = mapCitasToGrid(citas, gridCells, currentDate);
         setCalDays(updatedGrid);
       })
       .catch(err => {
