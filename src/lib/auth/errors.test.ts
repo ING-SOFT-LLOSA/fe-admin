@@ -5,10 +5,10 @@ import { toAuthErrorMessage } from "./errors";
 describe("toAuthErrorMessage", () => {
   it("should return correct message for known FirebaseError codes", () => {
     const error1 = new FirebaseError("auth/invalid-credential", "Invalid credentials");
-    expect(toAuthErrorMessage(error1)).toBe("Correo o contraseña incorrectos.");
+    expect(toAuthErrorMessage(error1)).toBe("Correo o contraseña inválido.");
 
     const error2 = new FirebaseError("auth/user-not-found", "User not found");
-    expect(toAuthErrorMessage(error2)).toBe("No existe una cuenta con ese correo.");
+    expect(toAuthErrorMessage(error2)).toBe("Correo o contraseña inválido.");
 
     const error3 = new FirebaseError("auth/popup-closed-by-user", "Popup closed");
     expect(toAuthErrorMessage(error3)).toBe("Inicio con Google cancelado.");

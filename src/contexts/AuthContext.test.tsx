@@ -1,4 +1,4 @@
-﻿import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, act, waitFor } from "@testing-library/react";
 import { AuthProvider, useAuth } from "./AuthContext";
 import * as api from "@/lib/auth/api";
@@ -31,7 +31,6 @@ vi.mock("@/lib/auth/login", () => ({
 
 vi.mock("@/lib/auth/session", () => ({
   clearSession: vi.fn(),
-  getStoredPerfil: vi.fn(),
   getStoredToken: vi.fn(),
   saveSession: vi.fn(),
 }));
@@ -105,28 +104,8 @@ describe("AuthContext", () => {
     expect(session.clearSession).toHaveBeenCalled();
   });
 
-  it("falls back to cached profile when fetchPerfil fails transiently", async () => {
-    const cachedPerfil = {
-      id: 1, nombre: "Cached User", email: "cached@test.com",
-      tipoUsuario: "EMPLEADO", rol: "ADMIN", activo: true, funciones: [],
-    };
-    vi.mocked(api.fetchPerfil).mockRejectedValue(new Error("Network error"));
-    vi.mocked(session.getStoredPerfil).mockReturnValue(cachedPerfil);
-    vi.mocked(session.getStoredToken).mockReturnValue("cached-token");
-
-    await renderAndFire(makeFirebaseUser());
-
-    await waitFor(() =>
-      expect(screen.getByTestId("loading").textContent).toBe("idle"),
-    );
-
-    expect(screen.getByTestId("auth").textContent).toBe("authenticated");
-    expect(screen.getByTestId("username").textContent).toBe("Cached User");
-  });
-
-  it("clears session when fetchPerfil fails and no cached profile exists", async () => {
+  it("clears session when fetchPerfil fails", async () => {
     vi.mocked(api.fetchPerfil).mockRejectedValue(new Error("Token expired"));
-    vi.mocked(session.getStoredPerfil).mockReturnValue(null);
 
     await renderAndFire(makeFirebaseUser());
 

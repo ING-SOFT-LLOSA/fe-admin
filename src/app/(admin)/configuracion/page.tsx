@@ -17,11 +17,7 @@ const ROLE_LABELS: Record<string, string> = {
   POSTVENTA: "Postventa",
 };
 
-const AUDIT_EVENTS = [
-  { date: "2026-06-02 09:14", action: "Inicio de sesion", source: "Backoffice" },
-  { date: "2026-06-01 18:40", action: "Cambio de rol base", source: "Admin Prototipo" },
-  { date: "2026-05-29 11:22", action: "Permisos revisados", source: "Gestion de Empleados" },
-];
+
 
 function fullName(user: Usuario) {
   return [user.nombre, user.apellidos].filter(Boolean).join(" ");
@@ -225,7 +221,6 @@ export default function EmployeeManagementPage() {
                                 </div>
                                 <div>
                                   <p className="font-bold text-build-main dark:text-white">{fullName(user)}</p>
-                                  <p className="text-xs text-slate-400">ID {user.id}</p>
                                 </div>
                               </div>
                             </td>
@@ -314,17 +309,7 @@ export default function EmployeeManagementPage() {
                         </div>
                       </section>
 
-                      <section>
-                        <h4 className="text-sm font-bold text-build-main dark:text-white">Auditoria de accesos</h4>
-                        <div className="mt-3 space-y-2">
-                          {AUDIT_EVENTS.map((event) => (
-                            <div key={`${event.date}-${event.action}`} className="rounded-lg bg-slate-50 px-3 py-2 text-xs dark:bg-white/10">
-                              <p className="font-bold text-build-main dark:text-white">{event.action}</p>
-                              <p className="text-slate-500">{event.date} - {event.source}</p>
-                            </div>
-                          ))}
-                        </div>
-                      </section>
+
                     </div>
                   </aside>
                 )}
