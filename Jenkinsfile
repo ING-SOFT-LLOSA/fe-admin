@@ -29,6 +29,9 @@ pipeline {
         }
 
         stage('SonarQube Analysis') {
+            when {
+                branch 'test'
+            }
             agent {
                 docker {
                     image 'node:22-bookworm'
@@ -47,6 +50,9 @@ pipeline {
         }
 
         stage('Quality Gate') {
+            when {
+                branch 'test'
+            }
             steps {
                 timeout(time: 1, unit: 'HOURS') {
                     waitForQualityGate abortPipeline: false

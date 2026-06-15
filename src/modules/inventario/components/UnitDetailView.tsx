@@ -120,9 +120,6 @@ export default function UnitDetailView({ projectId, unitId }: UnitDetailViewProp
         <section className="rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 p-6 shadow-sm">
           <div className="mb-5">
             <h2 className="text-[20px] font-bold text-build-main dark:text-white">Unidad {unit.nro}</h2>
-            <p className="mt-1 text-sm text-slate-500 dark:text-white/60">
-              Información técnica, precio base y estado comercial.
-            </p>
           </div>
 
           <div className="grid gap-4 md:grid-cols-2">
