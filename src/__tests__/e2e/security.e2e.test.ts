@@ -8,15 +8,15 @@
  */
 
 import { test, expect, type Page } from '@playwright/test'
+import { loginViaEmulator } from './helpers/emulator'
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 async function injectSession(page: Page, perfil: Record<string, unknown>) {
-  await page.goto('/login-empresa')
-  await page.evaluate((p) => {
-    localStorage.setItem('llosa_id_token', 'mock-token-security-test')
-    localStorage.setItem('llosa_perfil', JSON.stringify(p))
-  }, perfil)
+  // El perfil (rol/funciones) llega del backend mockeado; la identidad, del
+  // emulador de Firebase Auth mediante un login real.
+  await mockAuthMe(page, perfil)
+  await loginViaEmulator(page)
 }
 
 async function mockAuthMe(page: Page, perfil: Record<string, unknown> | null) {
@@ -126,7 +126,7 @@ test.describe('Token JWT accesible en localStorage', () => {
       funciones: [],
     })
 
-    await page.goto('/login-empresa')
+    await page.goto('/login')
     await page.evaluate(() => {
       localStorage.setItem('llosa_id_token', 'jwt-sensible-a-xss')
       localStorage.setItem('llosa_perfil', JSON.stringify({ id: 1, rol: 'ADMIN' }))
@@ -141,7 +141,7 @@ test.describe('Token JWT accesible en localStorage', () => {
 
   test('El perfil completo con rol y funciones es modificable desde JavaScript', async ({ page }) => {
    
-    await page.goto('/login-empresa')
+    await page.goto('/login')
     await page.evaluate(() => {
       localStorage.setItem('llosa_id_token', 'token-de-empleado')
       localStorage.setItem('llosa_perfil', JSON.stringify({
@@ -180,7 +180,7 @@ test.describe('Seguridad — Validación de tokens', () => {
       await route.fulfill({ status: 401, json: { error: 'Token expired' } })
     })
 
-    await page.goto('/login-empresa')
+    await page.goto('/login')
     await page.evaluate(() => {
       localStorage.setItem('llosa_id_token', 'token-expirado-o-robado')
       localStorage.setItem('llosa_perfil', JSON.stringify({

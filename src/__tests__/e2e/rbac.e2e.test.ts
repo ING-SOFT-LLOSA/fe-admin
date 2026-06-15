@@ -3,15 +3,15 @@
  */
 
 import { test, expect, type Page } from '@playwright/test'
+import { loginViaEmulator } from './helpers/emulator'
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 async function injectSession(page: Page, perfil: Record<string, unknown>) {
-  await page.goto('/login-empresa')
-  await page.evaluate((p) => {
-    localStorage.setItem('llosa_id_token', 'mock-token-e2e-rbac')
-    localStorage.setItem('llosa_perfil', JSON.stringify(p))
-  }, perfil)
+  // El perfil (rol/funciones) llega del backend mockeado; la identidad, del
+  // emulador de Firebase Auth mediante un login real.
+  await mockAuthMe(page, perfil)
+  await loginViaEmulator(page)
 }
 
 /**
