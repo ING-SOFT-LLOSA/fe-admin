@@ -324,9 +324,9 @@ export default function LegalOverview() {
             )
             .flatMap((c) => c.activos ?? [])
             .map((a) => a.torreNombre)
-            .filter(Boolean),
+            .filter((name): name is string => Boolean(name)),
         ),
-      ).sort(),
+      ).sort((a, b) => a.localeCompare(b)),
     [contracts, selectedProyecto],
   );
 
