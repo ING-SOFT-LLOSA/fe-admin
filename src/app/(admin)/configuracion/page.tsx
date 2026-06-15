@@ -3,6 +3,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 
 import PermissionGuard from "@/components/auth/PermissionGuard";
+import DialogModal from "@/components/ui/DialogModal";
 import { asignarRol, desactivarUsuario, fetchRoles, fetchUsuarios, registerEmpleado } from "@/lib/api/users";
 import type { Rol, Usuario } from "@/types/user";
 import { useAuth } from "@/contexts/AuthContext";
@@ -45,6 +46,7 @@ export default function EmployeeManagementPage() {
     email: "",
     rol: "ASESOR",
   });
+  const [userToDeactivate, setUserToDeactivate] = useState<Usuario | null>(null);
 
   const employees = useMemo(() => users.filter((user) => user.tipoUsuario === "EMPLEADO"), [users]);
   const selectedUser = employees.find((user) => user.id === selectedUserId) ?? employees[0] ?? null;
@@ -52,8 +54,10 @@ export default function EmployeeManagementPage() {
   const allPermissions = useMemo(() => permissionLabels(roles), [roles]);
   const employeeRoles = useMemo(() => roles.filter((role) => role.nombre !== "CLIENTE"), [roles]);
 
-  async function loadData() {
-    setLoading(true);
+  async function loadData(showLoading = true) {
+    if (showLoading) {
+      setLoading(true);
+    }
     const [loadedUsers, loadedRoles] = await Promise.all([fetchUsuarios(), fetchRoles()]);
     const internalUsers = loadedUsers.filter((user) => user.tipoUsuario === "EMPLEADO");
     setUsers(loadedUsers);
@@ -63,7 +67,8 @@ export default function EmployeeManagementPage() {
   }
 
   useEffect(() => {
-    loadData().catch((err) => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    loadData(false).catch((err) => {
       setError(err instanceof Error ? err.message : "No se pudo cargar gestion de empleados.");
       setLoading(false);
     });
@@ -239,7 +244,7 @@ export default function EmployeeManagementPage() {
                               <button
                                 onClick={(event) => {
                                   event.stopPropagation();
-                                  deactivate(user);
+                                  setUserToDeactivate(user);
                                 }}
                                 disabled={!user.activo || saving || perfil?.id === user.id}
                                 className="rounded-md p-1.5 text-[#ba1a1a] hover:bg-[#ffdad6] disabled:opacity-40"
@@ -406,6 +411,22 @@ export default function EmployeeManagementPage() {
             </div>
           </div>
         )}
+
+        <DialogModal
+          isOpen={!!userToDeactivate}
+          title="Desactivar usuario"
+          message={`¿Estás seguro de que deseas desactivar al usuario ${userToDeactivate ? fullName(userToDeactivate) : ""}?`}
+          type="danger"
+          confirmText="Desactivar"
+          cancelText="Cancelar"
+          onConfirm={async () => {
+            if (userToDeactivate) {
+              await deactivate(userToDeactivate);
+              setUserToDeactivate(null);
+            }
+          }}
+          onClose={() => setUserToDeactivate(null)}
+        />
       </div>
     </PermissionGuard>
   );
