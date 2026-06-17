@@ -90,8 +90,7 @@ export default function ObraTabHitos({ projectId, etapas, onRefresh }: ObraTabHi
       .then((data) => {
         if (cancelled) return;
         setTorres(data);
-        setSelectedTorreId("");
-        setSelectedPisoId("");
+
 
         // Cargar pisos para cada torre de manera individual e incremental
         data.forEach((t) => {

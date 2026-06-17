@@ -188,7 +188,8 @@ export default function ConstructionProgressView({
 
       {/* Tab content */}
       <div>
-        {activeTab === "hitos" && (
+
+        <div className={activeTab === "hitos" ? "" : "hidden"}>
           <ObraTabHitos
             projectId={projectId}
             etapas={etapas}
@@ -204,13 +205,13 @@ export default function ConstructionProgressView({
               }
             }}
           />
-        )}
-        {activeTab === "reportes" && (
+        </div>
+        <div className={activeTab === "reportes" ? "" : "hidden"}>
           <ObraTabReportes projectId={projectId} avance={avance} project={project} />
-        )}
-        {activeTab === "documentacion" && (
+        </div>
+        <div className={activeTab === "documentacion" ? "" : "hidden"}>
           <ObraTabDocumentacion projectId={projectId} />
-        )}
+        </div>      
       </div>
     </section>
   );
