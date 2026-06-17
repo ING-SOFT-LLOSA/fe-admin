@@ -21,7 +21,7 @@ export default function PaymentManagementStep({ expediente, onBack }: PaymentMan
         isLoading,
         error,
         refresh
-    } = useFinancingData(expediente.activo?.id ?? null);
+    } = useFinancingData(expediente.uuidUsuarioActivo, expediente);
 
     // Priorizar el expediente refrescado por el hook, caer en el del prop si aún está cargando
     const activeExpediente = refreshedExpediente || expediente;

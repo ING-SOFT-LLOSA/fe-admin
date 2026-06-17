@@ -129,12 +129,15 @@ export default function ContractSelectionStep({ client, onSelectContract, onBack
                                         </div>
                                         <div>
                                             <p className="text-base font-bold text-build-main dark:text-white">
-                                                {activo ? `Unidad ${activo.nro} — ${activo.proyectoNombre}` : `Expediente ${exp.uuidUsuarioActivo.slice(-6).toUpperCase()}`}
+                                            {exp.activos?.length > 0 
+                                                ? exp.activos.map(a => `Unidad ${a.nro}`).join(" + ") + ` — ${exp.activos[0].proyectoNombre}`
+                                                : `Expediente ${exp.uuidUsuarioActivo.slice(-6).toUpperCase()}`}
                                             </p>
-                                            {activo && (
-                                                <p className="text-xs text-slate-400 dark:text-white/40 mt-0.5">
-                                                    {activo.torreNombre ? `${activo.torreNombre} · ` : ""}Piso {activo.nroPiso} · {activo.areaM2} m²
-                                                </p>
+                                            {exp.activos?.[0] && (
+                                            <p className="text-xs text-slate-400 dark:text-white/40 mt-0.5">
+                                                {exp.activos[0].torreNombre ? `${exp.activos[0].torreNombre} · ` : ""}
+                                                {exp.activos.length > 1 ? `${exp.activos.length} unidades` : `Piso ${exp.activos[0].nroPiso} · ${exp.activos[0].areaM2} m²`}
+                                            </p>
                                             )}
                                         </div>
                                     </div>
@@ -151,7 +154,7 @@ export default function ContractSelectionStep({ client, onSelectContract, onBack
                                     </span>
                                     {activo && (
                                         <span className="text-[11px] text-slate-400 dark:text-white/40 ml-auto">
-                                            S/ {activo.precio?.toLocaleString("es-PE") ?? "—"}
+                                            S/ {exp.activos?.reduce((sum, a) => sum + (a.precio ?? 0), 0).toLocaleString("es-PE") ?? "—"}
                                         </span>
                                     )}
                                 </div>

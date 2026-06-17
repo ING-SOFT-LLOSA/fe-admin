@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { fetchContratoActivo, fetchCommercialStepper } from "@/lib/api/expedientes";
-import { ApiError } from "@/lib/api/http";
+import { fetchCommercialStepper, fetchContratoPorId } from "@/lib/api/expedientes";
 import type { StepperResponseDTO, UsuarioActivoResponseDTO } from "@/lib/api/expedientes";
 import {
     fetchCronograma,
@@ -12,12 +11,11 @@ import type {
     CronogramaPagoResponse,
     PagoResponse,
     CronogramaResumenResponse,
-    CartaAprobacionResponse,
-    FinanceType
+    CartaAprobacionResponse
 } from "@/modules/finanzas/types";
 
-export function useFinancingData(selectedUnitId: string | null) {
-    const [expediente, setExpediente] = useState<UsuarioActivoResponseDTO | null>(null);
+export function useFinancingData(uuidExpediente: string | null, expedienteBase?: UsuarioActivoResponseDTO | null) {
+    const [expediente, setExpediente] = useState<UsuarioActivoResponseDTO | null>(expedienteBase ?? null);
     const [cronograma, setCronograma] = useState<CronogramaPagoResponse | null>(null);
     const [pagos, setPagos] = useState<PagoResponse[]>([]);
     const [resumen, setResumen] = useState<CronogramaResumenResponse | null>(null);
@@ -26,10 +24,10 @@ export function useFinancingData(selectedUnitId: string | null) {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     // null = aún cargando, false = no tiene expediente, true = sí tiene
-    const [hasExpediente, setHasExpediente] = useState<boolean | null>(null);
+    const [hasExpediente, setHasExpediente] = useState<boolean | null>(expedienteBase ? true : null);
 
     const loadData = useCallback(async () => {
-        if (!selectedUnitId) {
+        if (!uuidExpediente && !expedienteBase) {
             setExpediente(null);
             setCronograma(null);
             setPagos([]);
@@ -44,7 +42,10 @@ export function useFinancingData(selectedUnitId: string | null) {
         setError(null);
         setHasExpediente(null);
         try {
-            const exp = await fetchContratoActivo(selectedUnitId);
+            const exp = expedienteBase ?? (uuidExpediente ? await fetchContratoPorId(uuidExpediente) : null);
+            if (!exp) {
+                throw new Error("No se pudo cargar el contrato solicitado.");
+            }
             setExpediente(exp);
             setHasExpediente(true);
 
@@ -103,22 +104,11 @@ export function useFinancingData(selectedUnitId: string | null) {
                 setResumen(null);
             }
         } catch (err) {
-            // 404 = la unidad no tiene expediente asignado → estado vacío, no error
-            if (err instanceof ApiError && err.status === 404) {
-                setExpediente(null);
-                setHasExpediente(false);
-                setCronograma(null);
-                setPagos([]);
-                setResumen(null);
-                setCartaAprobacion(null);
-                setStepper(null);
-            } else {
-                setError(err instanceof Error ? err.message : "Error al cargar datos de financiamiento");
-            }
+            setError(err instanceof Error ? err.message : "Error al cargar datos de financiamiento");
         } finally {
             setIsLoading(false);
         }
-    }, [selectedUnitId]);
+    }, [uuidExpediente, expedienteBase]);
 
     useEffect(() => {
         loadData();

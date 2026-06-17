@@ -166,6 +166,22 @@ export function fetchExpedientesPorUsuario(
 }
  
 /**
+ * GET /api/expedientes/contrato/{uuidExpediente}
+ * Devuelve el expediente asociado a un UUID de contrato.
+ * Requiere autoridad CONTRATO_VER.
+ */
+export function fetchContratoPorId(
+  uuidExpediente: string
+): Promise<UsuarioActivoResponseDTO> {
+  return apiFetch<UsuarioActivoResponseDTO>(
+    `/api/expedientes/contrato/${uuidExpediente}`
+  ).then((item) => ({
+    ...item,
+    activo: item.activo ?? item.activos?.[0],
+  }));
+}
+
+/**
  * GET /api/expedientes/{uuidActivo}/contrato
  * Devuelve el expediente asociado a un UUID de activo/inmueble.
  * Requiere autoridad CONTRATO_VER.

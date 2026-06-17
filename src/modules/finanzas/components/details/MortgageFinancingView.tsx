@@ -33,7 +33,6 @@ export default function MortgageFinancingView({ expediente, carta, stepper, onUp
 
     const [hitoFormData, setHitoFormData] = useState({
         nombre: "",
-        descripcion: "",
     });
 
     // Sincronizar form con data cuando cambia o se abre el form
@@ -53,8 +52,14 @@ export default function MortgageFinancingView({ expediente, carta, stepper, onUp
     const paymentEtapa = stepper?.etapas.find(e => e.etapa === "PAGO");
     const progress = paymentEtapa?.porcentajeAvance ?? 0;
 
+
     const handleHitoToggle = async (uuidHito: string, currentEstado: string) => {
-        const newEstado = currentEstado === "COMPLETADO" ? "PENDIENTE" : "COMPLETADO";
+        const newEstado =
+            currentEstado === "PENDIENTE"
+                ? "EN_PROGRESO"
+                : currentEstado === "EN_PROGRESO"
+                    ? "COMPLETADO"
+                    : "PENDIENTE";
         setIsUpdating(uuidHito);
         try {
             await updateCommercialHitoEstado(uuidHito, newEstado);
@@ -102,7 +107,7 @@ export default function MortgageFinancingView({ expediente, carta, stepper, onUp
             if (editingHito) {
                 await updateCommercialHito(editingHito, {
                     nombreHito: hitoFormData.nombre,
-                    descripcion: hitoFormData.descripcion,
+                    descripcion: "",
                 });
                 setEditingHito(null);
             } else {
@@ -110,11 +115,11 @@ export default function MortgageFinancingView({ expediente, carta, stepper, onUp
                     uuidUsuarioActivo: expediente.uuidUsuarioActivo,
                     etapaProceso: "PAGO",
                     nombreHito: hitoFormData.nombre,
-                    descripcion: hitoFormData.descripcion,
+                    descripcion: "",
                     orden: (paymentEtapa?.hitos.length ?? 0) + 1,
                 });
             }
-            setHitoFormData({ nombre: "", descripcion: "" });
+            setHitoFormData({ nombre: "" });
             setShowHitoForm(false);
             onUpdate();
         } catch (e) {
@@ -141,7 +146,6 @@ export default function MortgageFinancingView({ expediente, carta, stepper, onUp
         setEditingHito(hito.uuidHitoComercial);
         setHitoFormData({
             nombre: hito.nombreHito,
-            descripcion: hito.descripcion,
         });
         setShowHitoForm(true);
     };
@@ -380,8 +384,6 @@ export default function MortgageFinancingView({ expediente, carta, stepper, onUp
                                         <textarea
                                             placeholder="Descripción breve..."
                                             rows={2}
-                                            value={hitoFormData.descripcion}
-                                            onChange={(e) => setHitoFormData(p => ({ ...p, descripcion: e.target.value }))}
                                             className="w-full rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-[#1a1a1a] px-3 py-2 text-xs outline-none focus:border-build-accent resize-none"
                                         />
                                         <div className="flex gap-2">
@@ -396,7 +398,7 @@ export default function MortgageFinancingView({ expediente, carta, stepper, onUp
                                                 onClick={() => {
                                                     setShowHitoForm(false);
                                                     setEditingHito(null);
-                                                    setHitoFormData({ nombre: "", descripcion: "" });
+                                                    setHitoFormData({ nombre: "" });
                                                 }}
                                                 className="px-3 py-1.5 text-xs font-bold text-slate-400"
                                             >
@@ -453,17 +455,16 @@ export default function MortgageFinancingView({ expediente, carta, stepper, onUp
                                                             </button>
                                                         </div>
                                                     </div>
-                                                    <p className="text-[10px] text-slate-400 mt-1 line-clamp-2">{hito.descripcion}</p>
                                                 </div>
                                                 <div className="flex flex-col items-end gap-1">
                                                     <button
                                                         disabled={isUpdating === hito.uuidHitoComercial}
                                                         onClick={() => handleHitoToggle(hito.uuidHitoComercial, hito.estado)}
                                                         className="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-white/10 transition-colors"
-                                                        title={isCompleted ? "Marcar como pendiente" : "Marcar como completado"}
+                                                        title={isCompleted ? "Marcar como pendiente" : isEnProgreso ? "Marcar como completado" : "Marcar como en curso"}
                                                     >
                                                         <span className={`material-symbols-outlined text-[18px] ${isCompleted ? "text-green-500" : isEnProgreso ? "text-amber-500" : "text-slate-300"}`}>
-                                                            {isUpdating === hito.uuidHitoComercial ? "more_horiz" : isCompleted ? "check_circle" : isEnProgreso ? "published_with_changes" : "circle"}
+                                                            {isUpdating === hito.uuidHitoComercial ? "more_horiz" : isCompleted ? "check_circle" : isEnProgreso ? "published_with_changes" : "radio_button_unchecked"}
                                                         </span>
                                                     </button>
                                                     {hito.fechaCompletado && (
@@ -473,6 +474,7 @@ export default function MortgageFinancingView({ expediente, carta, stepper, onUp
                                                     )}
                                                 </div>
                                             </div>
+                                            
                                         </div>
                                     </div>
                                 );
