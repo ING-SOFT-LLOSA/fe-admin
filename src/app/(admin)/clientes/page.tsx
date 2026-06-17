@@ -126,35 +126,7 @@ export default function ClientsPage() {
         </div>
       </div>
 
-      {/* KPIs */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-        <div className="bg-white dark:bg-white/5 rounded-2xl border border-slate-200 dark:border-white/10 p-5">
-          <p className="text-xs uppercase font-bold text-slate-500">
-            Clientes Totales
-          </p>
-          <p className="text-3xl font-bold text-build-main dark:text-white mt-2">
-            {totalCount}
-          </p>
-        </div>
-
-        <div className="bg-white dark:bg-white/5 rounded-2xl border border-slate-200 dark:border-white/10 p-5">
-          <p className="text-xs uppercase font-bold text-slate-500">
-            Clientes Activos
-          </p>
-          <p className="text-3xl font-bold text-emerald-600 dark:text-emerald-400 mt-2">
-            {activeCount}
-          </p>
-        </div>
-
-        <div className="bg-white dark:bg-white/5 rounded-2xl border border-slate-200 dark:border-white/10 p-5">
-          <p className="text-xs uppercase font-bold text-slate-500">
-            Clientes Inactivos
-          </p>
-          <p className="text-3xl font-bold text-slate-500 mt-2">
-            {inactiveCount}
-          </p>
-        </div>
-      </div>
+      
 
       {listError && (
         <div className="mb-4 rounded-xl border border-red-200 dark:border-red-900/50 bg-red-50 dark:bg-red-900/20 px-4 py-3 text-[13px] text-red-800 dark:text-red-400">

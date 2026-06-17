@@ -141,7 +141,7 @@ export function unlinkAssignment(uuid: string): Promise<void> {
  * Lista todos los expedientes (UsuarioActivo) de la empresa.
  */
 export function fetchTodosLosContratos(): Promise<UsuarioActivoResponseDTO[]> {
-  return apiFetch<any>("/api/expedientes?unpaginated=true").then((res) => {
+  return apiFetch<any>("/api/expedientes?size=1000").then((res) => {
     const list = Array.isArray(res) ? res : (res?.content || []);
     return list.map((item: any) => ({
       ...item,

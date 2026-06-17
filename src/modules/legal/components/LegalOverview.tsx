@@ -2,7 +2,12 @@
 
 import { useEffect, useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
-
+import {
+  fetchProyectos,
+  fetchTorresPorProyecto,
+  type Proyecto,
+  type TorreResponseDTO,
+} from "@/lib/api/proyectos";
 import {
   fetchTodosLosContratos,
   fetchEtapasExpediente,
@@ -238,6 +243,30 @@ export default function LegalOverview() {
   const [selectedEtapa, setSelectedEtapa]       = useState("");
   const [ocultarDesistidos, setOcultarDesistidos] = useState(true);
 
+
+
+
+
+const [proyectosList, setProyectosList]   = useState<Proyecto[]>([]);
+const [proyectosOptions, setProyectosOptions] = useState<string[]>([]);
+const [torresOptions, setTorresOptions]   = useState<string[]>([]);
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(0);
+  const itemsPerPage = 10;
+
+
+// y en el fetch:
+useEffect(() => {
+  fetchProyectos().then((list) => {
+    setProyectosList(list);
+    setProyectosOptions(list.map((p) => p.nombre).sort());
+  });
+}, []);
+  // Reset page to 0 when filters change
+  useEffect(() => {
+    setCurrentPage(0);
+  }, [selectedProyecto, selectedTorre, selectedEstado, selectedEtapa, search, ocultarDesistidos]);
+
   // ── Data loading ───────────────────────────────────────────────────────────
   useEffect(() => {
     let mounted = true;
@@ -298,37 +327,23 @@ export default function LegalOverview() {
 
   // Reset Torre when Proyecto changes
   useEffect(() => { setSelectedTorre(""); }, [selectedProyecto]);
+useEffect(() => {
+  fetchProyectos().then((list) => {
+    setProyectosList(list);
+    setProyectosOptions(list.map((p) => p.nombre).sort());
+  });
+}, []);
 
-  // ── Derived filter option lists ────────────────────────────────────────────
-  const proyectosOptions = useMemo(
-    () =>
-      Array.from(
-        new Set(
-          contracts
-            .flatMap((c) => c.activos ?? [])
-            .map((a) => a.proyectoNombre)
-            .filter(Boolean),
-        ),
-      ).sort(),
-    [contracts],
+useEffect(() => {
+  setSelectedTorre("");
+  setTorresOptions([]);
+  if (!selectedProyecto) return;
+  const proyecto = proyectosList.find((p) => p.nombre === selectedProyecto);
+  if (!proyecto) return;
+  fetchTorresPorProyecto(proyecto.id).then((list) =>
+    setTorresOptions(list.map((t) => t.nombre).sort())
   );
-
-  const torresOptions = useMemo(
-    () =>
-      Array.from(
-        new Set(
-          contracts
-            .filter((c) =>
-              !selectedProyecto ||
-              (c.activos ?? []).some((a) => a.proyectoNombre === selectedProyecto),
-            )
-            .flatMap((c) => c.activos ?? [])
-            .map((a) => a.torreNombre)
-            .filter((name): name is string => Boolean(name)),
-        ),
-      ).sort((a, b) => a.localeCompare(b)),
-    [contracts, selectedProyecto],
-  );
+}, [selectedProyecto, proyectosList]);
 
   // ── Filtered list ──────────────────────────────────────────────────────────
   const filtered = useMemo(
@@ -371,6 +386,16 @@ export default function LegalOverview() {
       }),
     [contracts, contractsStages, selectedProyecto, selectedTorre, selectedEstado, selectedEtapa, search, ocultarDesistidos],
   );
+
+  // ── Paginated list ──────────────────────────────────────────────────────────
+  const totalPages = Math.ceil(filtered.length / itemsPerPage);
+  const paginatedList = useMemo(() => {
+    const start = currentPage * itemsPerPage;
+    return filtered.slice(start, start + itemsPerPage);
+  }, [filtered, currentPage]);
+
+  const startIndex = currentPage * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
 
   const hasActiveFilters = !!(selectedProyecto || selectedTorre || selectedEstado || selectedEtapa || search || !ocultarDesistidos);
 
@@ -542,7 +567,7 @@ export default function LegalOverview() {
                 </td>
               </tr>
             ) : (
-              filtered.map((contract) => {
+              paginatedList.map((contract) => {
                 const idCorto    = contract.uuidUsuarioActivo.slice(0, 8).toUpperCase();
                 const firstAct   = contract.activos?.[0];
                 const unitText   = (contract.activos ?? [])
@@ -632,6 +657,71 @@ export default function LegalOverview() {
             )}
           </tbody>
         </table>
+
+        {/* Pagination Controls */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between border-t border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/[0.03] px-4 py-3">
+            <div className="flex flex-1 justify-between sm:hidden">
+              <button
+                onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 0))}
+                disabled={currentPage === 0}
+                className="relative inline-flex items-center rounded-md border border-slate-300 dark:border-white/10 bg-white dark:bg-white/5 px-4 py-2 text-xs font-medium text-slate-700 dark:text-white/70 hover:bg-slate-50 dark:hover:bg-white/10 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              >
+                Anterior
+              </button>
+              <button
+                onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages - 1))}
+                disabled={currentPage === totalPages - 1}
+                className="relative ml-3 inline-flex items-center rounded-md border border-slate-300 dark:border-white/10 bg-white dark:bg-white/5 px-4 py-2 text-xs font-medium text-slate-700 dark:text-white/70 hover:bg-slate-50 dark:hover:bg-white/10 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              >
+                Siguiente
+              </button>
+            </div>
+            <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
+              <div>
+                <p className="text-xs text-slate-500 dark:text-white/50">
+                  Mostrando <span className="font-semibold text-slate-700 dark:text-white/80">{startIndex + 1}</span> a{" "}
+                  <span className="font-semibold text-slate-700 dark:text-white/80">{Math.min(endIndex, filtered.length)}</span> de{" "}
+                  <span className="font-semibold text-slate-700 dark:text-white/80">{filtered.length}</span> expedientes
+                </p>
+              </div>
+              <div>
+                <nav className="isolate inline-flex -space-x-px rounded-md shadow-sm" aria-label="Pagination">
+                  <button
+                    onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 0))}
+                    disabled={currentPage === 0}
+                    className="relative inline-flex items-center rounded-l-md border border-slate-300 dark:border-white/10 bg-white dark:bg-white/5 px-2 py-2 text-slate-400 dark:text-white/30 hover:bg-slate-50 dark:hover:bg-white/10 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                  >
+                    <span className="sr-only">Anterior</span>
+                    <span className="material-symbols-outlined text-[16px]">chevron_left</span>
+                  </button>
+                  {Array.from({ length: totalPages }).map((_, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => setCurrentPage(idx)}
+                      aria-current={currentPage === idx ? "page" : undefined}
+                      className={`relative inline-flex items-center px-3 py-2 text-xs font-semibold focus:z-20 transition-colors ${
+                        currentPage === idx
+                          ? "z-10 bg-build-accent text-white"
+                          : "text-slate-900 dark:text-white/70 bg-white dark:bg-white/5 border border-slate-300 dark:border-white/10 hover:bg-slate-50 dark:hover:bg-white/10"
+                      }`}
+                    >
+                      {idx + 1}
+                    </button>
+                  ))}
+                  <button
+                    onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages - 1))}
+                    disabled={currentPage === totalPages - 1}
+                    className="relative inline-flex items-center rounded-r-md border border-slate-300 dark:border-white/10 bg-white dark:bg-white/5 px-2 py-2 text-slate-400 dark:text-white/30 hover:bg-slate-50 dark:hover:bg-white/10 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                  >
+                    <span className="sr-only">Siguiente</span>
+                    <span className="material-symbols-outlined text-[16px]">chevron_right</span>
+                  </button>
+                </nav>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </section>
   );
