@@ -17,8 +17,6 @@ export default function ClientsPage() {
   const [createOpen, setCreateOpen] = useState(false);
   const [assignOpen, setAssignOpen] = useState(false);
   const [userToDelete, setUserToDelete] = useState<ClienteRow | null>(null);
-  const [selectedProject, setSelectedProject] = useState("");
-  const [projects, setProjects] = useState<string[]>([]);
   
   const [totalCount, setTotalCount] = useState(0);
   const [activeCount, setActiveCount] = useState(0);
@@ -51,13 +49,7 @@ export default function ClientsPage() {
               u.email?.toLowerCase().includes(q.toLowerCase())
           );
         }
-      if (selectedProject) {
-        filtered = filtered.filter(u => {
-          const row = mapUsuarioToClienteRow(u);
 
-          return row.project === selectedProject;
-        });
-      }
       if (selectedStatus) {
         filtered = filtered.filter(u => {
           const row = mapUsuarioToClienteRow(u);
@@ -91,7 +83,6 @@ export default function ClientsPage() {
     page,
     size,
     search,
-    selectedProject,
     selectedStatus
   ]);
 
@@ -105,7 +96,7 @@ export default function ClientsPage() {
   return (
     <>
       {/* Page Header */}
-      <div className="flex justify-between items-end mb-6">
+      <div className="flex justify-between items-end mb--2">
         <div>
           <h2 className="text-2xl md:text-3xl font-bold tracking-[-0.01em] text-build-main dark:text-white">Clientes y Asignaciones</h2>
           <p className="text-base text-slate-600 dark:text-white/70 mt-2">Registra clientes, gestiona sus datos y vincula unidades a su perfil.</p>
@@ -135,7 +126,7 @@ export default function ClientsPage() {
       )}
 
       {/* Toolbar */}
-      <div className="bg-white dark:bg-white/5 p-4 rounded-2xl border border-slate-200 dark:border-white/10 mb-6">
+      
         <div className="flex flex-col lg:flex-row gap-4">
 
           <form onSubmit={handleSearch} className="flex gap-2 flex-1">
@@ -155,25 +146,10 @@ export default function ClientsPage() {
             </button>
           </form>
 
-          <select
-            value={selectedProject}
-            onChange={(e) => {
-              setPage(0);
-              setSelectedProject(e.target.value);
-            }}
-            className="px-4 py-2 border border-slate-200 dark:border-white/10 rounded-lg text-sm"
-          >
-            <option value="">Todos los proyectos</option>
-
-            {projects.map(project => (
-              <option key={project} value={project}>
-                {project}
-              </option>
-            ))}
-          </select>
+          
 
         </div>
-      </div>
+ 
 
       {/* Table */}
       <div className="bg-white dark:bg-white/5 rounded-2xl border border-slate-200 dark:border-white/10 shadow-sm overflow-hidden flex-1 flex flex-col">
