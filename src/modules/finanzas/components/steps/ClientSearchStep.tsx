@@ -51,8 +51,8 @@ export default function ClientSearchStep({ onSelectClient }: ClientSearchStepPro
         <div className="space-y-6">
             {/* Header del paso */}
             <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full bg-build-accent/15 border border-build-accent/30 flex items-center justify-center flex-shrink-0">
-                    <span className="text-sm font-bold text-build-accent">1</span>
+                <div className="w-8 h-8 rounded-full bg-arch-gold/15 border border-arch-gold/30 flex items-center justify-center flex-shrink-0">
+                    <span className="text-sm font-bold text-arch-gold">1</span>
                 </div>
                 <div>
                     <h3 className="text-lg font-bold text-build-main dark:text-white">Buscar Cliente</h3>
@@ -131,7 +131,7 @@ export default function ClientSearchStep({ onSelectClient }: ClientSearchStepPro
                                     Inactivo
                                 </span>
                             )}
-                            <span className="material-symbols-outlined text-slate-300 dark:text-white/20 group-hover:text-build-accent transition-colors text-[18px]">
+                            <span className="material-symbols-outlined text-slate-300 dark:text-white/20 group-hover:text-arch-gold transition-colors text-[18px]">
                                 chevron_right
                             </span>
                         </div>

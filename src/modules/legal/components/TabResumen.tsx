@@ -69,7 +69,7 @@ export function TabResumen({ client, expediente, contrato, etapas, loadingSteppe
           <div className="mt-4 pt-3 border-t border-slate-100 dark:border-white/10">
             <div className="h-1.5 w-full rounded-full bg-slate-100 dark:bg-white/10">
               <div
-                className="h-1.5 rounded-full bg-build-accent transition-all"
+                className="h-1.5 rounded-full bg-arch-gold transition-all"
                 style={{ width: `${etapas.length ? (completadas / etapas.length) * 100 : 0}%` }}
               />
             </div>
@@ -85,8 +85,8 @@ export function TabResumen({ client, expediente, contrato, etapas, loadingSteppe
             <div className="rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 p-5 shadow-sm">
               <p className="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-white/40 mb-2">Etapa actual</p>
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-build-accent/10 dark:bg-build-accent/20 flex items-center justify-center">
-                  <span className="material-symbols-outlined text-build-accent text-[20px]">{etapaActual.icon}</span>
+                <div className="w-10 h-10 rounded-xl bg-arch-gold/10 dark:bg-arch-gold/20 flex items-center justify-center">
+                  <span className="material-symbols-outlined text-arch-gold text-[20px]">{etapaActual.icon}</span>
                 </div>
                 <div>
                   <p className="text-sm font-bold text-build-main dark:text-white">{etapaActual.label}</p>

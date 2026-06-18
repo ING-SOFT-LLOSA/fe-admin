@@ -145,7 +145,7 @@ export default function ProjectWorkspaceShell({ projectId, children }: ProjectWo
     <p className="text-[10px] font-bold uppercase text-slate-500 dark:text-white/60">
       Vendidas
     </p>
-    <p className="mt-3 text-3xl font-bold text-build-accent">
+    <p className="mt-3 text-3xl font-bold text-arch-gold">
       {units.filter(
         u =>
           u.estadoComercial === "VENDIDO" ||

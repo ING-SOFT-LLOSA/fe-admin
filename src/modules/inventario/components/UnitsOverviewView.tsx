@@ -90,7 +90,7 @@ export default function UnitsOverviewView({ projectId }: UnitsOverviewViewProps)
               value={search}
               onChange={(event) => setSearch(event.target.value)}
               placeholder="Ej. 101, departamento, terraza"
-              className="w-full rounded-xl border border-slate-200 dark:border-white/10 px-3 py-2 text-sm outline-none transition-all focus:border-build-accent focus:ring-1 focus:ring-build-accent"
+              className="w-full rounded-xl border border-slate-200 dark:border-white/10 px-3 py-2 text-sm outline-none transition-all focus:border-arch-gold focus:ring-1 focus:ring-arch-gold/20"
             />
           </div>
           <div>
@@ -100,7 +100,7 @@ export default function UnitsOverviewView({ projectId }: UnitsOverviewViewProps)
             <select
               value={typeFilter}
               onChange={(event) => setTypeFilter(event.target.value)}
-              className="w-full rounded-xl border border-slate-200 dark:border-white/10 px-3 py-2 text-sm outline-none transition-all focus:border-build-accent focus:ring-1 focus:ring-build-accent"
+              className="w-full rounded-xl border border-slate-200 dark:border-white/10 px-3 py-2 text-sm outline-none transition-all focus:border-arch-gold focus:ring-1 focus:ring-arch-gold/20"
             >
               <option value="all">Todos</option>
               {unitTypes.map((type) => (
@@ -115,7 +115,7 @@ export default function UnitsOverviewView({ projectId }: UnitsOverviewViewProps)
             <select
               value={statusFilter}
               onChange={(event) => setStatusFilter(event.target.value)}
-              className="w-full rounded-xl border border-slate-200 dark:border-white/10 px-3 py-2 text-sm outline-none transition-all focus:border-build-accent focus:ring-1 focus:ring-build-accent"
+              className="w-full rounded-xl border border-slate-200 dark:border-white/10 px-3 py-2 text-sm outline-none transition-all focus:border-arch-gold focus:ring-1 focus:ring-arch-gold/20"
             >
               <option value="all">Todos</option>
               {unitStatuses.map((status) => (

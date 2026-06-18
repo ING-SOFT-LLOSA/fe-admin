@@ -195,8 +195,8 @@ export default function ClientsPage() {
                   </div>
                 </td>
 
-                <td className="py-4 px-6 text-build-accent">{c.email}</td>
-                <td className="py-4 px-6 text-build-accent">{c.phone}</td>
+                <td className="py-4 px-6 text-build-main">{c.email}</td>
+                <td className="py-4 px-6 text-build-main">{c.phone}</td>
 
                 <td className="py-4 px-6">
                   <span

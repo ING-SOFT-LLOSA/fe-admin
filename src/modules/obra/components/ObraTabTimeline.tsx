@@ -59,9 +59,9 @@ export default function ObraTabTimeline({ etapas }: ObraTabTimelineProps) {
                     className={`
                       w-8 h-8 rounded-full flex items-center justify-center border-2 transition-all z-10 shrink-0
                       ${status === "completado"
-                        ? "bg-build-accent border-build-accent text-white"
+                        ? "bg-arch-gold border-arch-gold text-white"
                         : status === "en_progreso"
-                        ? "bg-white dark:bg-[#111] border-build-accent text-build-accent animate-pulse"
+                        ? "bg-white dark:bg-[#111] border-arch-gold text-arch-gold animate-pulse"
                         : "bg-white dark:bg-[#111] border-slate-200 dark:border-white/10 text-slate-400 dark:text-white/30"
                       }
                     `}
@@ -80,7 +80,7 @@ export default function ObraTabTimeline({ etapas }: ObraTabTimelineProps) {
                       status === "completado"
                         ? "text-build-main dark:text-white"
                         : status === "en_progreso"
-                        ? "text-build-accent"
+                        ? "text-arch-gold"
                         : "text-slate-400 dark:text-white/40"
                     }`}
                     title={etapa.nombre}

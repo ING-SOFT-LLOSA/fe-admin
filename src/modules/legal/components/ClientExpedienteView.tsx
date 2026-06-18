@@ -113,7 +113,7 @@ export default function ClientExpedienteView({ clientId }: Props) {
       <div>
         <Link
           href="/legal"
-          className="inline-flex items-center gap-1 text-sm font-semibold text-build-accent hover:text-build-main dark:hover:text-white mb-4 transition-colors"
+          className="inline-flex items-center gap-1 text-sm font-semibold text-arch-gold hover:text-build-main dark:hover:text-white mb-4 transition-colors"
         >
           <span className="material-symbols-outlined text-[18px]">arrow_back</span>
           Volver a Gestión Legal
@@ -209,7 +209,7 @@ export default function ClientExpedienteView({ clientId }: Props) {
             className={`
               flex items-center gap-1.5 px-4 py-2.5 text-sm font-semibold whitespace-nowrap border-b-2 transition-colors
               ${activeTab === tab.id
-                ? "border-build-accent text-build-accent"
+                ? "border-arch-gold text-arch-gold"
                 : "border-transparent text-slate-500 dark:text-white/50 hover:text-build-main dark:hover:text-white"
               }
             `}

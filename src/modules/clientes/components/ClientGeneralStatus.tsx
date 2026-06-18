@@ -11,7 +11,7 @@ export default function ClientGeneralStatus({ assignments }: ClientGeneralStatus
     return (
       <section className="rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 p-6 shadow-sm">
         <h3 className="text-base font-bold text-build-main dark:text-white flex items-center gap-2 mb-4">
-          <span className="material-symbols-outlined text-build-accent">info</span>
+          <span className="material-symbols-outlined text-arch-gold">info</span>
           Estado General
         </h3>
         <div className="text-center py-6 text-slate-500 dark:text-white/50 bg-slate-50 dark:bg-white/5 rounded-xl border border-dashed border-slate-300 dark:border-white/10">
@@ -36,7 +36,7 @@ export default function ClientGeneralStatus({ assignments }: ClientGeneralStatus
   return (
     <section className="rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 p-6 shadow-sm">
       <h3 className="text-base font-bold text-build-main dark:text-white flex items-center gap-2 mb-5">
-        <span className="material-symbols-outlined text-build-accent">info</span>
+        <span className="material-symbols-outlined text-arch-gold">info</span>
         Estado General
       </h3>
 

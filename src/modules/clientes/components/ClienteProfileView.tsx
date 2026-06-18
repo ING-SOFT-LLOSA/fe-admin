@@ -110,7 +110,7 @@ export default function ClienteProfileView({ clientId }: ClienteProfileViewProps
       <div>
         <Link
           href="/clientes"
-          className="inline-flex items-center gap-1 text-sm font-semibold text-build-accent hover:text-build-main dark:hover:text-white mb-4 transition-colors"
+          className="inline-flex items-center gap-1 text-sm font-semibold text-arch-gold hover:text-build-main dark:hover:text-white mb-4 transition-colors"
         >
           <span className="material-symbols-outlined text-[18px]">arrow_back</span>
           Volver a Clientes

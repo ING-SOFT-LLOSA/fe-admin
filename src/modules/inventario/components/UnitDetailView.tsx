@@ -125,23 +125,23 @@ export default function UnitDetailView({ projectId, unitId }: UnitDetailViewProp
           <div className="grid gap-4 md:grid-cols-2">
             <div>
               <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-white/60">Número</label>
-              <input value={form.nro} onChange={(event) => setForm({ ...form, nro: event.target.value })} className="w-full rounded-xl border border-slate-200 dark:border-white/10 px-3 py-2 text-sm outline-none focus:border-build-accent focus:ring-1 focus:ring-build-accent" />
+              <input value={form.nro} onChange={(event) => setForm({ ...form, nro: event.target.value })} className="w-full rounded-xl border border-slate-200 dark:border-white/10 px-3 py-2 text-sm outline-none focus:border-arch-gold focus:ring-1 focus:ring-arch-gold/20" />
             </div>
             <div>
               <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-white/60">Tipo</label>
-              <input value={form.tipo} onChange={(event) => setForm({ ...form, tipo: event.target.value })} className="w-full rounded-xl border border-slate-200 dark:border-white/10 px-3 py-2 text-sm outline-none focus:border-build-accent focus:ring-1 focus:ring-build-accent" />
+              <input value={form.tipo} onChange={(event) => setForm({ ...form, tipo: event.target.value })} className="w-full rounded-xl border border-slate-200 dark:border-white/10 px-3 py-2 text-sm outline-none focus:border-arch-gold focus:ring-1 focus:ring-arch-gold/20" />
             </div>
             <div>
               <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-white/60">Área m2</label>
-              <input type="number" value={form.areaM2} onChange={(event) => setForm({ ...form, areaM2: Number(event.target.value) })} className="w-full rounded-xl border border-slate-200 dark:border-white/10 px-3 py-2 text-sm outline-none focus:border-build-accent focus:ring-1 focus:ring-build-accent" />
+              <input type="number" value={form.areaM2} onChange={(event) => setForm({ ...form, areaM2: Number(event.target.value) })} className="w-full rounded-xl border border-slate-200 dark:border-white/10 px-3 py-2 text-sm outline-none focus:border-arch-gold focus:ring-1 focus:ring-arch-gold/20" />
             </div>
             <div>
               <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-white/60">Precio base</label>
-              <input type="number" value={form.precio} onChange={(event) => setForm({ ...form, precio: Number(event.target.value) })} className="w-full rounded-xl border border-slate-200 dark:border-white/10 px-3 py-2 text-sm outline-none focus:border-build-accent focus:ring-1 focus:ring-build-accent" />
+              <input type="number" value={form.precio} onChange={(event) => setForm({ ...form, precio: Number(event.target.value) })} className="w-full rounded-xl border border-slate-200 dark:border-white/10 px-3 py-2 text-sm outline-none focus:border-arch-gold focus:ring-1 focus:ring-arch-gold/20" />
             </div>
             <div>
               <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-white/60">Estado comercial</label>
-              <select value={form.estadoComercial} onChange={(event) => setForm({ ...form, estadoComercial: event.target.value })} className="w-full rounded-xl border border-slate-200 dark:border-white/10 px-3 py-2 text-sm outline-none focus:border-build-accent focus:ring-1 focus:ring-build-accent">
+              <select value={form.estadoComercial} onChange={(event) => setForm({ ...form, estadoComercial: event.target.value })} className="w-full rounded-xl border border-slate-200 dark:border-white/10 px-3 py-2 text-sm outline-none focus:border-arch-gold focus:ring-1 focus:ring-arch-gold/20">
                 <option value="DISPONIBLE">DISPONIBLE</option>
                 <option value="SEPARADO">SEPARADO</option>
                 <option value="VENDIDO">VENDIDO</option>
@@ -154,7 +154,7 @@ export default function UnitDetailView({ projectId, unitId }: UnitDetailViewProp
             </div>
             <div className="md:col-span-2">
               <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-white/60">Características técnicas</label>
-              <textarea rows={4} value={form.descripcion} onChange={(event) => setForm({ ...form, descripcion: event.target.value })} className="w-full rounded-xl border border-slate-200 dark:border-white/10 px-3 py-2 text-sm outline-none focus:border-build-accent focus:ring-1 focus:ring-build-accent" />
+              <textarea rows={4} value={form.descripcion} onChange={(event) => setForm({ ...form, descripcion: event.target.value })} className="w-full rounded-xl border border-slate-200 dark:border-white/10 px-3 py-2 text-sm outline-none focus:border-arch-gold focus:ring-1 focus:ring-arch-gold/20" />
             </div>
           </div>
 

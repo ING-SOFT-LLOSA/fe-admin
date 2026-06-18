@@ -26,7 +26,7 @@ export default function ClientKpis({ assignments }: ClientKpisProps) {
           className="bg-white dark:bg-white/5 rounded-2xl border border-slate-200 dark:border-white/10 p-5 shadow-sm"
         >
           <div className="flex items-center gap-2 mb-2">
-            <span className="material-symbols-outlined text-build-accent text-[20px]">{kpi.icon}</span>
+            <span className="material-symbols-outlined text-arch-gold text-[20px]">{kpi.icon}</span>
             <p className="text-[11px] uppercase font-bold text-slate-500 dark:text-white/50 tracking-wider">
               {kpi.title}
             </p>

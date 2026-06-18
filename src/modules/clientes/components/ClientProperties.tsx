@@ -20,7 +20,7 @@ export default function ClientProperties({ assignments, onUnlink }: ClientProper
   return (
     <section className="rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 p-6 shadow-sm">
       <h3 className="text-base font-bold text-build-main dark:text-white flex items-center gap-2 mb-5">
-        <span className="material-symbols-outlined text-build-accent">domain</span>
+        <span className="material-symbols-outlined text-arch-gold">domain</span>
         Propiedades
       </h3>
 
@@ -37,7 +37,7 @@ export default function ClientProperties({ assignments, onUnlink }: ClientProper
             return (
               <div key={project} className="bg-slate-50 dark:bg-white/5 rounded-xl border border-slate-100 dark:border-white/5 p-4">
                 <div className="flex items-center gap-2 mb-3">
-                  <span className="material-symbols-outlined text-build-accent text-[18px]">location_city</span>
+                  <span className="material-symbols-outlined text-arch-gold text-[18px]">location_city</span>
                   <h4 className="text-xs font-bold text-build-main dark:text-white uppercase tracking-wide">{project}</h4>
                 </div>
 
@@ -67,7 +67,7 @@ export default function ClientProperties({ assignments, onUnlink }: ClientProper
                         </button>
                         <Link
                           href={`/proyectos`}
-                          className="text-xs font-semibold text-build-accent hover:text-build-main dark:hover:text-white transition-colors px-2 py-1 rounded-md hover:bg-slate-100 dark:hover:bg-white/10"
+                          className="text-xs font-semibold text-arch-gold hover:text-build-main dark:hover:text-white transition-colors px-2 py-1 rounded-md hover:bg-slate-100 dark:hover:bg-white/10"
                         >
                           Ver propiedad
                         </Link>

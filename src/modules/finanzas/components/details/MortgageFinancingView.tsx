@@ -209,12 +209,12 @@ export default function MortgageFinancingView({ expediente, carta, creditoHipote
                     <section className="rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 p-6 shadow-sm min-h-[300px] flex flex-col">
                         <div className="flex items-center justify-between mb-6">
                             <h4 className="text-base font-bold text-build-main dark:text-white flex items-center gap-2">
-                                <span className="material-symbols-outlined text-build-accent">description</span>
+                                <span className="material-symbols-outlined text-arch-gold">description</span>
                                 Carta de Aprobación
                             </h4>
                             {carta && !showCartaForm && (
                                 <div className="flex gap-3">
-                                    <button onClick={() => setShowCartaForm(true)} className="text-xs font-bold text-build-accent hover:underline flex items-center gap-1">
+                                    <button onClick={() => setShowCartaForm(true)} className="text-xs font-bold text-arch-gold hover:underline flex items-center gap-1">
                                         <span className="material-symbols-outlined text-[16px]">edit</span> Editar
                                     </button>
                                     <button onClick={handleDeleteCarta} className="text-xs font-bold text-red-500 hover:opacity-70 flex items-center gap-1">
@@ -333,7 +333,7 @@ export default function MortgageFinancingView({ expediente, carta, creditoHipote
                                     </div>
                                     <div>
                                         <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1.5">Monto Aprobado</p>
-                                        <p className="text-base font-bold text-build-accent">
+                                        <p className="text-base font-bold text-arch-gold">
                                             S/ {carta.montoAprobado.toLocaleString("es-PE", { minimumFractionDigits: 2 })}
                                         </p>
                                     </div>
@@ -373,7 +373,7 @@ export default function MortgageFinancingView({ expediente, carta, creditoHipote
                                 </p>
                                 <button
                                     onClick={() => setShowCartaForm(true)}
-                                    className="bg-build-accent text-white px-6 py-2.5 rounded-xl text-sm font-bold hover:bg-build-accent/80 transition-all shadow-lg shadow-build-accent/20"
+                                    className="bg-arch-gold text-white px-6 py-2.5 rounded-xl text-sm font-bold hover:bg-arch-gold/80 transition-all shadow-lg shadow-arch-gold/20"
                                 >
                                     Registrar Carta Ahora
                                 </button>
@@ -386,7 +386,7 @@ export default function MortgageFinancingView({ expediente, carta, creditoHipote
                 <div className="lg:col-span-2 space-y-6">
                     <section className="rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 p-6 shadow-sm h-full flex flex-col">
                         <div className="flex items-center gap-2 mb-6">
-                            <span className="material-symbols-outlined text-build-accent">timeline</span>
+                            <span className="material-symbols-outlined text-arch-gold">timeline</span>
                             <h4 className="text-base font-bold text-build-main dark:text-white">Etapas del Desembolso</h4>
                             {creditoHipotecario && (
                                 <span className="ml-auto text-xs font-bold text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/20 px-2 py-0.5 rounded-full">
@@ -470,7 +470,7 @@ export default function MortgageFinancingView({ expediente, carta, creditoHipote
                                                             : isEnProgreso
                                                                 ? "text-amber-700 bg-amber-100 dark:text-amber-400 dark:bg-amber-900/30"
                                                                 : "text-slate-400 bg-slate-100 dark:bg-white/5"
-                                                    } ${canChangeEstado ? "hover:ring-2 hover:ring-build-accent/20" : "opacity-70"}`}
+                                                    } ${canChangeEstado ? "hover:ring-2 hover:ring-arch-gold/20" : "opacity-70"}`}
                                                     >
                                                         {item.estado === "COMPLETADO" ? "Listo" : item.estado === "EN_PROGRESO" ? "En curso" : "Pendiente"}
                                                     </button>
@@ -479,7 +479,7 @@ export default function MortgageFinancingView({ expediente, carta, creditoHipote
                                                             href={item.downloadUrl}
                                                             target="_blank"
                                                             rel="noopener noreferrer"
-                                                            className="text-[9px] text-build-accent hover:underline flex items-center gap-0.5"
+                                                            className="text-[9px] text-arch-gold hover:underline flex items-center gap-0.5"
                                                             title="Descargar documento"
                                                         >
                                                             <span className="material-symbols-outlined text-[12px]">download</span>

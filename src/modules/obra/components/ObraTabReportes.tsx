@@ -189,7 +189,7 @@ export default function ObraTabReportes({ projectId, avance, project }: ObraTabR
         <KpiMini icon="description"  label="Total reportes" value={String(reports.length)} />
         <KpiMini icon="check_circle" label="Publicados"     value={String(totalPublicados)} accent="text-emerald-500" />
         <KpiMini icon="edit_note"    label="Borradores"     value={String(totalBorradores)} accent="text-amber-500"   />
-        <KpiMini icon="construction" label="Avance actual"  value={`${avance}%`}            accent="text-build-accent" />
+        <KpiMini icon="construction" label="Avance actual"  value={`${avance}%`}            accent="text-arch-gold" />
       </div>
  
       {/* Controls row */}
@@ -358,7 +358,7 @@ function ReporteDetail({
           <button
             type="button"
             onClick={onBack}
-            className="inline-flex items-center gap-1 text-sm font-semibold text-build-accent hover:text-build-main dark:hover:text-white transition-colors"
+            className="inline-flex items-center gap-1 text-sm font-semibold text-arch-gold hover:text-build-main dark:hover:text-white transition-colors"
           >
             <span className="material-symbols-outlined text-[18px]">arrow_back</span>
             Volver a reportes
@@ -392,7 +392,7 @@ function ReporteDetail({
         <div className="flex items-center gap-4">
           <div className="h-3 flex-1 rounded-full bg-slate-100 dark:bg-white/10">
             <div
-              className="h-3 rounded-full bg-build-accent transition-all"
+              className="h-3 rounded-full bg-arch-gold transition-all"
               style={{ width: `${Math.min(report.porcentajeAvance, 100)}%` }}
             />
           </div>
@@ -546,12 +546,12 @@ function NuevoReporteForm({ projectId, projectName, onClose, onSubmit }: NuevoRe
   };
  
   return (
-    <div className="rounded-xl border border-build-accent/30 bg-build-accent/5 dark:bg-build-accent/10 p-6 shadow-sm space-y-6">
+    <div className="rounded-xl border border-arch-gold/30 bg-arch-gold/5 dark:bg-arch-gold/10 p-6 shadow-sm space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h3 className="text-sm font-bold text-build-main dark:text-white flex items-center gap-2">
-            <span className="material-symbols-outlined text-build-accent text-[18px]">note_add</span>
+            <span className="material-symbols-outlined text-arch-gold text-[18px]">note_add</span>
             Nuevo reporte de obra
           </h3>
           <p className="text-xs text-slate-400 dark:text-white/40 mt-0.5">
@@ -583,10 +583,10 @@ function NuevoReporteForm({ projectId, projectName, onClose, onSubmit }: NuevoRe
           value={titulo}
           onChange={(e) => setTitulo(e.target.value)}
           placeholder="Ej. Reporte Junio 2026"
-          className="w-full rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 px-3 py-2.5 text-sm text-build-main dark:text-white outline-none focus:border-build-accent focus:ring-1 focus:ring-build-accent transition"
+          className="w-full rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 px-3 py-2.5 text-sm text-build-main dark:text-white outline-none focus:border-arch-gold focus:ring-1 focus:ring-arch-gold/20 transition"
         />
       </div>
- 
+
       {/* Fecha del mes */}
       <div>
         <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-white/50 mb-1.5">
@@ -596,7 +596,7 @@ function NuevoReporteForm({ projectId, projectName, onClose, onSubmit }: NuevoRe
           type="date"
           value={fecha}
           onChange={(e) => setFecha(e.target.value)}
-          className="w-full rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 px-3 py-2.5 text-sm text-build-main dark:text-white outline-none focus:border-build-accent focus:ring-1 focus:ring-build-accent transition"
+          className="w-full rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 px-3 py-2.5 text-sm text-build-main dark:text-white outline-none focus:border-arch-gold focus:ring-1 focus:ring-arch-gold/20 transition"
         />
       </div>
 
@@ -640,7 +640,7 @@ function NuevoReporteForm({ projectId, projectName, onClose, onSubmit }: NuevoRe
                         setSelectedHitos([...selectedHitos, h.titulo]);
                       }
                     }}
-                    className="rounded text-build-accent border-slate-300 dark:border-white/10 focus:ring-build-accent focus:ring-1 bg-white dark:bg-transparent"
+                    className="rounded text-build-accent border-slate-300 dark:border-white/10 focus:ring-arch-gold/20 focus:ring-1 bg-white dark:bg-transparent"
                   />
                   <span className="font-semibold">{h.titulo}</span>
                   <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${
@@ -669,7 +669,7 @@ function NuevoReporteForm({ projectId, projectName, onClose, onSubmit }: NuevoRe
           value={comentarios}
           onChange={(e) => setComentarios(e.target.value)}
           placeholder="Novedades del período, incidencias, observaciones del avance físico..."
-          className="w-full rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 px-3 py-2.5 text-sm text-build-main dark:text-white outline-none focus:border-build-accent focus:ring-1 focus:ring-build-accent transition resize-none"
+          className="w-full rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 px-3 py-2.5 text-sm text-build-main dark:text-white outline-none focus:border-arch-gold focus:ring-1 focus:ring-arch-gold/20 transition resize-none"
         />
       </div>
 
@@ -755,7 +755,7 @@ function KpiMini({
   return (
     <div className="rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 p-4 shadow-sm flex items-center gap-4">
       <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-white/10 flex items-center justify-center shrink-0">
-        <span className="material-symbols-outlined text-build-accent text-[20px]">{icon}</span>
+        <span className="material-symbols-outlined text-arch-gold text-[20px]">{icon}</span>
       </div>  
       <div>
         <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-white/40">{label}</p>

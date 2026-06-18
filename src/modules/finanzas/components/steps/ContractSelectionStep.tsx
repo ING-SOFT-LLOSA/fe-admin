@@ -57,8 +57,8 @@ export default function ContractSelectionStep({ client, onSelectContract, onBack
         <div className="space-y-6">
             {/* Header del paso */}
             <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full bg-build-accent/15 border border-build-accent/30 flex items-center justify-center flex-shrink-0">
-                    <span className="text-sm font-bold text-build-accent">2</span>
+                <div className="w-8 h-8 rounded-full bg-arch-gold/15 border border-arch-gold/30 flex items-center justify-center flex-shrink-0">
+                    <span className="text-sm font-bold text-arch-gold">2</span>
                 </div>
                 <div>
                     <h3 className="text-lg font-bold text-build-main dark:text-white">Seleccionar Contrato</h3>
@@ -67,7 +67,7 @@ export default function ContractSelectionStep({ client, onSelectContract, onBack
             </div>
 
             {/* Tarjeta del cliente seleccionado */}
-            <div className="flex items-center gap-4 p-4 rounded-2xl border border-build-accent/30 bg-build-accent/5 dark:bg-build-accent/10">
+            <div className="flex items-center gap-4 p-4 rounded-2xl border border-arch-gold/30 bg-arch-gold/5 dark:bg-arch-gold/10">
                 <div className="w-12 h-12 rounded-full bg-build-main flex items-center justify-center flex-shrink-0">
                     <span className="text-base font-bold text-white">
                         {getInitials(client.nombre, client.apellidos)}
@@ -83,7 +83,7 @@ export default function ContractSelectionStep({ client, onSelectContract, onBack
                 </div>
                 <button
                     onClick={onBack}
-                    className="text-xs font-bold uppercase tracking-wider text-slate-400 hover:text-build-accent transition-colors flex items-center gap-1"
+                    className="text-xs font-bold uppercase tracking-wider text-slate-400 hover:text-arch-gold transition-colors flex items-center gap-1"
                 >
                     <span className="material-symbols-outlined text-[16px]">arrow_back</span>
                     Cambiar
@@ -141,7 +141,7 @@ export default function ContractSelectionStep({ client, onSelectContract, onBack
                                             )}
                                         </div>
                                     </div>
-                                    <span className="material-symbols-outlined text-slate-300 dark:text-white/20 group-hover:text-build-accent transition-colors text-[20px] flex-shrink-0 mt-1">
+                                    <span className="material-symbols-outlined text-slate-300 dark:text-white/20 group-hover:text-arch-gold transition-colors text-[20px] flex-shrink-0 mt-1">
                                         chevron_right
                                     </span>
                                 </div>

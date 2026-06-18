@@ -47,13 +47,13 @@ export default function SideNav() {
   }
 
   return (
-    <aside className="hidden md:flex fixed left-0 top-0 z-50 h-full w-72 flex-col border-r border-slate-200 dark:border-white/10 bg-build-bg px-6 py-8 shadow-sm" style={{ fontFamily: "'Outfit', sans-serif" }}>
+    <aside className="hidden md:flex fixed left-0 top-0 z-50 h-full w-72 flex-col border-r border-white/10 bg-build-main px-6 py-8 shadow-sm" style={{ fontFamily: "'Outfit', sans-serif" }}>
       {/* Brand */}
       <div className="mb-12 flex justify-center">
         <img
           src="/logo_llosa.png"
           alt="Llosa Edificaciones"
-          className="h-30 w-auto object-contain invert"
+          className="h-30 w-auto object-contain brightness-0 invert"
         />
       </div>
 
@@ -71,7 +71,7 @@ export default function SideNav() {
           return (
             <li key={label ?? `group-${i}`}>
               {label && (
-                <p className="px-4 mb-2 mt-4 text-[10px] font-bold text-slate-400 dark:text-white/50 uppercase tracking-widest">{label}</p>
+                <p className="px-4 mb-2 mt-4 text-[10px] font-bold text-build-bg/40 uppercase tracking-widest">{label}</p>
               )}
               <ul className="space-y-1">
                 {visibleItems.map(({ href, icon, label: lbl }) => {
@@ -82,13 +82,13 @@ export default function SideNav() {
                         href={href}
                         className={`flex items-center gap-3.5 rounded-xl px-4 py-3 text-[14px] font-semibold transition-all duration-200 ${
                           active
-                            ? 'border-l-4 border-build-accent bg-white dark:bg-white/5 text-build-main dark:text-white shadow-sm'
-                            : 'text-slate-500 dark:text-white/60 hover:bg-white dark:hover:bg-white/5 hover:text-slate-800 dark:hover:text-slate-100'
+                            ? 'border-l-4 border-arch-gold bg-white/10 text-build-bg shadow-sm'
+                            : 'text-build-bg/70 hover:bg-white/10 hover:text-build-bg'
                         }`}
                       >
                         <span
                           className="material-symbols-outlined text-[22px]"
-                          style={active ? { fontVariationSettings: "'FILL' 1", color: '#c49e5d' } : {}}
+                          style={active ? { fontVariationSettings: "'FILL' 1", color: '#CEBD93' } : {}}
                         >
                           {icon}
                         </span>
@@ -107,7 +107,7 @@ export default function SideNav() {
       <div className="mt-auto pt-8">
         <button
           onClick={handleLogout}
-          className="flex w-full items-center justify-center gap-2 rounded-xl bg-build-main px-4 py-3 text-[13px] font-bold text-white shadow-sm transition-colors hover:bg-build-accent"
+          className="flex w-full items-center justify-center gap-2 rounded-xl bg-white/10 px-4 py-3 text-[13px] font-bold text-build-bg shadow-sm transition-colors hover:bg-white/20"
         >
           <span className="material-symbols-outlined text-[18px]">logout</span>
           Cerrar Sesión

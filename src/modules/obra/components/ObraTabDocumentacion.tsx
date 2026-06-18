@@ -199,7 +199,7 @@ export default function ObraTabDocumentacion({ projectId }: ObraTabDocumentacion
       <div className="rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 shadow-sm overflow-hidden">
         {/* Header */}
         <div className="px-5 py-4 border-b border-slate-100 dark:border-white/10 flex items-center gap-3 bg-slate-50/50 dark:bg-white/[0.02]">
-          <span className="material-symbols-outlined text-build-accent text-[20px]">folder_open</span>
+          <span className="material-symbols-outlined text-arch-gold text-[20px]">folder_open</span>
           <h3 className="text-sm font-bold text-build-main dark:text-white font-sans">Documentación del Proyecto</h3>
         </div>
 

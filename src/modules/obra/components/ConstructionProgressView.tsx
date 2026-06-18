@@ -175,7 +175,7 @@ export default function ConstructionProgressView({
                   flex items-center gap-1.5 px-4 py-2.5 text-sm font-semibold whitespace-nowrap
                   border-b-2 transition-colors
                   ${activeTab === tab.id
-                    ? "border-build-accent text-build-accent"
+                    ? "border-arch-gold text-arch-gold"
                     : "border-transparent text-slate-500 dark:text-white/50 hover:text-build-main dark:hover:text-white"
                   }
                 `}

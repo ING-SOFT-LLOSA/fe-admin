@@ -22,7 +22,7 @@ function SubmitButton({ loading, disabled, isResetView, submitHover, onMouseEnte
   const bgClass = disabled
     ? "opacity-50 cursor-not-allowed bg-build-main"
     : submitHover
-    ? "bg-build-accent"
+    ? "bg-arch-gold"
     : "bg-build-main";
 
   return (
@@ -185,8 +185,8 @@ export default function LoginForm({ redirectTo = "/proyectos" }: LoginFormProps)
       <div className="hidden lg:flex lg:w-[55%] relative bg-black flex-col justify-between p-14 overflow-hidden">
         <div className="absolute inset-0 opacity-10 pointer-events-none">
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_30%,rgba(196,158,93,0.4)_0%,transparent_60%),radial-gradient(circle_at_80%_70%,rgba(196,158,93,0.2)_0%,transparent_50%)]" />
-          <div className="absolute bottom-0 right-0 w-96 h-96 rounded-full border border-build-accent/20 -mr-32 -mb-32" />
-          <div className="absolute top-0 left-0 w-64 h-64 rounded-full border border-build-accent/10 -ml-20 -mt-20" />
+          <div className="absolute bottom-0 right-0 w-96 h-96 rounded-full border border-arch-gold/20 -mr-32 -mb-32" />
+          <div className="absolute top-0 left-0 w-64 h-64 rounded-full border border-arch-gold/10 -ml-20 -mt-20" />
         </div>
 
         <div className="relative z-10 mb-8">
@@ -194,10 +194,10 @@ export default function LoginForm({ redirectTo = "/proyectos" }: LoginFormProps)
         </div>
 
         <div className="relative z-10 max-w-lg">
-          <div className="w-12 h-0.5 bg-build-accent mb-6" />
+          <div className="w-12 h-0.5 bg-arch-gold mb-6" />
           <h1 className="text-5xl font-bold text-white leading-[1.2] mb-6 tracking-tight" style={{ fontFamily: "'Outfit', sans-serif" }}>
             Gestiona tus<br />
-            <span className="text-build-accent">proyectos.</span>
+            <span className="text-arch-gold">proyectos.</span>
           </h1>
           <p className="text-base text-blue-100 leading-relaxed">
             Plataforma integral para administrar proyectos inmobiliarios, clientes, contratos y pagos desde un solo lugar.
@@ -211,7 +211,7 @@ export default function LoginForm({ redirectTo = "/proyectos" }: LoginFormProps)
             { value: "99%",  label: "Satisfacción" },
           ].map((s) => (
             <div key={s.label}>
-              <p className="text-3xl font-bold text-build-accent leading-none" style={{ fontFamily: "'Outfit', sans-serif" }}>
+              <p className="text-3xl font-bold text-arch-gold leading-none" style={{ fontFamily: "'Outfit', sans-serif" }}>
                 {s.value}
               </p>
               <p className="text-[13px] text-blue-100 mt-1">{s.label}</p>
@@ -262,7 +262,7 @@ export default function LoginForm({ redirectTo = "/proyectos" }: LoginFormProps)
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="usuario@correo.com"
-                  className="h-10 w-full px-4 rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 text-[15px] text-build-main dark:text-white outline-none transition-all duration-200 focus:border-build-accent focus:ring-4 focus:ring-build-accent/20 box-border"
+                  className="h-10 w-full px-4 rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 text-[15px] text-build-main dark:text-white outline-none transition-all duration-200 focus:border-arch-gold focus:ring-4 focus:ring-arch-gold/20 box-border"
                 />
               </div>
 
@@ -280,7 +280,7 @@ export default function LoginForm({ redirectTo = "/proyectos" }: LoginFormProps)
                       value={pass}
                       onChange={(e) => setPass(e.target.value)}
                       placeholder="••••••••"
-                      className="h-10 w-full pl-4 pr-12 rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 text-[15px] text-build-main dark:text-white outline-none transition-all duration-200 focus:border-build-accent focus:ring-4 focus:ring-build-accent/20 box-border"
+                      className="h-10 w-full pl-4 pr-12 rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 text-[15px] text-build-main dark:text-white outline-none transition-all duration-200 focus:border-arch-gold focus:ring-4 focus:ring-arch-gold/20 box-border"
                     />
                     <button
                       type="button"
@@ -349,7 +349,7 @@ export default function LoginForm({ redirectTo = "/proyectos" }: LoginFormProps)
                     setError(null);
                     setResetSuccess(false);
                   }}
-                  className="text-[12px] font-semibold text-build-accent hover:text-build-main dark:text-white transition-colors duration-300 cursor-pointer border-none bg-transparent p-0"
+                  className="text-[12px] font-semibold text-arch-gold hover:text-build-main dark:text-white transition-colors duration-300 cursor-pointer border-none bg-transparent p-0"
                 >
                   {backLinkLabel}
                 </button>

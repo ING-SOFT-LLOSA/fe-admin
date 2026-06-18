@@ -283,7 +283,7 @@ export default function DirectFinancingView({ expediente, cronograma, pagos, res
                                 { label: "Total Pactado", value: resumen.totalPactado, color: "text-build-main dark:text-white" },
                                 { label: "Total Pagado", value: resumen.totalPagado, color: "text-green-600 dark:text-green-400" },
                                 { label: "Saldo Pendiente", value: resumen.totalPendiente, color: "text-red-600 dark:text-red-400" },
-                                { label: "Próx. Vencimiento", value: null, extra: resumen.proximoVencimiento ? new Date(resumen.proximoVencimiento).toLocaleDateString("es-PE") : "—", color: "text-build-accent" },
+                                { label: "Próx. Vencimiento", value: null, extra: resumen.proximoVencimiento ? new Date(resumen.proximoVencimiento).toLocaleDateString("es-PE") : "—", color: "text-arch-gold" },
                             ].map((item) => (
                                 <div key={item.label} className="bg-slate-50 dark:bg-white/5 rounded-xl px-4 py-3">
                                     <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">{item.label}</p>
@@ -314,7 +314,7 @@ export default function DirectFinancingView({ expediente, cronograma, pagos, res
 
                 {/* Cronograma — Configuración */}
                 {showCronogramaForm ? (
-                    <div className="rounded-2xl border border-build-accent/30 bg-build-accent/5 dark:bg-build-accent/10 p-6">
+                    <div className="rounded-2xl border border-arch-gold/30 bg-arch-gold/5 dark:bg-arch-gold/10 p-6">
                         <h3 className="text-base font-bold text-build-main dark:text-white mb-4">
                             {cronograma ? "Editar" : "Crear"} Cronograma de Pagos
                         </h3>
@@ -352,7 +352,7 @@ export default function DirectFinancingView({ expediente, cronograma, pagos, res
                 ) : cronograma && (
                     <div className="flex items-center justify-between px-4 py-3 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-100 dark:border-white/5">
                         <div className="flex items-center gap-3">
-                            <span className="material-symbols-outlined text-build-accent text-[20px]">event_note</span>
+                            <span className="material-symbols-outlined text-arch-gold text-[20px]">event_note</span>
                             <div>
                                 <p className="text-sm font-bold text-build-main dark:text-white">Cronograma Activo</p>
                                 <p className="text-xs text-slate-400">{cronograma.numeroCuotas} cuotas · Estado: {cronograma.estado}</p>
@@ -360,21 +360,21 @@ export default function DirectFinancingView({ expediente, cronograma, pagos, res
                         </div>
                         <button
                             onClick={() => setShowCronogramaForm(true)}
-                            className="text-xs font-bold text-build-accent hover:underline"
-                        >
-                            Editar
-                        </button>
-                    </div>
-                )}
-
-                {/* Tabla de Cuotas */}
-                {cronograma && (
-                    <div className="rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 shadow-sm overflow-hidden">
-                        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-white/5">
-                            <h3 className="text-sm font-bold text-build-main dark:text-white uppercase tracking-wide">Cuotas del Cronograma</h3>
-                            <button
-                                onClick={() => setShowAddForm((v) => !v)}
-                                className="flex items-center gap-1.5 text-xs font-bold text-build-accent hover:underline"
+className="text-xs font-bold text-arch-gold hover:underline"
+                                                        >
+                                                            Editar
+                                                        </button>
+                                                    </div>
+                                                )}
+                
+                                                {/* Tabla de Cuotas */}
+                                                {cronograma && (
+                                                    <div className="rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 shadow-sm overflow-hidden">
+                                                        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-white/5">
+                                                            <h3 className="text-sm font-bold text-build-main dark:text-white uppercase tracking-wide">Cuotas del Cronograma</h3>
+                                                            <button
+                                                                onClick={() => setShowAddForm((v) => !v)}
+                                                                className="flex items-center gap-1.5 text-xs font-bold text-arch-gold hover:underline"
                             >
                                 <span className="material-symbols-outlined text-[16px]">add_circle</span>
                                 Agregar Cuota
@@ -383,7 +383,7 @@ export default function DirectFinancingView({ expediente, cronograma, pagos, res
 
                         {/* Formulario agregar cuota */}
                         {showAddForm && (
-                            <div className="px-6 py-4 bg-build-accent/5 border-b border-build-accent/20">
+                            <div className="px-6 py-4 bg-arch-gold/5 border-b border-arch-gold/20">
                                 <div className="grid gap-3 md:grid-cols-4 items-end">
                                     <div>
                                         <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">N° Cuota</label>
@@ -431,7 +431,7 @@ export default function DirectFinancingView({ expediente, cronograma, pagos, res
                                             <React.Fragment key={pago.uuidPago}>
                                                 <tr className={`transition-colors ${busy ? "opacity-60" : "hover:bg-slate-50/50 dark:hover:bg-white/[0.02]"}`}>
                                                     <td className="px-6 py-3 font-bold text-build-main dark:text-white text-sm">
-                                                        {pago.nroCuota === 0 ? <span className="text-build-accent">Inicial</span> : pago.nroCuota}
+                                                        {pago.nroCuota === 0 ? <span className="text-arch-gold">Inicial</span> : pago.nroCuota}
                                                     </td>
                                                     <td className="px-4 py-3 text-slate-600 dark:text-white/60">
                                                         {new Date(pago.fechaVencimiento).toLocaleDateString("es-PE")}
@@ -472,7 +472,7 @@ export default function DirectFinancingView({ expediente, cronograma, pagos, res
                                                                     disabled={busy}
                                                                     onClick={() => setActiveDropzoneId(showDropzone ? null : pago.uuidPago)}
                                                                     title="Registrar Cobro Rápido"
-                                                                    className={`p-1.5 rounded-lg transition-colors ${showDropzone ? "bg-build-accent/15 text-build-accent" : "hover:bg-slate-100 dark:hover:bg-white/10 text-slate-400 hover:text-build-accent"}`}
+                                                                     className={`p-1.5 rounded-lg transition-colors ${showDropzone ? "bg-arch-gold/15 text-arch-gold" : "hover:bg-slate-100 dark:hover:bg-white/10 text-slate-400 hover:text-arch-gold"}`}
                                                                 >
                                                                     <span className="material-symbols-outlined text-[18px]">payments</span>
                                                                 </button>
@@ -481,7 +481,7 @@ export default function DirectFinancingView({ expediente, cronograma, pagos, res
                                                             {/* Subir comprobante — solo si está PAGADO */}
                                                             {pago.estado === "PAGADO" && (
                                                                 <label title="Subir comprobante" className="cursor-pointer p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-white/10 transition-colors">
-                                                                    <span className="material-symbols-outlined text-[18px] text-build-accent">upload_file</span>
+                                                                        <span className="material-symbols-outlined text-[18px] text-arch-gold">upload_file</span>
                                                                     <input type="file" className="hidden" onChange={(e) => handleFileUpload(pago.uuidPago, e)} accept="application/pdf,image/*" />
                                                                 </label>
                                                             )}
@@ -513,7 +513,7 @@ export default function DirectFinancingView({ expediente, cronograma, pagos, res
                                                     <tr key={`${pago.uuidPago}-dropzone`}>
                                                         <td colSpan={5} className="bg-slate-50/50 dark:bg-white/[0.01] px-6 py-4">
                                                             <div 
-                                                                className="border-2 border-dashed border-build-accent/40 hover:border-build-accent rounded-xl p-4 text-center cursor-pointer bg-white dark:bg-white/5 transition flex flex-col items-center justify-center gap-1.5"
+                                                                className="border-2 border-dashed border-arch-gold/40 hover:border-arch-gold rounded-xl p-4 text-center cursor-pointer bg-white dark:bg-white/5 transition flex flex-col items-center justify-center gap-1.5"
                                                                 onClick={() => document.getElementById(`file-input-${pago.uuidPago}`)?.click()}
                                                                 onDragOver={(e) => { e.preventDefault(); }}
                                                                 onDrop={async (e) => {
@@ -522,7 +522,7 @@ export default function DirectFinancingView({ expediente, cronograma, pagos, res
                                                                     if (file) handleFastPayment(pago.uuidPago, file);
                                                                 }}
                                                             >
-                                                                <span className="material-symbols-outlined text-build-accent text-[28px] animate-bounce">upload_file</span>
+                                                                <span className="material-symbols-outlined text-arch-gold text-[28px] animate-bounce">upload_file</span>
                                                                 <p className="text-xs font-bold text-slate-600 dark:text-white/80">Arrastra el comprobante de pago o haz clic para subir</p>
                                                                 <p className="text-[10px] text-slate-400">PDF, JPG, PNG (máx 10MB)</p>
                                                                 <input

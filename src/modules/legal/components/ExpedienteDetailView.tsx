@@ -239,7 +239,7 @@ export default function ExpedienteDetailView({ uuidUsuarioActivo }: Props) {
         <ErrorBanner message={pageError || "Expediente no encontrado."} />
         <Link
           href="/legal"
-          className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-build-accent hover:underline"
+          className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-arch-gold hover:underline"
         >
           ← Volver a Gestión Legal
         </Link>
@@ -255,7 +255,7 @@ export default function ExpedienteDetailView({ uuidUsuarioActivo }: Props) {
       <div>
         <Link
           href="/legal"
-          className="inline-flex items-center gap-1.5 text-sm font-semibold text-slate-500 hover:text-build-accent dark:text-white/60 dark:hover:text-white transition-colors"
+          className="inline-flex items-center gap-1.5 text-sm font-semibold text-slate-500 hover:text-arch-gold dark:text-white/60 dark:hover:text-white transition-colors"
         >
           <span className="material-symbols-outlined text-[18px]">arrow_back</span>
           Volver a Gestión Legal
@@ -308,7 +308,7 @@ export default function ExpedienteDetailView({ uuidUsuarioActivo }: Props) {
           onClick={() => setActiveTab("resumen")}
           className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-semibold whitespace-nowrap border-b-2 transition-colors ${
             activeTab === "resumen"
-              ? "border-build-accent text-build-accent"
+              ? "border-arch-gold text-arch-gold"
               : "border-transparent text-slate-500 dark:text-white/50 hover:text-build-main dark:hover:text-white"
           }`}
         >
@@ -319,7 +319,7 @@ export default function ExpedienteDetailView({ uuidUsuarioActivo }: Props) {
           onClick={() => setActiveTab("proceso")}
           className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-semibold whitespace-nowrap border-b-2 transition-colors ${
             activeTab === "proceso"
-              ? "border-build-accent text-build-accent"
+              ? "border-arch-gold text-arch-gold"
               : "border-transparent text-slate-500 dark:text-white/50 hover:text-build-main dark:hover:text-white"
           }`}
         >
@@ -330,7 +330,7 @@ export default function ExpedienteDetailView({ uuidUsuarioActivo }: Props) {
           onClick={() => setActiveTab("documentos")}
           className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-semibold whitespace-nowrap border-b-2 transition-colors ${
             activeTab === "documentos"
-              ? "border-build-accent text-build-accent"
+              ? "border-arch-gold text-arch-gold"
               : "border-transparent text-slate-500 dark:text-white/50 hover:text-build-main dark:hover:text-white"
           }`}
         >
@@ -435,7 +435,7 @@ function ExpedienteContextBand({
                   href={`/clientes/${c.id}`}
                   className="inline-flex items-center gap-2 text-xs font-semibold px-3 py-1.5 rounded-full bg-slate-50 hover:bg-slate-100 dark:bg-white/5 dark:hover:bg-white/10 border border-slate-200/60 dark:border-white/10 text-slate-700 dark:text-white/80 transition"
                 >
-                  <div className="w-5 h-5 rounded-full bg-build-accent text-white flex items-center justify-center text-[9px] font-bold">
+                  <div className="w-5 h-5 rounded-full bg-arch-gold text-white flex items-center justify-center text-[9px] font-bold">
                     {initials}
                   </div>
                   {fullName}
@@ -490,7 +490,7 @@ function ExpedienteContextBand({
         </h3>
         {asesor ? (
           <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-full bg-build-accent text-white flex items-center justify-center text-[10px] font-bold">
+            <div className="w-7 h-7 rounded-full bg-arch-gold text-white flex items-center justify-center text-[10px] font-bold">
               {[asesor.nombre, asesor.apellidos].filter(Boolean).map((w) => w![0]).join("").toUpperCase()}
             </div>
             <div>
@@ -509,7 +509,7 @@ function ExpedienteContextBand({
         ) : (
           <button
             onClick={() => setShowModal(true)}
-            className="flex items-center gap-1 text-sm text-build-accent hover:text-build-main transition-colors"
+            className="flex items-center gap-1 text-sm text-arch-gold hover:text-build-main transition-colors"
           >
             <span className="material-symbols-outlined text-[16px]">person_add</span>
             Asignar asesor
@@ -541,7 +541,7 @@ function ExpedienteContextBand({
                     onClick={() => handleAssign(a.id)}
                     className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-slate-700 dark:text-white/80 hover:bg-slate-100 dark:hover:bg-white/10 disabled:opacity-50 transition-colors"
                   >
-                    <span className="material-symbols-outlined text-[16px] text-build-accent">badge</span>
+                    <span className="material-symbols-outlined text-[16px] text-arch-gold">badge</span>
                     {[a.nombre, a.apellidos].filter(Boolean).join(" ")}
                     <span className="ml-auto text-[11px] text-slate-400 dark:text-white/30">{a.email}</span>
                   </button>
@@ -662,7 +662,7 @@ function EtapasResumen({
                 <div>
                   <div className="flex items-center justify-between gap-2 mb-3">
                     <div className="flex items-center gap-2">
-                      <span className="material-symbols-outlined text-[18px] text-build-accent">{meta.icon}</span>
+                      <span className="material-symbols-outlined text-[18px] text-arch-gold">{meta.icon}</span>
                       <span className="text-sm font-bold text-slate-800 dark:text-white">{meta.label}</span>
                     </div>
                     <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${badgeClass}`}>
@@ -713,7 +713,7 @@ function ProcesoLegalAccordion({
   if (isLoading && !stepper) {
     return (
       <div className="flex flex-col items-center justify-center py-20">
-        <Spinner className="w-8 h-8 text-build-accent mr-3 mb-2" />
+        <Spinner className="w-8 h-8 text-arch-gold mr-3 mb-2" />
         <span className="text-sm text-slate-400 dark:text-white/45">Cargando hitos del proceso...</span>
       </div>
     );
@@ -1054,7 +1054,7 @@ function DocumentosTab({
               onClick={() => onFilterChange(opt.id)}
               className={`px-3.5 py-1.5 text-xs font-bold rounded-lg border transition ${
                 isActive
-                  ? "bg-build-accent border-build-accent text-white"
+                  ? "bg-arch-gold border-arch-gold text-white"
                   : "bg-white border-slate-200 dark:bg-[#111] dark:border-white/10 text-slate-600 dark:text-white/60 hover:border-slate-300 dark:hover:border-white/25"
               }`}
             >
@@ -1138,7 +1138,7 @@ function DocumentosTab({
                     {hasUrl && (
                       <button
                         onClick={() => window.open(doc.downloadUrl!, "_blank", "noopener,noreferrer")}
-                        className="flex items-center justify-center w-8 h-8 rounded-lg hover:bg-slate-100 dark:hover:bg-white/10 text-slate-500 hover:text-build-accent dark:text-white/60 dark:hover:text-white transition"
+                        className="flex items-center justify-center w-8 h-8 rounded-lg hover:bg-slate-100 dark:hover:bg-white/10 text-slate-500 hover:text-arch-gold dark:text-white/60 dark:hover:text-white transition"
                         title="Descargar / Ver Archivo"
                       >
                         <span className="material-symbols-outlined text-[18px]">download</span>
@@ -1149,11 +1149,11 @@ function DocumentosTab({
                     <button
                       onClick={() => handleUploadClick(doc.id)}
                       disabled={uploadingDocId === doc.id}
-                      className="flex items-center justify-center w-8 h-8 rounded-lg hover:bg-slate-100 dark:hover:bg-white/10 text-slate-500 hover:text-build-accent dark:text-white/60 dark:hover:text-white transition disabled:opacity-55"
+                      className="flex items-center justify-center w-8 h-8 rounded-lg hover:bg-slate-100 dark:hover:bg-white/10 text-slate-500 hover:text-arch-gold dark:text-white/60 dark:hover:text-white transition disabled:opacity-55"
                       title={hasUrl ? "Reemplazar Archivo" : "Subir Archivo"}
                     >
                       {uploadingDocId === doc.id ? (
-                        <Spinner className="w-4 h-4 text-build-accent" />
+                        <Spinner className="w-4 h-4 text-arch-gold" />
                       ) : (
                         <span className="material-symbols-outlined text-[18px]">upload_file</span>
                       )}
@@ -1162,7 +1162,7 @@ function DocumentosTab({
                     {/* Edit Metadata Button */}
                     <button
                       onClick={() => handleEditClick(doc)}
-                      className="flex items-center justify-center w-8 h-8 rounded-lg hover:bg-slate-100 dark:hover:bg-white/10 text-slate-500 hover:text-build-accent dark:text-white/60 dark:hover:text-white transition"
+                      className="flex items-center justify-center w-8 h-8 rounded-lg hover:bg-slate-100 dark:hover:bg-white/10 text-slate-500 hover:text-arch-gold dark:text-white/60 dark:hover:text-white transition"
                       title="Editar Información"
                     >
                       <span className="material-symbols-outlined text-[18px]">edit</span>
@@ -1234,7 +1234,7 @@ function DocumentosTab({
           <div className="bg-white dark:bg-[#1e1e1e] rounded-2xl border border-slate-200 dark:border-white/10 shadow-2xl w-full max-w-lg overflow-hidden animate-in fade-in-50 zoom-in-95 duration-200">
             <div className="px-6 py-4 border-b border-slate-100 dark:border-white/5 flex items-center justify-between">
               <h3 className="text-base font-bold text-slate-800 dark:text-white flex items-center gap-2">
-                <span className="material-symbols-outlined text-build-accent">edit_document</span>
+                <span className="material-symbols-outlined text-arch-gold">edit_document</span>
                 Editar Requisito Documental
               </h3>
               <button
@@ -1254,7 +1254,7 @@ function DocumentosTab({
                   required
                   value={editTitle}
                   onChange={(e) => setEditTitle(e.target.value)}
-                  className="w-full rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-[#111] px-4 py-2 text-sm focus:outline-none focus:border-build-accent dark:text-white transition"
+                  className="w-full rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-[#111] px-4 py-2 text-sm focus:outline-none focus:border-arch-gold dark:text-white transition"
                 />
               </div>
 
@@ -1265,7 +1265,7 @@ function DocumentosTab({
                   value={editDesc}
                   onChange={(e) => setEditDesc(e.target.value)}
                   rows={3}
-                  className="w-full rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-[#111] px-4 py-2 text-sm focus:outline-none focus:border-build-accent dark:text-white transition resize-none"
+                  className="w-full rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-[#111] px-4 py-2 text-sm focus:outline-none focus:border-arch-gold dark:text-white transition resize-none"
                 />
               </div>
 
@@ -1276,7 +1276,7 @@ function DocumentosTab({
                   value={editNota}
                   onChange={(e) => setEditNota(e.target.value)}
                   rows={2}
-                  className="w-full rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-[#111] px-4 py-2 text-sm focus:outline-none focus:border-build-accent dark:text-white transition resize-none"
+                  className="w-full rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-[#111] px-4 py-2 text-sm focus:outline-none focus:border-arch-gold dark:text-white transition resize-none"
                 />
               </div>
 
@@ -1288,7 +1288,7 @@ function DocumentosTab({
                     type="date"
                     value={editFecha}
                     onChange={(e) => setEditFecha(e.target.value)}
-                    className="w-full rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-[#111] px-4 py-2 text-sm focus:outline-none focus:border-build-accent dark:text-white transition"
+                    className="w-full rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-[#111] px-4 py-2 text-sm focus:outline-none focus:border-arch-gold dark:text-white transition"
                   />
                 </div>
 
@@ -1300,7 +1300,7 @@ function DocumentosTab({
                     value={editIcon}
                     onChange={(e) => setEditIcon(e.target.value)}
                     placeholder="e.g. description"
-                    className="w-full rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-[#111] px-4 py-2 text-sm focus:outline-none focus:border-build-accent dark:text-white transition"
+                    className="w-full rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-[#111] px-4 py-2 text-sm focus:outline-none focus:border-arch-gold dark:text-white transition"
                   />
                 </div>
               </div>
@@ -1317,7 +1317,7 @@ function DocumentosTab({
                 <button
                   type="submit"
                   disabled={editingDocLoading}
-                  className="px-4 py-2 rounded-xl bg-build-accent hover:bg-build-accent/95 text-white text-xs font-bold transition disabled:opacity-50 flex items-center gap-1.5"
+                  className="px-4 py-2 rounded-xl bg-arch-gold hover:bg-arch-gold/95 text-white text-xs font-bold transition disabled:opacity-50 flex items-center gap-1.5"
                 >
                   {editingDocLoading && <Spinner className="w-3.5 h-3.5 text-white" />}
                   Guardar Cambios

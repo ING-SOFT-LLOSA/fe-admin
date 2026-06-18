@@ -483,7 +483,7 @@ useEffect(() => {
             placeholder="Cliente, unidad o exp…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 pl-8 pr-3 py-2 text-xs text-build-main dark:text-white outline-none focus:border-build-accent focus:ring-1 focus:ring-build-accent transition"
+            className="w-full rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 pl-8 pr-3 py-2 text-xs text-build-main dark:text-white outline-none focus:border-arch-gold focus:ring-1 focus:ring-arch-gold transition"
           />
         </div>
 
@@ -491,7 +491,7 @@ useEffect(() => {
         <select
           value={selectedProyecto}
           onChange={(e) => setSelectedProyecto(e.target.value)}
-          className="rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 px-3 py-2 text-xs text-build-main dark:text-white focus:outline-none focus:border-build-accent transition"
+          className="rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 px-3 py-2 text-xs text-build-main dark:text-white focus:outline-none focus:border-arch-gold transition"
         >
           <option value="">Proyecto</option>
           {proyectosOptions.map((opt) => (
@@ -504,7 +504,7 @@ useEffect(() => {
           value={selectedTorre}
           onChange={(e) => setSelectedTorre(e.target.value)}
           disabled={!selectedProyecto}
-          className="rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 px-3 py-2 text-xs text-build-main dark:text-white focus:outline-none focus:border-build-accent transition disabled:opacity-40 disabled:cursor-not-allowed"
+          className="rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 px-3 py-2 text-xs text-build-main dark:text-white focus:outline-none focus:border-arch-gold transition disabled:opacity-40 disabled:cursor-not-allowed"
         >
           <option value="">Torre</option>
           {torresOptions.map((opt) => (
@@ -516,7 +516,7 @@ useEffect(() => {
         <select
           value={selectedEstado}
           onChange={(e) => setSelectedEstado(e.target.value)}
-          className="rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 px-3 py-2 text-xs text-build-main dark:text-white focus:outline-none focus:border-build-accent transition"
+          className="rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 px-3 py-2 text-xs text-build-main dark:text-white focus:outline-none focus:border-arch-gold transition"
         >
           <option value="">Estado</option>
           <option value="Vigente">Vigente</option>
@@ -527,7 +527,7 @@ useEffect(() => {
         <select
           value={selectedEtapa}
           onChange={(e) => setSelectedEtapa(e.target.value)}
-          className="rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 px-3 py-2 text-xs text-build-main dark:text-white focus:outline-none focus:border-build-accent transition"
+          className="rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 px-3 py-2 text-xs text-build-main dark:text-white focus:outline-none focus:border-arch-gold transition"
         >
           <option value="">Etapa</option>
           <option value="Separación">Separación</option>
@@ -543,7 +543,7 @@ useEffect(() => {
             type="checkbox"
             checked={ocultarDesistidos}
             onChange={(e) => setOcultarDesistidos(e.target.checked)}
-            className="w-4 h-4 accent-build-accent rounded border-slate-300"
+            className="w-4 h-4 accent-arch-gold rounded border-slate-300"
           />
           <span className="font-semibold text-slate-700 dark:text-white/80">Ocultar desistidos</span>
         </label>
@@ -641,7 +641,7 @@ useEffect(() => {
                   >
                     {/* ID */}
                     <td className="px-4 py-3">
-                      <span className="text-[13px] font-semibold text-build-main dark:text-white group-hover:text-build-accent transition-colors">
+                      <span className="text-[13px] font-semibold text-build-main dark:text-white group-hover:text-arch-gold transition-colors">
                         EXP-{idCorto}
                       </span>
                     </td>
@@ -677,7 +677,7 @@ useEffect(() => {
                     <td className="px-4 py-3">
                       {contract.asesor ? (
                         <div className="flex items-center gap-1.5">
-                          <span className="material-symbols-outlined text-[14px] text-build-accent">badge</span>
+                          <span className="material-symbols-outlined text-[14px] text-arch-gold">badge</span>
                           <div className="min-w-0">
                             <p className="truncate text-[13px] text-slate-700 dark:text-white/80">
                               {[contract.asesor.nombre, contract.asesor.apellidos].filter(Boolean).join(" ")}
@@ -693,7 +693,7 @@ useEffect(() => {
                       ) : (
                         <button
                           onClick={(e) => { e.stopPropagation(); setAssignTarget(contract.uuidUsuarioActivo); }}
-                          className="flex items-center gap-1 text-[12px] text-build-accent hover:text-build-main transition-colors"
+                          className="flex items-center gap-1 text-[12px] text-arch-gold hover:text-build-main transition-colors"
                         >
                           <span className="material-symbols-outlined text-[14px]">person_add</span>
                           Asignar
@@ -719,7 +719,7 @@ useEffect(() => {
 
                     {/* Arrow hint */}
                     <td className="px-4 py-3 text-right">
-                      <span className="material-symbols-outlined text-[16px] text-build-accent opacity-0 group-hover:opacity-100 transition-opacity">
+                      <span className="material-symbols-outlined text-[16px] text-arch-gold opacity-0 group-hover:opacity-100 transition-opacity">
                         arrow_forward
                       </span>
                     </td>
@@ -774,7 +774,7 @@ useEffect(() => {
                       aria-current={currentPage === idx ? "page" : undefined}
                       className={`relative inline-flex items-center px-3 py-2 text-xs font-semibold focus:z-20 transition-colors ${
                         currentPage === idx
-                          ? "z-10 bg-build-accent text-white"
+                          ? "z-10 bg-arch-gold text-white"
                           : "text-slate-900 dark:text-white/70 bg-white dark:bg-white/5 border border-slate-300 dark:border-white/10 hover:bg-slate-50 dark:hover:bg-white/10"
                       }`}
                     >
@@ -823,7 +823,7 @@ useEffect(() => {
                     onClick={() => handleAssignAsesor(a.id)}
                     className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-slate-700 dark:text-white/80 hover:bg-slate-100 dark:hover:bg-white/10 disabled:opacity-50 transition-colors"
                   >
-                    <span className="material-symbols-outlined text-[16px] text-build-accent">badge</span>
+                    <span className="material-symbols-outlined text-[16px] text-arch-gold">badge</span>
                     {[a.nombre, a.apellidos].filter(Boolean).join(" ")}
                     <span className="ml-auto text-[11px] text-slate-400 dark:text-white/30">{a.email}</span>
                   </button>

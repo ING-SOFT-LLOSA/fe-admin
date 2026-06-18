@@ -357,7 +357,7 @@ export default function ObraTabHitos({ projectId, etapas, onRefresh }: ObraTabHi
                 type="button"
                 onClick={handleGenerarEstandar}
                 disabled={saving}
-                className="rounded-xl bg-build-accent px-5 py-2.5 text-sm font-bold text-white hover:bg-build-accent/90 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                className="rounded-xl bg-arch-gold px-5 py-2.5 text-sm font-bold text-white hover:bg-arch-gold/90 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
               >
                 {saving ? (
                   <>
