@@ -494,6 +494,7 @@ type NuevoReporteFormProps = {
 function NuevoReporteForm({ projectId, projectName, onClose, onSubmit }: NuevoReporteFormProps) {
   const [titulo,      setTitulo]      = useState("");
   const [comentarios, setComentarios] = useState("");
+  const [fecha,       setFecha]       = useState(new Date().toISOString().split("T")[0]);
   const [files,       setFiles]       = useState<File[]>([]);
   
   const [availableHitos, setAvailableHitos] = useState<HitoResponseDTO[]>([]);
@@ -533,7 +534,7 @@ function NuevoReporteForm({ projectId, projectName, onClose, onSubmit }: NuevoRe
         uuidProyecto: projectId,
         tituloPeriodo: titulo.trim(),
         descripcion: comentarios.trim(),
-        fecha: new Date().toISOString().split("T")[0],
+        fecha,
         hitosConsolidados: selectedHitos,
       }, files);
     } catch (err) {
@@ -554,7 +555,7 @@ function NuevoReporteForm({ projectId, projectName, onClose, onSubmit }: NuevoRe
             Nuevo reporte de obra
           </h3>
           <p className="text-xs text-slate-400 dark:text-white/40 mt-0.5">
-            {projectName ? `Proyecto: ${projectName}` : "Completa los campos del reporte"}
+            Completa los campos del reporte
           </p>
         </div>
         <button
@@ -586,6 +587,19 @@ function NuevoReporteForm({ projectId, projectName, onClose, onSubmit }: NuevoRe
         />
       </div>
  
+      {/* Fecha del mes */}
+      <div>
+        <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-white/50 mb-1.5">
+          Fecha del reporte *
+        </label>
+        <input
+          type="date"
+          value={fecha}
+          onChange={(e) => setFecha(e.target.value)}
+          className="w-full rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 px-3 py-2.5 text-sm text-build-main dark:text-white outline-none focus:border-build-accent focus:ring-1 focus:ring-build-accent transition"
+        />
+      </div>
+
       {/* Hitos consolidados */}
       <div>
         <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-white/50 mb-2">
@@ -662,7 +676,7 @@ function NuevoReporteForm({ projectId, projectName, onClose, onSubmit }: NuevoRe
       {/* Fotos y Videos selector */}
       <div>
         <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-white/50 mb-1.5">
-          Adjuntar fotos y videos del período (Se intentará subir al backend)
+          Adjuntar fotos y videos del período
         </label>
         <div className="flex flex-col gap-3">
           <input

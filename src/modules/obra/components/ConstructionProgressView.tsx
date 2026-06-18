@@ -161,57 +161,63 @@ export default function ConstructionProgressView({
         </div>
       )}
 
-      {/* Timeline Horizontal Global */}
-      <ObraTabTimeline projectId={projectId} etapas={etapas} />
+      <div className="flex flex-col lg:flex-row gap-6">
+        {/* Middle: tabs + content */}
+        <div className="flex-1 min-w-0 space-y-6">
+          {/* Tab bar */}
+          <div className="flex gap-1 overflow-x-auto border-b border-slate-200 dark:border-white/10 scrollbar-none">
+            {TABS.map((tab) => (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => setActiveTab(tab.id)}
+                className={`
+                  flex items-center gap-1.5 px-4 py-2.5 text-sm font-semibold whitespace-nowrap
+                  border-b-2 transition-colors
+                  ${activeTab === tab.id
+                    ? "border-build-accent text-build-accent"
+                    : "border-transparent text-slate-500 dark:text-white/50 hover:text-build-main dark:hover:text-white"
+                  }
+                `}
+              >
+                <span className="material-symbols-outlined text-[17px]">{tab.icon}</span>
+                {tab.label}
+              </button>
+            ))}
+          </div>
 
-      {/* Tab bar */}
-      <div className="flex gap-1 overflow-x-auto border-b border-slate-200 dark:border-white/10 scrollbar-none">
-        {TABS.map((tab) => (
-          <button
-            key={tab.id}
-            type="button"
-            onClick={() => setActiveTab(tab.id)}
-            className={`
-              flex items-center gap-1.5 px-4 py-2.5 text-sm font-semibold whitespace-nowrap
-              border-b-2 transition-colors
-              ${activeTab === tab.id
-                ? "border-build-accent text-build-accent"
-                : "border-transparent text-slate-500 dark:text-white/50 hover:text-build-main dark:hover:text-white"
-              }
-            `}
-          >
-            <span className="material-symbols-outlined text-[17px]">{tab.icon}</span>
-            {tab.label}
-          </button>
-        ))}
-      </div>
-
-      {/* Tab content */}
-      <div>
-
-        <div className={activeTab === "hitos" ? "" : "hidden"}>
-          <ObraTabHitos
-            projectId={projectId}
-            etapas={etapas}
-            onRefresh={async () => {
-              const [updated, progress] = await Promise.all([
-                getEtapasByProyecto(projectId).catch(() => etapas),
-                getAvanceGeneral(projectId).catch(() => null),
-              ]);
-              const corrected = await fetchAndCorrectEtapas(projectId, updated);
-              setEtapas(corrected);
-              if (progress) {
-                setAvance(progress.porcentajeAvance);
-              }
-            }}
-          />
+          {/* Tab content */}
+          <div>
+            <div className={activeTab === "hitos" ? "" : "hidden"}>
+              <ObraTabHitos
+                projectId={projectId}
+                etapas={etapas}
+                onRefresh={async () => {
+                  const [updated, progress] = await Promise.all([
+                    getEtapasByProyecto(projectId).catch(() => etapas),
+                    getAvanceGeneral(projectId).catch(() => null),
+                  ]);
+                  const corrected = await fetchAndCorrectEtapas(projectId, updated);
+                  setEtapas(corrected);
+                  if (progress) {
+                    setAvance(progress.porcentajeAvance);
+                  }
+                }}
+              />
+            </div>
+            <div className={activeTab === "reportes" ? "" : "hidden"}>
+              <ObraTabReportes projectId={projectId} avance={avance} project={project} />
+            </div>
+            <div className={activeTab === "documentacion" ? "" : "hidden"}>
+              <ObraTabDocumentacion projectId={projectId} />
+            </div>      
+          </div>
         </div>
-        <div className={activeTab === "reportes" ? "" : "hidden"}>
-          <ObraTabReportes projectId={projectId} avance={avance} project={project} />
+
+        {/* Right: Timeline vertical */}
+        <div className="w-full lg:w-72 shrink-0">
+          <ObraTabTimeline projectId={projectId} etapas={etapas} />
         </div>
-        <div className={activeTab === "documentacion" ? "" : "hidden"}>
-          <ObraTabDocumentacion projectId={projectId} />
-        </div>      
       </div>
     </section>
   );
