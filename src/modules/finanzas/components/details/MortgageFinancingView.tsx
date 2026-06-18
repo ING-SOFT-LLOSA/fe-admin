@@ -24,13 +24,15 @@ export default function MortgageFinancingView({ expediente, carta, creditoHipote
     const [showHitoForm, setShowHitoForm] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
 
-    const [cartaFormData, setCartaFormData] = useState<Partial<CartaAprobacionPayload>>({
+    const [cartaFormData, setCartaFormData] = useState<Partial<CartaAprobacionPayload> & { pagoSeparacion?: number; pagoInicial?: number }>({
         banco: "",
         montoAprobado: 0,
         fechaEmision: "",
         fechaVencimiento: "",
         fechaDesembolsoProyectada: "",
         comentarios: "",
+        pagoSeparacion: 0,
+        pagoInicial: 0,
     });
 
     const [hitoFormData, setHitoFormData] = useState({
@@ -43,6 +45,8 @@ export default function MortgageFinancingView({ expediente, carta, creditoHipote
             setCartaFormData({
                 banco: carta.banco,
                 montoAprobado: carta.montoAprobado,
+                pagoSeparacion: 0,
+                pagoInicial: 0,
                 fechaEmision: carta.fechaEmision ? new Date(carta.fechaEmision).toISOString().split('T')[0] : "",
                 fechaVencimiento: carta.fechaVencimiento ? new Date(carta.fechaVencimiento).toISOString().split('T')[0] : "",
                 fechaDesembolsoProyectada: carta.fechaDesembolsoProyectada ? new Date(carta.fechaDesembolsoProyectada).toISOString().split('T')[0] : "",
@@ -222,8 +226,8 @@ export default function MortgageFinancingView({ expediente, carta, creditoHipote
 
                         {showCartaForm ? (
                             <div className="space-y-5 flex-1 animate-in fade-in duration-300">
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="col-span-2">
+                                <div className="grid grid-cols-3 gap-4">
+                                    <div className="col-span-3">
                                         <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-white/40 mb-1.5">Banco Financiador</label>
                                         <input
                                             type="text"
@@ -239,6 +243,24 @@ export default function MortgageFinancingView({ expediente, carta, creditoHipote
                                             type="number"
                                             value={cartaFormData.montoAprobado}
                                             onChange={(e) => setCartaFormData(p => ({ ...p, montoAprobado: Number(e.target.value) }))}
+                                            className="w-full rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 px-4 py-3 text-sm outline-none focus:border-build-accent"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-white/40 mb-1.5">Monto Pago Separación (S/)</label>
+                                        <input
+                                            type="number"
+                                            value={cartaFormData.pagoSeparacion ?? 0}
+                                            onChange={(e) => setCartaFormData(p => ({ ...p, pagoSeparacion: Number(e.target.value) }))}
+                                            className="w-full rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 px-4 py-3 text-sm outline-none focus:border-build-accent"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-white/40 mb-1.5">Monto Pago Inicial (S/)</label>
+                                        <input
+                                            type="number"
+                                            value={cartaFormData.pagoInicial ?? 0}
+                                            onChange={(e) => setCartaFormData(p => ({ ...p, pagoInicial: Number(e.target.value) }))}
                                             className="w-full rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 px-4 py-3 text-sm outline-none focus:border-build-accent"
                                         />
                                     </div>

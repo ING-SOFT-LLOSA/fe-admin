@@ -127,6 +127,19 @@ export function fetchProximasCitasCliente(): Promise<CitaResponse[]> {
   return apiFetch<CitaResponse[]>("/api/agenda/cliente/citas/proximas");
 }
 
+// ─── Google Calendar OAuth ─────────────────────────────────────────────────────
+export interface GoogleAuthUrlResponse {
+  url: string;
+}
+
+export function getGoogleAuthUrl(): Promise<GoogleAuthUrlResponse> {
+  return apiFetch<GoogleAuthUrlResponse>("/api/auth/google/url");
+}
+
+export function disconnectGoogleCalendar(): Promise<void> {
+  return apiFetch<void>("/api/auth/google", { method: "DELETE" });
+}
+
 // ─── PATCH /api/agenda/cliente/citas/{id}/respuesta ──────────────────────────
 export interface ResponderCitaPayload {
   confirmado: boolean;

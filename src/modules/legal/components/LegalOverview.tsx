@@ -12,9 +12,13 @@ import {
   fetchTodosLosContratos,
   fetchEtapasExpediente,
   fetchCommercialStepper,
+  asignarAsesorAContrato,
+  desasignarAsesorDelContrato,
   type UsuarioActivoResponseDTO,
   type EtapaExpedienteResponseDTO,
 } from "@/lib/api/expedientes";
+import { fetchUsuarios } from "@/lib/api/users";
+import type { Usuario } from "@/types/user";
 
 // ─────────────────────────────────────────────
 // Constants
@@ -243,7 +247,10 @@ export default function LegalOverview() {
   const [selectedEtapa, setSelectedEtapa]       = useState("");
   const [ocultarDesistidos, setOcultarDesistidos] = useState(true);
 
-
+  // Asesor assignment state
+  const [asesores, setAsesores]           = useState<Usuario[]>([]);
+  const [assignTarget, setAssignTarget]   = useState<string | null>(null);
+  const [assignLoading, setAssignLoading] = useState(false);
 
 
 
@@ -325,6 +332,13 @@ useEffect(() => {
     return () => { mounted = false; };
   }, []);
 
+  // Load asesores
+  useEffect(() => {
+    fetchUsuarios()
+      .then((users) => setAsesores(users.filter((u) => u.rol === "ASESOR")))
+      .catch(() => {});
+  }, []);
+
   // Reset Torre when Proyecto changes
   useEffect(() => { setSelectedTorre(""); }, [selectedProyecto]);
 useEffect(() => {
@@ -398,6 +412,35 @@ useEffect(() => {
   const endIndex = startIndex + itemsPerPage;
 
   const hasActiveFilters = !!(selectedProyecto || selectedTorre || selectedEstado || selectedEtapa || search || !ocultarDesistidos);
+
+  // ── Asesor handlers ─────────────────────────────────────────────────────────
+
+  function handleRemoveAsesor(contract: UsuarioActivoResponseDTO) {
+    if (!contract.asesor) return;
+    desasignarAsesorDelContrato(contract.uuidUsuarioActivo, contract.asesor.id).then(() => {
+      setContracts((prev) =>
+        prev.map((c) =>
+          c.uuidUsuarioActivo === contract.uuidUsuarioActivo ? { ...c, asesor: null } : c
+        )
+      );
+    });
+  }
+
+  async function handleAssignAsesor(idAsesor: number) {
+    if (!assignTarget) return;
+    setAssignLoading(true);
+    try {
+      const updated = await asignarAsesorAContrato(assignTarget, idAsesor);
+      setContracts((prev) =>
+        prev.map((c) =>
+          c.uuidUsuarioActivo === assignTarget ? { ...c, asesor: updated.asesor } : c
+        )
+      );
+      setAssignTarget(null);
+    } finally {
+      setAssignLoading(false);
+    }
+  }
 
   // ── Render ─────────────────────────────────────────────────────────────────
   return (
@@ -536,15 +579,16 @@ useEffect(() => {
         <table className="w-full text-left table-fixed">
           <colgroup>
             <col className="w-[11%]" />
-            <col className="w-[22%]" />
-            <col className="w-[22%]" />
-            <col className="w-[22%]" />
-            <col className="w-[14%]" />
-            <col className="w-[9%]" />
+            <col className="w-[20%]" />
+            <col className="w-[17%]" />
+            <col className="w-[17%]" />
+            <col className="w-[15%]" />
+            <col className="w-[12%]" />
+            <col className="w-[8%]" />
           </colgroup>
           <thead className="border-b border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/[0.03]">
             <tr>
-              {["Expediente", "Proyecto / Unidad", "Titulares", "Etapa actual", "Estado", ""].map((h) => (
+              {["Expediente", "Proyecto / Unidad", "Titulares", "Etapa actual", "Asesor", "Estado", ""].map((h) => (
                 <th
                   key={h}
                   className="px-4 py-2.5 text-[11px] font-semibold uppercase tracking-wider text-slate-400 dark:text-white/40"
@@ -560,7 +604,7 @@ useEffect(() => {
               Array.from({ length: 6 }).map((_, i) => <SkeletonRow key={i} />)
             ) : filtered.length === 0 ? (
               <tr>
-                <td colSpan={6} className="px-5 py-14 text-center text-sm text-slate-400 dark:text-white/40">
+                <td colSpan={7} className="px-5 py-14 text-center text-sm text-slate-400 dark:text-white/40">
                   {hasActiveFilters
                     ? "Sin resultados para los filtros seleccionados."
                     : "No hay expedientes registrados."}
@@ -626,6 +670,34 @@ useEffect(() => {
                           <MiniStepper stages={stages} current={etapaLabel} />
                           {isStalled && <StalledChip days={dias!} />}
                         </div>
+                      )}
+                    </td>
+
+                    {/* Asesor */}
+                    <td className="px-4 py-3">
+                      {contract.asesor ? (
+                        <div className="flex items-center gap-1.5">
+                          <span className="material-symbols-outlined text-[14px] text-build-accent">badge</span>
+                          <div className="min-w-0">
+                            <p className="truncate text-[13px] text-slate-700 dark:text-white/80">
+                              {[contract.asesor.nombre, contract.asesor.apellidos].filter(Boolean).join(" ")}
+                            </p>
+                            <button
+                              onClick={(e) => { e.stopPropagation(); handleRemoveAsesor(contract); }}
+                              className="text-[10px] text-red-500 hover:text-red-700 transition-colors"
+                            >
+                              Desvincular
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={(e) => { e.stopPropagation(); setAssignTarget(contract.uuidUsuarioActivo); }}
+                          className="flex items-center gap-1 text-[12px] text-build-accent hover:text-build-main transition-colors"
+                        >
+                          <span className="material-symbols-outlined text-[14px]">person_add</span>
+                          Asignar
+                        </button>
                       )}
                     </td>
 
@@ -723,6 +795,53 @@ useEffect(() => {
           </div>
         )}
       </div>
+
+      {/* ── Assign Asesor Modal ── */}
+      {assignTarget && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
+          onClick={() => setAssignTarget(null)}
+        >
+          <div
+            className="w-full max-w-sm rounded-xl bg-white dark:bg-slate-900 p-5 shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="text-base font-semibold text-build-main dark:text-white mb-4">
+              Asignar asesor
+            </h3>
+
+            {asesores.length === 0 ? (
+              <p className="text-sm text-slate-500 dark:text-white/50">
+                No hay asesores disponibles.
+              </p>
+            ) : (
+              <div className="max-h-60 space-y-1 overflow-y-auto">
+                {asesores.map((a) => (
+                  <button
+                    key={a.id}
+                    disabled={assignLoading}
+                    onClick={() => handleAssignAsesor(a.id)}
+                    className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-slate-700 dark:text-white/80 hover:bg-slate-100 dark:hover:bg-white/10 disabled:opacity-50 transition-colors"
+                  >
+                    <span className="material-symbols-outlined text-[16px] text-build-accent">badge</span>
+                    {[a.nombre, a.apellidos].filter(Boolean).join(" ")}
+                    <span className="ml-auto text-[11px] text-slate-400 dark:text-white/30">{a.email}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+
+            <div className="mt-4 flex justify-end">
+              <button
+                onClick={() => setAssignTarget(null)}
+                className="rounded-lg border border-slate-200 dark:border-white/10 px-4 py-1.5 text-xs text-slate-600 dark:text-white/70 hover:bg-slate-50 dark:hover:bg-white/5 transition-colors"
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   );
 }

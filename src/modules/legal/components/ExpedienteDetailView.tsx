@@ -7,10 +7,15 @@ import {
   fetchCommercialStepper,
   updateCommercialHitoEstado,
   fetchEtapasExpediente,
+  asignarAsesorAContrato,
+  desasignarAsesorDelContrato,
   type StepperResponseDTO,
   type UsuarioActivoResponseDTO,
   type EtapaExpedienteResponseDTO,
 } from "@/lib/api/expedientes";
+
+import { fetchUsuarios } from "@/lib/api/users";
+import type { Usuario } from "@/types/user";
 
 import {
   fetchStageDocuments,
@@ -45,7 +50,7 @@ export default function ExpedienteDetailView({ uuidUsuarioActivo }: Props) {
   const [activeTab, setActiveTab] = useState<"resumen" | "proceso" | "documentos">("resumen");
 
   // Load contract details and stages summary on mount
-  const { expediente, stages, loading: pageLoading, error: pageError } = useExpediente(uuidUsuarioActivo);
+  const { expediente, stages, loading: pageLoading, error: pageError, setExpediente } = useExpediente(uuidUsuarioActivo);
 
   // Stepper Lazy Loading State
   const [stepper, setStepper] = useState<StepperResponseDTO | null>(null);
@@ -289,7 +294,13 @@ export default function ExpedienteDetailView({ uuidUsuarioActivo }: Props) {
       </div>
 
       {/* 3. Banda de contexto */}
-      <ExpedienteContextBand clientes={expediente.clientes} activos={expediente.activos} />
+      <ExpedienteContextBand
+        uuid={expediente.uuidUsuarioActivo}
+        clientes={expediente.clientes}
+        activos={expediente.activos}
+        asesor={expediente.asesor}
+        setAsesor={(a) => setExpediente((prev) => prev ? { ...prev, asesor: a } : prev)}
+      />
 
       {/* 4. Tabs */}
       <div className="flex gap-1 overflow-x-auto border-b border-slate-200 dark:border-white/10 scrollbar-none">
@@ -363,15 +374,47 @@ export default function ExpedienteDetailView({ uuidUsuarioActivo }: Props) {
 
 // ─── Subcomponent: ExpedienteContextBand ────────────────────────────────────
 function ExpedienteContextBand({
+  uuid,
   clientes,
   activos,
+  asesor,
+  setAsesor,
 }: {
+  uuid: string;
   clientes: UsuarioActivoResponseDTO["clientes"];
   activos: UsuarioActivoResponseDTO["activos"];
+  asesor: UsuarioActivoResponseDTO["asesor"];
+  setAsesor: (a: UsuarioActivoResponseDTO["asesor"]) => void;
 }) {
+  const [asesores, setAsesores] = useState<Usuario[]>([]);
+  const [showModal, setShowModal] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    fetchUsuarios()
+      .then((users) => setAsesores(users.filter((u) => u.rol === "ASESOR")))
+      .catch(() => {});
+  }, []);
+
+  async function handleAssign(idAsesor: number) {
+    setLoading(true);
+    try {
+      const updated = await asignarAsesorAContrato(uuid, idAsesor);
+      setAsesor(updated.asesor);
+      setShowModal(false);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function handleRemove() {
+    if (!asesor) return;
+    desasignarAsesorDelContrato(uuid, asesor.id).then(() => setAsesor(null));
+  }
+
   return (
-    <div className="grid gap-4 md:grid-cols-2 bg-white dark:bg-white/5 p-6 rounded-2xl border border-slate-200 dark:border-white/10 shadow-sm">
-      {/* Columna izquierda — Titulares */}
+    <div className="grid gap-4 md:grid-cols-3 bg-white dark:bg-white/5 p-6 rounded-2xl border border-slate-200 dark:border-white/10 shadow-sm">
+      {/* Titulares */}
       <div className="space-y-3">
         <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-white/35">
           Titulares
@@ -405,7 +448,7 @@ function ExpedienteContextBand({
         </div>
       </div>
 
-      {/* Columna derecha — Unidades vinculadas */}
+      {/* Unidades vinculadas */}
       <div className="space-y-3">
         <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-white/35">
           Unidades Vinculadas
@@ -439,6 +482,83 @@ function ExpedienteContextBand({
           )}
         </div>
       </div>
+
+      {/* Asesor */}
+      <div className="space-y-3">
+        <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-white/35">
+          Asesor
+        </h3>
+        {asesor ? (
+          <div className="flex items-center gap-2">
+            <div className="w-7 h-7 rounded-full bg-build-accent text-white flex items-center justify-center text-[10px] font-bold">
+              {[asesor.nombre, asesor.apellidos].filter(Boolean).map((w) => w![0]).join("").toUpperCase()}
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-slate-700 dark:text-white/80">
+                {[asesor.nombre, asesor.apellidos].filter(Boolean).join(" ")}
+              </p>
+              <p className="text-[11px] text-slate-400 dark:text-white/35">{asesor.email}</p>
+            </div>
+            <button
+              onClick={handleRemove}
+              className="ml-3 text-[10px] text-red-500 hover:text-red-700 transition-colors"
+            >
+              Desvincular
+            </button>
+          </div>
+        ) : (
+          <button
+            onClick={() => setShowModal(true)}
+            className="flex items-center gap-1 text-sm text-build-accent hover:text-build-main transition-colors"
+          >
+            <span className="material-symbols-outlined text-[16px]">person_add</span>
+            Asignar asesor
+          </button>
+        )}
+      </div>
+
+      {/* Assign modal */}
+      {showModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
+          onClick={() => setShowModal(false)}
+        >
+          <div
+            className="w-full max-w-sm rounded-xl bg-white dark:bg-slate-900 p-5 shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="text-base font-semibold text-build-main dark:text-white mb-4">
+              Asignar asesor
+            </h3>
+            {asesores.length === 0 ? (
+              <p className="text-sm text-slate-500 dark:text-white/50">No hay asesores disponibles.</p>
+            ) : (
+              <div className="max-h-60 space-y-1 overflow-y-auto">
+                {asesores.map((a) => (
+                  <button
+                    key={a.id}
+                    disabled={loading}
+                    onClick={() => handleAssign(a.id)}
+                    className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-slate-700 dark:text-white/80 hover:bg-slate-100 dark:hover:bg-white/10 disabled:opacity-50 transition-colors"
+                  >
+                    <span className="material-symbols-outlined text-[16px] text-build-accent">badge</span>
+                    {[a.nombre, a.apellidos].filter(Boolean).join(" ")}
+                    <span className="ml-auto text-[11px] text-slate-400 dark:text-white/30">{a.email}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+            <div className="mt-4 flex justify-end">
+              <button
+                onClick={() => setShowModal(false)}
+                className="rounded-lg border border-slate-200 dark:border-white/10 px-4 py-1.5 text-xs text-slate-600 dark:text-white/70 hover:bg-slate-50 dark:hover:bg-white/5 transition-colors"
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

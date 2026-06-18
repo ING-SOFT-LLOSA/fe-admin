@@ -29,6 +29,7 @@ export interface UsuarioActivoResponseDTO {
   clientes:            ClienteSimpleDTO[];
   activos:             ActivoResponseDTO[];  // Lista de activos vinculados
   activo?:             ActivoResponseDTO;
+  asesor?:             ClienteSimpleDTO | null;
   faseComercial?:      string;
   estadoTramiteLegal?: string;
 }
@@ -314,6 +315,36 @@ export function fetchActivosPorUsuario(
 ): Promise<ActivoUsuarioDTO[]> {
   return apiFetch<ActivoUsuarioDTO[]>(
     `/api/expedientes/usuario/${idUsuario}/activos`
+  );
+}
+
+// ─── Gestión de Asesores ───────────────────────────────────────────────────────
+
+/**
+ * POST /api/expedientes/usuarioActivo/{uuid}/asesor/{idAsesor}
+ * Asigna un asesor (Usuario) a un contrato.
+ */
+export function asignarAsesorAContrato(
+  uuid: string,
+  idAsesor: number
+): Promise<UsuarioActivoResponseDTO> {
+  return apiFetch<UsuarioActivoResponseDTO>(
+    `/api/expedientes/usuarioActivo/${uuid}/asesor/${idAsesor}`,
+    { method: "POST" }
+  );
+}
+
+/**
+ * PUT /api/expedientes/usuarioActivo/{uuid}/asesor/{idAsesor}
+ * Desasigna el asesor del contrato.
+ */
+export function desasignarAsesorDelContrato(
+  uuid: string,
+  idAsesor: number
+): Promise<UsuarioActivoResponseDTO> {
+  return apiFetch<UsuarioActivoResponseDTO>(
+    `/api/expedientes/usuarioActivo/${uuid}/asesor/${idAsesor}`,
+    { method: "PUT" }
   );
 }
 
