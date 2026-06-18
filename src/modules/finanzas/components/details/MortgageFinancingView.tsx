@@ -1,21 +1,23 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import type { CartaAprobacionResponse } from "@/modules/finanzas/types";
+import type { CartaAprobacionResponse, CreditoHipotecarioItem, CreditoHipotecarioResumen } from "@/modules/finanzas/types";
 import type { CartaAprobacionPayload } from "@/lib/api/finanzas";
 import { createCartaAprobacion, updateCartaAprobacion, deleteCartaAprobacion } from "@/lib/api/finanzas";
-import type { StepperResponseDTO, HitoComercialResponseDTO } from "@/lib/api/expedientes";
+import type { HitoComercialResponseDTO } from "@/lib/api/expedientes";
 import { updateCommercialHitoEstado, createCommercialHito, deleteCommercialHito, updateCommercialHito } from "@/lib/api/expedientes";
 import type { UsuarioActivoResponseDTO } from "@/lib/api/expedientes";
+import CreditDocumentsSection from "./CreditDocumentsSection";
+
 
 interface MortgageFinancingViewProps {
     expediente: UsuarioActivoResponseDTO;
     carta: CartaAprobacionResponse | null;
-    stepper: StepperResponseDTO | null;
+    creditoHipotecario: CreditoHipotecarioResumen | null;
     onUpdate: () => void;
 }
 
-export default function MortgageFinancingView({ expediente, carta, stepper, onUpdate }: MortgageFinancingViewProps) {
+export default function MortgageFinancingView({ expediente, carta, creditoHipotecario, onUpdate }: MortgageFinancingViewProps) {
     const [isUpdating, setIsUpdating] = useState<string | null>(null);
     const [editingHito, setEditingHito] = useState<string | null>(null);
     const [showCartaForm, setShowCartaForm] = useState(false);
@@ -49,8 +51,10 @@ export default function MortgageFinancingView({ expediente, carta, stepper, onUp
         }
     }, [carta, showCartaForm]);
 
-    const paymentEtapa = stepper?.etapas.find(e => e.etapa === "PAGO");
-    const progress = paymentEtapa?.porcentajeAvance ?? 0;
+    // Progreso viene del backend (endpoint unificado) o cae a 0
+    const progress = creditoHipotecario?.progreso ?? 0;
+    // Hitos del stepper interno (para CRUD manual)
+    const paymentHitos = creditoHipotecario?.items ?? [];
 
 
     const handleHitoToggle = async (uuidHito: string, currentEstado: string) => {
@@ -64,8 +68,8 @@ export default function MortgageFinancingView({ expediente, carta, stepper, onUp
         try {
             await updateCommercialHitoEstado(uuidHito, newEstado);
             onUpdate();
-        } catch (error) {
-            console.error("Error updating hito status", error);
+        } catch (e) {
+            console.error("Error updating hito status", e);
             alert("No se pudo actualizar el hito.");
         } finally {
             setIsUpdating(null);
@@ -116,7 +120,7 @@ export default function MortgageFinancingView({ expediente, carta, stepper, onUp
                     etapaProceso: "PAGO",
                     nombreHito: hitoFormData.nombre,
                     descripcion: "",
-                    orden: (paymentEtapa?.hitos.length ?? 0) + 1,
+                    orden: (paymentHitos.length ?? 0) + 1,
                 });
             }
             setHitoFormData({ nombre: "" });
@@ -189,6 +193,12 @@ export default function MortgageFinancingView({ expediente, carta, stepper, onUp
                 </div>
             </div>
 
+            {/* Documentos de Crédito — fila completa */}
+            <CreditDocumentsSection
+                expedienteId={expediente.uuidUsuarioActivo}
+                onUpdate={onUpdate}
+            />
+            {/* Carta + Hitos — grilla 5 columnas */}
             <div className="grid gap-6 lg:grid-cols-5">
                 {/* Lado Izquierdo: Carta de Aprobación (3 cols) */}
                 <div className="lg:col-span-3 space-y-6">
@@ -350,141 +360,123 @@ export default function MortgageFinancingView({ expediente, carta, stepper, onUp
                     </section>
                 </div>
 
-                {/* Lado Derecho: Hitos de Desembolso (2 cols) */}
+                {/* Lado Derecho: Hitos del Crédito (2 cols) */}
                 <div className="lg:col-span-2 space-y-6">
                     <section className="rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 p-6 shadow-sm h-full flex flex-col">
-                        <div className="flex items-center justify-between mb-6">
-                            <h4 className="text-base font-bold text-build-main dark:text-white flex items-center gap-2">
-                                <span className="material-symbols-outlined text-build-accent">task_alt</span>
-                                Hitos
-                            </h4>
-                            <button
-                                onClick={() => setShowHitoForm(!showHitoForm)}
-                                className="w-8 h-8 rounded-lg bg-slate-50 dark:bg-white/5 border border-slate-100 dark:border-white/10 flex items-center justify-center text-slate-500 hover:text-build-accent hover:border-build-accent transition-all"
-                                title="Agregar Hito Manual"
-                            >
-                                <span className="material-symbols-outlined text-[20px]">{showHitoForm ? "close" : "add"}</span>
-                            </button>
+                        <div className="flex items-center gap-2 mb-6">
+                            <span className="material-symbols-outlined text-build-accent">timeline</span>
+                            <h4 className="text-base font-bold text-build-main dark:text-white">Etapas del Desembolso</h4>
+                            {creditoHipotecario && (
+                                <span className="ml-auto text-xs font-bold text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/20 px-2 py-0.5 rounded-full">
+                                    {creditoHipotecario.progreso.toFixed(0)}% completo
+                                </span>
+                            )}
                         </div>
 
-                        <div className="space-y-4 relative flex-1">
-                            {showHitoForm && (
-                                <div className="mb-6 p-4 rounded-xl border border-build-accent/20 bg-build-accent/5 animate-in slide-in-from-top-2 duration-300">
-                                    <p className="text-[10px] font-bold uppercase tracking-widest text-build-accent mb-3">
-                                        {editingHito ? "Editar Hito" : "Nuevo Hito (Etapa PAGO)"}
-                                    </p>
-                                    <div className="space-y-3">
-                                        <input
-                                            type="text"
-                                            placeholder="Nombre del hito (ej. Minuta)"
-                                            value={hitoFormData.nombre}
-                                            onChange={(e) => setHitoFormData(p => ({ ...p, nombre: e.target.value }))}
-                                            className="w-full rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-[#1a1a1a] px-3 py-2 text-xs outline-none focus:border-build-accent"
-                                        />
-                                        <textarea
-                                            placeholder="Descripción breve..."
-                                            rows={2}
-                                            className="w-full rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-[#1a1a1a] px-3 py-2 text-xs outline-none focus:border-build-accent resize-none"
-                                        />
-                                        <div className="flex gap-2">
-                                            <button
-                                                onClick={handleAddHito}
-                                                disabled={!hitoFormData.nombre || isSaving}
-                                                className="flex-1 bg-build-accent text-white py-1.5 rounded-lg text-xs font-bold hover:bg-build-accent/80 transition-all disabled:opacity-50"
-                                            >
-                                                {isSaving ? "Procesando..." : editingHito ? "Guardar Cambios" : "Agregar Hito"}
-                                            </button>
-                                            <button
-                                                onClick={() => {
-                                                    setShowHitoForm(false);
-                                                    setEditingHito(null);
-                                                    setHitoFormData({ nombre: "" });
-                                                }}
-                                                className="px-3 py-1.5 text-xs font-bold text-slate-400"
-                                            >
-                                                Cancelar
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-
+                        <div className="space-y-3 relative flex-1">
                             {/* Línea vertical decorativa */}
                             <div className="absolute left-4 top-2 bottom-2 w-0.5 bg-slate-100 dark:bg-white/5" />
 
-                            {paymentEtapa?.hitos.sort((a, b) => a.orden - b.orden).map((hito) => {
-                                const isCompleted = hito.estado === "COMPLETADO";
-                                const isEnProgreso = hito.estado === "EN_PROGRESO";
+                            {paymentHitos.length === 0 && (
+                                <div className="text-center py-10 opacity-50">
+                                    <span className="material-symbols-outlined text-4xl mb-2">hourglass_empty</span>
+                                    <p className="text-sm italic">Cargando etapas...</p>
+                                </div>
+                            )}
+
+                            {paymentHitos.map((item, idx) => {
+                                const isCompleted = item.estado === "COMPLETADO";
+                                const isEnProgreso = item.estado === "EN_PROGRESO";
+                                const canChangeEstado = Boolean(item.uuidHitoComercial);
 
                                 return (
-                                    <div key={hito.uuidHitoComercial} className="relative pl-10 mb-4 last:mb-0 group">
+                                    <div key={item.uuidHitoComercial ?? `${item.nombre}-${idx}`} className="relative pl-10 last:mb-0 group">
                                         {/* Punto en la línea */}
-                                        <div className={`absolute left-0 top-1.5 w-8 h-8 rounded-full border-2 flex items-center justify-center z-10 transition-colors ${isCompleted
-                                            ? "bg-green-500 border-green-500 text-white"
-                                            : isEnProgreso
-                                                ? "bg-amber-500 border-amber-500 text-white"
-                                                : "bg-white dark:bg-[#1a1a1a] border-slate-200 dark:border-white/10 text-slate-300"
-                                            }`}>
+                                        <button
+                                            type="button"
+                                            disabled={!canChangeEstado || isUpdating === item.uuidHitoComercial}
+                                            onClick={() => item.uuidHitoComercial && handleHitoToggle(item.uuidHitoComercial, item.estado)}
+                                            title={!canChangeEstado ? "No hay hito asociado" : isCompleted ? "Marcar como pendiente" : isEnProgreso ? "Marcar como completado" : "Marcar como en curso"}
+                                            className={`absolute left-0 top-1.5 w-8 h-8 rounded-full border-2 flex items-center justify-center z-10 transition-colors disabled:cursor-not-allowed ${
+                                            isCompleted
+                                                ? "bg-green-500 border-green-500 text-white"
+                                                : isEnProgreso
+                                                    ? "bg-amber-500 border-amber-500 text-white"
+                                                    : "bg-white dark:bg-[#1a1a1a] border-slate-200 dark:border-white/10 text-slate-300"
+                                            } ${canChangeEstado ? "hover:scale-105" : "opacity-60"}`}
+                                        >
                                             <span className="material-symbols-outlined text-[16px]">
-                                                {isCompleted ? "check" : isEnProgreso ? "priority_high" : "radio_button_unchecked"}
+                                                {isUpdating === item.uuidHitoComercial ? "more_horiz" : isCompleted ? "check" : isEnProgreso ? "priority_high" : "radio_button_unchecked"}
                                             </span>
-                                        </div>
+                                        </button>
 
-                                        <div className={`p-3 rounded-xl border transition-all ${isCompleted ? "bg-green-50/50 dark:bg-green-900/10 border-green-100 dark:border-green-900/30" : "bg-white dark:bg-white/0 border-transparent shadow-sm"
-                                            }`}>
-                                            <div className="flex items-start justify-between gap-3">
-                                                <div className="flex-1">
-                                                    <div className="flex items-center justify-between">
-                                                        <p className={`text-sm font-bold transition-colors ${isCompleted ? "text-green-800 dark:text-green-400" : "text-build-main dark:text-white"}`}>
-                                                            {hito.nombreHito}
-                                                        </p>
-                                                        <div className="hidden group-hover:flex items-center gap-1">
-                                                            <button
-                                                                onClick={() => startEditingHito(hito)}
-                                                                className="text-slate-400 hover:text-build-accent transition-colors"
-                                                                title="Editar"
-                                                            >
-                                                                <span className="material-symbols-outlined text-[16px]">edit</span>
-                                                            </button>
-                                                            <button
-                                                                onClick={() => handleDeleteHito(hito.uuidHitoComercial)}
-                                                                className="text-slate-400 hover:text-red-500 transition-colors"
-                                                                title="Eliminar"
-                                                            >
-                                                                <span className="material-symbols-outlined text-[16px]">delete</span>
-                                                            </button>
-                                                        </div>
+                                        <div className={`p-3 rounded-xl border transition-all ${
+                                            isCompleted
+                                                ? "bg-green-50/50 dark:bg-green-900/10 border-green-100 dark:border-green-900/30"
+                                                : isEnProgreso
+                                                    ? "bg-amber-50/50 dark:bg-amber-900/10 border-amber-100 dark:border-amber-900/20"
+                                                    : "bg-white dark:bg-white/0 border-transparent"
+                                        }`}>
+                                            <div className="flex items-start justify-between gap-2">
+                                                <div className="flex-1 min-w-0">
+                                                    <p className={`text-sm font-bold truncate ${
+                                                        isCompleted ? "text-green-800 dark:text-green-400" : "text-build-main dark:text-white"
+                                                    }`}>
+                                                        {item.nombre}
+                                                    </p>
+                                                    <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                                                        {item.monto > 0 && (
+                                                            <span className="text-[10px] font-bold text-slate-500 dark:text-white/40">
+                                                                S/ {item.monto.toLocaleString("es-PE", { minimumFractionDigits: 2 })}
+                                                            </span>
+                                                        )}
+                                                        {item.fecha && (
+                                                            <span className="text-[10px] text-slate-400 dark:text-white/30">
+                                                                {new Date(item.fecha).toLocaleDateString("es-PE")}
+                                                            </span>
+                                                        )}
                                                     </div>
                                                 </div>
-                                                <div className="flex flex-col items-end gap-1">
+                                                <div className="flex flex-col items-end gap-1 shrink-0">
                                                     <button
-                                                        disabled={isUpdating === hito.uuidHitoComercial}
-                                                        onClick={() => handleHitoToggle(hito.uuidHitoComercial, hito.estado)}
-                                                        className="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-white/10 transition-colors"
-                                                        title={isCompleted ? "Marcar como pendiente" : isEnProgreso ? "Marcar como completado" : "Marcar como en curso"}
+                                                        type="button"
+                                                        disabled={!canChangeEstado || isUpdating === item.uuidHitoComercial}
+                                                        onClick={() => item.uuidHitoComercial && handleHitoToggle(item.uuidHitoComercial, item.estado)}
+                                                        className={`text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full transition-colors disabled:cursor-not-allowed ${
+                                                        isCompleted
+                                                            ? "text-green-700 bg-green-100 dark:text-green-400 dark:bg-green-900/30"
+                                                            : isEnProgreso
+                                                                ? "text-amber-700 bg-amber-100 dark:text-amber-400 dark:bg-amber-900/30"
+                                                                : "text-slate-400 bg-slate-100 dark:bg-white/5"
+                                                    } ${canChangeEstado ? "hover:ring-2 hover:ring-build-accent/20" : "opacity-70"}`}
                                                     >
-                                                        <span className={`material-symbols-outlined text-[18px] ${isCompleted ? "text-green-500" : isEnProgreso ? "text-amber-500" : "text-slate-300"}`}>
-                                                            {isUpdating === hito.uuidHitoComercial ? "more_horiz" : isCompleted ? "check_circle" : isEnProgreso ? "published_with_changes" : "radio_button_unchecked"}
-                                                        </span>
+                                                        {item.estado === "COMPLETADO" ? "Listo" : item.estado === "EN_PROGRESO" ? "En curso" : "Pendiente"}
                                                     </button>
-                                                    {hito.fechaCompletado && (
-                                                        <span className="text-[9px] text-green-600 dark:text-green-400 font-bold whitespace-nowrap">
-                                                            {new Date(hito.fechaCompletado).toLocaleDateString("es-PE")}
-                                                        </span>
+                                                    {item.downloadUrl && (
+                                                        <a
+                                                            href={item.downloadUrl}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            className="text-[9px] text-build-accent hover:underline flex items-center gap-0.5"
+                                                            title="Descargar documento"
+                                                        >
+                                                            <span className="material-symbols-outlined text-[12px]">download</span>
+                                                        </a>
                                                     )}
                                                 </div>
                                             </div>
-                                            
                                         </div>
                                     </div>
                                 );
                             })}
 
-                            {(!paymentEtapa?.hitos || paymentEtapa.hitos.length === 0) && !showHitoForm && (
-                                <div className="text-center py-10 opacity-50">
-                                    <span className="material-symbols-outlined text-4xl mb-2">rule</span>
-                                    <p className="text-sm italic">Sin hitos configurados para esta etapa.</p>
-                                    <button onClick={() => setShowHitoForm(true)} className="text-xs font-bold text-build-accent underline mt-2">Agregar el primero</button>
+                            {/* Monto total */}
+                            {creditoHipotecario && creditoHipotecario.montoTotal > 0 && (
+                                <div className="mt-4 pt-3 border-t border-slate-100 dark:border-white/10 flex items-center justify-between">
+                                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Monto Total Hipotecario</span>
+                                    <span className="text-sm font-bold text-build-main dark:text-white">
+                                        S/ {creditoHipotecario.montoTotal.toLocaleString("es-PE", { minimumFractionDigits: 2 })}
+                                    </span>
                                 </div>
                             )}
                         </div>
@@ -493,4 +485,5 @@ export default function MortgageFinancingView({ expediente, carta, stepper, onUp
             </div>
         </div>
     );
+
 }

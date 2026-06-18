@@ -17,7 +17,7 @@ export default function PaymentManagementStep({ expediente, onBack }: PaymentMan
         pagos,
         resumen,
         cartaAprobacion,
-        stepper,
+        creditoHipotecario,
         isLoading,
         error,
         refresh
@@ -75,7 +75,7 @@ export default function PaymentManagementStep({ expediente, onBack }: PaymentMan
                         <MortgageFinancingView
                             expediente={activeExpediente}
                             carta={cartaAprobacion}
-                            stepper={stepper}
+                            creditoHipotecario={creditoHipotecario}
                             onUpdate={refresh}
                         />
                     )}

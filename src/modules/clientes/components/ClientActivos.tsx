@@ -9,6 +9,7 @@ import {
   type ActivoUsuarioDTO,
 } from "@/lib/api/expedientes";
 import { fetchProyectos, type Proyecto } from "@/lib/api/proyectos";
+import { ApiError } from "@/lib/api/http";
 
 type ClientActivosProps = {
   clientId: number;
@@ -77,7 +78,11 @@ export default function ClientActivos({ clientId, refreshKey = 0 }: ClientActivo
       }
     } catch (err) {
       console.error(err);
-      alert("Error al cargar el expediente legal.");
+      if (err instanceof ApiError && err.status === 404) {
+        alert("No se encontró un expediente legal asociado para esta propiedad.");
+      } else {
+        alert("Error al cargar el expediente legal.");
+      }
     } finally {
       setLoadingLegal((prev) => ({ ...prev, [activoId]: false }));
     }

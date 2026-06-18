@@ -1,17 +1,19 @@
 import { useState, useEffect, useCallback } from "react";
-import { fetchCommercialStepper, fetchContratoPorId } from "@/lib/api/expedientes";
-import type { StepperResponseDTO, UsuarioActivoResponseDTO } from "@/lib/api/expedientes";
+import { fetchContratoPorId, fetchCommercialStepper } from "@/lib/api/expedientes";
+import type { UsuarioActivoResponseDTO, HitoComercialResponseDTO } from "@/lib/api/expedientes";
 import {
     fetchCronograma,
     fetchPagos,
     fetchResumenPagos,
-    fetchCartaAprobacion
+    fetchCartaAprobacion,
 } from "@/lib/api/finanzas";
 import type {
     CronogramaPagoResponse,
     PagoResponse,
     CronogramaResumenResponse,
-    CartaAprobacionResponse
+    CartaAprobacionResponse,
+    CreditoHipotecarioResumen,
+    CreditoHipotecarioItem,
 } from "@/modules/finanzas/types";
 
 export function useFinancingData(uuidExpediente: string | null, expedienteBase?: UsuarioActivoResponseDTO | null) {
@@ -20,7 +22,7 @@ export function useFinancingData(uuidExpediente: string | null, expedienteBase?:
     const [pagos, setPagos] = useState<PagoResponse[]>([]);
     const [resumen, setResumen] = useState<CronogramaResumenResponse | null>(null);
     const [cartaAprobacion, setCartaAprobacion] = useState<CartaAprobacionResponse | null>(null);
-    const [stepper, setStepper] = useState<StepperResponseDTO | null>(null);
+    const [creditoHipotecario, setCreditoHipotecario] = useState<CreditoHipotecarioResumen | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     // null = aún cargando, false = no tiene expediente, true = sí tiene
@@ -33,7 +35,7 @@ export function useFinancingData(uuidExpediente: string | null, expedienteBase?:
             setPagos([]);
             setResumen(null);
             setCartaAprobacion(null);
-            setStepper(null);
+            setCreditoHipotecario(null);
             setHasExpediente(null);
             return;
         }
@@ -82,23 +84,49 @@ export function useFinancingData(uuidExpediente: string | null, expedienteBase?:
                     setResumen(null);
                     setPagos([]);
                 }
-                setStepper(null);
+                setCreditoHipotecario(null);
                 setCartaAprobacion(null);
             } else if (rawType.includes("hipotecario")) {
+                let carta: CartaAprobacionResponse | null = null;
                 try {
-                    const step = await fetchCommercialStepper(uuid);
-                    setStepper(step);
-                } catch (e) {
-                    console.warn("Error fetching stepper", e);
-                    setStepper(null);
-                }
+                    carta = await fetchCartaAprobacion(uuid);
+                } catch { /* sin carta aún */ }
+                setCartaAprobacion(carta);
+
+                // Obtener hitos reales desde el stepper comercial (tienen UUID → toggleables)
+                let stepperItems: CreditoHipotecarioItem[] = [];
                 try {
-                    const carta = await fetchCartaAprobacion(uuid);
-                    setCartaAprobacion(carta);
-                } catch (e) {
-                    console.warn("Error fetching carta", e);
-                    setCartaAprobacion(null);
+                    const stepper = await fetchCommercialStepper(uuid);
+                    const pagoEtapa = stepper.etapas.find(e => e.etapa === "PAGO");
+                    if (pagoEtapa && pagoEtapa.hitos.length > 0) {
+                        stepperItems = pagoEtapa.hitos.map(h => ({
+                            uuidHitoComercial: h.uuidHitoComercial,
+                            nombre: h.nombreHito,
+                            fecha: h.fechaCompletado,
+                            estado: h.estado,
+                            monto: 0,
+                            documentId: null,
+                            downloadUrl: null,
+                        }));
+                    }
+                } catch { /* sin stepper */ }
+
+                // Fallback: mostrar los 4 hitos estándar (sin UUID, solo lectura)
+                if (stepperItems.length === 0) {
+                    stepperItems = [
+                        { uuidHitoComercial: null, nombre: "Carta de aprobación", fecha: carta?.fechaEmision ?? null, estado: carta ? "COMPLETADO" : "PENDIENTE", monto: 0, documentId: null, downloadUrl: null },
+                        { uuidHitoComercial: null, nombre: "Pago de separación", fecha: null, estado: "PENDIENTE", monto: 0, documentId: null, downloadUrl: null },
+                        { uuidHitoComercial: null, nombre: "Pago inicial", fecha: null, estado: "PENDIENTE", monto: 0, documentId: null, downloadUrl: null },
+                        { uuidHitoComercial: null, nombre: "Desembolso", fecha: carta?.fechaDesembolsoProyectada ?? null, estado: "PENDIENTE", monto: carta?.montoAprobado ?? 0, documentId: null, downloadUrl: null },
+                    ];
                 }
+
+                const completados = stepperItems.filter(i => i.estado === "COMPLETADO").length;
+                setCreditoHipotecario({
+                    items: stepperItems,
+                    montoTotal: carta?.montoAprobado ?? 0,
+                    progreso: stepperItems.length > 0 ? (completados / stepperItems.length) * 100 : 0,
+                });
                 setPagos([]);
                 setCronograma(null);
                 setResumen(null);
@@ -120,7 +148,7 @@ export function useFinancingData(uuidExpediente: string | null, expedienteBase?:
         pagos,
         resumen,
         cartaAprobacion,
-        stepper,
+        creditoHipotecario,
         hasExpediente,
         isLoading,
         error,

@@ -118,6 +118,11 @@ export function fetchCartaAprobacion(uuidUsuarioActivo: string): Promise<CartaAp
     return apiFetch<CartaAprobacionResponse>(`/api/cartas-aprobacion/${uuidUsuarioActivo}`);
 }
 
+export function fetchCreditoHipotecario(uuidUsuarioActivo: string): Promise<import("@/modules/finanzas/types").CreditoHipotecarioResumen> {
+    return apiFetch<import("@/modules/finanzas/types").CreditoHipotecarioResumen>(`/api/credito-hipotecario/${uuidUsuarioActivo}`);
+}
+
+
 export interface CartaAprobacionPayload {
     uuidUsuarioActivo: string;
     banco: string;
