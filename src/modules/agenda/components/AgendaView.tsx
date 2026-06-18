@@ -27,6 +27,9 @@ type CalEvent = {
   unit?: string;
   rsvpDot?: string;
   rsvpText?: string;
+  syncDot?: string;
+  syncIcon?: string;
+  syncText?: string;
 };
 
 type CalDay = {
@@ -150,6 +153,21 @@ function mapCitaToEvent(c: CitaResponse): CalEvent {
     rsvpText = "Declinado";
   }
 
+  let syncDot = "";
+  let syncIcon = "";
+  let syncText = "";
+  if (c.clienteUsaGoogle) {
+    if (c.estadoSincronizacion === "SINCRONIZADO") {
+      syncDot = "bg-emerald-500";
+      syncIcon = "check_circle";
+      syncText = "Sincronizado con Google Calendar";
+    } else if (c.estadoSincronizacion === "PENDIENTE" || c.estadoSincronizacion === "FALLIDO") {
+      syncDot = "bg-amber-500";
+      syncIcon = "sync_problem";
+      syncText = c.estadoSincronizacion === "FALLIDO" ? "Error de sincronización" : "Pendiente de sincronizar";
+    }
+  }
+
   return {
     id: c.id,
     label: `${c.titulo || c.tipoEvento}`,
@@ -157,6 +175,9 @@ function mapCitaToEvent(c: CitaResponse): CalEvent {
     dot,
     rsvpDot,
     rsvpText,
+    syncDot,
+    syncIcon,
+    syncText,
     text: bg.split(" ")[1] || "",
     time: startL,
     client: c.clienteNombre || "Cliente",
@@ -665,6 +686,11 @@ export default function SchedulePage() {
                     <div className="flex items-center gap-1.5">
                       <span className={`w-1.5 h-1.5 rounded-full ${ev.rsvpDot}`} title={`Confirmación: ${ev.rsvpText}`} />
                       <span className="text-[11px] font-bold truncate">{ev.label}</span>
+                      {ev.syncIcon && (
+                        <span className={`material-symbols-outlined text-[12px] ml-auto shrink-0 ${ev.syncDot === "bg-emerald-500" ? "text-emerald-500" : "text-amber-500"}`} title={ev.syncText}>
+                          {ev.syncIcon}
+                        </span>
+                      )}
                     </div>
                     {ev.time && <span className="text-[9px] font-semibold opacity-75 pl-3">{ev.time}</span>}
                   </div>
@@ -689,7 +715,14 @@ export default function SchedulePage() {
                 >
                   <div className="flex items-center justify-between gap-2">
                     <h4 className="text-[13px] font-bold text-build-main dark:text-white truncate hover:underline">{ev.label}</h4>
-                    <span className={`w-2 h-2 rounded-full shrink-0 ${ev.rsvpDot}`} title={`Confirmación: ${ev.rsvpText}`} />
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        {ev.syncIcon && (
+                          <span className={`material-symbols-outlined text-[14px] ${ev.syncDot === "bg-emerald-500" ? "text-emerald-500" : "text-amber-500"}`} title={ev.syncText}>
+                            {ev.syncIcon}
+                          </span>
+                        )}
+                        <span className={`w-2 h-2 rounded-full shrink-0 ${ev.rsvpDot}`} title={`Confirmación: ${ev.rsvpText}`} />
+                      </div>
                   </div>
                   <p className="text-[11px] text-slate-500 dark:text-white/60 mt-0.5">Cliente: {ev.client}</p>
                   <p className="text-[12px] text-slate-500 dark:text-white/60 flex items-center gap-1 mt-1 font-semibold">
