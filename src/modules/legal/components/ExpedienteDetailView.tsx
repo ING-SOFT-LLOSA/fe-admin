@@ -40,10 +40,10 @@ import { useExpediente } from "./hooks";
 import DialogModal from "@/components/ui/DialogModal";
 
 type Props = {
-  uuidUsuarioActivo: string;
+  readonly uuidUsuarioActivo: string;
 };
 
-export default function ExpedienteDetailView({ uuidUsuarioActivo }: Props) {
+export default function ExpedienteDetailView({ uuidUsuarioActivo }: Readonly<Props>) {
   // Tabs Navigation State
   const [activeTab, setActiveTab] = useState<"resumen" | "proceso" | "documentos">("resumen");
 
@@ -152,7 +152,7 @@ export default function ExpedienteDetailView({ uuidUsuarioActivo }: Props) {
       nuevoEstado = "PENDIENTE";
     }
 
-    const previousStepper = JSON.parse(JSON.stringify(stepper)) as StepperResponseDTO;
+    const previousStepper = structuredClone(stepper);
 
     // Optimistic Update
     const updatedEtapas = stepper.etapas.map((et) => {
@@ -161,7 +161,7 @@ export default function ExpedienteDetailView({ uuidUsuarioActivo }: Props) {
           if (h.uuidHitoComercial === uuidHitoComercial) {
             return {
               ...h,
-              estado: nuevoEstado as "PENDIENTE" | "EN_PROGRESO" | "COMPLETADO",
+              estado: nuevoEstado,
               fechaCompletado: nuevoEstado === "COMPLETADO" ? new Date().toISOString() : null,
             };
           }
@@ -261,7 +261,7 @@ export default function ExpedienteDetailView({ uuidUsuarioActivo }: Props) {
           className="inline-flex items-center gap-1.5 text-sm font-semibold text-slate-500 hover:text-arch-gold dark:text-white/60 dark:hover:text-white transition-colors"
         >
           <span className="material-symbols-outlined text-[18px]">arrow_back</span>
-          Volver a Gestión Legal
+          {" "}Volver a Gestión Legal
         </Link>
       </div>
 
@@ -276,12 +276,12 @@ export default function ExpedienteDetailView({ uuidUsuarioActivo }: Props) {
             {/* Badge de estado */}
             <span
               className={`inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 rounded-full ${
-                expediente.vigente !== false
-                  ? "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400"
-                  : "bg-slate-100 dark:bg-white/10 text-slate-500 dark:text-white/40"
+                expediente.vigente === false
+                  ? "bg-slate-100 dark:bg-white/10 text-slate-500 dark:text-white/40"
+                  : "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400"
               }`}
             >
-              {expediente.vigente !== false ? "Vigente" : "Desvinculado"}
+              {expediente.vigente === false ? "Desvinculado" : "Vigente"}
             </span>
 
             {/* Badge de financiamiento */}
@@ -316,7 +316,7 @@ export default function ExpedienteDetailView({ uuidUsuarioActivo }: Props) {
           }`}
         >
           <span className="material-symbols-outlined text-[18px]">dashboard</span>
-          Resumen
+          {" "}Resumen
         </button>
         <button
           onClick={() => setActiveTab("proceso")}
@@ -327,7 +327,7 @@ export default function ExpedienteDetailView({ uuidUsuarioActivo }: Props) {
           }`}
         >
           <span className="material-symbols-outlined text-[18px]">account_tree</span>
-          Proceso legal
+          {" "}Proceso legal
         </button>
         <button
           onClick={() => setActiveTab("documentos")}
@@ -338,7 +338,7 @@ export default function ExpedienteDetailView({ uuidUsuarioActivo }: Props) {
           }`}
         >
           <span className="material-symbols-outlined text-[18px]">folder_open</span>
-          Documentos
+          {" "}Documentos
         </button>
       </div>
 
@@ -382,13 +382,13 @@ function ExpedienteContextBand({
   activos,
   asesor,
   setAsesor,
-}: {
+}: Readonly<{
   uuid: string;
   clientes: UsuarioActivoResponseDTO["clientes"];
   activos: UsuarioActivoResponseDTO["activos"];
   asesor: UsuarioActivoResponseDTO["asesor"];
   setAsesor: (a: UsuarioActivoResponseDTO["asesor"]) => void;
-}) {
+}>) {
   const [asesores, setAsesores] = useState<Usuario[]>([]);
   const [showModal, setShowModal] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -515,21 +515,21 @@ function ExpedienteContextBand({
             className="flex items-center gap-1 text-sm text-arch-gold hover:text-build-main transition-colors"
           >
             <span className="material-symbols-outlined text-[16px]">person_add</span>
-            Asignar asesor
+            {" "}Asignar asesor
           </button>
         )}
       </div>
 
       {/* Assign modal */}
       {showModal && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
-          onClick={() => setShowModal(false)}
-        >
-          <div
-            className="w-full max-w-sm rounded-xl bg-white dark:bg-slate-900 p-5 shadow-xl"
-            onClick={(e) => e.stopPropagation()}
-          >
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <button
+            type="button"
+            className="fixed inset-0 bg-black/40 cursor-default border-0 outline-none w-full h-full"
+            onClick={() => setShowModal(false)}
+            aria-label="Cerrar modal"
+          />
+          <div className="relative w-full max-w-sm rounded-xl bg-white dark:bg-slate-900 p-5 shadow-xl z-10">
             <h3 className="text-base font-semibold text-build-main dark:text-white mb-4">
               Asignar asesor
             </h3>
@@ -570,10 +570,10 @@ function ExpedienteContextBand({
 function EtapasResumen({
   stages,
   stepper,
-}: {
-  stages: EtapaExpedienteResponseDTO[];
+}: Readonly<{
+  stages: readonly EtapaExpedienteResponseDTO[];
   stepper: StepperResponseDTO | null;
-}) {
+}>) {
   // Determine Stage stats (estimated or precise from stepper if loaded)
   let totalHitos = 0;
   let completedHitos = 0;
@@ -657,6 +657,13 @@ function EtapasResumen({
               badgeClass = "bg-amber-100 dark:bg-amber-950/20 text-amber-700 dark:text-amber-400";
             }
 
+            let progressBg = "bg-slate-300 dark:bg-white/20";
+            if (pct === 100) {
+              progressBg = "bg-emerald-500";
+            } else if (pct > 0) {
+              progressBg = "bg-amber-500";
+            }
+
             return (
               <div
                 key={stageId}
@@ -676,9 +683,7 @@ function EtapasResumen({
                   {/* Horizontal progress bar */}
                   <div className="h-2 w-full bg-slate-100 dark:bg-white/10 rounded-full overflow-hidden mb-2">
                     <div
-                      className={`h-full rounded-full transition-all duration-500 ${
-                        pct === 100 ? "bg-emerald-500" : pct > 0 ? "bg-amber-500" : "bg-slate-300 dark:bg-white/20"
-                      }`}
+                      className={`h-full rounded-full transition-all duration-500 ${progressBg}`}
                       style={{ width: `${pct}%` }}
                     />
                   </div>
@@ -706,13 +711,13 @@ function ProcesoLegalAccordion({
   expandedStages,
   onToggleAccordion,
   onToggleHito,
-}: {
+}: Readonly<{
   stepper: StepperResponseDTO | null;
   isLoading: boolean;
   expandedStages: Record<string, boolean>;
   onToggleAccordion: (stageId: string) => void;
   onToggleHito: (uuidHito: string, currentEstado: string, stageId: string) => Promise<void>;
-}) {
+}>) {
   if (isLoading && !stepper) {
     return (
       <div className="flex flex-col items-center justify-center py-20">
@@ -749,9 +754,10 @@ function ProcesoLegalAccordion({
             className="border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 rounded-2xl shadow-sm overflow-hidden"
           >
             {/* Header / Accordion trigger */}
-            <div
+            <button
+              type="button"
               onClick={() => onToggleAccordion(stageId)}
-              className="px-5 py-4 flex items-center justify-between gap-4 cursor-pointer hover:bg-slate-50 dark:hover:bg-white/[0.02] select-none transition"
+              className="w-full text-left px-5 py-4 flex items-center justify-between gap-4 cursor-pointer hover:bg-slate-50 dark:hover:bg-white/[0.02] select-none transition focus:outline-none"
             >
               <div className="flex items-center gap-3">
                 <span className="material-symbols-outlined text-[20px] text-slate-400 dark:text-white/45">
@@ -773,7 +779,7 @@ function ProcesoLegalAccordion({
                   <div className="w-[80px] h-1.5 bg-slate-100 dark:bg-white/10 rounded-full overflow-hidden">
                     <div
                       className={`h-full rounded-full transition-all duration-300 ${
-                        pct === 100 ? "bg-emerald-500" : pct > 0 ? "bg-amber-500" : "bg-slate-200"
+                        pct === 100 ? "bg-emerald-500" : (pct > 0 ? "bg-amber-500" : "bg-slate-200")
                       }`}
                       style={{ width: `${pct}%` }}
                     />
@@ -793,14 +799,14 @@ function ProcesoLegalAccordion({
                   expand_more
                 </span>
               </div>
-            </div>
+            </button>
 
             {/* Accordion body list of hitos */}
             {isExpanded && (
               <div className="px-6 pb-5 border-t border-slate-100 dark:border-white/5 bg-slate-50/30 dark:bg-white/[0.01]">
                 {etapa.hitos && etapa.hitos.length > 0 ? (
                   <div className="mt-4 space-y-4">
-                    {etapa.hitos
+                    {[...etapa.hitos]
                       .sort((a, b) => a.orden - b.orden)
                       .map((hito) => {
                         const isCompleted = hito.estado === "COMPLETADO";
@@ -818,6 +824,13 @@ function ProcesoLegalAccordion({
                         const mappedEstado = BACKEND_A_ESTADO[hito.estado] || hito.estado.toLowerCase();
                         const badgeInfo = ESTADO_BADGE[mappedEstado as EstadoHito] || { label: hito.estado, cls: "" };
 
+                        let checkboxContent = null;
+                        if (isCompleted) {
+                          checkboxContent = <span className="material-symbols-outlined text-[13px] font-extrabold">check</span>;
+                        } else if (isProgress) {
+                          checkboxContent = <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />;
+                        }
+
                         return (
                           <div
                             key={hito.uuidHitoComercial}
@@ -829,11 +842,7 @@ function ProcesoLegalAccordion({
                                 onClick={() => onToggleHito(hito.uuidHitoComercial, hito.estado, stageId)}
                                 className={`w-5 h-5 rounded-full border flex items-center justify-center shrink-0 transition hover:scale-105 active:scale-95 ${checkboxClass}`}
                               >
-                                {isCompleted ? (
-                                  <span className="material-symbols-outlined text-[13px] font-extrabold">check</span>
-                                ) : isProgress ? (
-                                  <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
-                                ) : null}
+                                {checkboxContent}
                               </button>
 
                               {/* Hito detail */}
@@ -877,6 +886,18 @@ function ProcesoLegalAccordion({
   );
 }
 
+function getEtapaReadableLabel(stageKey: string): string {
+  switch (stageKey) {
+    case "SEPARACION": return "Separación";
+    case "CONTRATO": return "Contrato";
+    case "PAGO": return "Pago";
+    case "ENTREGA": return "Entrega";
+    case "SANEAMIENTO": return "Saneamiento";
+    case "OTRO": return "Otro";
+    default: return stageKey;
+  }
+}
+
 // ─── Subcomponent: DocumentosTab (Tab 3) ────────────────────────────────────
 function DocumentosTab({
   documents,
@@ -885,14 +906,14 @@ function DocumentosTab({
   onFilterChange,
   formatFecha,
   onRefresh,
-}: {
+}: Readonly<{
   documents: Record<string, DocumentoItem[]>;
   isLoading: boolean;
   selectedFilter: string;
   onFilterChange: (filter: string) => void;
   formatFecha: (isoString: string | null | undefined) => string;
   onRefresh: () => Promise<void>;
-}) {
+}>) {
   const filterOptions = [
     { id: "ALL", label: "Todos" },
     { id: "SEPARACION", label: "Separación" },
@@ -944,17 +965,176 @@ function DocumentosTab({
     return d.stageKey === selectedFilter;
   });
 
-  function getEtapaReadableLabel(stageKey: string): string {
-    switch (stageKey) {
-      case "SEPARACION": return "Separación";
-      case "CONTRATO": return "Contrato";
-      case "PAGO": return "Pago";
-      case "ENTREGA": return "Entrega";
-      case "SANEAMIENTO": return "Saneamiento";
-      case "OTRO": return "Otro";
-      default: return stageKey;
-    }
+  let documentsContent;
+  if (isLoading && allDocs.length === 0) {
+    documentsContent = (
+      <div className="animate-pulse space-y-4">
+        {[1, 2, 3].map((n) => (
+          <div
+            key={n}
+            className="flex items-center justify-between p-4 bg-slate-50 dark:bg-white/[0.02] rounded-2xl border border-slate-200/50 dark:border-white/5"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-slate-200 dark:bg-white/10 rounded-xl" />
+              <div className="space-y-2">
+                <div className="h-4 bg-slate-200 dark:bg-white/10 rounded w-48" />
+                <div className="h-3 bg-slate-200 dark:bg-white/10 rounded w-32" />
+              </div>
+            </div>
+            <div className="w-8 h-8 bg-slate-200 dark:bg-white/10 rounded-lg" />
+          </div>
+        ))}
+      </div>
+    );
+  } else if (filteredDocs.length === 0) {
+    documentsContent = (
+      <div className="text-center py-16 bg-white dark:bg-white/5 rounded-2xl border border-slate-200/60 dark:border-white/10">
+        <span className="material-symbols-outlined text-[48px] text-slate-300 dark:text-white/15 mb-2">
+          description
+        </span>
+        <p className="text-sm font-semibold text-slate-400 dark:text-white/30">
+          No hay documentos en esta etapa.
+        </p>
+      </div>
+    );
+  } else {
+    documentsContent = (
+      <div className="grid gap-3">
+        {filteredDocs.map((doc) => {
+          const hasUrl = doc.hasDownload && !!doc.downloadUrl;
+          const isCompleted = doc.status?.toLowerCase() === "completada" || hasUrl;
+          
+          return (
+            <div
+              key={doc.id}
+              className="p-5 bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl shadow-sm hover:shadow-md transition space-y-4"
+            >
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex items-start gap-3 min-w-0">
+                  {/* Dynamic Icon */}
+                  <div className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-950/20 text-blue-500 dark:text-blue-400 flex items-center justify-center shrink-0">
+                    <span className="material-symbols-outlined text-[20px] font-semibold">
+                      {doc.icon || "description"}
+                    </span>
+                  </div>
+
+                  <div className="min-w-0 space-y-0.5">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h4 className="text-sm font-bold text-slate-700 dark:text-white/80">
+                        {doc.title}
+                      </h4>
+                      <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full uppercase ${
+                        isCompleted
+                          ? "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400"
+                          : "bg-slate-100 dark:bg-white/10 text-slate-500 dark:text-white/45"
+                      }`}>
+                        {isCompleted ? "Completado" : "Pendiente"}
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-400 dark:text-white/35">
+                      {getEtapaReadableLabel(doc.stageKey)} · Emisión: {formatFecha(doc.emissionDate)}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Actions Column (Download, Upload, Edit, Delete) */}
+                <div className="flex items-center gap-1.5 shrink-0">
+                  {/* Download Button */}
+                  {hasUrl && (
+                    <button
+                      onClick={() => window.open(doc.downloadUrl!, "_blank", "noopener,noreferrer")}
+                      className="flex items-center justify-center w-8 h-8 rounded-lg hover:bg-slate-100 dark:hover:bg-white/10 text-slate-500 hover:text-arch-gold dark:text-white/60 dark:hover:text-white transition"
+                      title="Descargar / Ver Archivo"
+                    >
+                      <span className="material-symbols-outlined text-[18px]">download</span>
+                    </button>
+                  )}
+
+                  {/* Upload / Re-upload Button */}
+                  <button
+                    onClick={() => handleUploadClick(doc.id)}
+                    disabled={uploadingDocId === doc.id}
+                    className="flex items-center justify-center w-8 h-8 rounded-lg hover:bg-slate-100 dark:hover:bg-white/10 text-slate-500 hover:text-arch-gold dark:text-white/60 dark:hover:text-white transition disabled:opacity-55"
+                    title={hasUrl ? "Reemplazar Archivo" : "Subir Archivo"}
+                  >
+                    {uploadingDocId === doc.id ? (
+                      <Spinner className="w-4 h-4 text-arch-gold" />
+                    ) : (
+                      <span className="material-symbols-outlined text-[18px]">upload_file</span>
+                    )}
+                  </button>
+
+                  {/* Edit Metadata Button */}
+                  <button
+                    onClick={() => handleEditClick(doc)}
+                    className="flex items-center justify-center w-8 h-8 rounded-lg hover:bg-slate-100 dark:hover:bg-white/10 text-slate-500 hover:text-arch-gold dark:text-white/60 dark:hover:text-white transition"
+                    title="Editar Información"
+                  >
+                    <span className="material-symbols-outlined text-[18px]">edit</span>
+                  </button>
+
+                  {/* Delete File Button */}
+                  {hasUrl && (
+                    <button
+                      onClick={() => handleDeleteClick(doc.id)}
+                      disabled={deletingDocId === doc.id}
+                      className="flex items-center justify-center w-8 h-8 rounded-lg hover:bg-red-50 dark:hover:bg-red-950/20 text-red-500 hover:text-red-600 transition disabled:opacity-55"
+                      title="Eliminar Archivo"
+                    >
+                      {deletingDocId === doc.id ? (
+                        <Spinner className="w-4 h-4 text-red-500" />
+                      ) : (
+                        <span className="material-symbols-outlined text-[18px]">delete</span>
+                      )}
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Description info */}
+              {doc.description && (
+                <p className="text-xs text-slate-500 dark:text-white/50 pl-13 leading-relaxed">
+                  {doc.description}
+                </p>
+              )}
+
+              {/* Corporate Note (Styled Container) */}
+              {doc.notaCorporativa ? (
+                <div className="pl-13">
+                  {isCompleted ? (
+                    <div className="rounded-xl border border-slate-100 dark:border-white/5 bg-slate-50/50 dark:bg-white/[0.02] p-3 text-xs text-slate-500 dark:text-white/50 leading-relaxed italic">
+                      <span className="font-bold not-italic text-slate-600 dark:text-white/60 block text-[10px] uppercase tracking-wider mb-1">
+                        Nota Corporativa:
+                      </span>
+                      {doc.notaCorporativa}
+                    </div>
+                  ) : (
+                    <div className="rounded-xl border border-amber-200 dark:border-amber-900/50 bg-amber-50 dark:bg-amber-950/20 p-3.5 text-xs text-amber-800 dark:text-amber-400 border-l-4 border-amber-500 leading-relaxed shadow-sm flex items-start gap-2.5">
+                      <span className="material-symbols-outlined text-amber-600 dark:text-amber-500 text-[18px] shrink-0 mt-0.5 select-none">
+                        warning
+                      </span>
+                      <div className="space-y-1">
+                        <span className="font-extrabold text-amber-900 dark:text-amber-300 block text-[10px] uppercase tracking-wider">
+                          Nota del Abogado (Observación):
+                        </span>
+                        <p className="font-medium">{doc.notaCorporativa}</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="pl-13">
+                  <p className="text-[10px] text-slate-400 dark:text-white/30 italic">Sin notas corporativas.</p>
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    );
   }
+
+
 
   // Edit Handlers
   const handleEditClick = (doc: DocumentoItem) => {
@@ -974,7 +1154,7 @@ function DocumentosTab({
     setEditIcon(doc.icon || "");
   };
 
-  const handleSaveEdit = async (e: React.FormEvent) => {
+  const handleSaveEdit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!editingDoc) return;
     setEditingDocLoading(true);
@@ -1067,169 +1247,7 @@ function DocumentosTab({
         })}
       </div>
 
-      {/* Documents List */}
-      {isLoading && allDocs.length === 0 ? (
-        // Skeleton loader
-        <div className="animate-pulse space-y-4">
-          {[1, 2, 3].map((n) => (
-            <div
-              key={n}
-              className="flex items-center justify-between p-4 bg-slate-50 dark:bg-white/[0.02] rounded-2xl border border-slate-200/50 dark:border-white/5"
-            >
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-slate-200 dark:bg-white/10 rounded-xl" />
-                <div className="space-y-2">
-                  <div className="h-4 bg-slate-200 dark:bg-white/10 rounded w-48" />
-                  <div className="h-3 bg-slate-200 dark:bg-white/10 rounded w-32" />
-                </div>
-              </div>
-              <div className="w-8 h-8 bg-slate-200 dark:bg-white/10 rounded-lg" />
-            </div>
-          ))}
-        </div>
-      ) : filteredDocs.length === 0 ? (
-        <div className="text-center py-16 bg-white dark:bg-white/5 rounded-2xl border border-slate-200/60 dark:border-white/10">
-          <span className="material-symbols-outlined text-[48px] text-slate-300 dark:text-white/15 mb-2">
-            description
-          </span>
-          <p className="text-sm font-semibold text-slate-400 dark:text-white/30">
-            No hay documentos en esta etapa.
-          </p>
-        </div>
-      ) : (
-        <div className="grid gap-3">
-          {filteredDocs.map((doc) => {
-            const hasUrl = doc.hasDownload && !!doc.downloadUrl;
-            const isCompleted = doc.status?.toLowerCase() === "completada" || hasUrl;
-            
-            return (
-              <div
-                key={doc.id}
-                className="p-5 bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl shadow-sm hover:shadow-md transition space-y-4"
-              >
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex items-start gap-3 min-w-0">
-                    {/* Dynamic Icon */}
-                    <div className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-950/20 text-blue-500 dark:text-blue-400 flex items-center justify-center shrink-0">
-                      <span className="material-symbols-outlined text-[20px] font-semibold">
-                        {doc.icon || "description"}
-                      </span>
-                    </div>
-
-                    <div className="min-w-0 space-y-0.5">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <h4 className="text-sm font-bold text-slate-700 dark:text-white/80">
-                          {doc.title}
-                        </h4>
-                        <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full uppercase ${
-                          isCompleted
-                            ? "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400"
-                            : "bg-slate-100 dark:bg-white/10 text-slate-500 dark:text-white/45"
-                        }`}>
-                          {isCompleted ? "Completado" : "Pendiente"}
-                        </span>
-                      </div>
-                      <p className="text-xs text-slate-400 dark:text-white/35">
-                        {getEtapaReadableLabel(doc.stageKey)} · Emisión: {formatFecha(doc.emissionDate)}
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Actions Column (Download, Upload, Edit, Delete) */}
-                  <div className="flex items-center gap-1.5 shrink-0">
-                    {/* Download Button */}
-                    {hasUrl && (
-                      <button
-                        onClick={() => window.open(doc.downloadUrl!, "_blank", "noopener,noreferrer")}
-                        className="flex items-center justify-center w-8 h-8 rounded-lg hover:bg-slate-100 dark:hover:bg-white/10 text-slate-500 hover:text-arch-gold dark:text-white/60 dark:hover:text-white transition"
-                        title="Descargar / Ver Archivo"
-                      >
-                        <span className="material-symbols-outlined text-[18px]">download</span>
-                      </button>
-                    )}
-
-                    {/* Upload / Re-upload Button */}
-                    <button
-                      onClick={() => handleUploadClick(doc.id)}
-                      disabled={uploadingDocId === doc.id}
-                      className="flex items-center justify-center w-8 h-8 rounded-lg hover:bg-slate-100 dark:hover:bg-white/10 text-slate-500 hover:text-arch-gold dark:text-white/60 dark:hover:text-white transition disabled:opacity-55"
-                      title={hasUrl ? "Reemplazar Archivo" : "Subir Archivo"}
-                    >
-                      {uploadingDocId === doc.id ? (
-                        <Spinner className="w-4 h-4 text-arch-gold" />
-                      ) : (
-                        <span className="material-symbols-outlined text-[18px]">upload_file</span>
-                      )}
-                    </button>
-
-                    {/* Edit Metadata Button */}
-                    <button
-                      onClick={() => handleEditClick(doc)}
-                      className="flex items-center justify-center w-8 h-8 rounded-lg hover:bg-slate-100 dark:hover:bg-white/10 text-slate-500 hover:text-arch-gold dark:text-white/60 dark:hover:text-white transition"
-                      title="Editar Información"
-                    >
-                      <span className="material-symbols-outlined text-[18px]">edit</span>
-                    </button>
-
-                    {/* Delete File Button */}
-                    {hasUrl && (
-                      <button
-                        onClick={() => handleDeleteClick(doc.id)}
-                        disabled={deletingDocId === doc.id}
-                        className="flex items-center justify-center w-8 h-8 rounded-lg hover:bg-red-50 dark:hover:bg-red-950/20 text-red-500 hover:text-red-600 transition disabled:opacity-55"
-                        title="Eliminar Archivo"
-                      >
-                        {deletingDocId === doc.id ? (
-                          <Spinner className="w-4 h-4 text-red-500" />
-                        ) : (
-                          <span className="material-symbols-outlined text-[18px]">delete</span>
-                        )}
-                      </button>
-                    )}
-                  </div>
-                </div>
-
-                {/* Description info */}
-                {doc.description && (
-                  <p className="text-xs text-slate-500 dark:text-white/50 pl-13 leading-relaxed">
-                    {doc.description}
-                  </p>
-                )}
-
-                {/* Corporate Note (Styled Container) */}
-                {doc.notaCorporativa ? (
-                  <div className="pl-13">
-                    {!isCompleted ? (
-                      <div className="rounded-xl border border-amber-200 dark:border-amber-900/50 bg-amber-50 dark:bg-amber-950/20 p-3.5 text-xs text-amber-800 dark:text-amber-400 border-l-4 border-amber-500 leading-relaxed shadow-sm flex items-start gap-2.5">
-                        <span className="material-symbols-outlined text-amber-600 dark:text-amber-500 text-[18px] shrink-0 mt-0.5 select-none">
-                          warning
-                        </span>
-                        <div className="space-y-1">
-                          <span className="font-extrabold text-amber-900 dark:text-amber-300 block text-[10px] uppercase tracking-wider">
-                            Nota del Abogado (Observación):
-                          </span>
-                          <p className="font-medium">{doc.notaCorporativa}</p>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="rounded-xl border border-slate-100 dark:border-white/5 bg-slate-50/50 dark:bg-white/[0.02] p-3 text-xs text-slate-500 dark:text-white/50 leading-relaxed italic">
-                        <span className="font-bold not-italic text-slate-600 dark:text-white/60 block text-[10px] uppercase tracking-wider mb-1">
-                          Nota Corporativa:
-                        </span>
-                        {doc.notaCorporativa}
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  <div className="pl-13">
-                    <p className="text-[10px] text-slate-400 dark:text-white/30 italic">Sin notas corporativas.</p>
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      )}
+      {documentsContent}
 
       {/* Edit Dialog Modal Overlay */}
       {editingDoc && (
@@ -1238,7 +1256,7 @@ function DocumentosTab({
             <div className="px-6 py-4 border-b border-slate-100 dark:border-white/5 flex items-center justify-between">
               <h3 className="text-base font-bold text-slate-800 dark:text-white flex items-center gap-2">
                 <span className="material-symbols-outlined text-arch-gold">edit_document</span>
-                Editar Requisito Documental
+                {" "}Editar Requisito Documental
               </h3>
               <button
                 onClick={() => setEditingDoc(null)}
@@ -1251,8 +1269,9 @@ function DocumentosTab({
             <form onSubmit={handleSaveEdit} className="p-6 space-y-4">
               {/* Title Input */}
               <div className="space-y-1">
-                <label className="text-xs font-bold text-slate-500 dark:text-white/40 uppercase tracking-wider">Título *</label>
+                <label htmlFor="edit-title" className="text-xs font-bold text-slate-500 dark:text-white/40 uppercase tracking-wider">Título *</label>
                 <input
+                  id="edit-title"
                   type="text"
                   required
                   value={editTitle}
@@ -1263,8 +1282,9 @@ function DocumentosTab({
 
               {/* Description Input */}
               <div className="space-y-1">
-                <label className="text-xs font-bold text-slate-500 dark:text-white/40 uppercase tracking-wider">Descripción</label>
+                <label htmlFor="edit-description" className="text-xs font-bold text-slate-500 dark:text-white/40 uppercase tracking-wider">Descripción</label>
                 <textarea
+                  id="edit-description"
                   value={editDesc}
                   onChange={(e) => setEditDesc(e.target.value)}
                   rows={3}
@@ -1274,8 +1294,9 @@ function DocumentosTab({
 
               {/* Corporate Note Input */}
               <div className="space-y-1">
-                <label className="text-xs font-bold text-slate-500 dark:text-white/40 uppercase tracking-wider">Nota Corporativa</label>
+                <label htmlFor="edit-corporate-note" className="text-xs font-bold text-slate-500 dark:text-white/40 uppercase tracking-wider">Nota Corporativa</label>
                 <textarea
+                  id="edit-corporate-note"
                   value={editNota}
                   onChange={(e) => setEditNota(e.target.value)}
                   rows={2}
@@ -1286,8 +1307,9 @@ function DocumentosTab({
               <div className="grid grid-cols-2 gap-4">
                 {/* Emission Date Input */}
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-slate-500 dark:text-white/40 uppercase tracking-wider">Fecha de Emisión</label>
+                  <label htmlFor="edit-emission-date" className="text-xs font-bold text-slate-500 dark:text-white/40 uppercase tracking-wider">Fecha de Emisión</label>
                   <input
+                    id="edit-emission-date"
                     type="date"
                     value={editFecha}
                     onChange={(e) => setEditFecha(e.target.value)}
@@ -1297,8 +1319,9 @@ function DocumentosTab({
 
                 {/* Icon Input */}
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-slate-500 dark:text-white/40 uppercase tracking-wider">Icono (Material)</label>
+                  <label htmlFor="edit-icon" className="text-xs font-bold text-slate-500 dark:text-white/40 uppercase tracking-wider">Icono (Material)</label>
                   <input
+                    id="edit-icon"
                     type="text"
                     value={editIcon}
                     onChange={(e) => setEditIcon(e.target.value)}
