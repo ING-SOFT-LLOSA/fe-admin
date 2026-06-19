@@ -1,0 +1,284 @@
+"use client";
+
+import { useState } from "react";
+import type { TorreData, ActivoData } from "@/modules/proyectos/utils/wizard-logic";
+
+type UnitEditorStepProps = {
+  torres: TorreData[];
+  onBack: () => void;
+  onSubmit: (torres: TorreData[]) => void;
+};
+
+type TabType = "DEPARTAMENTO" | "COCHERA" | "DEPOSITO";
+
+const TAB_INFO: Record<TabType, { label: string; icon: string }> = {
+  DEPARTAMENTO: { label: "Departamentos", icon: "apartment" },
+  COCHERA: { label: "Cocheras", icon: "directions_car" },
+  DEPOSITO: { label: "Depósitos", icon: "inventory_2" },
+};
+
+function UnitCard({
+  activo,
+  onEdit,
+  onDelete,
+}: {
+  activo: ActivoData;
+  onEdit: (field: keyof ActivoData, value: string | number) => void;
+  onDelete: () => void;
+}) {
+  const [editing, setEditing] = useState(false);
+
+  return (
+    <div className="rounded-lg border border-slate-100 dark:border-white/10 bg-white dark:bg-white/5 p-3">
+      {editing ? (
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <p className="font-bold text-build-main dark:text-white text-sm">{activo.nro}</p>
+            <button
+              type="button"
+              onClick={() => setEditing(false)}
+              className="rounded bg-build-main px-3 py-1 text-xs font-bold text-white"
+            >
+              Listo
+            </button>
+          </div>
+          <div className="grid grid-cols-3 gap-2">
+            <div>
+              <label className="text-[10px] font-semibold text-slate-400">Área (m²)</label>
+              <input
+                type="number"
+                value={activo.areaM2}
+                onChange={(e) => onEdit("areaM2", Number(e.target.value))}
+                className="w-full rounded border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 px-2 py-1 text-xs outline-none focus:border-build-accent"
+              />
+            </div>
+            <div>
+              <label className="text-[10px] font-semibold text-slate-400">Tech. (m²)</label>
+              <input
+                type="number"
+                value={activo.areaTechada}
+                onChange={(e) => onEdit("areaTechada", Number(e.target.value))}
+                className="w-full rounded border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 px-2 py-1 text-xs outline-none focus:border-build-accent"
+              />
+            </div>
+            <div>
+              <label className="text-[10px] font-semibold text-slate-400">Precio S/</label>
+              <input
+                type="number"
+                value={activo.precio}
+                onChange={(e) => onEdit("precio", Number(e.target.value))}
+                className="w-full rounded border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 px-2 py-1 text-xs outline-none focus:border-build-accent"
+              />
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div className="flex items-center justify-between gap-2">
+          <div className="min-w-0 flex-1">
+            <p className="font-bold text-build-main dark:text-white text-sm">{activo.nro}</p>
+            <p className="text-xs text-slate-500 truncate">
+              {activo.areaM2} m² · Tech {activo.areaTechada} m² · S/ {activo.precio.toLocaleString("es-PE")}
+            </p>
+          </div>
+          <div className="flex items-center gap-1 shrink-0">
+            <button
+              type="button"
+              onClick={() => setEditing(true)}
+              className="rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-slate-100 hover:text-build-accent"
+              title="Editar"
+            >
+              <span className="material-symbols-outlined text-[16px]">edit</span>
+            </button>
+            <button
+              type="button"
+              onClick={onDelete}
+              className="rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-red-50 hover:text-red-500"
+              title="Eliminar"
+            >
+              <span className="material-symbols-outlined text-[16px]">delete</span>
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default function UnitEditorStep({ torres: initialTorres, onBack, onSubmit }: UnitEditorStepProps) {
+  const [torres, setTorres] = useState<TorreData[]>(() => structuredClone(initialTorres));
+  const [confirmDelete, setConfirmDelete] = useState<{ tIdx: number; pIdx: number; aIdx: number } | null>(null);
+
+  const handleEdit = (tIdx: number, pIdx: number, aIdx: number, field: keyof ActivoData, value: string | number) => {
+    setTorres((prev) => {
+      const next = structuredClone(prev);
+      (next[tIdx].pisos[pIdx].activos[aIdx] as any)[field] = value;
+      return next;
+    });
+  };
+
+  const handleDelete = (tIdx: number, pIdx: number, aIdx: number) => {
+    setTorres((prev) => {
+      const next = structuredClone(prev);
+      next[tIdx].pisos[pIdx].activos.splice(aIdx, 1);
+      return next;
+    });
+    setConfirmDelete(null);
+  };
+
+  const handleAdd = (tIdx: number, pIdx: number, tipo: TabType) => {
+    setTorres((prev) => {
+      const next = structuredClone(prev);
+      const piso = next[tIdx].pisos[pIdx];
+      const existing = piso.activos.filter((a) => a.tipo === tipo);
+      const maxSeq = existing.reduce((max, a) => {
+        const s = parseInt(a.nro.slice(-2), 10);
+        return Math.max(max, isNaN(s) ? 0 : s);
+      }, 0);
+      const nextSeq = maxSeq + 1;
+      const seqStr = nextSeq.toString().padStart(2, "0");
+      const pisoNro = piso.nroPiso;
+
+      const defaults: Record<TabType, Omit<ActivoData, "nro" | "tipo">> = {
+        DEPARTAMENTO: { areaM2: 70, areaTechada: 0, precio: 200000, estadoComercial: "DISPONIBLE", descripcion: `Dpto en ${next[tIdx].nombre}, Piso ${pisoNro}` },
+        COCHERA: { areaM2: 12, areaTechada: 0, precio: 15000, estadoComercial: "DISPONIBLE", descripcion: `Estacionamiento en ${next[tIdx].nombre}, Piso ${pisoNro}` },
+        DEPOSITO: { areaM2: 5, areaTechada: 0, precio: 5000, estadoComercial: "DISPONIBLE", descripcion: `Depósito en ${next[tIdx].nombre}, Piso ${pisoNro}` },
+      };
+
+      const nro = tipo === "DEPARTAMENTO"
+        ? `${pisoNro}${seqStr}`
+        : tipo === "COCHERA"
+          ? `E-${pisoNro}${seqStr}`
+          : `D-${pisoNro}${seqStr}`;
+
+      piso.activos.push({ nro, tipo, ...defaults[tipo] });
+      return next;
+    });
+  };
+
+  const totalActivos = torres.reduce((sum, t) => sum + t.pisos.reduce((s, p) => s + p.activos.length, 0), 0);
+
+  return (
+    <div className="space-y-6">
+      <div className="rounded-2xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 p-4 text-center">
+        <p className="text-sm text-slate-600 dark:text-white/70">
+          Total de unidades: <span className="font-bold text-build-main dark:text-white">{totalActivos}</span>
+        </p>
+      </div>
+
+      <div className="space-y-4">
+        {torres.map((torre, tIdx) => (
+          <details key={torre.nombre} className="group rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 overflow-hidden" open={tIdx === 0}>
+            <summary className="flex cursor-pointer items-center gap-2 bg-slate-100 dark:bg-white/10 px-5 py-3 text-sm font-bold text-build-main dark:text-white">
+              <span className="material-symbols-outlined text-[18px] text-slate-400">account_balance</span>
+              {torre.nombre}
+              <span className="ml-auto text-xs font-normal text-slate-400">{torre.pisos.length} pisos · {torre.pisos.reduce((s, p) => s + p.activos.length, 0)} uds.</span>
+              <span className="material-symbols-outlined text-[18px] text-slate-400 transition-transform group-open:rotate-180">expand_more</span>
+            </summary>
+            <div className="divide-y divide-slate-100 dark:divide-white/5">
+              {torre.pisos.map((piso, pIdx) => {
+                const grouped = piso.activos.reduce((acc, a) => {
+                  if (!acc[a.tipo]) acc[a.tipo] = [];
+                  acc[a.tipo].push(a);
+                  return acc;
+                }, {} as Record<string, ActivoData[]>);
+
+                return (
+                  <details key={`${tIdx}-${pIdx}`} className="group" open={piso.activos.length > 0}>
+                    <summary className="flex cursor-pointer items-center gap-1.5 bg-slate-50/50 dark:bg-white/[0.02] px-6 py-2 text-xs font-semibold text-slate-600 dark:text-white/70">
+                      <span className="material-symbols-outlined text-[15px] text-slate-400">layers</span>
+                      Piso {piso.nroPiso}
+                      <span className="ml-auto text-[10px] text-slate-400">{piso.activos.length} uds.</span>
+                      <span className="material-symbols-outlined text-[15px] text-slate-400 transition-transform group-open:rotate-180">expand_more</span>
+                    </summary>
+                    <div className="px-6 py-3 space-y-3">
+                      {(Object.keys(TAB_INFO) as TabType[]).map((tipo) => {
+                        const units = grouped[tipo] || [];
+                        const info = TAB_INFO[tipo];
+                        return (
+                          <div key={tipo}>
+                            <p className="mb-2 flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                              <span className="material-symbols-outlined text-[14px]">{info.icon}</span>
+                              {info.label} ({units.length})
+                            </p>
+                            {units.length > 0 && (
+                              <div className="mb-2 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                                {units.map((activo, aIdx) => {
+                                  const actualIdx = piso.activos.indexOf(activo);
+                                  return (
+                                    <UnitCard
+                                      key={`${tIdx}-${pIdx}-${actualIdx}`}
+                                      activo={activo}
+                                      onEdit={(field, value) => handleEdit(tIdx, pIdx, actualIdx, field, value)}
+                                      onDelete={() => setConfirmDelete({ tIdx, pIdx, aIdx: actualIdx })}
+                                    />
+                                  );
+                                })}
+                              </div>
+                            )}
+                            <button
+                              type="button"
+                              onClick={() => handleAdd(tIdx, pIdx, tipo)}
+                              className="flex items-center gap-1 rounded-lg border border-dashed border-slate-300 dark:border-white/20 px-3 py-1.5 text-[11px] font-semibold text-slate-500 dark:text-white/50 transition-colors hover:border-build-accent hover:text-build-accent"
+                            >
+                              <span className="material-symbols-outlined text-[14px]">add</span>
+                              Agregar {info.label.toLowerCase()}
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </details>
+                );
+              })}
+            </div>
+          </details>
+        ))}
+      </div>
+
+      <div className="flex items-center justify-between border-t border-slate-100 dark:border-white/5 pt-6">
+        <button
+          type="button"
+          onClick={onBack}
+          className="flex items-center gap-2 rounded-xl px-6 py-2.5 text-sm font-bold text-slate-600 dark:text-white/70 transition-colors hover:bg-slate-100 dark:bg-white/10"
+        >
+          <span className="material-symbols-outlined text-[18px]">arrow_back</span>
+          Volver
+        </button>
+        <button
+          type="button"
+          onClick={() => onSubmit(torres)}
+          className="flex items-center gap-2 rounded-xl bg-build-main px-6 py-2.5 text-sm font-bold text-white shadow-sm transition-colors hover:bg-arch-gold"
+        >
+          <span className="material-symbols-outlined text-[18px]">check</span>
+          Crear proyecto
+        </button>
+      </div>
+
+      {confirmDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="rounded-2xl bg-white dark:bg-slate-800 p-6 shadow-xl max-w-sm w-full mx-4 space-y-4">
+            <p className="text-sm text-slate-600 dark:text-white/70">
+              ¿Eliminar la unidad <strong className="text-build-main dark:text-white">{torres[confirmDelete.tIdx]?.pisos[confirmDelete.pIdx]?.activos[confirmDelete.aIdx]?.nro}</strong>?
+            </p>
+            <div className="flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setConfirmDelete(null)}
+                className="rounded-xl px-4 py-2 text-sm font-semibold text-slate-600 transition-colors hover:bg-slate-100"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={() => handleDelete(confirmDelete.tIdx, confirmDelete.pIdx, confirmDelete.aIdx)}
+                className="rounded-xl bg-red-500 px-4 py-2 text-sm font-bold text-white transition-colors hover:bg-red-600"
+              >
+                Eliminar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

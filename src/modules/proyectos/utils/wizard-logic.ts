@@ -16,3 +16,23 @@ export interface InventoryConfig {
   cocherasPorPiso: number;
   depositosPorPiso: number;
 }
+
+export interface ActivoData {
+  nro: string;
+  tipo: "DEPARTAMENTO" | "COCHERA" | "DEPOSITO";
+  areaM2: number;
+  areaTechada: number;
+  precio: number;
+  estadoComercial: string;
+  descripcion: string;
+}
+
+export interface PisoData {
+  nroPiso: number;
+  activos: ActivoData[];
+}
+
+export interface TorreData {
+  nombre: string;
+  pisos: PisoData[];
+}

@@ -4,6 +4,7 @@ import InstallmentStatusBadge from "../details/InstallmentStatusBadge";
 import { updatePagoEstado, uploadPagoComprobante, addPago, deletePago, updatePago, createCronograma, updateCronograma } from "@/lib/api/finanzas";
 import type { UsuarioActivoResponseDTO } from "@/lib/api/expedientes";
 import { fetchSignedUrl } from "@/lib/api/documents";
+import { linkComprobanteToLegal } from "@/modules/finanzas/utils/linkComprobanteToLegal";
 import DialogModal from "@/components/ui/DialogModal";
 
     interface DirectFinancingViewProps {
@@ -65,6 +66,12 @@ export default function DirectFinancingView({ expediente, cronograma, pagos, res
             }
         }, [showCronogramaForm, cronograma]);
 
+        useEffect(() => {
+            const existing = new Set(pagos.map(p => p.concepto).filter(Boolean));
+            const valid = (["CUOTA", "SEPARACION", "INICIAL"] as const).filter(c => c === "CUOTA" || !existing.has(c));
+            setAddForm(p => valid.includes(p.concepto as any) ? p : { ...p, concepto: valid[0] ?? "CUOTA" });
+        }, [pagos]);
+
         const [isSaving, setIsSaving] = useState(false);
         const [activeDropzoneId, setActiveDropzoneId] = useState<string | null>(null);
         const [dropzoneComentario, setDropzoneComentario] = useState("");
@@ -118,14 +125,18 @@ export default function DirectFinancingView({ expediente, cronograma, pagos, res
             setDropzoneFile(file);
         };
 
-        const handleConfirmUpload = async (uuidPago: string, currentEstado: string) => {
+        const handleConfirmUpload = async (uuidPago: string, currentEstado: string, concepto?: string) => {
             if (!dropzoneFile) return;
             setUpdatingId(uuidPago);
+            const file = dropzoneFile;
             const comentario = dropzoneComentario.trim() || undefined;
             try {
-                await uploadPagoComprobante(uuidPago, dropzoneFile, comentario);
+                await uploadPagoComprobante(uuidPago, file, comentario);
                 if (currentEstado !== "PAGADO") {
                     await updatePagoEstado(uuidPago, "PAGADO");
+                }
+                if (concepto === "SEPARACION" || concepto === "INICIAL") {
+                    await linkComprobanteToLegal(expediente.uuidUsuarioActivo, concepto, file).catch(() => {});
                 }
                 setActiveDropzoneId(null);
                 setDropzoneComentario("");
@@ -461,15 +472,23 @@ export default function DirectFinancingView({ expediente, cronograma, pagos, res
                                         <input type="number" value={addForm.nroCuota} onChange={(e) => setAddForm((p) => ({ ...p, nroCuota: e.target.value }))}
                                             className="w-full rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 px-3 py-2 text-sm text-build-main dark:text-white outline-none focus:border-build-accent" />
                                     </div>
-                                    <div>
-                                        <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Concepto</label>
-                                        <select value={addForm.concepto} onChange={(e) => setAddForm((p) => ({ ...p, concepto: e.target.value }))}
-                                            className="w-full rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 px-3 py-2 text-sm text-build-main dark:text-white outline-none focus:border-build-accent">
-                                            <option value="CUOTA">CUOTA</option>
-                                            <option value="SEPARACION">SEPARACION</option>
-                                            <option value="INICIAL">INICIAL</option>
-                                        </select>
-                                    </div>
+                                    {(() => {
+                                        const existingConceptos = new Set(pagos.map(p => p.concepto).filter(Boolean));
+                                        const conceptOptions = [
+                                            { value: "CUOTA" as const, label: "CUOTA" },
+                                            { value: "SEPARACION" as const, label: "SEPARACION" },
+                                            { value: "INICIAL" as const, label: "INICIAL" },
+                                        ].filter(o => o.value === "CUOTA" || !existingConceptos.has(o.value));
+                                        return (
+                                            <div>
+                                                <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Concepto</label>
+                                                <select value={addForm.concepto} onChange={(e) => setAddForm((p) => ({ ...p, concepto: e.target.value }))}
+                                                    className="w-full rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 px-3 py-2 text-sm text-build-main dark:text-white outline-none focus:border-build-accent">
+                                                    {conceptOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                                                </select>
+                                            </div>
+                                        );
+                                    })()}
                                     <div>
                                         <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Monto (S/)</label>
                                         <input type="number" value={addForm.montoProgramado} onChange={(e) => setAddForm((p) => ({ ...p, montoProgramado: e.target.value }))}
@@ -683,7 +702,7 @@ export default function DirectFinancingView({ expediente, cronograma, pagos, res
                                                                     </button>
                                                                     <button
                                                                         disabled={!dropzoneFile || isSaving}
-                                                                        onClick={(e) => { e.stopPropagation(); handleConfirmUpload(pago.uuidPago, pago.estado); }}
+                                                                        onClick={(e) => { e.stopPropagation(); handleConfirmUpload(pago.uuidPago, pago.estado, pago.concepto); }}
                                                                         className="bg-build-main text-white px-4 py-1.5 rounded-lg text-[11px] font-bold hover:bg-build-main/80 transition-all disabled:opacity-50 flex items-center gap-1"
                                                                     >
                                                                         <span className="material-symbols-outlined text-[14px]">cloud_upload</span>

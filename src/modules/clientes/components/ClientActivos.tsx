@@ -202,7 +202,7 @@ export default function ClientActivos({ clientId, refreshKey = 0 }: ClientActivo
                               {getUnitLabel(activo.tipo)} {activo.nro}
                             </p>
                             <p className="text-[11px] text-slate-500 dark:text-white/50">
-                              {activo.torreNombre} · Piso {activo.nroPiso} · {activo.areaM2} m²
+                              {activo.torreNombre} · Piso {activo.nroPiso} · {activo.areaM2} m² · Tech. {activo.areaTechada} m²
                             </p>
                           </div>
                         </div>
@@ -220,6 +220,10 @@ export default function ClientActivos({ clientId, refreshKey = 0 }: ClientActivo
                         <span className="flex items-center gap-1">
                           <span className="material-symbols-outlined text-[13px]">straighten</span>
                           {activo.areaM2} m²
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <span className="material-symbols-outlined text-[13px]">roofing</span>
+                          Tech. {activo.areaTechada} m²
                         </span>
                       </div>
 

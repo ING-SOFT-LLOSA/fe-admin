@@ -7,6 +7,7 @@ import { fetchSignedUrl } from "@/lib/api/documents";
 import type { UsuarioActivoResponseDTO } from "@/lib/api/expedientes";
 import { updateCommercialHitoEstado, createCommercialHito, deleteCommercialHito, updateCommercialHito } from "@/lib/api/expedientes";
 import type { HitoComercialResponseDTO } from "@/lib/api/expedientes";
+import { linkComprobanteToLegal } from "@/modules/finanzas/utils/linkComprobanteToLegal";
 import DialogModal from "@/components/ui/DialogModal";
 
 interface MortgageFinancingViewProps {
@@ -73,6 +74,12 @@ export default function MortgageFinancingView({ expediente, cronograma, pagos, r
 
     const [addForm, setAddForm] = useState({ nroCuota: "", montoProgramado: "", fechaVencimiento: "", concepto: "COMPLETO" });
 
+    useEffect(() => {
+        const existing = new Set(pagos.map(p => p.concepto).filter(Boolean));
+        const valid = (["COMPLETO", "SEPARACION", "INICIAL"] as const).filter(c => !existing.has(c));
+        setAddForm(p => valid.includes(p.concepto as any) ? p : { ...p, concepto: valid[0] ?? "COMPLETO" });
+    }, [pagos]);
+
     const [hitoFormData, setHitoFormData] = useState({ nombre: "" });
 
     const progress = creditoHipotecario?.progreso ?? 0;
@@ -119,14 +126,18 @@ export default function MortgageFinancingView({ expediente, cronograma, pagos, r
         setDropzoneFile(file);
     };
 
-    const handleConfirmUpload = async (uuidPago: string, currentEstado: string) => {
+    const handleConfirmUpload = async (uuidPago: string, currentEstado: string, concepto?: string) => {
         if (!dropzoneFile) return;
         setUpdatingId(uuidPago);
+        const file = dropzoneFile;
         const comentario = dropzoneComentario.trim() || undefined;
         try {
-            await uploadPagoComprobante(uuidPago, dropzoneFile, comentario);
+            await uploadPagoComprobante(uuidPago, file, comentario);
             if (currentEstado !== "PAGADO") {
                 await updatePagoEstado(uuidPago, "PAGADO");
+            }
+            if (concepto === "SEPARACION" || concepto === "INICIAL") {
+                await linkComprobanteToLegal(expediente.uuidUsuarioActivo, concepto, file).catch(() => {});
             }
             setActiveDropzoneId(null);
             setDropzoneComentario("");
@@ -546,15 +557,23 @@ export default function MortgageFinancingView({ expediente, cronograma, pagos, r
                                     <input type="number" value={addForm.nroCuota} onChange={(e) => setAddForm((p) => ({ ...p, nroCuota: e.target.value }))}
                                         className="w-full rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 px-3 py-2 text-sm text-build-main dark:text-white outline-none focus:border-build-accent" />
                                 </div>
-                                <div>
-                                    <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Concepto</label>
-                                    <select value={addForm.concepto} onChange={(e) => setAddForm((p) => ({ ...p, concepto: e.target.value }))}
-                                        className="w-full rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 px-3 py-2 text-sm text-build-main dark:text-white outline-none focus:border-build-accent">
-                                        <option value="COMPLETO">COMPLETO</option>
-                                        <option value="SEPARACION">SEPARACION</option>
-                                        <option value="INICIAL">INICIAL</option>
-                                    </select>
-                                </div>
+                                {(() => {
+                                    const existing = new Set(pagos.map(p => p.concepto).filter(Boolean));
+                                    const conceptOptions = [
+                                        { value: "COMPLETO" as const, label: "COMPLETO" },
+                                        { value: "SEPARACION" as const, label: "SEPARACION" },
+                                        { value: "INICIAL" as const, label: "INICIAL" },
+                                    ].filter(o => !existing.has(o.value));
+                                    return (
+                                        <div>
+                                            <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Concepto</label>
+                                            <select value={addForm.concepto} onChange={(e) => setAddForm((p) => ({ ...p, concepto: e.target.value }))}
+                                                className="w-full rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 px-3 py-2 text-sm text-build-main dark:text-white outline-none focus:border-build-accent">
+                                                {conceptOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                                            </select>
+                                        </div>
+                                    );
+                                })()}
                                 <div>
                                     <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Monto (S/)</label>
                                     <input type="number" value={addForm.montoProgramado} onChange={(e) => setAddForm((p) => ({ ...p, montoProgramado: e.target.value }))}
@@ -765,7 +784,7 @@ export default function MortgageFinancingView({ expediente, cronograma, pagos, r
                                                                 </button>
                                                                 <button
                                                                     disabled={!dropzoneFile || isSaving}
-                                                                    onClick={(e) => { e.stopPropagation(); handleConfirmUpload(pago.uuidPago, pago.estado); }}
+                                                                    onClick={(e) => { e.stopPropagation(); handleConfirmUpload(pago.uuidPago, pago.estado, pago.concepto); }}
                                                                     className="bg-build-main text-white px-4 py-1.5 rounded-lg text-[11px] font-bold hover:bg-build-main/80 transition-all disabled:opacity-50 flex items-center gap-1"
                                                                 >
                                                                     <span className="material-symbols-outlined text-[14px]">cloud_upload</span>

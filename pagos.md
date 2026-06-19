@@ -39,7 +39,7 @@ Auth: CONTRATO_EDITAR
   "totalPactado": 150000.00,
   "numeroCuotas": 12,
   "pagoSeparacion": 1000.00,
-  "pagoIncial": 15000.00
+  "pagoInicial": 15000.00
 }
 ```
 

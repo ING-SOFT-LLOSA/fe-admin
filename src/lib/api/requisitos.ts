@@ -31,6 +31,17 @@ export interface RequisitoCreatePayload {
   icono?:               string;
 }
 
+export interface RequisitoResponseDTO {
+  id: string;
+  etapaProcesoCompraId: string;
+  titulo: string;
+  descripcion: string | null;
+  notaCorporativa: string | null;
+  estado: string;
+  fechaEmision: string | null;
+  icono: string | null;
+}
+
 export interface RequisitoUpdatePayload {
   titulo: string;
   descripcion?: string;
@@ -101,8 +112,8 @@ export function deleteRequisitoArchivo(requisitoId: string): Promise<void> {
  * Create a new custom requirement.
  * POST /api/requisitos-documentales
  */
-export function createRequisito(payload: RequisitoCreatePayload): Promise<void> {
-  return apiFetch<void>("/api/requisitos-documentales", {
+export function createRequisito(payload: RequisitoCreatePayload): Promise<RequisitoResponseDTO> {
+  return apiFetch<RequisitoResponseDTO>("/api/requisitos-documentales", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),

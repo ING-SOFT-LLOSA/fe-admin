@@ -30,7 +30,7 @@ function toCronogramaBody(p: CronogramaPayload) {
         uuidUsuarioActivo: p.uuidUsuarioActivo,
         totalPactado: p.totalPactado,
         pagoSeparacion: p.pagoSeparacion,
-        pagoIncial: p.pagoInicial,
+        pagoInicial: p.pagoInicial,
         numeroCuotas: p.numeroCuotas,
     };
 }
