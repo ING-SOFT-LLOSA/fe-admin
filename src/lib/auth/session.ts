@@ -11,8 +11,12 @@ export function saveSession(token: string, _perfil: PerfilConPermisos): void {
 
 export function clearSession(): void {
   if (typeof window === "undefined") return;
-  localStorage.removeItem(TOKEN_KEY); // Legacy cleanup
-  localStorage.removeItem(PERFIL_KEY); // Legacy cleanup
+  try {
+    localStorage?.removeItem(TOKEN_KEY);
+    localStorage?.removeItem(PERFIL_KEY);
+  } catch {
+    // localStorage may not be available (e.g., jsdom without full Web API)
+  }
   document.cookie = `${TOKEN_KEY}=; path=/; max-age=0; SameSite=Lax`;
 }
 
