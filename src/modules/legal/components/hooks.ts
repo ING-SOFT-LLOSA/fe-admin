@@ -27,9 +27,53 @@ import {
   type StageId,
 } from "./constants";
 
+// ─── Seed helpers ──────────────────────────────────────────────────────────────
+
+async function esperarLock(lockKey: string): Promise<void> {
+  let attempts = 0;
+  while (localStorage.getItem(lockKey) === "true" && attempts < 10) {
+    await new Promise((resolve) => setTimeout(resolve, 500));
+    attempts++;
+  }
+}
+
+async function crearHitosFaltantes(uuidUsuarioActivo: string): Promise<void> {
+  const etapasExp = await fetchEtapasExpediente(uuidUsuarioActivo);
+  for (const h of DEFAULT_HITOS) {
+    const stage = etapasExp.find((e) => e.etapaProceso === h.etapaProceso);
+    if (!stage) continue;
+    const freshStepper = await fetchCommercialStepper(uuidUsuarioActivo);
+    const hitoExists = freshStepper.etapas?.some(e =>
+      e.etapa === h.etapaProceso && e.hitos?.some(existH => existH.nombreHito === h.nombreHito)
+    );
+    if (hitoExists) continue;
+    await createCommercialHito({
+      uuidEstapaExpediente: stage.uuidEtapaExpediente,
+      nombreHito:           h.nombreHito,
+      descripcion:          h.descripcion,
+      orden:                h.orden,
+    });
+  }
+}
+
+async function asegurarHitos(uuidUsuarioActivo: string): Promise<StepperResponseDTO> {
+  const lockKey = `seeding_hitos_${uuidUsuarioActivo}`;
+  await esperarLock(lockKey);
+
+  const doubleCheck = await fetchCommercialStepper(uuidUsuarioActivo);
+  const checkTotal = doubleCheck.etapas?.reduce((acc, e) => acc + (e.hitos?.length ?? 0), 0) ?? 0;
+  if (checkTotal > 0) return doubleCheck;
+
+  localStorage.setItem(lockKey, "true");
+  try {
+    await crearHitosFaltantes(uuidUsuarioActivo);
+  } finally {
+    localStorage.removeItem(lockKey);
+  }
+  return await fetchCommercialStepper(uuidUsuarioActivo);
+}
+
 // ─── useCommercialStepper ─────────────────────────────────────────────────────
-// Carga (y hace seed si está vacío) los hitos comerciales de un contrato.
-// Ahora soporta N hitos por etapa en lugar de 1.
 
 export function useCommercialStepper(contrato: UsuarioActivoResponseDTO | null) {
   const [stepper, setStepper] = useState<StepperResponseDTO | null>(null);
@@ -50,57 +94,11 @@ export function useCommercialStepper(contrato: UsuarioActivoResponseDTO | null) 
     try {
       let data = await fetchCommercialStepper(uuidUsuarioActivo);
 
-      // Cuenta hitos existentes en el backend
       const totalHitos =
         data.etapas?.reduce((acc, e) => acc + (e.hitos?.length ?? 0), 0) ?? 0;
 
       if (totalHitos === 0) {
-        const lockKey = `seeding_hitos_${uuidUsuarioActivo}`;
-
-        // Espera si otra pestaña del navegador ya está sembrando los hitos
-        let attempts = 0;
-        while (localStorage.getItem(lockKey) === "true" && attempts < 10) {
-          await new Promise((resolve) => setTimeout(resolve, 500));
-          attempts++;
-        }
-
-        // Volver a consultar después de la espera
-        const doubleCheck = await fetchCommercialStepper(uuidUsuarioActivo);
-        const checkTotal = doubleCheck.etapas?.reduce((acc, e) => acc + (e.hitos?.length ?? 0), 0) ?? 0;
-
-        if (checkTotal > 0) {
-          data = doubleCheck;
-        } else {
-          localStorage.setItem(lockKey, "true");
-          try {
-            // Fetch the stages to get their uuidEtapaExpediente
-            const etapasExp = await fetchEtapasExpediente(uuidUsuarioActivo);
-            
-            // Seed: crea todos los hitos definidos en DEFAULT_HITOS en orden
-            for (const h of DEFAULT_HITOS) {
-              const stage = etapasExp.find((e) => e.etapaProceso === h.etapaProceso);
-              if (stage) {
-                // Doble chequeo contra el backend para evitar duplicados en la iteración secuencial
-                const freshStepper = await fetchCommercialStepper(uuidUsuarioActivo);
-                const hitoExists = freshStepper.etapas?.some(e =>
-                  e.etapa === h.etapaProceso && e.hitos?.some(existH => existH.nombreHito === h.nombreHito)
-                );
-
-                if (!hitoExists) {
-                  await createCommercialHito({
-                    uuidEstapaExpediente: stage.uuidEtapaExpediente,
-                    nombreHito:           h.nombreHito,
-                    descripcion:          h.descripcion,
-                    orden:                h.orden,
-                  });
-                }
-              }
-            }
-          } finally {
-            localStorage.removeItem(lockKey);
-          }
-          data = await fetchCommercialStepper(uuidUsuarioActivo);
-        }
+        data = await asegurarHitos(uuidUsuarioActivo);
       }
 
       setStepper(data);

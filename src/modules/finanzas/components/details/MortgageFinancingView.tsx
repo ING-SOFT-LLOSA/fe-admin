@@ -759,6 +759,153 @@ function CuotasSeccion({ cronograma, pagos, expediente, onUpdate, setDialog }: C
     );
 }
 
+interface HitoBadgeInfo {
+    bg: string;
+    text: string;
+    label: string;
+}
+
+const hitoStateBadges: Record<string, HitoBadgeInfo> = {
+    COMPLETADO: { bg: "text-green-700 bg-green-100 dark:text-green-400 dark:bg-green-900/30", text: "text-green-700", label: "Listo" },
+    EN_PROGRESO: { bg: "text-amber-700 bg-amber-100 dark:text-amber-400 dark:bg-amber-900/30", text: "text-amber-700", label: "En curso" },
+    PENDIENTE: { bg: "text-slate-400 bg-slate-100 dark:bg-white/5", text: "text-slate-400", label: "Pendiente" },
+};
+
+function getHitoCircleStyle(estado: string): string {
+    if (estado === "COMPLETADO") return "bg-green-500 border-green-500 text-white";
+    if (estado === "EN_PROGRESO") return "bg-amber-500 border-amber-500 text-white";
+    return "bg-white dark:bg-[#1a1a1a] border-slate-200 dark:border-white/10 text-slate-300";
+}
+
+function getHitoCardStyle(estado: string): string {
+    if (estado === "COMPLETADO") return "bg-green-50/50 dark:bg-green-900/10 border-green-100 dark:border-green-900/30";
+    if (estado === "EN_PROGRESO") return "bg-amber-50/50 dark:bg-amber-900/10 border-amber-100 dark:border-amber-900/20";
+    return "bg-white dark:bg-white/0 border-transparent";
+}
+
+function getHitoButtonTitle(canChange: boolean, estado: string): string {
+    if (!canChange) return "No hay hito asociado";
+    if (estado === "COMPLETADO") return "Marcar como pendiente";
+    if (estado === "EN_PROGRESO") return "Marcar como completado";
+    return "Marcar como en curso";
+}
+
+function getHitoIcon(estado: string, isUpdating: boolean): string {
+    if (isUpdating) return "more_horiz";
+    if (estado === "COMPLETADO") return "check";
+    if (estado === "EN_PROGRESO") return "priority_high";
+    return "radio_button_unchecked";
+}
+
+interface HitoRowProps {
+    item: any;
+    idx: number;
+    isUpdating: string | null;
+    handleHitoToggle: (uuidHito: string, currentEstado: string) => Promise<void>;
+    startEditingHito: (hito: HitoComercialResponseDTO) => void;
+    handleDeleteHito: (uuidHito: string) => Promise<void>;
+}
+
+function HitoRow({ item, idx, isUpdating, handleHitoToggle, startEditingHito, handleDeleteHito }: HitoRowProps) {
+    const isCompleted = item.estado === "COMPLETADO";
+    const canChangeEstado = Boolean(item.uuidHitoComercial);
+    const isUpdatingThis = isUpdating === item.uuidHitoComercial;
+
+    const circleStyle = getHitoCircleStyle(item.estado);
+    const cardStyle = getHitoCardStyle(item.estado);
+    const titleText = getHitoButtonTitle(canChangeEstado, item.estado);
+    const iconName = getHitoIcon(item.estado, isUpdatingThis);
+    const badge = hitoStateBadges[item.estado] ?? hitoStateBadges.PENDIENTE;
+
+    return (
+        <div className="relative pl-10 last:mb-0 group">
+            <button
+                type="button"
+                disabled={!canChangeEstado || isUpdatingThis}
+                onClick={() => item.uuidHitoComercial && handleHitoToggle(item.uuidHitoComercial, item.estado)}
+                title={titleText}
+                className={`absolute left-0 top-1.5 w-8 h-8 rounded-full border-2 flex items-center justify-center z-10 transition-colors disabled:cursor-not-allowed ${circleStyle} ${canChangeEstado ? "hover:scale-105" : "opacity-60"}`}
+            >
+                <span className="material-symbols-outlined text-[16px]">{iconName}</span>
+            </button>
+
+            <div className={`p-3 rounded-xl border transition-all ${cardStyle}`}>
+                <div className="flex items-start justify-between gap-2">
+                    <div className="flex-1 min-w-0">
+                        <p className={`text-sm font-bold truncate ${isCompleted ? "text-green-800 dark:text-green-400" : "text-build-main dark:text-white"}`}>
+                            {item.nombre}
+                        </p>
+                        <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                            {item.monto > 0 && (
+                                <span className="text-[10px] font-bold text-slate-500 dark:text-white/40">
+                                    S/ {item.monto.toLocaleString("es-PE", { minimumFractionDigits: 2 })}
+                                </span>
+                            )}
+                            {item.fecha && (
+                                <span className="text-[10px] text-slate-400 dark:text-white/30">
+                                    {new Date(item.fecha).toLocaleDateString("es-PE")}
+                                </span>
+                            )}
+                        </div>
+                    </div>
+                    <div className="flex flex-col items-end gap-1 shrink-0">
+                        <button
+                            type="button"
+                            disabled={!canChangeEstado || isUpdatingThis}
+                            onClick={() => item.uuidHitoComercial && handleHitoToggle(item.uuidHitoComercial, item.estado)}
+                            className={`text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full transition-colors disabled:cursor-not-allowed ${badge.bg} ${canChangeEstado ? "hover:ring-2 hover:ring-build-accent/20" : "opacity-70"}`}
+                        >
+                            {badge.label}
+                        </button>
+                        {item.downloadUrl && (
+                            <a
+                                href={item.downloadUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-[9px] text-build-accent hover:underline flex items-center gap-0.5"
+                                title="Descargar documento"
+                            >
+                                <span className="material-symbols-outlined text-[12px]">download</span>
+                            </a>
+                        )}
+                        {item.uuidHitoComercial && (
+                            <div className="flex items-center gap-1">
+                                <button
+                                    onClick={() => {
+                                        const h: HitoComercialResponseDTO = {
+                                            uuidHitoComercial: item.uuidHitoComercial!,
+                                            uuidEtapaExpediente: "",
+                                            etapaProceso: "PAGO",
+                                            nombreHito: item.nombre,
+                                            descripcion: "",
+                                            orden: idx,
+                                            estado: item.estado as any,
+                                            fechaCompletado: item.fecha,
+                                            createdAt: "",
+                                        };
+                                        startEditingHito(h);
+                                    }}
+                                    className="text-[9px] text-slate-400 hover:text-build-accent"
+                                    title="Editar nombre"
+                                >
+                                    <span className="material-symbols-outlined text-[12px]">edit</span>
+                                </button>
+                                <button
+                                    onClick={() => handleDeleteHito(item.uuidHitoComercial!)}
+                                    className="text-[9px] text-slate-400 hover:text-red-500"
+                                    title="Eliminar hito"
+                                >
+                                    <span className="material-symbols-outlined text-[12px]">delete</span>
+                                </button>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+}
+
 interface HitosDesembolsoSectionProps {
     creditoHipotecario: CreditoHipotecarioResumen | null;
     expediente: UsuarioActivoResponseDTO;
@@ -904,121 +1051,17 @@ function HitosDesembolsoSection({ creditoHipotecario, expediente, onUpdate }: Hi
                     </div>
                 )}
 
-                {paymentHitos.map((item, idx) => {
-                    const isCompleted = item.estado === "COMPLETADO";
-                    const isEnProgreso = item.estado === "EN_PROGRESO";
-                    const canChangeEstado = Boolean(item.uuidHitoComercial);
-
-                    return (
-                        <div key={item.uuidHitoComercial ?? `${item.nombre}-${idx}`} className="relative pl-10 last:mb-0 group">
-                            <button
-                                type="button"
-                                disabled={!canChangeEstado || isUpdating === item.uuidHitoComercial}
-                                onClick={() => item.uuidHitoComercial && handleHitoToggle(item.uuidHitoComercial, item.estado)}
-                                title={!canChangeEstado ? "No hay hito asociado" : isCompleted ? "Marcar como pendiente" : isEnProgreso ? "Marcar como completado" : "Marcar como en curso"}
-                                className={`absolute left-0 top-1.5 w-8 h-8 rounded-full border-2 flex items-center justify-center z-10 transition-colors disabled:cursor-not-allowed ${
-                                isCompleted
-                                    ? "bg-green-500 border-green-500 text-white"
-                                    : isEnProgreso
-                                        ? "bg-amber-500 border-amber-500 text-white"
-                                        : "bg-white dark:bg-[#1a1a1a] border-slate-200 dark:border-white/10 text-slate-300"
-                                } ${canChangeEstado ? "hover:scale-105" : "opacity-60"}`}
-                            >
-                                <span className="material-symbols-outlined text-[16px]">
-                                    {isUpdating === item.uuidHitoComercial ? "more_horiz" : isCompleted ? "check" : isEnProgreso ? "priority_high" : "radio_button_unchecked"}
-                                </span>
-                            </button>
-
-                            <div className={`p-3 rounded-xl border transition-all ${
-                                isCompleted
-                                    ? "bg-green-50/50 dark:bg-green-900/10 border-green-100 dark:border-green-900/30"
-                                    : isEnProgreso
-                                        ? "bg-amber-50/50 dark:bg-amber-900/10 border-amber-100 dark:border-amber-900/20"
-                                        : "bg-white dark:bg-white/0 border-transparent"
-                            }`}>
-                                <div className="flex items-start justify-between gap-2">
-                                    <div className="flex-1 min-w-0">
-                                        <p className={`text-sm font-bold truncate ${
-                                            isCompleted ? "text-green-800 dark:text-green-400" : "text-build-main dark:text-white"
-                                        }`}>
-                                            {item.nombre}
-                                        </p>
-                                        <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                                            {item.monto > 0 && (
-                                                <span className="text-[10px] font-bold text-slate-500 dark:text-white/40">
-                                                    S/ {item.monto.toLocaleString("es-PE", { minimumFractionDigits: 2 })}
-                                                </span>
-                                            )}
-                                            {item.fecha && (
-                                                <span className="text-[10px] text-slate-400 dark:text-white/30">
-                                                    {new Date(item.fecha).toLocaleDateString("es-PE")}
-                                                </span>
-                                            )}
-                                        </div>
-                                    </div>
-                                    <div className="flex flex-col items-end gap-1 shrink-0">
-                                        <button
-                                            type="button"
-                                            disabled={!canChangeEstado || isUpdating === item.uuidHitoComercial}
-                                            onClick={() => item.uuidHitoComercial && handleHitoToggle(item.uuidHitoComercial, item.estado)}
-                                            className={`text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full transition-colors disabled:cursor-not-allowed ${
-                                            isCompleted
-                                                ? "text-green-700 bg-green-100 dark:text-green-400 dark:bg-green-900/30"
-                                                : isEnProgreso
-                                                    ? "text-amber-700 bg-amber-100 dark:text-amber-400 dark:bg-amber-900/30"
-                                                    : "text-slate-400 bg-slate-100 dark:bg-white/5"
-                                        } ${canChangeEstado ? "hover:ring-2 hover:ring-build-accent/20" : "opacity-70"}`}
-                                        >
-                                            {item.estado === "COMPLETADO" ? "Listo" : item.estado === "EN_PROGRESO" ? "En curso" : "Pendiente"}
-                                        </button>
-                                        {item.downloadUrl && (
-                                            <a
-                                                href={item.downloadUrl}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="text-[9px] text-build-accent hover:underline flex items-center gap-0.5"
-                                                title="Descargar documento"
-                                            >
-                                                <span className="material-symbols-outlined text-[12px]">download</span>
-                                            </a>
-                                        )}
-                                        {item.uuidHitoComercial && (
-                                            <div className="flex items-center gap-1">
-                                                <button
-                                                    onClick={() => {
-                                                        const h: HitoComercialResponseDTO = {
-                                                            uuidHitoComercial: item.uuidHitoComercial!,
-                                                            uuidEtapaExpediente: "",
-                                                            etapaProceso: "PAGO",
-                                                            nombreHito: item.nombre,
-                                                            descripcion: "",
-                                                            orden: idx,
-                                                            estado: item.estado as any,
-                                                            fechaCompletado: item.fecha,
-                                                            createdAt: "",
-                                                        };
-                                                        startEditingHito(h);
-                                                    }}
-                                                    className="text-[9px] text-slate-400 hover:text-build-accent"
-                                                    title="Editar nombre"
-                                                >
-                                                    <span className="material-symbols-outlined text-[12px]">edit</span>
-                                                </button>
-                                                <button
-                                                    onClick={() => handleDeleteHito(item.uuidHitoComercial!)}
-                                                    className="text-[9px] text-slate-400 hover:text-red-500"
-                                                    title="Eliminar hito"
-                                                >
-                                                    <span className="material-symbols-outlined text-[12px]">delete</span>
-                                                </button>
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    );
-                })}
+                {paymentHitos.map((item, idx) => (
+                    <HitoRow
+                        key={item.uuidHitoComercial ?? `${item.nombre}-${idx}`}
+                        item={item}
+                        idx={idx}
+                        isUpdating={isUpdating}
+                        handleHitoToggle={handleHitoToggle}
+                        startEditingHito={startEditingHito}
+                        handleDeleteHito={handleDeleteHito}
+                    />
+                ))}
 
                 {creditoHipotecario && creditoHipotecario.montoTotal > 0 && (
                     <div className="mt-4 pt-3 border-t border-slate-100 dark:border-white/10 flex items-center justify-between">
