@@ -199,4 +199,36 @@ describe("apiFetch", () => {
     const [, init] = (global.fetch as ReturnType<typeof vi.fn>).mock.calls[0];
     expect(init.cache).toBe("no-store");
   });
+
+  it("lanza ApiError genérico con body vacío — usa el fallback", async () => {
+    mockGetFreshToken.mockResolvedValue("token");
+    const mockRes = {
+      ok: false,
+      status: 500,
+      text: vi.fn().mockResolvedValue(""),
+    };
+    (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValue(mockRes);
+
+    const apiFetch = await importApiFetch();
+    await expect(apiFetch("/api/crash")).rejects.toMatchObject({
+      status: 500,
+      message: "Error 500 en /api/crash",
+    });
+  });
+
+  it("lanza ApiError con body JSON sin campos error ni message — usa texto crudo", async () => {
+    mockGetFreshToken.mockResolvedValue("token");
+    const mockRes = {
+      ok: false,
+      status: 422,
+      text: vi.fn().mockResolvedValue(JSON.stringify({ code: "BAD_DATA" })),
+    };
+    (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValue(mockRes);
+
+    const apiFetch = await importApiFetch();
+    await expect(apiFetch("/api/validate")).rejects.toMatchObject({
+      status: 422,
+      message: JSON.stringify({ code: "BAD_DATA" }),
+    });
+  });
 });

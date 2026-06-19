@@ -7,6 +7,17 @@ vi.mock("@/lib/firebase", () => ({
 
 import { getFirebaseAuth } from "@/lib/firebase";
 import { saveSession, clearSession, getStoredToken, getFreshToken } from "./session";
+import type { PerfilConPermisos } from "@/types/auth";
+
+const mockPerfil: PerfilConPermisos = {
+  id: 5,
+  nombre: "Asesor Prueba",
+  email: "asesor@llosaedificaciones.com",
+  tipoUsuario: "EMPLEADO",
+  rol: "ASESOR",
+  activo: true,
+  funciones: ["PROYECTO_VER", "CLIENTE_VER"],
+};
 
 const mockGetFirebaseAuth = vi.mocked(getFirebaseAuth);
 
@@ -48,8 +59,14 @@ describe("session", () => {
 
   describe("saveSession", () => {
     it("guarda el token en la cookie", () => {
-      saveSession("mi-token", {} as any);
+      saveSession("mi-token", mockPerfil);
       expect(document.cookie).toContain("llosa_id_token=mi-token");
+    });
+
+    it("sobrescribe un token previo al llamarse de nuevo", () => {
+      saveSession("token-viejo", mockPerfil);
+      saveSession("token-nuevo", mockPerfil);
+      expect(document.cookie).toContain("llosa_id_token=token-nuevo");
     });
 
     it("no falla en entorno SSR (window undefined)", () => {
@@ -77,6 +94,28 @@ describe("session", () => {
       expect(localStorage.getItem("llosa_id_token")).toBeNull();
       expect(localStorage.getItem("llosa_perfil")).toBeNull();
     });
+
+    it("no lanza error si no hay sesión previa", () => {
+      expect(() => clearSession()).not.toThrow();
+    });
+
+    it("no falla si localStorage no está disponible", () => {
+      localStorageMock.removeItem.mockImplementationOnce(() => {
+        throw new Error("unavailable");
+      });
+      setCookie("llosa_id_token", "tok-123");
+      expect(() => clearSession()).not.toThrow();
+      expect(document.cookie).not.toContain("llosa_id_token=tok-123");
+    });
+
+    it("no falla en entorno SSR (window undefined)", () => {
+      const originalWindow = global.window;
+      // @ts-expect-error simulating SSR
+      delete global.window;
+      setCookie("llosa_id_token", "tok-123");
+      expect(() => clearSession()).not.toThrow();
+      global.window = originalWindow;
+    });
   });
 
   describe("getStoredToken", () => {
@@ -87,6 +126,20 @@ describe("session", () => {
     it("retorna el token almacenado en la cookie", () => {
       setCookie("llosa_id_token", "cookie-tok");
       expect(getStoredToken()).toBe("cookie-tok");
+    });
+
+    it("devuelve null después de clearSession", () => {
+      saveSession("token", mockPerfil);
+      clearSession();
+      expect(getStoredToken()).toBeNull();
+    });
+
+    it("retorna null en entorno SSR", () => {
+      const originalWindow = global.window;
+      // @ts-expect-error simulating SSR
+      delete global.window;
+      expect(getStoredToken()).toBeNull();
+      global.window = originalWindow;
     });
   });
 
@@ -127,6 +180,33 @@ describe("session", () => {
       await getFreshToken();
       expect(cookieSpy).not.toHaveBeenCalled();
       cookieSpy.mockRestore();
+    });
+
+    it("retorna null si getIdToken devuelve undefined", async () => {
+      const mockUser = {
+        getIdToken: vi.fn().mockResolvedValue(undefined),
+      };
+      mockGetFirebaseAuth.mockReturnValue({ currentUser: mockUser } as any);
+      const token = await getFreshToken();
+      expect(token).toBeNull();
+    });
+
+    it("retorna null si getIdToken devuelve null", async () => {
+      const mockUser = {
+        getIdToken: vi.fn().mockResolvedValue(null),
+      };
+      mockGetFirebaseAuth.mockReturnValue({ currentUser: mockUser } as any);
+      const token = await getFreshToken();
+      expect(token).toBeNull();
+    });
+
+    it("retorna string vacía si getIdToken devuelve string vacía", async () => {
+      const mockUser = {
+        getIdToken: vi.fn().mockResolvedValue(""),
+      };
+      mockGetFirebaseAuth.mockReturnValue({ currentUser: mockUser } as any);
+      const token = await getFreshToken();
+      expect(token).toBe("");
     });
 
     it("retorna null si Firebase lanza error", async () => {

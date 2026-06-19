@@ -240,5 +240,27 @@ describe("useFinancingData", () => {
       expect(result.current.error).toBe("Error de red");
       expect(result.current.expediente).toBeNull();
     });
+
+    it("captura error si el contrato no existe (fetchContratoPorId devuelve null)", async () => {
+      mockFetchContrato.mockResolvedValue(null as any);
+
+      const { result } = renderHook(() => useFinancingData("ua-1"));
+      await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+      expect(result.current.error).toBe("No se pudo cargar el contrato solicitado.");
+    });
+  });
+
+  describe("tipo de financiamiento no soportado", () => {
+    it("no llama a finanzas si el tipo no es directo ni hipotecario", async () => {
+      mockFetchContrato.mockResolvedValue(makeExpediente("Plan de Ahorro"));
+
+      const { result } = renderHook(() => useFinancingData("ua-1"));
+      await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+      expect(result.current.hasExpediente).toBe(true);
+      expect(result.current.cronograma).toBeNull();
+      expect(mockFetchCronograma).not.toHaveBeenCalled();
+    });
   });
 });

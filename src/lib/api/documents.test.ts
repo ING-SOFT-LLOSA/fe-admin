@@ -126,6 +126,34 @@ describe("documents API", () => {
       expect(url).toContain("entidad=REPORTE");
       expect(url).toContain("idReferencia=ref-2");
     });
+
+    it("lanza error si el servidor responde con texto de error", async () => {
+      mockGetFreshToken.mockResolvedValue("token-ok");
+      const mockRes = {
+        ok: false,
+        text: vi.fn().mockResolvedValue("Error del servidor"),
+      };
+      (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValue(mockRes);
+
+      const file = new File(["content"], "doc.pdf");
+      await expect(
+        uploadDocumentExplicito("ref-1", file, "PDF_LEGAL", "REPORTE")
+      ).rejects.toThrow("Error del servidor");
+    });
+
+    it("usa mensaje genérico si el error de upload explícito está vacío", async () => {
+      mockGetFreshToken.mockResolvedValue("token-ok");
+      const mockRes = {
+        ok: false,
+        text: vi.fn().mockResolvedValue(""),
+      };
+      (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValue(mockRes);
+
+      const file = new File(["content"], "doc.pdf");
+      await expect(
+        uploadDocumentExplicito("ref-1", file, "PDF_LEGAL", "REPORTE")
+      ).rejects.toThrow("Error al subir el documento");
+    });
   });
 
   describe("fetchDocumentosByReferencia", () => {

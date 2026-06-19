@@ -105,6 +105,12 @@ describe("expedientes API", () => {
       expect(result[0].uuidUsuarioActivo).toBe("ua-2");
     });
 
+    it("maneja respuesta paginada sin content", async () => {
+      mockApiFetch.mockResolvedValue({ totalElements: 0, otherField: "value" });
+      const result = await fetchTodosLosContratos();
+      expect(result).toEqual([]);
+    });
+
     it("mapea activo desde activos[0] si activo es null", async () => {
       const item = { ...makeExpediente(), activo: undefined };
       mockApiFetch.mockResolvedValue([item]);

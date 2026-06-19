@@ -90,6 +90,18 @@ describe("requisitos API", () => {
         "Error al subir el archivo del requisito"
       );
     });
+
+    it("extrae mensaje de error desde JSON", async () => {
+      mockGetFreshToken.mockResolvedValue("token-ok");
+      const mockRes = {
+        ok: false,
+        text: vi.fn().mockResolvedValue(JSON.stringify({ error: "Archivo inválido" })),
+      };
+      (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValue(mockRes);
+
+      const file = new File(["content"], "doc.pdf");
+      await expect(uploadRequisitoArchivo("req-1", file)).rejects.toThrow("Archivo inválido");
+    });
   });
 
   describe("deleteRequisitoArchivo", () => {

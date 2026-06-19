@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import { FirebaseError } from "firebase/app";
 
 vi.mock("firebase/auth", () => ({
   signInWithEmailAndPassword: vi.fn(),
@@ -27,6 +28,7 @@ import {
 import { fetchPerfil } from "@/lib/auth/api";
 import { saveSession, clearSession } from "@/lib/auth/session";
 import { loginWithEmail, loginWithGoogle, logout, resetPassword } from "./login";
+import { toAuthErrorMessage } from "./errors";
 
 const mockSignIn = vi.mocked(signInWithEmailAndPassword);
 const mockSignInWithPopup = vi.mocked(signInWithPopup);
@@ -69,6 +71,12 @@ describe("loginWithEmail", () => {
     expect(mockFetchPerfil).toHaveBeenCalledWith("id-token-firebase");
   });
 
+  it("solicita un ID token de Firebase para enviarlo al backend", async () => {
+    mockSignIn.mockResolvedValue({ user: mockUser } as any);
+    await loginWithEmail("admin@empresa.com", "SecurePass123");
+    expect(mockUser.getIdToken).toHaveBeenCalledOnce();
+  });
+
   it("llama a saveSession con el token y el perfil", async () => {
     mockSignIn.mockResolvedValue({ user: mockUser } as any);
     await loginWithEmail("admin@empresa.com", "SecurePass123");
@@ -91,6 +99,13 @@ describe("loginWithEmail", () => {
       "Cuenta inactiva o deshabilitada"
     );
     expect(mockSaveSession).not.toHaveBeenCalled();
+  });
+
+  it("el backend protege el sistema: fetchPerfil lanza 403 si el dominio no está autorizado", async () => {
+    mockSignIn.mockResolvedValue({ user: mockUser } as any);
+    mockFetchPerfil.mockRejectedValue(new Error("Sesión inválida. Vuelve a iniciar sesión."));
+    await expect(loginWithEmail("intruso@gmail.com", "ValidPassword123!"))
+      .rejects.toThrow("Sesión inválida. Vuelve a iniciar sesión.");
   });
 });
 
@@ -150,5 +165,36 @@ describe("resetPassword", () => {
     await expect(resetPassword("noexiste@test.com")).rejects.toThrow(
       "auth/user-not-found"
     );
+  });
+});
+
+describe("toAuthErrorMessage", () => {
+  it("auth/invalid-credential → 'Correo o contraseña inválido.'", () => {
+    const err = new FirebaseError("auth/invalid-credential", "Firebase: invalid-credential");
+    expect(toAuthErrorMessage(err)).toBe("Correo o contraseña inválido.");
+  });
+
+  it("auth/wrong-password → 'Correo o contraseña inválido.'", () => {
+    const err = new FirebaseError("auth/wrong-password", "Firebase: wrong-password");
+    expect(toAuthErrorMessage(err)).toBe("Correo o contraseña inválido.");
+  });
+
+  it("auth/user-not-found → 'Correo o contraseña inválido.'", () => {
+    const err = new FirebaseError("auth/user-not-found", "Firebase: user-not-found");
+    expect(toAuthErrorMessage(err)).toBe("Correo o contraseña inválido.");
+  });
+
+  it("auth/too-many-requests → 'Demasiados intentos. Espera un momento.'", () => {
+    const err = new FirebaseError("auth/too-many-requests", "Firebase: too-many-requests");
+    expect(toAuthErrorMessage(err)).toBe("Demasiados intentos. Espera un momento.");
+  });
+
+  it("error genérico de Error devuelve su message original", () => {
+    const err = new Error("Sesión inválida. Vuelve a iniciar sesión.");
+    expect(toAuthErrorMessage(err)).toBe("Sesión inválida. Vuelve a iniciar sesión.");
+  });
+
+  it("error desconocido devuelve mensaje genérico de fallback", () => {
+    expect(toAuthErrorMessage({ code: "raro" })).toBe("No se pudo iniciar sesión.");
   });
 });
