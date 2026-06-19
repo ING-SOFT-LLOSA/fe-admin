@@ -4,9 +4,8 @@ import React, { useState, useEffect } from "react";
 import type { PagoResponse, CronogramaPagoResponse, CronogramaResumenResponse, CreditoHipotecarioResumen } from "@/modules/finanzas/types";
 import { createCronograma, updateCronograma, addPago, deletePago, uploadPagoComprobante, updatePago, updatePagoEstado } from "@/lib/api/finanzas";
 import { fetchSignedUrl } from "@/lib/api/documents";
-import type { UsuarioActivoResponseDTO } from "@/lib/api/expedientes";
 import { updateCommercialHitoEstado, createCommercialHito, deleteCommercialHito, updateCommercialHito } from "@/lib/api/expedientes";
-import type { HitoComercialResponseDTO } from "@/lib/api/expedientes";
+import type { UsuarioActivoResponseDTO, HitoComercialResponseDTO } from "@/lib/api/expedientes";
 import { linkComprobanteToLegal } from "@/modules/finanzas/utils/linkComprobanteToLegal";
 import DialogModal from "@/components/ui/DialogModal";
 
@@ -21,12 +20,12 @@ interface DialogState {
 }
 
 interface MortgageFinancingViewProps {
-    expediente: UsuarioActivoResponseDTO;
-    cronograma: CronogramaPagoResponse | null;
-    pagos: PagoResponse[];
-    resumen: CronogramaResumenResponse | null;
-    creditoHipotecario: CreditoHipotecarioResumen | null;
-    onUpdate: () => void;
+    readonly expediente: UsuarioActivoResponseDTO;
+    readonly cronograma: CronogramaPagoResponse | null;
+    readonly pagos: PagoResponse[];
+    readonly resumen: CronogramaResumenResponse | null;
+    readonly creditoHipotecario: CreditoHipotecarioResumen | null;
+    readonly onUpdate: () => void;
 }
 
 interface CronogramaFormData {
@@ -47,7 +46,16 @@ function isSpecialConcepto(pago: PagoResponse): boolean {
 }
 
 function getConceptoLabel(pago: PagoResponse): string {
-    return pago.concepto ?? (pago.nroCuota === -1 ? "SEPARACION" : pago.nroCuota === 0 ? "INICIAL" : "COMPLETO");
+    if (pago.concepto) {
+        return pago.concepto;
+    }
+    if (pago.nroCuota === -1) {
+        return "SEPARACION";
+    }
+    if (pago.nroCuota === 0) {
+        return "INICIAL";
+    }
+    return "COMPLETO";
 }
 
 function getPagoStatusInfo(pago: PagoResponse) {
@@ -90,10 +98,10 @@ function getPagoStatusInfo(pago: PagoResponse) {
 // ─── Componentes Auxiliares ──────────────────────────────────────────────────
 
 interface ResumenSaldosCardProps {
-    resumen: CronogramaResumenResponse | null;
+    readonly resumen: CronogramaResumenResponse | null;
 }
 
-function ResumenSaldosCard({ resumen }: ResumenSaldosCardProps) {
+function ResumenSaldosCard({ resumen }: Readonly<ResumenSaldosCardProps>) {
     if (!resumen) return null;
     const estadoStyle = resumen.estadoGlobal ? estadoGlobalStyles[resumen.estadoGlobal] : null;
 
@@ -117,28 +125,28 @@ function ResumenSaldosCard({ resumen }: ResumenSaldosCardProps) {
                     <div key={item.label} className="bg-slate-50 dark:bg-white/5 rounded-xl px-4 py-3">
                         <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">{item.label}</p>
                         <p className={`text-base font-bold ${item.color}`}>
-                            {item.value != null ? `S/ ${item.value.toLocaleString("es-PE", { minimumFractionDigits: 2 })}` : item.extra}
+                            {item.value === null || typeof item.value === "undefined" ? item.extra : `S/ ${item.value.toLocaleString("es-PE", { minimumFractionDigits: 2 })}`}
                         </p>
                     </div>
                 ))}
             </div>
             <div className="mt-3 grid grid-cols-3 gap-2 text-center text-xs text-slate-400 dark:text-white/40">
-                <span>{resumen.cuotasPagadas} cuota{resumen.cuotasPagadas !== 1 ? "s" : ""} pagada{resumen.cuotasPagadas !== 1 ? "s" : ""}</span>
-                <span>{resumen.cuotasPendientes} pendiente{resumen.cuotasPendientes !== 1 ? "s" : ""}</span>
-                <span>{resumen.cuotasVencidas} vencida{resumen.cuotasVencidas !== 1 ? "s" : ""}</span>
+                <span>{resumen.cuotasPagadas} cuota{resumen.cuotasPagadas === 1 ? "" : "s"} pagada{resumen.cuotasPagadas === 1 ? "" : "s"}</span>
+                <span>{resumen.cuotasPendientes} pendiente{resumen.cuotasPendientes === 1 ? "" : "s"}</span>
+                <span>{resumen.cuotasVencidas} vencida{resumen.cuotasVencidas === 1 ? "" : "s"}</span>
             </div>
         </div>
     );
 }
 
 interface CronogramaSeccionProps {
-    cronograma: CronogramaPagoResponse | null;
-    expediente: UsuarioActivoResponseDTO;
-    onUpdate: () => void;
-    setDialog: React.Dispatch<React.SetStateAction<DialogState>>;
+    readonly cronograma: CronogramaPagoResponse | null;
+    readonly expediente: UsuarioActivoResponseDTO;
+    readonly onUpdate: () => void;
+    readonly setDialog: React.Dispatch<React.SetStateAction<DialogState>>;
 }
 
-function CronogramaSeccion({ cronograma, expediente, onUpdate, setDialog }: CronogramaSeccionProps) {
+function CronogramaSeccion({ cronograma, expediente, onUpdate, setDialog }: Readonly<CronogramaSeccionProps>) {
     const [showCronogramaForm, setShowCronogramaForm] = useState(!cronograma);
     const [isSaving, setIsSaving] = useState(false);
     const [cronogramaForm, setCronogramaForm] = useState<CronogramaFormData>({
@@ -165,17 +173,17 @@ function CronogramaSeccion({ cronograma, expediente, onUpdate, setDialog }: Cron
             if (cronograma) {
                 await updateCronograma(cronograma.uuidCronograma, {
                     uuidUsuarioActivo: expediente.uuidUsuarioActivo,
-                    totalPactado: parseFloat(cronogramaForm.totalPactado),
-                    pagoSeparacion: parseFloat(cronogramaForm.pagoSeparacion),
-                    pagoInicial: parseFloat(cronogramaForm.pagoInicial),
+                    totalPactado: Number.parseFloat(cronogramaForm.totalPactado),
+                    pagoSeparacion: Number.parseFloat(cronogramaForm.pagoSeparacion),
+                    pagoInicial: Number.parseFloat(cronogramaForm.pagoInicial),
                     numeroCuotas: 1,
                 });
             } else {
                 await createCronograma({
                     uuidUsuarioActivo: expediente.uuidUsuarioActivo,
-                    totalPactado: parseFloat(cronogramaForm.totalPactado),
-                    pagoSeparacion: parseFloat(cronogramaForm.pagoSeparacion),
-                    pagoInicial: parseFloat(cronogramaForm.pagoInicial),
+                    totalPactado: Number.parseFloat(cronogramaForm.totalPactado),
+                    pagoSeparacion: Number.parseFloat(cronogramaForm.pagoSeparacion),
+                    pagoInicial: Number.parseFloat(cronogramaForm.pagoInicial),
                     numeroCuotas: 1,
                 });
             }
@@ -241,7 +249,7 @@ function CronogramaSeccion({ cronograma, expediente, onUpdate, setDialog }: Cron
                     <span className="material-symbols-outlined text-build-accent text-[20px]">event_note</span>
                     <div>
                         <p className="text-sm font-bold text-build-main dark:text-white">Cronograma Activo</p>
-                        <p className="text-xs text-slate-400">{cronograma.numeroCuotas} cuota{cronograma.numeroCuotas !== 1 ? "s" : ""} · Estado: {cronograma.estado}</p>
+                        <p className="text-xs text-slate-400">{cronograma.numeroCuotas} cuota{cronograma.numeroCuotas === 1 ? "" : "s"} · Estado: {cronograma.estado}</p>
                     </div>
                 </div>
                 <button
@@ -265,14 +273,14 @@ function CronogramaSeccion({ cronograma, expediente, onUpdate, setDialog }: Cron
 }
 
 interface MortgagePagoRowProps {
-    pago: PagoResponse;
-    expediente: UsuarioActivoResponseDTO;
-    onUpdate: () => void;
-    setDialog: React.Dispatch<React.SetStateAction<DialogState>>;
-    editingId: string | null;
-    setEditingId: (id: string | null) => void;
-    activeDropzoneId: string | null;
-    setActiveDropzoneId: (id: string | null) => void;
+    readonly pago: PagoResponse;
+    readonly expediente: UsuarioActivoResponseDTO;
+    readonly onUpdate: () => void;
+    readonly setDialog: React.Dispatch<React.SetStateAction<DialogState>>;
+    readonly editingId: string | null;
+    readonly setEditingId: (id: string | null) => void;
+    readonly activeDropzoneId: string | null;
+    readonly setActiveDropzoneId: (id: string | null) => void;
 }
 
 function MortgagePagoRow({
@@ -284,7 +292,7 @@ function MortgagePagoRow({
     setEditingId,
     activeDropzoneId,
     setActiveDropzoneId
-}: MortgagePagoRowProps) {
+}: Readonly<MortgagePagoRowProps>) {
     const [isSaving, setIsSaving] = useState(false);
     const [isBusy, setIsBusy] = useState(false);
     const [editForm, setEditForm] = useState({ montoProgramado: "", fechaVencimiento: "" });
@@ -422,7 +430,7 @@ function MortgagePagoRow({
         try {
             await updatePago(pago.uuidPago, {
                 nroCuota: pago.nroCuota,
-                montoProgramado: parseFloat(editForm.montoProgramado),
+                montoProgramado: Number.parseFloat(editForm.montoProgramado),
                 fechaVencimiento: editForm.fechaVencimiento,
             });
             setEditingId(null);
@@ -565,6 +573,8 @@ function MortgagePagoRow({
                 <tr>
                     <td colSpan={6} className="bg-slate-50/50 dark:bg-white/[0.01] px-6 py-4">
                         <div 
+                            role="region"
+                            aria-label="Subir comprobante"
                             className="border-2 border-dashed border-build-accent/40 rounded-xl p-4 bg-white dark:bg-white/5 transition flex flex-col gap-3"
                             onDragOver={(e) => { e.preventDefault(); }}
                             onDrop={(e) => {
@@ -573,8 +583,9 @@ function MortgagePagoRow({
                                 if (file) handleSelectFile(file);
                             }}
                         >
-                            <div 
-                                className="text-center cursor-pointer flex flex-col items-center justify-center gap-1.5"
+                            <button 
+                                type="button"
+                                className="w-full text-center cursor-pointer flex flex-col items-center justify-center gap-1.5 bg-transparent border-0 outline-none"
                                 onClick={() => document.getElementById(`file-input-${pago.uuidPago}`)?.click()}
                             >
                                 <span className="material-symbols-outlined text-build-accent text-[28px]">upload_file</span>
@@ -586,17 +597,17 @@ function MortgagePagoRow({
                                         <p className="text-[10px] text-slate-400">PDF, JPG, PNG (máx 10MB)</p>
                                     </>
                                 )}
-                                <input
-                                    type="file"
-                                    id={`file-input-${pago.uuidPago}`}
-                                    className="hidden"
-                                    accept="application/pdf,image/*"
-                                    onChange={(e) => {
-                                        const file = e.target.files?.[0];
-                                        if (file) handleSelectFile(file);
-                                    }}
-                                />
-                            </div>
+                            </button>
+                            <input
+                                type="file"
+                                id={`file-input-${pago.uuidPago}`}
+                                className="hidden"
+                                accept="application/pdf,image/*"
+                                onChange={(e) => {
+                                    const file = e.target.files?.[0];
+                                    if (file) handleSelectFile(file);
+                                }}
+                            />
                             <div>
                                 <textarea
                                     value={dropzoneComentario}
@@ -633,14 +644,14 @@ function MortgagePagoRow({
 }
 
 interface CuotasSeccionProps {
-    cronograma: CronogramaPagoResponse;
-    pagos: PagoResponse[];
-    expediente: UsuarioActivoResponseDTO;
-    onUpdate: () => void;
-    setDialog: React.Dispatch<React.SetStateAction<DialogState>>;
+    readonly cronograma: CronogramaPagoResponse;
+    readonly pagos: PagoResponse[];
+    readonly expediente: UsuarioActivoResponseDTO;
+    readonly onUpdate: () => void;
+    readonly setDialog: React.Dispatch<React.SetStateAction<DialogState>>;
 }
 
-function CuotasSeccion({ cronograma, pagos, expediente, onUpdate, setDialog }: CuotasSeccionProps) {
+function CuotasSeccion({ cronograma, pagos, expediente, onUpdate, setDialog }: Readonly<CuotasSeccionProps>) {
     const [showAddForm, setShowAddForm] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
     const [editingId, setEditingId] = useState<string | null>(null);
@@ -658,15 +669,22 @@ function CuotasSeccion({ cronograma, pagos, expediente, onUpdate, setDialog }: C
     const handleAddPago = async () => {
         setIsSaving(true);
         const rawNro = addForm.nroCuota.trim();
-        const nroCuota = rawNro !== ""
-            ? parseInt(rawNro)
-            : addForm.concepto === "SEPARACION" ? -1
-            : addForm.concepto === "INICIAL" ? 0
-            : 2;
+        let nroCuota: number;
+        if (rawNro === "") {
+            if (addForm.concepto === "SEPARACION") {
+                nroCuota = -1;
+            } else if (addForm.concepto === "INICIAL") {
+                nroCuota = 0;
+            } else {
+                nroCuota = 2;
+            }
+        } else {
+            nroCuota = Number.parseInt(rawNro, 10);
+        }
         try {
             await addPago(cronograma.uuidCronograma, {
                 nroCuota,
-                montoProgramado: parseFloat(addForm.montoProgramado),
+                montoProgramado: Number.parseFloat(addForm.montoProgramado),
                 fechaVencimiento: addForm.fechaVencimiento,
                 concepto: addForm.concepto,
             });
@@ -697,8 +715,8 @@ function CuotasSeccion({ cronograma, pagos, expediente, onUpdate, setDialog }: C
                 <div className="px-6 py-4 bg-build-accent/5 border-b border-build-accent/20">
                     <div className="grid gap-3 md:grid-cols-5 items-end">
                         <div>
-                            <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">N° Cuota</label>
-                            <input type="number" value={addForm.nroCuota} onChange={(e) => setAddForm((p) => ({ ...p, nroCuota: e.target.value }))}
+                            <label htmlFor="add-nro-cuota" className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">N° Cuota</label>
+                            <input id="add-nro-cuota" type="number" value={addForm.nroCuota} onChange={(e) => setAddForm((p) => ({ ...p, nroCuota: e.target.value }))}
                                 className="w-full rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 px-3 py-2 text-sm text-build-main dark:text-white outline-none focus:border-build-accent" />
                         </div>
                         {(() => {
@@ -710,8 +728,8 @@ function CuotasSeccion({ cronograma, pagos, expediente, onUpdate, setDialog }: C
                             ].filter(o => !existing.has(o.value));
                             return (
                                 <div>
-                                    <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Concepto</label>
-                                    <select value={addForm.concepto} onChange={(e) => setAddForm((p) => ({ ...p, concepto: e.target.value }))}
+                                    <label htmlFor="add-concepto" className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Concepto</label>
+                                    <select id="add-concepto" value={addForm.concepto} onChange={(e) => setAddForm((p) => ({ ...p, concepto: e.target.value }))}
                                         className="w-full rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 px-3 py-2 text-sm text-build-main dark:text-white outline-none focus:border-build-accent">
                                         {conceptOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
                                     </select>
@@ -719,13 +737,13 @@ function CuotasSeccion({ cronograma, pagos, expediente, onUpdate, setDialog }: C
                             );
                         })()}
                         <div>
-                            <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Monto (S/)</label>
-                            <input type="number" value={addForm.montoProgramado} onChange={(e) => setAddForm((p) => ({ ...p, montoProgramado: e.target.value }))}
+                            <label htmlFor="add-monto" className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Monto (S/)</label>
+                            <input id="add-monto" type="number" value={addForm.montoProgramado} onChange={(e) => setAddForm((p) => ({ ...p, montoProgramado: e.target.value }))}
                                 className="w-full rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 px-3 py-2 text-sm text-build-main dark:text-white outline-none focus:border-build-accent" />
                         </div>
                         <div>
-                            <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Vencimiento</label>
-                            <input type="date" value={addForm.fechaVencimiento} onChange={(e) => setAddForm((p) => ({ ...p, fechaVencimiento: e.target.value }))}
+                            <label htmlFor="add-vencimiento" className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Vencimiento</label>
+                            <input id="add-vencimiento" type="date" value={addForm.fechaVencimiento} onChange={(e) => setAddForm((p) => ({ ...p, fechaVencimiento: e.target.value }))}
                                 className="w-full rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 px-3 py-2 text-sm text-build-main dark:text-white outline-none focus:border-build-accent" />
                         </div>
                         <div className="flex gap-2">
@@ -752,7 +770,7 @@ function CuotasSeccion({ cronograma, pagos, expediente, onUpdate, setDialog }: C
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-50 dark:divide-white/5">
-                        {pagos.sort((a, b) => a.nroCuota - b.nroCuota).map((pago) => (
+                        {[...pagos].sort((a, b) => a.nroCuota - b.nroCuota).map((pago) => (
                             <MortgagePagoRow
                                 key={pago.uuidPago}
                                 pago={pago}
@@ -825,15 +843,15 @@ interface HitoRowItem {
 }
 
 interface HitoRowProps {
-    item: HitoRowItem;
-    idx: number;
-    isUpdating: string | null;
-    handleHitoToggle: (uuidHito: string, currentEstado: string) => Promise<void>;
-    startEditingHito: (hito: HitoComercialResponseDTO) => void;
-    handleDeleteHito: (uuidHito: string) => Promise<void>;
+    readonly item: HitoRowItem;
+    readonly idx: number;
+    readonly isUpdating: string | null;
+    readonly handleHitoToggle: (uuidHito: string, currentEstado: string) => Promise<void>;
+    readonly startEditingHito: (hito: HitoComercialResponseDTO) => void;
+    readonly handleDeleteHito: (uuidHito: string) => Promise<void>;
 }
 
-function HitoRow({ item, idx, isUpdating, handleHitoToggle, startEditingHito, handleDeleteHito }: HitoRowProps) {
+function HitoRow({ item, idx, isUpdating, handleHitoToggle, startEditingHito, handleDeleteHito }: Readonly<HitoRowProps>) {
     const isCompleted = item.estado === "COMPLETADO";
     const canChangeEstado = Boolean(item.uuidHitoComercial);
     const isUpdatingThis = isUpdating === item.uuidHitoComercial;
@@ -934,12 +952,12 @@ function HitoRow({ item, idx, isUpdating, handleHitoToggle, startEditingHito, ha
 }
 
 interface HitosDesembolsoSectionProps {
-    creditoHipotecario: CreditoHipotecarioResumen | null;
-    expediente: UsuarioActivoResponseDTO;
-    onUpdate: () => void;
+    readonly creditoHipotecario: CreditoHipotecarioResumen | null;
+    readonly expediente: UsuarioActivoResponseDTO;
+    readonly onUpdate: () => void;
 }
 
-function HitosDesembolsoSection({ creditoHipotecario, expediente, onUpdate }: HitosDesembolsoSectionProps) {
+function HitosDesembolsoSection({ creditoHipotecario, expediente, onUpdate }: Readonly<HitosDesembolsoSectionProps>) {
     const [showHitoForm, setShowHitoForm] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
     const [isUpdating, setIsUpdating] = useState<string | null>(null);
@@ -949,12 +967,14 @@ function HitosDesembolsoSection({ creditoHipotecario, expediente, onUpdate }: Hi
     const paymentHitos = creditoHipotecario?.items ?? [];
 
     const handleHitoToggle = async (uuidHito: string, currentEstado: string) => {
-        const newEstado =
-            currentEstado === "PENDIENTE"
-                ? "EN_PROGRESO"
-                : currentEstado === "EN_PROGRESO"
-                    ? "COMPLETADO"
-                    : "PENDIENTE";
+        let newEstado: "PENDIENTE" | "EN_PROGRESO" | "COMPLETADO";
+        if (currentEstado === "PENDIENTE") {
+            newEstado = "EN_PROGRESO";
+        } else if (currentEstado === "EN_PROGRESO") {
+            newEstado = "COMPLETADO";
+        } else {
+            newEstado = "PENDIENTE";
+        }
         setIsUpdating(uuidHito);
         try {
             await updateCommercialHitoEstado(uuidHito, newEstado);
@@ -1036,7 +1056,7 @@ function HitosDesembolsoSection({ creditoHipotecario, expediente, onUpdate }: Hi
                     className="flex items-center gap-1.5 text-xs font-bold text-build-accent hover:underline"
                 >
                     <span className="material-symbols-outlined text-[16px]">add_circle</span>
-                    Agregar Hito
+                    {" "}Agregar Hito
                 </button>
             </div>
 
@@ -1056,7 +1076,7 @@ function HitosDesembolsoSection({ creditoHipotecario, expediente, onUpdate }: Hi
                             onClick={handleAddHito}
                             className="bg-build-main text-white px-4 py-2 rounded-lg text-xs font-bold disabled:opacity-50"
                         >
-                            {isSaving ? "…" : editingHito ? "Actualizar" : "Agregar"}
+                            {isSaving ? "…" : (editingHito ? "Actualizar" : "Agregar")}
                         </button>
                         <button
                             onClick={() => { setShowHitoForm(false); setEditingHito(null); }}
@@ -1105,7 +1125,7 @@ function HitosDesembolsoSection({ creditoHipotecario, expediente, onUpdate }: Hi
 
 // ─── Componente Principal ────────────────────────────────────────────────────
 
-export default function MortgageFinancingView({ expediente, cronograma, pagos, resumen, creditoHipotecario, onUpdate }: MortgageFinancingViewProps) {
+export default function MortgageFinancingView({ expediente, cronograma, pagos, resumen, creditoHipotecario, onUpdate }: Readonly<MortgageFinancingViewProps>) {
     const [dialog, setDialog] = useState<DialogState>({ isOpen: false, title: "", message: "", type: "info" });
 
     const progress = creditoHipotecario?.progreso ?? 0;
