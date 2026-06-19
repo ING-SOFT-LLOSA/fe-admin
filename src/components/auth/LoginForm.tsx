@@ -83,7 +83,6 @@ function useLoginFormLogic(redirectTo: string) {
     setLoading(true);
     try {
       await loginEmail(email.trim(), pass);
-      router.replace(redirectTo);
     } catch (err) {
       setError(toAuthErrorMessage(err));
     } finally {
@@ -112,7 +111,6 @@ function useLoginFormLogic(redirectTo: string) {
     setLoading(true);
     try {
       await loginGoogle();
-      router.replace(redirectTo);
     } catch (err) {
       setError(toAuthErrorMessage(err));
     } finally {
