@@ -71,30 +71,31 @@ export default function ExpedienteDetailView({ uuidUsuarioActivo }: Props) {
 
 
   // Load Stepper data on mount to ensure summary cards display correct counts immediately
+  const loadStepper = useCallback(async () => {
+    if (!uuidUsuarioActivo) return;
+    setIsStepperLoading(true);
+    try {
+      const data = await fetchCommercialStepper(uuidUsuarioActivo);
+      setStepper(data);
+      setExpandedStages(
+        data.etapas?.reduce((acc, stage) => {
+          acc[stage.etapa] = stage.hitos?.some(h => h.estado === "EN_PROGRESO") || stage.etapa === "SEPARACION";
+          return acc;
+        }, {} as Record<string, boolean>) || { SEPARACION: true }
+      );
+      setStepperLoaded(true);
+    } catch (err) {
+      console.error("Error loading stepper lazy:", err);
+    } finally {
+      setIsStepperLoading(false);
+    }
+  }, [uuidUsuarioActivo]);
+
   useEffect(() => {
-    if (!stepperLoaded && uuidUsuarioActivo) {
-      async function loadStepper() {
-        setIsStepperLoading(true);
-        try {
-          const data = await fetchCommercialStepper(uuidUsuarioActivo);
-          setStepper(data);
-          setExpandedStages(
-            data.etapas?.reduce((acc, stage) => {
-              // Expand stages that are EN_PROGRESO, or default to SEPARACION
-              acc[stage.etapa] = stage.hitos?.some(h => h.estado === "EN_PROGRESO") || stage.etapa === "SEPARACION";
-              return acc;
-            }, {} as Record<string, boolean>) || { SEPARACION: true }
-          );
-          setStepperLoaded(true);
-        } catch (err) {
-          console.error("Error loading stepper lazy:", err);
-        } finally {
-          setIsStepperLoading(false);
-        }
-      }
+    if (!stepperLoaded) {
       void loadStepper();
     }
-  }, [activeTab, stepperLoaded, uuidUsuarioActivo]);
+  }, [activeTab, stepperLoaded, loadStepper]);
 
   // Reusable callback to load/reload stage documents
   const loadDocs = useCallback(async () => {
