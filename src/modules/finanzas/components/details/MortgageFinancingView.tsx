@@ -32,6 +32,51 @@ const estadoGlobalStyles: Record<string, { bg: string; text: string; label: stri
     LIQUIDADO: { bg: "bg-blue-50 dark:bg-blue-900/20", text: "text-blue-700 dark:text-blue-400", label: "Liquidado" },
 };
 
+function isSpecialConcepto(pago: PagoResponse): boolean {
+    return pago.concepto === "SEPARACION" || pago.concepto === "INICIAL" || pago.concepto === "COMPLETO";
+}
+
+function getConceptoLabel(pago: PagoResponse): string {
+    return pago.concepto ?? (pago.nroCuota === -1 ? "SEPARACION" : pago.nroCuota === 0 ? "INICIAL" : "COMPLETO");
+}
+
+function getPagoStatusInfo(pago: PagoResponse) {
+    if (pago.estado === "PAGADO") {
+        return {
+            bg: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 border border-green-200 dark:border-green-800/20",
+            label: "Pagado",
+            moraDays: 0,
+        };
+    }
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const dueDate = new Date(pago.fechaVencimiento);
+    dueDate.setHours(0, 0, 0, 0);
+    const diffTime = today.getTime() - dueDate.getTime();
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+    if (diffDays > 0) {
+        return {
+            bg: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 border border-red-200 dark:border-red-900/30",
+            label: "Vencido",
+            moraDays: diffDays,
+            moraText: `${diffDays} ${diffDays === 1 ? "día" : "días"} de mora`,
+        };
+    } else if (diffDays >= -3 && diffDays <= 0) {
+        const daysToDue = Math.abs(diffDays);
+        return {
+            bg: "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400 border border-yellow-200 dark:border-yellow-900/30",
+            label: daysToDue === 0 ? "Vence hoy" : `Vence en ${daysToDue} d`,
+            moraDays: 0,
+        };
+    } else {
+        return {
+            bg: "bg-slate-100 text-slate-600 dark:bg-white/10 dark:text-white/40",
+            label: "Pendiente",
+            moraDays: 0,
+        };
+    }
+}
+
 export default function MortgageFinancingView({ expediente, cronograma, pagos, resumen, creditoHipotecario, onUpdate }: MortgageFinancingViewProps) {
     const [updatingId, setUpdatingId] = useState<string | null>(null);
     const [showAddForm, setShowAddForm] = useState(false);
@@ -84,43 +129,6 @@ export default function MortgageFinancingView({ expediente, cronograma, pagos, r
 
     const progress = creditoHipotecario?.progreso ?? 0;
     const paymentHitos = creditoHipotecario?.items ?? [];
-
-    const getPagoStatusInfo = (pago: PagoResponse) => {
-        if (pago.estado === "PAGADO") {
-            return {
-                bg: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 border border-green-200 dark:border-green-800/20",
-                label: "Pagado",
-                moraDays: 0,
-            };
-        }
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        const dueDate = new Date(pago.fechaVencimiento);
-        dueDate.setHours(0, 0, 0, 0);
-        const diffTime = today.getTime() - dueDate.getTime();
-        const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-        if (diffDays > 0) {
-            return {
-                bg: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 border border-red-200 dark:border-red-900/30",
-                label: "Vencido",
-                moraDays: diffDays,
-                moraText: `${diffDays} ${diffDays === 1 ? "día" : "días"} de mora`,
-            };
-        } else if (diffDays >= -3 && diffDays <= 0) {
-            const daysToDue = Math.abs(diffDays);
-            return {
-                bg: "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400 border border-yellow-200 dark:border-yellow-900/30",
-                label: daysToDue === 0 ? "Vence hoy" : `Vence en ${daysToDue} d`,
-                moraDays: 0,
-            };
-        } else {
-            return {
-                bg: "bg-slate-100 text-slate-600 dark:bg-white/10 dark:text-white/40",
-                label: "Pendiente",
-                moraDays: 0,
-            };
-        }
-    };
 
     const handleSelectFile = (uuidPago: string, file: File) => {
         setDropzoneFile(file);
@@ -617,10 +625,10 @@ export default function MortgageFinancingView({ expediente, cronograma, pagos, r
                                         <React.Fragment key={pago.uuidPago}>
                                             <tr className={`transition-colors ${busy ? "opacity-60" : "hover:bg-slate-50/50 dark:hover:bg-white/[0.02]"}`}>
                                                 <td className="px-6 py-3 font-bold text-build-main dark:text-white text-sm">
-                                                    {pago.concepto === "SEPARACION" || pago.concepto === "INICIAL" || pago.concepto === "COMPLETO" ? <span className="text-slate-300 dark:text-white/20">—</span> : pago.nroCuota}
+                                                    {isSpecialConcepto(pago) ? <span className="text-slate-300 dark:text-white/20">—</span> : pago.nroCuota}
                                                 </td>
                                                 <td className="px-4 py-3 text-xs font-semibold text-slate-500 dark:text-white/50">
-                                                    {pago.concepto ?? (pago.nroCuota === -1 ? "SEPARACION" : pago.nroCuota === 0 ? "INICIAL" : "COMPLETO")}
+                                                    {getConceptoLabel(pago)}
                                                 </td>
                                                 <td className="px-4 py-3 text-slate-600 dark:text-white/60">
                                                     {isEditing ? (
