@@ -183,7 +183,7 @@ export default function UnitEditorStep({ torres: initialTorres, onBack, onSubmit
                 }, {} as Record<string, ActivoData[]>);
 
                 return (
-                  <details key={`${tIdx}-${pIdx}`} className="group" open={piso.activos.length > 0}>
+                  <details key={`${tIdx}-${pIdx}`} className="group">
                     <summary className="flex cursor-pointer items-center gap-1.5 bg-slate-50/50 dark:bg-white/[0.02] px-6 py-2 text-xs font-semibold text-slate-600 dark:text-white/70">
                       <span className="material-symbols-outlined text-[15px] text-slate-400">layers</span>
                       Piso {piso.nroPiso}
