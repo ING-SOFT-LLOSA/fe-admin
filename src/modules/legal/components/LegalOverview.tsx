@@ -6,6 +6,7 @@ import {
   fetchProyectos,
   fetchTorresPorProyecto,
   type Proyecto,
+  type ActivoResponseDTO,
 } from "@/lib/api/proyectos";
 import {
   fetchTodosLosContratos,
@@ -15,6 +16,7 @@ import {
   desasignarAsesorDelContrato,
   type UsuarioActivoResponseDTO,
   type EtapaExpedienteResponseDTO,
+  type ClienteSimpleDTO,
 } from "@/lib/api/expedientes";
 import { fetchUsuarios } from "@/lib/api/users";
 import type { Usuario } from "@/types/user";
@@ -31,7 +33,7 @@ const ETAPA_LABEL: Record<EtapaClave, string> = {
   CONTRATO:   "Contrato",
   PAGO:       "Pagos",
   ENTREGA:    "Entrega",
-  SANEAMIENTO:"Saneamiento",
+  SANEAMIENTO: "Saneamiento",
 };
 
 // Days without forward movement before we flag it as stalled.
@@ -46,7 +48,7 @@ function formatEtapaLabel(ep: string): string {
 }
 
 /** Returns the label of the first in-progress or next-pending stage. */
-function getEtapaActualLabel(stages: EtapaExpedienteResponseDTO[] | undefined): string {
+function getEtapaActualLabel(stages: readonly EtapaExpedienteResponseDTO[] | undefined): string {
   if (!stages || stages.length === 0) return "Por iniciar";
   const sorted = [...stages].sort(
     (a, b) => ETAPA_ORDER.indexOf(a.etapaProceso as EtapaClave) - ETAPA_ORDER.indexOf(b.etapaProceso as EtapaClave),
@@ -62,8 +64,92 @@ function getEtapaActualLabel(stages: EtapaExpedienteResponseDTO[] | undefined): 
 function daysSince(isoDate: string | undefined | null): number | null {
   if (!isoDate) return null;
   const ms = Date.now() - new Date(isoDate).getTime();
-  if (isNaN(ms)) return null;
+  if (Number.isNaN(ms)) return null;
   return Math.floor(ms / 86_400_000);
+}
+
+function getUnitText(activos: readonly ActivoResponseDTO[] | undefined): string {
+  if (!activos) return "Sin unidades";
+  return activos
+    .map((a) => {
+      let tipo = "Depósito";
+      if (a.tipo === "DEPARTAMENTO") {
+        tipo = "Dpto";
+      } else if (a.tipo === "ESTACIONAMIENTO") {
+        tipo = "Cochera";
+      }
+      return `${tipo} ${a.nro}`;
+    })
+    .join(" + ") || "Sin unidades";
+}
+
+function getTitularesText(clientes: readonly ClienteSimpleDTO[] | undefined): string {
+  if (!clientes) return "Sin titulares";
+  return clientes
+    .map((cl) => [cl.nombre, cl.apellidos].filter(Boolean).join(" "))
+    .join(" · ") || "Sin titulares";
+}
+
+async function fetchAndCorrectStages(uuidUsuarioActivo: string): Promise<EtapaExpedienteResponseDTO[]> {
+  const [stages, stepper] = await Promise.all([
+    fetchEtapasExpediente(uuidUsuarioActivo),
+    fetchCommercialStepper(uuidUsuarioActivo),
+  ]);
+
+  return stages.map((stage) => {
+    const stepperStage = stepper.etapas?.find((e) => e.etapa === stage.etapaProceso);
+    if (!stepperStage) return stage;
+
+    const total      = stepperStage.hitos?.length ?? 0;
+    const completed  = stepperStage.hitos?.filter((h) => h.estado === "COMPLETADO").length ?? 0;
+    const inProgress = stepperStage.hitos?.filter((h) => h.estado === "EN_PROGRESO").length ?? 0;
+
+    let estado = "PENDIENTE";
+    if (completed === total && total > 0) {
+      estado = "COMPLETADO";
+    } else if (completed > 0 || inProgress > 0) {
+      estado = "EN_PROGRESO";
+    }
+
+    return { ...stage, estado, totalHitos: total, hitosCompletados: completed };
+  });
+}
+
+function matchesProyectoTorre(c: Readonly<UsuarioActivoResponseDTO>, proyecto: string, torre: string): boolean {
+  if (proyecto && !(c.activos ?? []).some((a) => a.proyectoNombre === proyecto)) {
+    return false;
+  }
+  if (torre && !(c.activos ?? []).some((a) => a.torreNombre === torre)) {
+    return false;
+  }
+  return true;
+}
+
+function matchesEtapa(stages: readonly EtapaExpedienteResponseDTO[] | undefined, selectedEtapa: string): boolean {
+  if (!selectedEtapa) return true;
+  const label = getEtapaActualLabel(stages);
+  return label === selectedEtapa || (label.includes("Saneamiento") && selectedEtapa === "Saneamiento");
+}
+
+function matchesSearch(c: Readonly<UsuarioActivoResponseDTO>, query: string): boolean {
+  if (!query) return true;
+  const q = query.toLowerCase();
+  
+  const byId = c.uuidUsuarioActivo.toLowerCase().includes(q) || 
+               `exp-${c.uuidUsuarioActivo.slice(0, 8)}`.toLowerCase().includes(q);
+               
+  const byCliente = c.clientes?.some((cl) =>
+    [cl.nombre, cl.apellidos].filter(Boolean).join(" ").toLowerCase().includes(q) ||
+    cl.email.toLowerCase().includes(q) ||
+    (cl.documentoIdentidad ?? "").toLowerCase().includes(q)
+  ) ?? false;
+  
+  const byActivo = c.activos?.some((a) =>
+    `${a.torreNombre} ${a.tipo} ${a.nro}`.toLowerCase().includes(q) ||
+    (a.proyectoNombre ?? "").toLowerCase().includes(q)
+  ) ?? false;
+  
+  return byId || byCliente || byActivo;
 }
 
 // ─────────────────────────────────────────────
@@ -72,18 +158,14 @@ function daysSince(isoDate: string | undefined | null): number | null {
 
 /**
  * Five-dot mini-stepper for the Etapa column.
- *
- * Props:
- *   stages  – corrected stages array for the contract
- *   current – label of the active/next stage
  */
 function MiniStepper({
   stages,
   current,
-}: {
-  stages: EtapaExpedienteResponseDTO[] | undefined;
+}: Readonly<{
+  stages: readonly EtapaExpedienteResponseDTO[] | undefined;
   current: string;
-}) {
+}>) {
   if (!stages || stages.length === 0) {
     return <span className="text-xs text-slate-400 dark:text-white/30">Por iniciar</span>;
   }
@@ -131,7 +213,7 @@ function MiniStepper({
 }
 
 /** Red "N días sin avance" chip shown when a contract looks stalled. */
-function StalledChip({ days }: { days: number }) {
+function StalledChip({ days }: Readonly<{ days: number }>) {
   return (
     <span className="inline-flex items-center gap-1 rounded-full bg-red-50 dark:bg-red-900/20 px-2 py-0.5 text-[10px] font-semibold text-red-600 dark:text-red-400">
       <span className="material-symbols-outlined text-[11px]">warning</span>
@@ -145,11 +227,11 @@ function MetricCards({
   contracts,
   stages,
   isLoading,
-}: {
-  contracts: UsuarioActivoResponseDTO[];
-  stages: Record<string, EtapaExpedienteResponseDTO[]>;
+}: Readonly<{
+  contracts: readonly UsuarioActivoResponseDTO[];
+  stages: Readonly<Record<string, readonly EtapaExpedienteResponseDTO[]>>;
   isLoading: boolean;
-}) {
+}>) {
   const stats = useMemo(() => {
     const total      = contracts.length;
     let enProceso  = 0;
@@ -212,8 +294,8 @@ function MetricCards({
 function SkeletonRow() {
   return (
     <tr className="border-b border-slate-100 dark:border-white/5 last:border-b-0">
-      {[40, 120, 100, 80, 60].map((w, i) => (
-        <td key={i} className="px-5 py-3">
+      {[40, 120, 100, 80, 60].map((w) => (
+        <td key={w} className="px-5 py-3">
           <span
             className="inline-block h-3.5 animate-pulse rounded bg-slate-100 dark:bg-white/10"
             style={{ width: w }}
@@ -226,12 +308,145 @@ function SkeletonRow() {
 }
 
 // ─────────────────────────────────────────────
+// Standalone Contract Row Component
+// ─────────────────────────────────────────────
+
+function ContractRow({
+  contract,
+  stages,
+  isStagesLoading,
+  onRemoveAsesor,
+  onAssignAsesor,
+}: Readonly<{
+  contract: UsuarioActivoResponseDTO;
+  stages: readonly EtapaExpedienteResponseDTO[] | undefined;
+  isStagesLoading: boolean;
+  onRemoveAsesor: (contract: UsuarioActivoResponseDTO) => void;
+  onAssignAsesor: (uuidUsuarioActivo: string) => void;
+}>) {
+  const router = useRouter();
+
+  const idCorto = contract.uuidUsuarioActivo.slice(0, 8).toUpperCase();
+  const firstAct = contract.activos?.[0];
+  const unitText = getUnitText(contract.activos);
+  const proyText = firstAct ? `${firstAct.torreNombre} · ${unitText}` : "Sin asignar";
+  const titulares = getTitularesText(contract.clientes);
+
+  const etapaLabel = isStagesLoading && !stages ? "—" : getEtapaActualLabel(stages);
+  const isVigente = contract.vigente !== false;
+
+  const rawUltimaActualizacion = (contract as { ultimaActualizacion?: string }).ultimaActualizacion;
+  const dias = daysSince(rawUltimaActualizacion ?? null);
+  const isStalled = dias !== null && dias > STALLED_DAYS;
+
+  return (
+    <tr
+      role="button"
+      tabIndex={0}
+      onClick={() => router.push(`/legal/${contract.uuidUsuarioActivo}`)}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          router.push(`/legal/${contract.uuidUsuarioActivo}`);
+        }
+      }}
+      className="group cursor-pointer hover:bg-slate-50 dark:hover:bg-white/[0.03] transition-colors"
+    >
+      {/* ID */}
+      <td className="px-4 py-3">
+        <span className="text-[13px] font-semibold text-build-main dark:text-white group-hover:text-arch-gold transition-colors">
+          EXP-{idCorto}
+        </span>
+      </td>
+
+      {/* Proyecto / Unidad */}
+      <td className="px-4 py-3">
+        <p className="truncate text-[13px] font-medium text-slate-700 dark:text-white/80">{proyText}</p>
+        {firstAct?.proyectoNombre && (
+          <p className="truncate text-[11px] text-slate-400 dark:text-white/35 mt-0.5">
+            {firstAct.proyectoNombre}
+          </p>
+        )}
+      </td>
+
+      {/* Titulares */}
+      <td className="px-4 py-3">
+        <p className="truncate text-[13px] text-slate-600 dark:text-white/70">{titulares}</p>
+      </td>
+
+      {/* Etapa — mini stepper */}
+      <td className="px-4 py-3">
+        {stages || !isStagesLoading ? (
+          <div className="flex flex-col gap-1.5">
+            <MiniStepper stages={stages} current={etapaLabel} />
+            {isStalled && <StalledChip days={dias!} />}
+          </div>
+        ) : (
+          <span className="inline-block h-3 w-16 animate-pulse rounded bg-slate-100 dark:bg-white/10" />
+        )}
+      </td>
+
+      {/* Asesor */}
+      <td className="px-4 py-3">
+        {contract.asesor ? (
+          <div className="flex items-center gap-1.5">
+            <span className="material-symbols-outlined text-[14px] text-arch-gold">badge</span>
+            <div className="min-w-0">
+              <p className="truncate text-[13px] text-slate-700 dark:text-white/80">
+                {[contract.asesor.nombre, contract.asesor.apellidos].filter(Boolean).join(" ")}
+              </p>
+              <button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); onRemoveAsesor(contract); }}
+                className="text-[10px] text-red-500 hover:text-red-700 transition-colors"
+              >
+                Desvincular
+              </button>
+            </div>
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); onAssignAsesor(contract.uuidUsuarioActivo); }}
+            className="flex items-center gap-1 text-[12px] text-arch-gold hover:text-build-main transition-colors"
+          >
+            <span className="material-symbols-outlined text-[14px]">person_add</span>
+            Asignar
+          </button>
+        )}
+      </td>
+
+      {/* Estado */}
+      <td className="px-4 py-3">
+        <span
+          className={`inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full ${
+            isVigente
+              ? "bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400"
+              : "bg-slate-100 dark:bg-white/10 text-slate-500 dark:text-white/40"
+          }`}
+        >
+          <span className="material-symbols-outlined text-[11px]">
+            {isVigente ? "check_circle" : "cancel"}
+          </span>
+          {isVigente ? "Vigente" : "Desvinculado"}
+        </span>
+      </td>
+
+      {/* Arrow hint */}
+      <td className="px-4 py-3 text-right">
+        <span className="material-symbols-outlined text-[16px] text-arch-gold opacity-0 group-hover:opacity-100 transition-opacity">
+          arrow_forward
+        </span>
+      </td>
+    </tr>
+  );
+}
+
+// ─────────────────────────────────────────────
 // Main component
 // ─────────────────────────────────────────────
 
 export default function LegalOverview() {
-  const router = useRouter();
-
   const [contracts, setContracts]           = useState<UsuarioActivoResponseDTO[]>([]);
   const [contractsStages, setContractsStages] = useState<Record<string, EtapaExpedienteResponseDTO[]>>({});
   const [isLoading, setIsLoading]           = useState(true);
@@ -251,28 +466,26 @@ export default function LegalOverview() {
   const [assignTarget, setAssignTarget]   = useState<string | null>(null);
   const [assignLoading, setAssignLoading] = useState(false);
 
+  const [proyectosList, setProyectosList]   = useState<Proyecto[]>([]);
+  const [proyectosOptions, setProyectosOptions] = useState<string[]>([]);
+  const [torresOptions, setTorresOptions]   = useState<string[]>([]);
 
-
-const [proyectosList, setProyectosList]   = useState<Proyecto[]>([]);
-const [proyectosOptions, setProyectosOptions] = useState<string[]>([]);
-const [torresOptions, setTorresOptions]   = useState<string[]>([]);
   // Pagination states
   const [currentPage, setCurrentPage] = useState(0);
   const itemsPerPage = 10;
 
+  // y en el fetch:
+  useEffect(() => {
+    fetchProyectos().then((list) => {
+      setProyectosList(list);
+      setProyectosOptions(list.map((p) => p.nombre).sort((a, b) => a.localeCompare(b)));
+    });
+  }, []);
 
-// y en el fetch:
-useEffect(() => {
-  fetchProyectos().then((list) => {
-    setProyectosList(list);
-    setProyectosOptions(list.map((p) => p.nombre).sort((a, b) => a.localeCompare(b)));
-  });
-}, []);
   // Reset page to 0 when filters change
   useEffect(() => {
-    Promise.resolve().then(() => {
-      setCurrentPage(0);
-    });
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setCurrentPage(0);
   }, [selectedProyecto, selectedTorre, selectedEstado, selectedEtapa, search, ocultarDesistidos]);
 
   // ── Data loading ───────────────────────────────────────────────────────────
@@ -292,26 +505,7 @@ useEffect(() => {
         await Promise.all(
           list.map(async (c) => {
             try {
-              const [stages, stepper] = await Promise.all([
-                fetchEtapasExpediente(c.uuidUsuarioActivo),
-                fetchCommercialStepper(c.uuidUsuarioActivo),
-              ]);
-
-              const corrected = stages.map((stage) => {
-                const stepperStage = stepper.etapas?.find((e) => e.etapa === stage.etapaProceso);
-                if (!stepperStage) return stage;
-
-                const total      = stepperStage.hitos?.length ?? 0;
-                const completed  = stepperStage.hitos?.filter((h) => h.estado === "COMPLETADO").length ?? 0;
-                const inProgress = stepperStage.hitos?.filter((h) => h.estado === "EN_PROGRESO").length ?? 0;
-
-                let estado = "PENDIENTE";
-                if (completed === total && total > 0)   estado = "COMPLETADO";
-                else if (completed > 0 || inProgress > 0) estado = "EN_PROGRESO";
-
-                return { ...stage, estado, totalHitos: total, hitosCompletados: completed };
-              });
-
+              const corrected = await fetchAndCorrectStages(c.uuidUsuarioActivo);
               stagesMap[c.uuidUsuarioActivo] = corrected;
             } catch {
               // Non-fatal: the row will just show "—" for stage
@@ -329,7 +523,7 @@ useEffect(() => {
         }
       }
     }
-    void load();
+    load();
     return () => { mounted = false; };
   }, []);
 
@@ -340,68 +534,26 @@ useEffect(() => {
       .catch(() => {});
   }, []);
 
-  // Reset Torre when Proyecto changes
-  useEffect(() => {
-    Promise.resolve().then(() => {
-      setSelectedTorre("");
-    });
-  }, [selectedProyecto]);
-useEffect(() => {
-  fetchProyectos().then((list) => {
-    setProyectosList(list);
-    setProyectosOptions(list.map((p) => p.nombre).sort((a, b) => a.localeCompare(b)));
-  });
-}, []);
-
-useEffect(() => {
-  Promise.resolve().then(() => {
-    setSelectedTorre("");
-    setTorresOptions([]);
-    if (!selectedProyecto) return;
-    const proyecto = proyectosList.find((p) => p.nombre === selectedProyecto);
-    if (!proyecto) return;
-    fetchTorresPorProyecto(proyecto.id).then((list) =>
-      setTorresOptions(list.map((t) => t.nombre).sort((a, b) => a.localeCompare(b)))
-    );
-  });
-}, [selectedProyecto, proyectosList]);
-
   // ── Filtered list ──────────────────────────────────────────────────────────
   const filtered = useMemo(
     () =>
       contracts.filter((c) => {
-        if (selectedProyecto) {
-          if (!(c.activos ?? []).some((a) => a.proyectoNombre === selectedProyecto)) return false;
-        }
-        if (selectedTorre) {
-          if (!(c.activos ?? []).some((a) => a.torreNombre === selectedTorre)) return false;
+        if (!matchesProyectoTorre(c, selectedProyecto, selectedTorre)) {
+          return false;
         }
         if (selectedEstado) {
-          const label = c.vigente !== false ? "Vigente" : "Desvinculado";
+          const label = c.vigente === false ? "Desvinculado" : "Vigente";
           if (label !== selectedEstado) return false;
         }
         if (ocultarDesistidos && c.vigente === false) {
           return false;
         }
-        if (selectedEtapa) {
-          const stgs    = contractsStages[c.uuidUsuarioActivo];
-          const label   = getEtapaActualLabel(stgs);
-          const matches = label === selectedEtapa || (label.includes("Saneamiento") && selectedEtapa === "Saneamiento");
-          if (!matches) return false;
+        const stgs = contractsStages[c.uuidUsuarioActivo];
+        if (!matchesEtapa(stgs, selectedEtapa)) {
+          return false;
         }
-        if (search) {
-          const q = search.toLowerCase();
-          const byId       = c.uuidUsuarioActivo.toLowerCase().includes(q) || `exp-${c.uuidUsuarioActivo.slice(0, 8)}`.toLowerCase().includes(q);
-          const byCliente  = c.clientes?.some((cl) =>
-            [cl.nombre, cl.apellidos].filter(Boolean).join(" ").toLowerCase().includes(q) ||
-            cl.email.toLowerCase().includes(q) ||
-            (cl.documentoIdentidad ?? "").toLowerCase().includes(q),
-          );
-          const byActivo   = c.activos?.some((a) =>
-            `${a.torreNombre} ${a.tipo} ${a.nro}`.toLowerCase().includes(q) ||
-            (a.proyectoNombre ?? "").toLowerCase().includes(q),
-          );
-          if (!byId && !byCliente && !byActivo) return false;
+        if (!matchesSearch(c, search)) {
+          return false;
         }
         return true;
       }),
@@ -420,18 +572,23 @@ useEffect(() => {
 
   const hasActiveFilters = !!(selectedProyecto || selectedTorre || selectedEstado || selectedEtapa || search || !ocultarDesistidos);
 
+  const pageNumbers = useMemo(() => Array.from({ length: totalPages }, (_, i) => i + 1), [totalPages]);
+
   // ── Asesor handlers ─────────────────────────────────────────────────────────
 
-  function handleRemoveAsesor(contract: UsuarioActivoResponseDTO) {
+  const handleRemoveAsesor = async (contract: UsuarioActivoResponseDTO) => {
     if (!contract.asesor) return;
-    desasignarAsesorDelContrato(contract.uuidUsuarioActivo, contract.asesor.id).then(() => {
+    try {
+      await desasignarAsesorDelContrato(contract.uuidUsuarioActivo, contract.asesor.id);
       setContracts((prev) =>
         prev.map((c) =>
           c.uuidUsuarioActivo === contract.uuidUsuarioActivo ? { ...c, asesor: null } : c
         )
       );
-    });
-  }
+    } catch {
+      // Ignored
+    }
+  };
 
   async function handleAssignAsesor(idAsesor: number) {
     if (!assignTarget) return;
@@ -497,7 +654,21 @@ useEffect(() => {
         {/* Proyecto */}
         <select
           value={selectedProyecto}
-          onChange={(e) => setSelectedProyecto(e.target.value)}
+          onChange={(e) => {
+            const val = e.target.value;
+            setSelectedProyecto(val);
+            setSelectedTorre("");
+            setTorresOptions([]);
+            if (val) {
+              const proyecto = proyectosList.find((p) => p.nombre === val);
+              if (proyecto) {
+                fetchTorresPorProyecto(proyecto.id).then((list) => {
+                  const sortedTorres = list.map((t) => t.nombre).sort((a, b) => a.localeCompare(b));
+                  setTorresOptions(sortedTorres);
+                });
+              }
+            }
+          }}
           className="rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 px-3 py-2 text-xs text-build-main dark:text-white focus:outline-none focus:border-arch-gold transition"
         >
           <option value="">Proyecto</option>
@@ -562,6 +733,7 @@ useEffect(() => {
               setSearch("");
               setSelectedProyecto("");
               setSelectedTorre("");
+              setTorresOptions([]);
               setSelectedEstado("");
               setSelectedEtapa("");
               setOcultarDesistidos(true);
@@ -569,14 +741,14 @@ useEffect(() => {
             className="flex items-center gap-1 rounded-lg border border-slate-200 dark:border-white/10 px-3 py-2 text-xs text-slate-500 dark:text-white/50 hover:bg-slate-50 dark:hover:bg-white/5 transition"
           >
             <span className="material-symbols-outlined text-[14px]">close</span>
-            Limpiar
+            {" "}Limpiar
           </button>
         )}
 
         {/* Result count — right-aligned */}
         {!isLoading && (
           <span className="ml-auto text-xs text-slate-400 dark:text-white/30 tabular-nums">
-            {filtered.length} expediente{filtered.length !== 1 ? "s" : ""}
+            {filtered.length} expediente{filtered.length === 1 ? "" : "s"}
           </span>
         )}
       </div>
@@ -608,7 +780,7 @@ useEffect(() => {
 
           <tbody className="divide-y divide-slate-100 dark:divide-white/5">
             {isLoading ? (
-              Array.from({ length: 6 }).map((_, i) => <SkeletonRow key={i} />)
+              ["s1", "s2", "s3", "s4", "s5", "s6"].map((key) => <SkeletonRow key={key} />)
             ) : filtered.length === 0 ? (
               <tr>
                 <td colSpan={7} className="px-5 py-14 text-center text-sm text-slate-400 dark:text-white/40">
@@ -618,121 +790,16 @@ useEffect(() => {
                 </td>
               </tr>
             ) : (
-              paginatedList.map((contract) => {
-                const idCorto    = contract.uuidUsuarioActivo.slice(0, 8).toUpperCase();
-                const firstAct   = contract.activos?.[0];
-                const unitText   = (contract.activos ?? [])
-                  .map((a) => {
-                    const tipo = a.tipo === "DEPARTAMENTO" ? "Dpto" : a.tipo === "ESTACIONAMIENTO" ? "Cochera" : "Depósito";
-                    return `${tipo} ${a.nro}`;
-                  })
-                  .join(" + ") || "Sin unidades";
-                const proyText   = firstAct ? `${firstAct.torreNombre} · ${unitText}` : "Sin asignar";
-                const titulares  = (contract.clientes ?? [])
-                  .map((cl) => [cl.nombre, cl.apellidos].filter(Boolean).join(" "))
-                  .join(" · ") || "Sin titulares";
-
-                const stages     = contractsStages[contract.uuidUsuarioActivo];
-                const etapaLabel = isStagesLoading && !stages ? "—" : getEtapaActualLabel(stages);
-                const isVigente  = contract.vigente !== false;
-
-                // Stalled detection
-                const dias = daysSince((contract as { ultimaActualizacion?: string }).ultimaActualizacion ?? null);
-                const isStalled = dias !== null && dias > STALLED_DAYS;
-
-                return (
-                  <tr
-                    key={contract.uuidUsuarioActivo}
-                    onClick={() => router.push(`/legal/${contract.uuidUsuarioActivo}`)}
-                    className="group cursor-pointer hover:bg-slate-50 dark:hover:bg-white/[0.03] transition-colors"
-                  >
-                    {/* ID */}
-                    <td className="px-4 py-3">
-                      <span className="text-[13px] font-semibold text-build-main dark:text-white group-hover:text-arch-gold transition-colors">
-                        EXP-{idCorto}
-                      </span>
-                    </td>
-
-                    {/* Proyecto / Unidad */}
-                    <td className="px-4 py-3">
-                      <p className="truncate text-[13px] font-medium text-slate-700 dark:text-white/80">{proyText}</p>
-                      {firstAct?.proyectoNombre && (
-                        <p className="truncate text-[11px] text-slate-400 dark:text-white/35 mt-0.5">
-                          {firstAct.proyectoNombre}
-                        </p>
-                      )}
-                    </td>
-
-                    {/* Titulares */}
-                    <td className="px-4 py-3">
-                      <p className="truncate text-[13px] text-slate-600 dark:text-white/70">{titulares}</p>
-                    </td>
-
-                    {/* Etapa — mini stepper */}
-                    <td className="px-4 py-3">
-                      {isStagesLoading && !stages ? (
-                        <span className="inline-block h-3 w-16 animate-pulse rounded bg-slate-100 dark:bg-white/10" />
-                      ) : (
-                        <div className="flex flex-col gap-1.5">
-                          <MiniStepper stages={stages} current={etapaLabel} />
-                          {isStalled && <StalledChip days={dias!} />}
-                        </div>
-                      )}
-                    </td>
-
-                    {/* Asesor */}
-                    <td className="px-4 py-3">
-                      {contract.asesor ? (
-                        <div className="flex items-center gap-1.5">
-                          <span className="material-symbols-outlined text-[14px] text-arch-gold">badge</span>
-                          <div className="min-w-0">
-                            <p className="truncate text-[13px] text-slate-700 dark:text-white/80">
-                              {[contract.asesor.nombre, contract.asesor.apellidos].filter(Boolean).join(" ")}
-                            </p>
-                            <button
-                              onClick={(e) => { e.stopPropagation(); handleRemoveAsesor(contract); }}
-                              className="text-[10px] text-red-500 hover:text-red-700 transition-colors"
-                            >
-                              Desvincular
-                            </button>
-                          </div>
-                        </div>
-                      ) : (
-                        <button
-                          onClick={(e) => { e.stopPropagation(); setAssignTarget(contract.uuidUsuarioActivo); }}
-                          className="flex items-center gap-1 text-[12px] text-arch-gold hover:text-build-main transition-colors"
-                        >
-                          <span className="material-symbols-outlined text-[14px]">person_add</span>
-                          Asignar
-                        </button>
-                      )}
-                    </td>
-
-                    {/* Estado */}
-                    <td className="px-4 py-3">
-                      <span
-                        className={`inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full ${
-                          isVigente
-                            ? "bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400"
-                            : "bg-slate-100 dark:bg-white/10 text-slate-500 dark:text-white/40"
-                        }`}
-                      >
-                        <span className="material-symbols-outlined text-[11px]">
-                          {isVigente ? "check_circle" : "cancel"}
-                        </span>
-                        {isVigente ? "Vigente" : "Desvinculado"}
-                      </span>
-                    </td>
-
-                    {/* Arrow hint */}
-                    <td className="px-4 py-3 text-right">
-                      <span className="material-symbols-outlined text-[16px] text-arch-gold opacity-0 group-hover:opacity-100 transition-opacity">
-                        arrow_forward
-                      </span>
-                    </td>
-                  </tr>
-                );
-              })
+              paginatedList.map((contract) => (
+                <ContractRow
+                  key={contract.uuidUsuarioActivo}
+                  contract={contract}
+                  stages={contractsStages[contract.uuidUsuarioActivo]}
+                  isStagesLoading={isStagesLoading}
+                  onRemoveAsesor={handleRemoveAsesor}
+                  onAssignAsesor={setAssignTarget}
+                />
+              ))
             )}
           </tbody>
         </table>
@@ -774,18 +841,18 @@ useEffect(() => {
                     <span className="sr-only">Anterior</span>
                     <span className="material-symbols-outlined text-[16px]">chevron_left</span>
                   </button>
-                  {Array.from({ length: totalPages }).map((_, idx) => (
+                  {pageNumbers.map((pageNum) => (
                     <button
-                      key={idx}
-                      onClick={() => setCurrentPage(idx)}
-                      aria-current={currentPage === idx ? "page" : undefined}
+                      key={pageNum}
+                      onClick={() => setCurrentPage(pageNum - 1)}
+                      aria-current={currentPage === pageNum - 1 ? "page" : undefined}
                       className={`relative inline-flex items-center px-3 py-2 text-xs font-semibold focus:z-20 transition-colors ${
-                        currentPage === idx
+                        currentPage === pageNum - 1
                           ? "z-10 bg-arch-gold text-white"
                           : "text-slate-900 dark:text-white/70 bg-white dark:bg-white/5 border border-slate-300 dark:border-white/10 hover:bg-slate-50 dark:hover:bg-white/10"
                       }`}
                     >
-                      {idx + 1}
+                      {pageNum}
                     </button>
                   ))}
                   <button
@@ -805,14 +872,14 @@ useEffect(() => {
 
       {/* ── Assign Asesor Modal ── */}
       {assignTarget && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
-          onClick={() => setAssignTarget(null)}
-        >
-          <div
-            className="w-full max-w-sm rounded-xl bg-white dark:bg-slate-900 p-5 shadow-xl"
-            onClick={(e) => e.stopPropagation()}
-          >
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <button
+            type="button"
+            className="fixed inset-0 bg-black/40 cursor-default border-0 outline-none w-full h-full"
+            onClick={() => setAssignTarget(null)}
+            aria-label="Cerrar modal"
+          />
+          <div className="relative w-full max-w-sm rounded-xl bg-white dark:bg-slate-900 p-5 shadow-xl z-10">
             <h3 className="text-base font-semibold text-build-main dark:text-white mb-4">
               Asignar asesor
             </h3>
@@ -826,6 +893,7 @@ useEffect(() => {
                 {asesores.map((a) => (
                   <button
                     key={a.id}
+                    type="button"
                     disabled={assignLoading}
                     onClick={() => handleAssignAsesor(a.id)}
                     className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-slate-700 dark:text-white/80 hover:bg-slate-100 dark:hover:bg-white/10 disabled:opacity-50 transition-colors"
@@ -840,6 +908,7 @@ useEffect(() => {
 
             <div className="mt-4 flex justify-end">
               <button
+                type="button"
                 onClick={() => setAssignTarget(null)}
                 className="rounded-lg border border-slate-200 dark:border-white/10 px-4 py-1.5 text-xs text-slate-600 dark:text-white/70 hover:bg-slate-50 dark:hover:bg-white/5 transition-colors"
               >
