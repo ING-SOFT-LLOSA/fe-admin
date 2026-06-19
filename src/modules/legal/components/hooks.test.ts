@@ -94,6 +94,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   localStorageMock.clear();
   vi.stubGlobal('localStorage', localStorageMock);
+  vi.spyOn(console, 'error').mockImplementation(() => {});
 });
 
 describe("useCommercialStepper", () => {

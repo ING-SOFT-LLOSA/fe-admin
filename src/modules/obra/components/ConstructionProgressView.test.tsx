@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import ConstructionProgressView from "./ConstructionProgressView";
 
 vi.mock("@/lib/api/obra", () => ({
@@ -70,10 +70,11 @@ describe("ConstructionProgressView", () => {
     mockFetchActivos.mockResolvedValue({ content: [] } as any);
 
     render(<ConstructionProgressView projectId="p-1" />);
-    await new Promise((r) => setTimeout(r, 200));
-    expect(screen.getAllByText("Hitos").length).toBeGreaterThanOrEqual(1);
-    expect(screen.getAllByText("Reportes").length).toBeGreaterThanOrEqual(1);
-    expect(screen.getAllByText("Documentación").length).toBeGreaterThanOrEqual(1);
+    await waitFor(() => {
+      expect(screen.getAllByText("Hitos").length).toBeGreaterThanOrEqual(1);
+      expect(screen.getAllByText("Reportes").length).toBeGreaterThanOrEqual(1);
+      expect(screen.getAllByText("Documentación").length).toBeGreaterThanOrEqual(1);
+    });
   });
 
   it("muestra el nombre del proyecto en el header cuando context es obra", async () => {

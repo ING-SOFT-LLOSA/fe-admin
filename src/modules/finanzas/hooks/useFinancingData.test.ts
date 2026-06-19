@@ -80,6 +80,7 @@ const mockCarta = {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  vi.spyOn(console, 'warn').mockImplementation(() => {});
 });
 
 describe("useFinancingData", () => {
