@@ -11,7 +11,7 @@ export default function ClientExpedients({ assignments }: ClientExpedientsProps)
   return (
     <section className="rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 p-6 shadow-sm">
       <h3 className="text-base font-bold text-build-main dark:text-white flex items-center gap-2 mb-5">
-        <span className="material-symbols-outlined text-build-accent">folder_open</span>
+        <span className="material-symbols-outlined text-arch-gold">folder_open</span>
         Expedientes
       </h3>
 

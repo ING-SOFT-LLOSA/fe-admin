@@ -2,12 +2,14 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
-  /* Constructora Theme */
-  --color-build-bg: #f9f6f0;
-  --color-build-main: #3C3C3B;
-  --color-build-accent: #c49e5d;
+  /* Constructora Theme — alineado con fe-client */
+  --color-build-bg: #FFFFFF;
+  --color-build-main: #4B4B4B;
+  --color-build-accent: #9D9990;
+  --color-arch-gold: #CEBD93;
+  --color-arch-navy: #001629;
 
-  --color-primary: #001b27;
+  --color-primary: #001629;
   --color-primary-container: #023143;
   --color-primary-fixed: #c2e8ff;
   --color-primary-fixed-dim: #a5cce3;
@@ -76,8 +78,10 @@
 
 @layer base {
   .dark {
-    --color-build-bg: #0d0b0c; /* Much darker for better contrast */
-    --color-build-accent: #d4b572;
+    --color-build-bg: #0d0b0c;
+    --color-build-main: #e0e0e0;
+    --color-build-accent: #a09c94;
+    --color-arch-gold: #d4b572;
   }
 
   html { font-family: 'Plus Jakarta Sans', sans-serif; background-color: var(--color-build-bg); color: var(--color-build-main); transition: background-color 0.3s ease, color 0.3s ease; }
@@ -99,7 +103,7 @@
   p { font-size: 1.0625rem; line-height: 1.6; }
 
   a {
-    color: #C49E5D;
+    color: var(--color-arch-gold, #CEBD93);
     text-decoration: none;
     transition: opacity 0.3s ease;
   }
@@ -129,7 +133,7 @@
 
   input:focus, textarea:focus, select:focus {
     outline: none;
-    border-color: var(--color-build-accent);
+    border-color: var(--color-arch-gold, #CEBD93);
     box-shadow: 0 0 0 3px rgba(196, 158, 93, 0.1);
   }
   
@@ -147,12 +151,12 @@
   /* Scrollbar */
   ::-webkit-scrollbar              { width: 5px; height: 5px; }
   ::-webkit-scrollbar-track        { background: transparent; }
-  ::-webkit-scrollbar-thumb        { background: rgba(196, 158, 93, 0.25); border-radius: 99px; }
-  ::-webkit-scrollbar-thumb:hover  { background: rgba(196, 158, 93, 0.5); }
+  ::-webkit-scrollbar-thumb        { background: rgba(158, 153, 144, 0.25); border-radius: 99px; }
+  ::-webkit-scrollbar-thumb:hover  { background: rgba(158, 153, 144, 0.5); }
   
   .dark ::-webkit-scrollbar-track  { background: transparent; }
-  .dark ::-webkit-scrollbar-thumb  { background: rgba(212, 181, 114, 0.25); border-radius: 99px; }
-  .dark ::-webkit-scrollbar-thumb:hover { background: rgba(212, 181, 114, 0.5); }
+  .dark ::-webkit-scrollbar-thumb  { background: rgba(160, 156, 148, 0.25); border-radius: 99px; }
+  .dark ::-webkit-scrollbar-thumb:hover { background: rgba(160, 156, 148, 0.5); }
 }
 
 @layer utilities {
@@ -182,18 +186,18 @@
   /* Premium card */
   .card {
     background: var(--color-build-bg);
-    border: 1px solid var(--color-build-accent);
-    border-radius: 12px;
-    box-shadow: 0 2px 8px rgba(60,60,59,.04), 0 0 0 0 rgba(60,60,59,0);
+    border: 1px solid rgba(158, 153, 144, 0.3);
+    border-radius: 16px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04), 0 0 0 0 rgba(0,0,0,0);
     transition: box-shadow .2s ease, transform .2s ease;
   }
   .card:hover {
-    box-shadow: 0 8px 24px rgba(2,49,67,.09);
+    box-shadow: 0 8px 24px rgba(0,22,41,0.08);
     transform: translateY(-1px);
   }
   
   .dark .card {
-    background: #181516; /* Darker than 231f20, lighter than bg */
+    background: #181516;
     border-color: rgba(255, 255, 255, 0.05);
     box-shadow: 0 2px 8px rgba(0,0,0,0.4), 0 0 0 0 rgba(0,0,0,0);
   }
@@ -203,14 +207,14 @@
 
   /* Status badges */
   .badge-active   { background:#E8F5E9; color:#2E7D32; }
-  .badge-inactive { background:#e2e2e4; color:#41484c; }
+  .badge-inactive { background:#e1e3e4; color:#42474d; }
   .badge-warning  { background:#FFF3E0; color:#E65100; }
   .badge-error    { background:#ffdad6; color:#93000a; }
-  .badge-info     { background:#c2e8ff; color:#001e2b; }
+  .badge-info     { background:#cfe5ff; color:#001d34; }
   
   .dark .badge-active   { background:rgba(46, 125, 50, 0.2); color:#81c784; }
-  .dark .badge-inactive { background:rgba(255, 255, 255, 0.1); color:#ffffff; }
+  .dark .badge-inactive { background:rgba(255, 255, 255, 0.1); color:#e0e0e0; }
   .dark .badge-warning  { background:rgba(230, 81, 0, 0.2); color:#ffb74d; }
   .dark .badge-error    { background:rgba(147, 0, 10, 0.2); color:#e57373; }
-  .dark .badge-info     { background:rgba(255, 255, 255, 0.15); color:#64b5f6; }
+  .dark .badge-info     { background:rgba(255, 255, 255, 0.15); color:#a8caef; }
 }

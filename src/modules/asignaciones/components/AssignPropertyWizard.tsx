@@ -79,12 +79,8 @@ export default function AssignPropertyWizard({ onClose, onSuccess, client }: Ass
   useEffect(() => {
     let active = true;
     fetchProyectos().then(data => {
-      if (!active) return;
-      setProjects(data);
-      if (data.length > 0) {
-        setSelectedProjectId(data[0].id);
-        setProjectSearch(data[0].nombre);
-      }
+        if (!active) return;
+        setProjects(data);
     }).catch(() => {
       if (active) setErrorMsg("No se pudieron cargar los proyectos");
     });

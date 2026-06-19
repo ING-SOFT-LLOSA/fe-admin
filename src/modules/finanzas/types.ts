@@ -66,3 +66,21 @@ export interface ContratoDetalleResponse {
   cartaAprobacion: CartaAprobacionResponse | null;
   resumen: CronogramaResumenResponse | null;
 }
+
+// ─── Crédito Hipotecario Unificado ────────────────────────────────────────────
+
+export interface CreditoHipotecarioItem {
+  uuidHitoComercial: string | null;
+  nombre: string;
+  fecha: string | null;
+  estado: "PENDIENTE" | "COMPLETADO" | "EN_PROGRESO";
+  monto: number;
+  documentId: string | null;
+  downloadUrl: string | null;
+}
+
+export interface CreditoHipotecarioResumen {
+  items: CreditoHipotecarioItem[];
+  montoTotal: number;
+  progreso: number; // 0–100
+}

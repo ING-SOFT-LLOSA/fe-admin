@@ -17,11 +17,11 @@ export default function PaymentManagementStep({ expediente, onBack }: PaymentMan
         pagos,
         resumen,
         cartaAprobacion,
-        stepper,
+        creditoHipotecario,
         isLoading,
         error,
         refresh
-    } = useFinancingData(expediente.activo?.id ?? null);
+    } = useFinancingData(expediente.uuidUsuarioActivo, expediente);
 
     // Priorizar el expediente refrescado por el hook, caer en el del prop si aún está cargando
     const activeExpediente = refreshedExpediente || expediente;
@@ -33,8 +33,8 @@ export default function PaymentManagementStep({ expediente, onBack }: PaymentMan
             {/* Header del paso */}
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-build-accent/15 border border-build-accent/30 flex items-center justify-center flex-shrink-0">
-                        <span className="text-sm font-bold text-build-accent">3</span>
+                    <div className="w-8 h-8 rounded-full bg-arch-gold/15 border border-arch-gold/30 flex items-center justify-center flex-shrink-0">
+                        <span className="text-sm font-bold text-arch-gold">3</span>
                     </div>
                     <div>
                         <h3 className="text-lg font-bold text-build-main dark:text-white">Gestionar Pagos</h3>
@@ -75,7 +75,7 @@ export default function PaymentManagementStep({ expediente, onBack }: PaymentMan
                         <MortgageFinancingView
                             expediente={activeExpediente}
                             carta={cartaAprobacion}
-                            stepper={stepper}
+                            creditoHipotecario={creditoHipotecario}
                             onUpdate={refresh}
                         />
                     )}

@@ -415,5 +415,5 @@ export function useExpediente(uuidUsuarioActivo: string | null) {
     void refresh();
   }, [refresh]);
 
-  return { expediente, stages, loading, error, refresh };
+  return { expediente, stages, loading, error, refresh, setExpediente };
 }

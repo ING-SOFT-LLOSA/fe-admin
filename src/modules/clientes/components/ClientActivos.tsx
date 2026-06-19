@@ -9,6 +9,7 @@ import {
   type ActivoUsuarioDTO,
 } from "@/lib/api/expedientes";
 import { fetchProyectos, type Proyecto } from "@/lib/api/proyectos";
+import { ApiError } from "@/lib/api/http";
 
 type ClientActivosProps = {
   clientId: number;
@@ -77,7 +78,11 @@ export default function ClientActivos({ clientId, refreshKey = 0 }: ClientActivo
       }
     } catch (err) {
       console.error(err);
-      alert("Error al cargar el expediente legal.");
+      if (err instanceof ApiError && err.status === 404) {
+        alert("No se encontró un expediente legal asociado para esta propiedad.");
+      } else {
+        alert("Error al cargar el expediente legal.");
+      }
     } finally {
       setLoadingLegal((prev) => ({ ...prev, [activoId]: false }));
     }
@@ -122,7 +127,7 @@ export default function ClientActivos({ clientId, refreshKey = 0 }: ClientActivo
     <section className="rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 p-6 shadow-sm">
       <div className="flex items-center justify-between mb-5">
         <h3 className="text-base font-bold text-build-main dark:text-white flex items-center gap-2">
-          <span className="material-symbols-outlined text-build-accent">domain</span>
+          <span className="material-symbols-outlined text-arch-gold">domain</span>
           Propiedades del Cliente
         </h3>
         {!loading && (
@@ -166,7 +171,7 @@ export default function ClientActivos({ clientId, refreshKey = 0 }: ClientActivo
             <div key={projectName} className="bg-slate-50 dark:bg-white/5 rounded-xl border border-slate-100 dark:border-white/5 p-4">
               {/* Project header */}
               <div className="flex items-center gap-2 mb-3">
-                <span className="material-symbols-outlined text-build-accent text-[18px]">location_city</span>
+                <span className="material-symbols-outlined text-arch-gold text-[18px]">location_city</span>
                 <h4 className="text-xs font-bold text-build-main dark:text-white uppercase tracking-wide">{projectName}</h4>
                 <span className="text-[10px] font-bold text-slate-400 dark:text-white/40 bg-white dark:bg-white/10 px-2 py-0.5 rounded-full ml-auto">
                   {projectActivos.length} {projectActivos.length === 1 ? "unidad" : "unidades"}
@@ -224,7 +229,7 @@ export default function ClientActivos({ clientId, refreshKey = 0 }: ClientActivo
                           type="button"
                           onClick={() => handleVerExpediente(activo.id)}
                           disabled={loadingLegal[activo.id]}
-                          className="inline-flex items-center gap-1.5 text-xs font-semibold text-build-accent hover:text-build-main dark:hover:text-white transition-colors px-3 py-1.5 rounded-lg hover:bg-build-bg dark:hover:bg-white/10 disabled:opacity-50"
+                          className="inline-flex items-center gap-1.5 text-xs font-semibold text-arch-gold hover:text-build-main dark:hover:text-white transition-colors px-3 py-1.5 rounded-lg hover:bg-build-bg dark:hover:bg-white/10 disabled:opacity-50"
                         >
                           <span className="material-symbols-outlined text-[15px]">gavel</span>
                           {loadingLegal[activo.id] ? "Cargando..." : "Ver expediente legal"}

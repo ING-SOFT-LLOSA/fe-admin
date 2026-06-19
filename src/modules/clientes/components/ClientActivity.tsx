@@ -73,7 +73,7 @@ export default function ClientActivity({ assignments, clientCreatedAt }: ClientA
   return (
     <section className="rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 p-6 shadow-sm">
       <h3 className="text-base font-bold text-build-main dark:text-white flex items-center gap-2 mb-5">
-        <span className="material-symbols-outlined text-build-accent">history</span>
+        <span className="material-symbols-outlined text-arch-gold">history</span>
         Actividad Reciente
       </h3>
 
@@ -93,7 +93,7 @@ export default function ClientActivity({ assignments, clientCreatedAt }: ClientA
                 />
                 <div>
                   <div className="flex flex-wrap items-center gap-2">
-                    <span className="material-symbols-outlined text-build-accent text-[16px]">{event.icon}</span>
+                    <span className="material-symbols-outlined text-arch-gold text-[16px]">{event.icon}</span>
                     <p className="text-sm font-semibold text-build-main dark:text-white">{event.label}</p>
                   </div>
                   <p className="text-[11px] text-slate-400 dark:text-white/40 mt-1">

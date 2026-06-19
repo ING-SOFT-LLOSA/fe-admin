@@ -330,7 +330,7 @@ export default function EmployeeManagementPage() {
                         <h3 className="text-lg font-bold text-build-main dark:text-white">{ROLE_LABELS[role.nombre] ?? role.nombre}</h3>
                         <p className="mt-1 text-sm text-slate-500">{role.descripcion}</p>
                       </div>
-                      <span className="material-symbols-outlined text-build-accent">admin_panel_settings</span>
+                      <span className="material-symbols-outlined text-arch-gold">admin_panel_settings</span>
                     </div>
                     <p className="mt-4 text-xs font-bold uppercase text-slate-500">Permisos del rol</p>
                     <div className="mt-3 flex flex-wrap gap-2">

@@ -103,10 +103,10 @@ export default function ObraOverview() {
                 >
                   <td className="px-5 py-4">
                     <div className="flex items-center gap-2">
-                      <span className="text-sm font-bold text-build-main dark:text-white group-hover:text-build-accent dark:group-hover:text-build-accent transition-colors">
+                      <span className="text-sm font-bold text-build-main dark:text-white group-hover:text-arch-gold dark:group-hover:text-arch-gold transition-colors">
                         {project.nombre}
                       </span>
-                      <span className="material-symbols-outlined text-[14px] text-slate-300 dark:text-white/20 group-hover:text-build-accent dark:group-hover:text-build-accent transition-colors">
+                      <span className="material-symbols-outlined text-[14px] text-slate-300 dark:text-white/20 group-hover:text-arch-gold dark:group-hover:text-arch-gold transition-colors">
                         arrow_forward
                       </span>
                     </div>
@@ -118,7 +118,7 @@ export default function ObraOverview() {
                     <div className="flex items-center gap-3">
                       <div className="h-2 w-32 rounded-full bg-slate-100 dark:bg-white/10">
                         <div
-                          className="h-2 rounded-full bg-build-accent transition-all"
+                          className="h-2 rounded-full bg-arch-gold transition-all"
                           style={{ width: `${Math.min(project.porcentajeAvance ?? 0, 100)}%` }}
                         />
                       </div>

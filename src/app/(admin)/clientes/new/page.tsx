@@ -72,14 +72,14 @@ export default function NewClientPage() {
  
         {/* Hero */}
         <div className="relative z-10">
-          <div className="w-8 h-0.5 bg-build-accent mb-7" />
+          <div className="w-8 h-0.5 bg-arch-gold mb-7" />
           <h1
             className="text-5xl font-bold text-build-main dark:text-white leading-[1.1] mb-5 tracking-tight"
             style={{ fontFamily: "'Outfit', sans-serif" }}
           >
             Nuevo
             <br />
-            <span className="text-build-accent">cliente.</span>
+            <span className="text-arch-gold">cliente.</span>
           </h1>
           <p className="text-build-main/50 dark:text-white/50 text-[14px] leading-relaxed max-w-[260px]">
             Registra un nuevo cliente en la plataforma de Llosa Edificaciones.
@@ -94,8 +94,8 @@ export default function NewClientPage() {
             { icon: "check_circle", text: "Acceso inmediato tras la activación"           },
           ].map(({ icon, text }) => (
             <div key={icon} className="flex items-center gap-3">
-              <div className="w-7 h-7 rounded-full bg-build-accent/20 flex items-center justify-center flex-shrink-0">
-                <span className="material-symbols-outlined text-[15px] text-build-accent">{icon}</span>
+              <div className="w-7 h-7 rounded-full bg-arch-gold/20 flex items-center justify-center flex-shrink-0">
+                <span className="material-symbols-outlined text-[15px] text-arch-gold">{icon}</span>
               </div>
               <span className="text-[13px] text-build-main/50 dark:text-white/50">{text}</span>
             </div>
@@ -119,7 +119,7 @@ export default function NewClientPage() {
         <div className="flex-1 flex flex-col justify-center px-8 lg:px-14 py-10 max-w-2xl w-full">
           {/* Header */}
           <div className="mb-8">
-            <p className="text-[11px] font-bold uppercase tracking-[0.15em] text-build-accent mb-2">
+            <p className="text-[11px] font-bold uppercase tracking-[0.15em] text-arch-gold mb-2">
               Registro de cliente
             </p>
             <h2
@@ -219,7 +219,7 @@ export default function NewClientPage() {
               <button
                 type="submit"
                 disabled={loading || !!success}
-                className="inline-flex items-center gap-2 px-7 py-2.5 bg-build-main hover:bg-build-accent text-white rounded-xl text-[13px] font-bold transition-all duration-300 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                className="inline-flex items-center gap-2 px-7 py-2.5 bg-build-main hover:bg-arch-gold text-white rounded-xl text-[13px] font-bold transition-all duration-300 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {loading ? (
                   <>

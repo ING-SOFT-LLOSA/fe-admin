@@ -100,13 +100,34 @@ export default function ObraTabDocumentacion({ projectId }: ObraTabDocumentacion
     loadDocuments();
   }, [loadDocuments]);
 
+  const MAX_PDF_SIZE = 5 * 1024 * 1024; // 5 MB
+
+  const showError = (title: string, message: string) => {
+    setDialog({
+      isOpen: true,
+      title,
+      message,
+      type: "danger",
+      confirmText: "Aceptar",
+    });
+  };
+
   const handleUploadClick = (categoria: DocCategoria) => {
     const input = document.createElement("input");
     input.type = "file";
-    input.accept = ".pdf,.jpg,.jpeg,.png,.dwg,.xlsx,.docx";
+    input.accept = ".pdf";
     input.onchange = async (e) => {
       const file = (e.target as HTMLInputElement).files?.[0];
       if (!file) return;
+      if (file.type !== "application/pdf") {
+        showError("Formato no válido", "Solo se permiten archivos PDF para la documentación del proyecto.");
+        return;
+      }
+      if (file.size > MAX_PDF_SIZE) {
+        const mb = (file.size / (1024 * 1024)).toFixed(1);
+        showError("Archivo demasiado grande", `El archivo "${file.name}" pesa ${mb} MB. El tamaño máximo permitido es 5 MB.`);
+        return;
+      }
       await handleUpload(categoria, file);
     };
     input.click();
@@ -178,7 +199,7 @@ export default function ObraTabDocumentacion({ projectId }: ObraTabDocumentacion
       <div className="rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 shadow-sm overflow-hidden">
         {/* Header */}
         <div className="px-5 py-4 border-b border-slate-100 dark:border-white/10 flex items-center gap-3 bg-slate-50/50 dark:bg-white/[0.02]">
-          <span className="material-symbols-outlined text-build-accent text-[20px]">folder_open</span>
+          <span className="material-symbols-outlined text-arch-gold text-[20px]">folder_open</span>
           <h3 className="text-sm font-bold text-build-main dark:text-white font-sans">Documentación del Proyecto</h3>
         </div>
 

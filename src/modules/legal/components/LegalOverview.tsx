@@ -2,14 +2,23 @@
 
 import { useEffect, useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
-
+import {
+  fetchProyectos,
+  fetchTorresPorProyecto,
+  type Proyecto,
+  type TorreResponseDTO,
+} from "@/lib/api/proyectos";
 import {
   fetchTodosLosContratos,
   fetchEtapasExpediente,
   fetchCommercialStepper,
+  asignarAsesorAContrato,
+  desasignarAsesorDelContrato,
   type UsuarioActivoResponseDTO,
   type EtapaExpedienteResponseDTO,
 } from "@/lib/api/expedientes";
+import { fetchUsuarios } from "@/lib/api/users";
+import type { Usuario } from "@/types/user";
 
 // ─────────────────────────────────────────────
 // Constants
@@ -238,6 +247,33 @@ export default function LegalOverview() {
   const [selectedEtapa, setSelectedEtapa]       = useState("");
   const [ocultarDesistidos, setOcultarDesistidos] = useState(true);
 
+  // Asesor assignment state
+  const [asesores, setAsesores]           = useState<Usuario[]>([]);
+  const [assignTarget, setAssignTarget]   = useState<string | null>(null);
+  const [assignLoading, setAssignLoading] = useState(false);
+
+
+
+const [proyectosList, setProyectosList]   = useState<Proyecto[]>([]);
+const [proyectosOptions, setProyectosOptions] = useState<string[]>([]);
+const [torresOptions, setTorresOptions]   = useState<string[]>([]);
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(0);
+  const itemsPerPage = 10;
+
+
+// y en el fetch:
+useEffect(() => {
+  fetchProyectos().then((list) => {
+    setProyectosList(list);
+    setProyectosOptions(list.map((p) => p.nombre).sort());
+  });
+}, []);
+  // Reset page to 0 when filters change
+  useEffect(() => {
+    setCurrentPage(0);
+  }, [selectedProyecto, selectedTorre, selectedEstado, selectedEtapa, search, ocultarDesistidos]);
+
   // ── Data loading ───────────────────────────────────────────────────────────
   useEffect(() => {
     let mounted = true;
@@ -296,39 +332,32 @@ export default function LegalOverview() {
     return () => { mounted = false; };
   }, []);
 
+  // Load asesores
+  useEffect(() => {
+    fetchUsuarios()
+      .then((users) => setAsesores(users.filter((u) => u.rol === "ASESOR")))
+      .catch(() => {});
+  }, []);
+
   // Reset Torre when Proyecto changes
   useEffect(() => { setSelectedTorre(""); }, [selectedProyecto]);
+useEffect(() => {
+  fetchProyectos().then((list) => {
+    setProyectosList(list);
+    setProyectosOptions(list.map((p) => p.nombre).sort());
+  });
+}, []);
 
-  // ── Derived filter option lists ────────────────────────────────────────────
-  const proyectosOptions = useMemo(
-    () =>
-      Array.from(
-        new Set(
-          contracts
-            .flatMap((c) => c.activos ?? [])
-            .map((a) => a.proyectoNombre)
-            .filter(Boolean),
-        ),
-      ).sort(),
-    [contracts],
+useEffect(() => {
+  setSelectedTorre("");
+  setTorresOptions([]);
+  if (!selectedProyecto) return;
+  const proyecto = proyectosList.find((p) => p.nombre === selectedProyecto);
+  if (!proyecto) return;
+  fetchTorresPorProyecto(proyecto.id).then((list) =>
+    setTorresOptions(list.map((t) => t.nombre).sort())
   );
-
-  const torresOptions = useMemo(
-    () =>
-      Array.from(
-        new Set(
-          contracts
-            .filter((c) =>
-              !selectedProyecto ||
-              (c.activos ?? []).some((a) => a.proyectoNombre === selectedProyecto),
-            )
-            .flatMap((c) => c.activos ?? [])
-            .map((a) => a.torreNombre)
-            .filter((name): name is string => Boolean(name)),
-        ),
-      ).sort((a, b) => a.localeCompare(b)),
-    [contracts, selectedProyecto],
-  );
+}, [selectedProyecto, proyectosList]);
 
   // ── Filtered list ──────────────────────────────────────────────────────────
   const filtered = useMemo(
@@ -372,7 +401,46 @@ export default function LegalOverview() {
     [contracts, contractsStages, selectedProyecto, selectedTorre, selectedEstado, selectedEtapa, search, ocultarDesistidos],
   );
 
+  // ── Paginated list ──────────────────────────────────────────────────────────
+  const totalPages = Math.ceil(filtered.length / itemsPerPage);
+  const paginatedList = useMemo(() => {
+    const start = currentPage * itemsPerPage;
+    return filtered.slice(start, start + itemsPerPage);
+  }, [filtered, currentPage]);
+
+  const startIndex = currentPage * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+
   const hasActiveFilters = !!(selectedProyecto || selectedTorre || selectedEstado || selectedEtapa || search || !ocultarDesistidos);
+
+  // ── Asesor handlers ─────────────────────────────────────────────────────────
+
+  function handleRemoveAsesor(contract: UsuarioActivoResponseDTO) {
+    if (!contract.asesor) return;
+    desasignarAsesorDelContrato(contract.uuidUsuarioActivo, contract.asesor.id).then(() => {
+      setContracts((prev) =>
+        prev.map((c) =>
+          c.uuidUsuarioActivo === contract.uuidUsuarioActivo ? { ...c, asesor: null } : c
+        )
+      );
+    });
+  }
+
+  async function handleAssignAsesor(idAsesor: number) {
+    if (!assignTarget) return;
+    setAssignLoading(true);
+    try {
+      const updated = await asignarAsesorAContrato(assignTarget, idAsesor);
+      setContracts((prev) =>
+        prev.map((c) =>
+          c.uuidUsuarioActivo === assignTarget ? { ...c, asesor: updated.asesor } : c
+        )
+      );
+      setAssignTarget(null);
+    } finally {
+      setAssignLoading(false);
+    }
+  }
 
   // ── Render ─────────────────────────────────────────────────────────────────
   return (
@@ -415,7 +483,7 @@ export default function LegalOverview() {
             placeholder="Cliente, unidad o exp…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 pl-8 pr-3 py-2 text-xs text-build-main dark:text-white outline-none focus:border-build-accent focus:ring-1 focus:ring-build-accent transition"
+            className="w-full rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 pl-8 pr-3 py-2 text-xs text-build-main dark:text-white outline-none focus:border-arch-gold focus:ring-1 focus:ring-arch-gold transition"
           />
         </div>
 
@@ -423,7 +491,7 @@ export default function LegalOverview() {
         <select
           value={selectedProyecto}
           onChange={(e) => setSelectedProyecto(e.target.value)}
-          className="rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 px-3 py-2 text-xs text-build-main dark:text-white focus:outline-none focus:border-build-accent transition"
+          className="rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 px-3 py-2 text-xs text-build-main dark:text-white focus:outline-none focus:border-arch-gold transition"
         >
           <option value="">Proyecto</option>
           {proyectosOptions.map((opt) => (
@@ -436,7 +504,7 @@ export default function LegalOverview() {
           value={selectedTorre}
           onChange={(e) => setSelectedTorre(e.target.value)}
           disabled={!selectedProyecto}
-          className="rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 px-3 py-2 text-xs text-build-main dark:text-white focus:outline-none focus:border-build-accent transition disabled:opacity-40 disabled:cursor-not-allowed"
+          className="rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 px-3 py-2 text-xs text-build-main dark:text-white focus:outline-none focus:border-arch-gold transition disabled:opacity-40 disabled:cursor-not-allowed"
         >
           <option value="">Torre</option>
           {torresOptions.map((opt) => (
@@ -448,7 +516,7 @@ export default function LegalOverview() {
         <select
           value={selectedEstado}
           onChange={(e) => setSelectedEstado(e.target.value)}
-          className="rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 px-3 py-2 text-xs text-build-main dark:text-white focus:outline-none focus:border-build-accent transition"
+          className="rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 px-3 py-2 text-xs text-build-main dark:text-white focus:outline-none focus:border-arch-gold transition"
         >
           <option value="">Estado</option>
           <option value="Vigente">Vigente</option>
@@ -459,7 +527,7 @@ export default function LegalOverview() {
         <select
           value={selectedEtapa}
           onChange={(e) => setSelectedEtapa(e.target.value)}
-          className="rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 px-3 py-2 text-xs text-build-main dark:text-white focus:outline-none focus:border-build-accent transition"
+          className="rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 px-3 py-2 text-xs text-build-main dark:text-white focus:outline-none focus:border-arch-gold transition"
         >
           <option value="">Etapa</option>
           <option value="Separación">Separación</option>
@@ -475,7 +543,7 @@ export default function LegalOverview() {
             type="checkbox"
             checked={ocultarDesistidos}
             onChange={(e) => setOcultarDesistidos(e.target.checked)}
-            className="w-4 h-4 accent-build-accent rounded border-slate-300"
+            className="w-4 h-4 accent-arch-gold rounded border-slate-300"
           />
           <span className="font-semibold text-slate-700 dark:text-white/80">Ocultar desistidos</span>
         </label>
@@ -511,15 +579,16 @@ export default function LegalOverview() {
         <table className="w-full text-left table-fixed">
           <colgroup>
             <col className="w-[11%]" />
-            <col className="w-[22%]" />
-            <col className="w-[22%]" />
-            <col className="w-[22%]" />
-            <col className="w-[14%]" />
-            <col className="w-[9%]" />
+            <col className="w-[20%]" />
+            <col className="w-[17%]" />
+            <col className="w-[17%]" />
+            <col className="w-[15%]" />
+            <col className="w-[12%]" />
+            <col className="w-[8%]" />
           </colgroup>
           <thead className="border-b border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/[0.03]">
             <tr>
-              {["Expediente", "Proyecto / Unidad", "Titulares", "Etapa actual", "Estado", ""].map((h) => (
+              {["Expediente", "Proyecto / Unidad", "Titulares", "Etapa actual", "Asesor", "Estado", ""].map((h) => (
                 <th
                   key={h}
                   className="px-4 py-2.5 text-[11px] font-semibold uppercase tracking-wider text-slate-400 dark:text-white/40"
@@ -535,14 +604,14 @@ export default function LegalOverview() {
               Array.from({ length: 6 }).map((_, i) => <SkeletonRow key={i} />)
             ) : filtered.length === 0 ? (
               <tr>
-                <td colSpan={6} className="px-5 py-14 text-center text-sm text-slate-400 dark:text-white/40">
+                <td colSpan={7} className="px-5 py-14 text-center text-sm text-slate-400 dark:text-white/40">
                   {hasActiveFilters
                     ? "Sin resultados para los filtros seleccionados."
                     : "No hay expedientes registrados."}
                 </td>
               </tr>
             ) : (
-              filtered.map((contract) => {
+              paginatedList.map((contract) => {
                 const idCorto    = contract.uuidUsuarioActivo.slice(0, 8).toUpperCase();
                 const firstAct   = contract.activos?.[0];
                 const unitText   = (contract.activos ?? [])
@@ -572,7 +641,7 @@ export default function LegalOverview() {
                   >
                     {/* ID */}
                     <td className="px-4 py-3">
-                      <span className="text-[13px] font-semibold text-build-main dark:text-white group-hover:text-build-accent transition-colors">
+                      <span className="text-[13px] font-semibold text-build-main dark:text-white group-hover:text-arch-gold transition-colors">
                         EXP-{idCorto}
                       </span>
                     </td>
@@ -604,6 +673,34 @@ export default function LegalOverview() {
                       )}
                     </td>
 
+                    {/* Asesor */}
+                    <td className="px-4 py-3">
+                      {contract.asesor ? (
+                        <div className="flex items-center gap-1.5">
+                          <span className="material-symbols-outlined text-[14px] text-arch-gold">badge</span>
+                          <div className="min-w-0">
+                            <p className="truncate text-[13px] text-slate-700 dark:text-white/80">
+                              {[contract.asesor.nombre, contract.asesor.apellidos].filter(Boolean).join(" ")}
+                            </p>
+                            <button
+                              onClick={(e) => { e.stopPropagation(); handleRemoveAsesor(contract); }}
+                              className="text-[10px] text-red-500 hover:text-red-700 transition-colors"
+                            >
+                              Desvincular
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={(e) => { e.stopPropagation(); setAssignTarget(contract.uuidUsuarioActivo); }}
+                          className="flex items-center gap-1 text-[12px] text-arch-gold hover:text-build-main transition-colors"
+                        >
+                          <span className="material-symbols-outlined text-[14px]">person_add</span>
+                          Asignar
+                        </button>
+                      )}
+                    </td>
+
                     {/* Estado */}
                     <td className="px-4 py-3">
                       <span
@@ -622,7 +719,7 @@ export default function LegalOverview() {
 
                     {/* Arrow hint */}
                     <td className="px-4 py-3 text-right">
-                      <span className="material-symbols-outlined text-[16px] text-build-accent opacity-0 group-hover:opacity-100 transition-opacity">
+                      <span className="material-symbols-outlined text-[16px] text-arch-gold opacity-0 group-hover:opacity-100 transition-opacity">
                         arrow_forward
                       </span>
                     </td>
@@ -632,7 +729,119 @@ export default function LegalOverview() {
             )}
           </tbody>
         </table>
+
+        {/* Pagination Controls */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between border-t border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/[0.03] px-4 py-3">
+            <div className="flex flex-1 justify-between sm:hidden">
+              <button
+                onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 0))}
+                disabled={currentPage === 0}
+                className="relative inline-flex items-center rounded-md border border-slate-300 dark:border-white/10 bg-white dark:bg-white/5 px-4 py-2 text-xs font-medium text-slate-700 dark:text-white/70 hover:bg-slate-50 dark:hover:bg-white/10 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              >
+                Anterior
+              </button>
+              <button
+                onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages - 1))}
+                disabled={currentPage === totalPages - 1}
+                className="relative ml-3 inline-flex items-center rounded-md border border-slate-300 dark:border-white/10 bg-white dark:bg-white/5 px-4 py-2 text-xs font-medium text-slate-700 dark:text-white/70 hover:bg-slate-50 dark:hover:bg-white/10 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              >
+                Siguiente
+              </button>
+            </div>
+            <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
+              <div>
+                <p className="text-xs text-slate-500 dark:text-white/50">
+                  Mostrando <span className="font-semibold text-slate-700 dark:text-white/80">{startIndex + 1}</span> a{" "}
+                  <span className="font-semibold text-slate-700 dark:text-white/80">{Math.min(endIndex, filtered.length)}</span> de{" "}
+                  <span className="font-semibold text-slate-700 dark:text-white/80">{filtered.length}</span> expedientes
+                </p>
+              </div>
+              <div>
+                <nav className="isolate inline-flex -space-x-px rounded-md shadow-sm" aria-label="Pagination">
+                  <button
+                    onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 0))}
+                    disabled={currentPage === 0}
+                    className="relative inline-flex items-center rounded-l-md border border-slate-300 dark:border-white/10 bg-white dark:bg-white/5 px-2 py-2 text-slate-400 dark:text-white/30 hover:bg-slate-50 dark:hover:bg-white/10 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                  >
+                    <span className="sr-only">Anterior</span>
+                    <span className="material-symbols-outlined text-[16px]">chevron_left</span>
+                  </button>
+                  {Array.from({ length: totalPages }).map((_, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => setCurrentPage(idx)}
+                      aria-current={currentPage === idx ? "page" : undefined}
+                      className={`relative inline-flex items-center px-3 py-2 text-xs font-semibold focus:z-20 transition-colors ${
+                        currentPage === idx
+                          ? "z-10 bg-arch-gold text-white"
+                          : "text-slate-900 dark:text-white/70 bg-white dark:bg-white/5 border border-slate-300 dark:border-white/10 hover:bg-slate-50 dark:hover:bg-white/10"
+                      }`}
+                    >
+                      {idx + 1}
+                    </button>
+                  ))}
+                  <button
+                    onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages - 1))}
+                    disabled={currentPage === totalPages - 1}
+                    className="relative inline-flex items-center rounded-r-md border border-slate-300 dark:border-white/10 bg-white dark:bg-white/5 px-2 py-2 text-slate-400 dark:text-white/30 hover:bg-slate-50 dark:hover:bg-white/10 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                  >
+                    <span className="sr-only">Siguiente</span>
+                    <span className="material-symbols-outlined text-[16px]">chevron_right</span>
+                  </button>
+                </nav>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
+
+      {/* ── Assign Asesor Modal ── */}
+      {assignTarget && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
+          onClick={() => setAssignTarget(null)}
+        >
+          <div
+            className="w-full max-w-sm rounded-xl bg-white dark:bg-slate-900 p-5 shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="text-base font-semibold text-build-main dark:text-white mb-4">
+              Asignar asesor
+            </h3>
+
+            {asesores.length === 0 ? (
+              <p className="text-sm text-slate-500 dark:text-white/50">
+                No hay asesores disponibles.
+              </p>
+            ) : (
+              <div className="max-h-60 space-y-1 overflow-y-auto">
+                {asesores.map((a) => (
+                  <button
+                    key={a.id}
+                    disabled={assignLoading}
+                    onClick={() => handleAssignAsesor(a.id)}
+                    className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-slate-700 dark:text-white/80 hover:bg-slate-100 dark:hover:bg-white/10 disabled:opacity-50 transition-colors"
+                  >
+                    <span className="material-symbols-outlined text-[16px] text-arch-gold">badge</span>
+                    {[a.nombre, a.apellidos].filter(Boolean).join(" ")}
+                    <span className="ml-auto text-[11px] text-slate-400 dark:text-white/30">{a.email}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+
+            <div className="mt-4 flex justify-end">
+              <button
+                onClick={() => setAssignTarget(null)}
+                className="rounded-lg border border-slate-200 dark:border-white/10 px-4 py-1.5 text-xs text-slate-600 dark:text-white/70 hover:bg-slate-50 dark:hover:bg-white/5 transition-colors"
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   );
 }

@@ -61,12 +61,64 @@ export async function uploadDocument(
   return res.json();
 }
 
+export async function uploadDocumentExplicito(
+  idReferencia: string,
+  file: File,
+  tipoDocumento: "PDF_LEGAL" | "COMPROBANTE" | "FOTO_OBRA" | "VIDEO_OBRA",
+  entidad: string
+): Promise<DocumentoResponse> {
+  const token = await getFreshToken();
+  if (!token) {
+    throw new Error("No hay sesión activa. Inicia sesión de nuevo.");
+  }
+
+  const formData = new FormData();
+  formData.append("file", file);
+
+  const requestBlob = new Blob(
+    [JSON.stringify({ tipoDocumento })],
+    { type: "application/json" }
+  );
+  formData.append("data", requestBlob);
+
+  const res = await fetch(
+    `${API_URL}/api/documentos/explicito?entidad=${encodeURIComponent(
+      entidad
+    )}&idReferencia=${encodeURIComponent(idReferencia)}`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      body: formData,
+    }
+  );
+
+  if (!res.ok) {
+    const errorText = await res.text();
+    let message = errorText;
+    try {
+      const json = JSON.parse(errorText);
+      message = json.error ?? json.message ?? errorText;
+    } catch {
+      // not JSON
+    }
+    throw new Error(message || "Error al subir el documento");
+  }
+
+  return res.json();
+}
+
 export async function fetchDocumentosByReferencia(
   idReferencia: string,
-  tipoDocumento?: string
+  tipoDocumento?: string,
+  entidadReferencia?: string
 ): Promise<DocumentoResponse[]> {
-  const query = tipoDocumento ? `?tipoDocumento=${encodeURIComponent(tipoDocumento)}` : "";
-  return apiFetch<DocumentoResponse[]>(`/api/documentos/${idReferencia}${query}`);
+  const params = new URLSearchParams();
+  if (tipoDocumento) params.set("tipoDocumento", tipoDocumento);
+  if (entidadReferencia) params.set("entidadReferencia", entidadReferencia);
+  const qs = params.toString();
+  return apiFetch<DocumentoResponse[]>(`/api/documentos/${idReferencia}${qs ? `?${qs}` : ""}`);
 }
 
 export const fetchDocumentosByUsuarioActivo = fetchDocumentosByReferencia;

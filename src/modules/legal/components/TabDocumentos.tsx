@@ -137,7 +137,7 @@ export function TabDocumentos({
 
       {loading && sections.length === 0 ? (
         <div className="flex items-center justify-center py-12">
-          <Spinner className="w-5 h-5 text-build-accent mr-3" />
+          <Spinner className="w-5 h-5 text-arch-gold mr-3" />
           <span className="text-sm text-slate-500 dark:text-white/40 font-medium">
             Cargando documentos y requisitos...
           </span>
@@ -150,7 +150,7 @@ export function TabDocumentos({
           >
             {/* Section header */}
             <div className="px-5 py-4 border-b border-slate-100 dark:border-white/10 flex items-center gap-3 bg-slate-50/50 dark:bg-white/[0.02]">
-              <span className="material-symbols-outlined text-build-accent text-[20px]">{seccion.icon}</span>
+              <span className="material-symbols-outlined text-arch-gold text-[20px]">{seccion.icon}</span>
               <h3 className="text-sm font-bold text-build-main dark:text-white">{seccion.label}</h3>
             </div>
 
@@ -289,7 +289,7 @@ function DocRow({
                   title="Subir archivo"
                 >
                   {isUploading
-                    ? <Spinner className="w-4 h-4 text-build-accent" />
+                    ? <Spinner className="w-4 h-4 text-arch-gold" />
                     : <span className="material-symbols-outlined text-[18px]">upload_file</span>
                   }
                 </button>
@@ -347,7 +347,7 @@ function DocRow({
               <button
                 type="button"
                 onClick={onEditNotaStart}
-                className="inline-flex items-center gap-1 text-[10px] font-bold text-build-accent hover:text-build-main dark:hover:text-white transition-colors"
+                className="inline-flex items-center gap-1 text-[10px] font-bold text-arch-gold hover:text-build-main dark:hover:text-white transition-colors"
               >
                 <span className="material-symbols-outlined text-[13px]">edit_note</span>
                 {doc.notaCorporativa ? "Editar Nota" : "Agregar Nota"}

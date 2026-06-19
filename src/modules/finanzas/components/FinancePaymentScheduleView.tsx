@@ -68,13 +68,13 @@ export default function FinancePaymentScheduleView({
               disabled={(s.id === "contracts" && !selectedClient) || (s.id === "management" && !selectedExpediente)}
               onClick={() => s.id === "search" ? handleBackToSearch() : s.id === "contracts" ? handleBackToContracts() : null}
               className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all ${s.active
-                  ? "bg-build-accent text-white font-bold shadow-sm"
+                      ? "bg-arch-gold text-white font-bold shadow-sm"
                   : s.done
                     ? "text-build-main dark:text-white/80 hover:bg-slate-100 dark:hover:bg-white/5 font-semibold"
                     : "text-slate-400 dark:text-white/20 cursor-not-allowed font-medium"
                 }`}
             >
-              <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] ${s.active ? "bg-white text-build-accent" : s.done ? "bg-build-accent text-white" : "bg-slate-200 dark:bg-white/10 text-slate-500"
+              <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] ${s.active ? "bg-white text-arch-gold" : s.done ? "bg-arch-gold text-white" : "bg-slate-200 dark:bg-white/10 text-slate-500"
                 }`}>
                 {s.done && !s.active ? "✓" : i + 1}
               </span>

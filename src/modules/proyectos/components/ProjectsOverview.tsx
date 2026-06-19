@@ -162,7 +162,7 @@ const filtered = useMemo(() => {
             placeholder="Buscar proyecto…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 pl-8 pr-3 py-2 text-xs text-build-main dark:text-white outline-none focus:border-build-accent focus:ring-1 focus:ring-build-accent transition"
+            className="w-full rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 pl-8 pr-3 py-2 text-xs text-build-main dark:text-white outline-none focus:border-arch-gold focus:ring-1 focus:ring-arch-gold/20 transition"
           />
         </div>
 
@@ -205,7 +205,7 @@ const filtered = useMemo(() => {
           {hasFilters && (
             <button
               onClick={() => { setSearch(""); }}
-              className="mt-4 text-xs font-semibold text-build-accent hover:underline"
+              className="mt-4 text-xs font-semibold text-arch-gold hover:underline"
             >
               Limpiar filtros
             </button>

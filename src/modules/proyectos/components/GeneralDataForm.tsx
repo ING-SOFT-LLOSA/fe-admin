@@ -246,7 +246,7 @@ export default function GeneralDataForm({ initialData, onSubmit, onCancel }: Pro
         </button>
         <button 
           type="submit" 
-          className="flex items-center gap-2 rounded-xl bg-build-main px-6 py-2.5 text-sm font-bold text-white shadow-sm hover:bg-build-accent transition-colors"
+          className="flex items-center gap-2 rounded-xl bg-build-main px-6 py-2.5 text-sm font-bold text-white shadow-sm hover:bg-arch-gold transition-colors"
         >
           Siguiente paso
           <span className="material-symbols-outlined text-[18px]">arrow_forward</span>

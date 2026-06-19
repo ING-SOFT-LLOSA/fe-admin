@@ -139,7 +139,7 @@ export default function InventoryConfigurator({
             <p className="mt-2 text-xs font-semibold uppercase text-slate-500 dark:text-white/60">Departamentos</p>
           </div>
           <div>
-            <p className="text-[32px] font-bold leading-none text-build-accent">{totalUnidades}</p>
+            <p className="text-[32px] font-bold leading-none text-arch-gold">{totalUnidades}</p>
             <p className="mt-2 text-xs font-bold uppercase text-build-main dark:text-white">Unidades totales</p>
           </div>
         </div>
@@ -156,7 +156,7 @@ export default function InventoryConfigurator({
         </button>
         <button
           type="submit"
-          className="flex items-center gap-2 rounded-xl bg-build-main px-6 py-2.5 text-sm font-bold text-white shadow-sm transition-colors hover:bg-build-accent"
+          className="flex items-center gap-2 rounded-xl bg-build-main px-6 py-2.5 text-sm font-bold text-white shadow-sm transition-colors hover:bg-arch-gold"
         >
           <span className="material-symbols-outlined text-[18px]">save</span>
           Crear proyecto

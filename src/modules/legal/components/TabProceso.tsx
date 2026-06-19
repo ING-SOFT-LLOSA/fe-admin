@@ -49,7 +49,7 @@ export function TabProceso({ etapas, loadingStepper, canEdit, onUpdateHito }: Pr
                   ${global === "completado"
                     ? "bg-emerald-500 border-emerald-500 text-white"
                     : global === "en_proceso"
-                    ? "bg-white dark:bg-[#111] border-build-accent text-build-accent"
+                    ? "bg-white dark:bg-[#111] border-arch-gold text-arch-gold"
                     : "bg-white dark:bg-[#111] border-slate-200 dark:border-white/10 text-slate-300 dark:text-white/20"
                   }
                 `}>
@@ -96,7 +96,7 @@ export function TabProceso({ etapas, loadingStepper, canEdit, onUpdateHito }: Pr
                             ${etapa.estado === "completado"
                               ? "bg-emerald-500 border-emerald-500 text-white"
                               : etapa.estado === "en_proceso"
-                              ? "bg-white dark:bg-[#111] border-build-accent text-build-accent"
+                              ? "bg-white dark:bg-[#111] border-arch-gold text-arch-gold"
                               : etapa.estado === "observado"
                               ? "bg-white dark:bg-[#111] border-amber-400 text-amber-400"
                               : "bg-white dark:bg-[#111] border-slate-200 dark:border-white/10 text-slate-300 dark:text-white/20"
@@ -128,7 +128,7 @@ export function TabProceso({ etapas, loadingStepper, canEdit, onUpdateHito }: Pr
                                 onChange={(e) => onUpdateHito(etapa.uuidHito!, e.target.value)}
                                 className={`
                                   text-[10px] font-bold px-2.5 py-0.5 rounded-full border-0 cursor-pointer
-                                  focus:ring-2 focus:ring-build-accent/50 focus:outline-none transition-all
+                                  focus:ring-2 focus:ring-arch-gold/50 focus:outline-none transition-all
                                   ${badge.cls}
                                   ${loadingStepper ? "opacity-50 cursor-not-allowed" : ""}
                                 `}

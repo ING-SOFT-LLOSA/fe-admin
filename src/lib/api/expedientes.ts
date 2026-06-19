@@ -29,6 +29,7 @@ export interface UsuarioActivoResponseDTO {
   clientes:            ClienteSimpleDTO[];
   activos:             ActivoResponseDTO[];  // Lista de activos vinculados
   activo?:             ActivoResponseDTO;
+  asesor?:             ClienteSimpleDTO | null;
   faseComercial?:      string;
   estadoTramiteLegal?: string;
 }
@@ -141,7 +142,7 @@ export function unlinkAssignment(uuid: string): Promise<void> {
  * Lista todos los expedientes (UsuarioActivo) de la empresa.
  */
 export function fetchTodosLosContratos(): Promise<UsuarioActivoResponseDTO[]> {
-  return apiFetch<any>("/api/expedientes?unpaginated=true").then((res) => {
+  return apiFetch<any>("/api/expedientes?size=1000").then((res) => {
     const list = Array.isArray(res) ? res : (res?.content || []);
     return list.map((item: any) => ({
       ...item,
@@ -165,6 +166,22 @@ export function fetchExpedientesPorUsuario(
   );
 }
  
+/**
+ * GET /api/expedientes/contrato/{uuidExpediente}
+ * Devuelve el expediente asociado a un UUID de contrato.
+ * Requiere autoridad CONTRATO_VER.
+ */
+export function fetchContratoPorId(
+  uuidExpediente: string
+): Promise<UsuarioActivoResponseDTO> {
+  return apiFetch<UsuarioActivoResponseDTO>(
+    `/api/expedientes/contrato/${uuidExpediente}`
+  ).then((item) => ({
+    ...item,
+    activo: item.activo ?? item.activos?.[0],
+  }));
+}
+
 /**
  * GET /api/expedientes/{uuidActivo}/contrato
  * Devuelve el expediente asociado a un UUID de activo/inmueble.
@@ -298,6 +315,36 @@ export function fetchActivosPorUsuario(
 ): Promise<ActivoUsuarioDTO[]> {
   return apiFetch<ActivoUsuarioDTO[]>(
     `/api/expedientes/usuario/${idUsuario}/activos`
+  );
+}
+
+// ─── Gestión de Asesores ───────────────────────────────────────────────────────
+
+/**
+ * POST /api/expedientes/usuarioActivo/{uuid}/asesor/{idAsesor}
+ * Asigna un asesor (Usuario) a un contrato.
+ */
+export function asignarAsesorAContrato(
+  uuid: string,
+  idAsesor: number
+): Promise<UsuarioActivoResponseDTO> {
+  return apiFetch<UsuarioActivoResponseDTO>(
+    `/api/expedientes/usuarioActivo/${uuid}/asesor/${idAsesor}`,
+    { method: "POST" }
+  );
+}
+
+/**
+ * PUT /api/expedientes/usuarioActivo/{uuid}/asesor/{idAsesor}
+ * Desasigna el asesor del contrato.
+ */
+export function desasignarAsesorDelContrato(
+  uuid: string,
+  idAsesor: number
+): Promise<UsuarioActivoResponseDTO> {
+  return apiFetch<UsuarioActivoResponseDTO>(
+    `/api/expedientes/usuarioActivo/${uuid}/asesor/${idAsesor}`,
+    { method: "PUT" }
   );
 }
 

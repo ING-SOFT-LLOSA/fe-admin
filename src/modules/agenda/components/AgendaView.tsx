@@ -9,6 +9,8 @@ import {
   actualizarCita,
   seleccionarBloqueDisponibilidad,
   forzarSincronizacionManual,
+  getGoogleAuthUrl,
+  disconnectGoogleCalendar,
   type CitaResponse,
 } from "@/lib/api/agenda";
 
@@ -25,6 +27,9 @@ type CalEvent = {
   unit?: string;
   rsvpDot?: string;
   rsvpText?: string;
+  syncDot?: string;
+  syncIcon?: string;
+  syncText?: string;
 };
 
 type CalDay = {
@@ -148,6 +153,21 @@ function mapCitaToEvent(c: CitaResponse): CalEvent {
     rsvpText = "Declinado";
   }
 
+  let syncDot = "";
+  let syncIcon = "";
+  let syncText = "";
+  if (c.clienteUsaGoogle) {
+    if (c.estadoSincronizacion === "SINCRONIZADO") {
+      syncDot = "bg-emerald-500";
+      syncIcon = "check_circle";
+      syncText = "Sincronizado con Google Calendar";
+    } else if (c.estadoSincronizacion === "PENDIENTE" || c.estadoSincronizacion === "FALLIDO") {
+      syncDot = "bg-amber-500";
+      syncIcon = "sync_problem";
+      syncText = c.estadoSincronizacion === "FALLIDO" ? "Error de sincronización" : "Pendiente de sincronizar";
+    }
+  }
+
   return {
     id: c.id,
     label: `${c.titulo || c.tipoEvento}`,
@@ -155,6 +175,9 @@ function mapCitaToEvent(c: CitaResponse): CalEvent {
     dot,
     rsvpDot,
     rsvpText,
+    syncDot,
+    syncIcon,
+    syncText,
     text: bg.split(" ")[1] || "",
     time: startL,
     client: c.clienteNombre || "Cliente",
@@ -211,7 +234,6 @@ export default function SchedulePage() {
   const [errorMsg, setErrorMsg] = useState("");
 
   // UX State
-  const [simulateGoogleFail, setSimulateGoogleFail] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [successMsg, setSuccessMsg] = useState("");
   const [warningMsg, setWarningMsg] = useState("");
@@ -443,6 +465,43 @@ export default function SchedulePage() {
       });
   };
 
+  const [isConnectingGoogle, setIsConnectingGoogle] = useState(false);
+  const [justConnected, setJustConnected] = useState(false);
+
+  const handleConnectGoogle = async () => {
+    setIsConnectingGoogle(true);
+    try {
+      const { url } = await getGoogleAuthUrl();
+      const popup = window.open(url, "google-oauth", "width=600,height=700");
+      if (!popup) {
+        alert("El navegador bloqueó la ventana emergente. Permite popups e intenta de nuevo.");
+        setIsConnectingGoogle(false);
+        return;
+      }
+      const timer = setInterval(() => {
+        if (popup.closed) {
+          clearInterval(timer);
+          setIsConnectingGoogle(false);
+          setJustConnected(true);
+          setTimeout(() => setJustConnected(false), 6000);
+        }
+      }, 500);
+    } catch (err) {
+      setIsConnectingGoogle(false);
+      alert(err instanceof Error ? err.message : "Error al conectar Google Calendar.");
+    }
+  };
+
+  const handleDisconnectGoogle = async () => {
+    if (!confirm("¿Desconectar Google Calendar?")) return;
+    try {
+      await disconnectGoogleCalendar();
+      alert("Google Calendar desconectado.");
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Error al desconectar.");
+    }
+  };
+
   const handleSyncManual = () => {
     setIsSyncing(true);
     forzarSincronizacionManual()
@@ -489,27 +548,11 @@ export default function SchedulePage() {
       fechaInicio: startDateTimeStr,
       fechaFin: endDateTimeStr,
       permiteReprogramacion: true,
-      clienteUsaGoogle: !simulateGoogleFail,
-      
-      // Positional fallbacks
-      arg0: Number(clientId),
-      arg1: selectedUnitId,
-      arg2: eventType,
-      arg3: `${eventLabel} - ${selectedClient?.nombre || ""} ${selectedClient?.apellidos || ""}`,
-      arg4: `Cita sobre unidad inmobiliaria`,
-      arg5: location,
-      arg6: startDateTimeStr,
-      arg7: endDateTimeStr,
-      arg8: true,
-      arg9: !simulateGoogleFail
+      clienteUsaGoogle: true,
     })
       .then(() => {
         setIsSaving(false);
-        if (simulateGoogleFail) {
-          setWarningMsg("Cita guardada en el portal. La sincronización con Google Calendar experimentó un retraso y se reintentará en breve.");
-        } else {
-          setSuccessMsg("Cita agendada y notificada exitosamente al correo/calendario del cliente.");
-        }
+        setSuccessMsg("Cita agendada y notificada exitosamente al correo/calendario del cliente.");
         setTimeout(() => {
           setModalOpen(false);
           fetchAppointments();
@@ -537,19 +580,51 @@ export default function SchedulePage() {
           <h2 className="text-2xl md:text-3xl font-bold tracking-[-0.01em] text-build-main dark:text-white">Agenda y Citas</h2>
           <p className="text-base text-slate-600 dark:text-white/70 mt-2">Programa reuniones, firmas, entregas y eventos importantes con clientes.</p>
         </div>
-        <div className="flex items-center gap-2.5 self-end md:self-auto">
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 self-end md:self-auto">
+          {/* Google Connect */}
+          <button
+            onClick={handleConnectGoogle}
+            disabled={isConnectingGoogle}
+            className={`inline-flex items-center justify-center gap-1.5 rounded-xl px-2 py-2.5 text-xs font-semibold shadow-sm transition-all disabled:opacity-50 ${
+              justConnected
+                ? "border border-green-200 dark:border-green-900/40 bg-green-50 dark:bg-green-900/10 text-green-700 dark:text-green-400"
+                : "border border-arch-gold/30 bg-arch-gold/5 hover:bg-arch-gold/10 text-arch-gold"
+            }`}
+          >
+            <span className="material-symbols-outlined text-[16px] shrink-0">
+              {isConnectingGoogle ? "more_horiz" : justConnected ? "check_circle" : "calendar_month"}
+            </span>
+            <span className="truncate">{isConnectingGoogle ? "Conectando..." : justConnected ? "¡Conectado!" : "Conectar Google Calendar"}</span>
+          </button>
+
+          {/* Disconnect */}
+          <button
+            onClick={handleDisconnectGoogle}
+            className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-red-200 px-2 py-2.5 text-xs font-semibold shadow-sm transition-all bg-red-50 text-red-600 hover:bg-red-100 dark:border-red-900/30 dark:bg-red-950/10 dark:text-red-400 dark:hover:bg-red-950/20"
+          >
+            <span className="material-symbols-outlined text-[16px] shrink-0">link_off</span>
+            <span className="truncate">Desconectar</span>
+          </button>
+
+          {/* Sync */}
           <button
             onClick={handleSyncManual}
             disabled={isSyncing}
-            className="border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 hover:bg-slate-50 dark:hover:bg-white/10 text-build-main dark:text-white text-xs font-semibold px-4 py-2.5 rounded-xl flex items-center gap-2 transition-all shadow-sm disabled:opacity-50"
+            className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-2 py-2.5 text-xs font-semibold shadow-sm transition-all text-build-main hover:bg-slate-50 disabled:opacity-50 dark:border-white/10 dark:bg-white/5 dark:text-white dark:hover:bg-white/10"
           >
-            <span className={`material-symbols-outlined text-[18px] ${isSyncing ? "animate-spin" : ""}`}>
+            <span className={`material-symbols-outlined text-[16px] shrink-0 ${isSyncing ? "animate-spin" : ""}`}>
               sync
             </span>
-            {isSyncing ? "Sincronizando..." : "Sincronizar Google Calendar"}
+            <span className="truncate">{isSyncing ? "Sincronizando..." : "Sincronizar Google Calendar"}</span>
           </button>
-          <button onClick={handleOpenModal} className="bg-build-main text-white text-xs font-semibold px-4 py-2.5 rounded-xl flex items-center gap-2 hover:bg-build-main/90 transition-all shadow-sm">
-            <span className="material-symbols-outlined text-[18px]">event_available</span>Nueva cita
+
+          {/* New Appointment */}
+          <button
+            onClick={handleOpenModal}
+            className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-build-main px-2 py-2.5 text-xs font-semibold text-white shadow-sm transition-all hover:bg-build-main/90"
+          >
+            <span className="material-symbols-outlined text-[16px] shrink-0">event_available</span>
+            <span className="truncate">Nueva cita</span>
           </button>
         </div>
       </div>
@@ -611,6 +686,11 @@ export default function SchedulePage() {
                     <div className="flex items-center gap-1.5">
                       <span className={`w-1.5 h-1.5 rounded-full ${ev.rsvpDot}`} title={`Confirmación: ${ev.rsvpText}`} />
                       <span className="text-[11px] font-bold truncate">{ev.label}</span>
+                      {ev.syncIcon && (
+                        <span className={`material-symbols-outlined text-[12px] ml-auto shrink-0 ${ev.syncDot === "bg-emerald-500" ? "text-emerald-500" : "text-amber-500"}`} title={ev.syncText}>
+                          {ev.syncIcon}
+                        </span>
+                      )}
                     </div>
                     {ev.time && <span className="text-[9px] font-semibold opacity-75 pl-3">{ev.time}</span>}
                   </div>
@@ -622,23 +702,6 @@ export default function SchedulePage() {
 
         {/* Right Info Panel */}
         <div className="lg:col-span-3 flex flex-col gap-6">
-          <div className="bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl p-6 shadow-sm">
-            <div className="flex justify-between items-center mb-6 border-b border-slate-200 dark:border-white/10 pb-4">
-              <h3 className="text-[18px] font-bold text-build-main dark:text-white">Panel de Pruebas (Google Sync)</h3>
-              <span className="material-symbols-outlined text-slate-500 dark:text-white/60">science</span>
-            </div>
-
-            <label className="flex items-start gap-3 p-3 bg-slate-50 dark:bg-white/5 rounded-lg border border-slate-200 dark:border-white/10 cursor-pointer hover:bg-slate-100 dark:bg-white/10 transition-colors">
-              <div className="pt-0.5">
-                <input type="checkbox" className="w-4 h-4 accent-build-accent" checked={simulateGoogleFail} onChange={e => setSimulateGoogleFail(e.target.checked)} />
-              </div>
-              <div>
-                <p className="text-[13px] font-bold text-build-main dark:text-white leading-tight">Simular fallo de Google Calendar</p>
-                <p className="text-[11px] text-slate-500 dark:text-white/60 mt-1 pr-2">Si ocurre un fallo, la cita se guardará solo localmente y se notificará el reintento.</p>
-              </div>
-            </label>
-          </div>
-
           <div className="bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl p-6 shadow-sm">
             <h3 className="text-[18px] font-bold text-build-main dark:text-white mb-4">Próximos Eventos</h3>
             {upcomingEvents.length === 0 ? (
@@ -652,7 +715,14 @@ export default function SchedulePage() {
                 >
                   <div className="flex items-center justify-between gap-2">
                     <h4 className="text-[13px] font-bold text-build-main dark:text-white truncate hover:underline">{ev.label}</h4>
-                    <span className={`w-2 h-2 rounded-full shrink-0 ${ev.rsvpDot}`} title={`Confirmación: ${ev.rsvpText}`} />
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        {ev.syncIcon && (
+                          <span className={`material-symbols-outlined text-[14px] ${ev.syncDot === "bg-emerald-500" ? "text-emerald-500" : "text-amber-500"}`} title={ev.syncText}>
+                            {ev.syncIcon}
+                          </span>
+                        )}
+                        <span className={`w-2 h-2 rounded-full shrink-0 ${ev.rsvpDot}`} title={`Confirmación: ${ev.rsvpText}`} />
+                      </div>
                   </div>
                   <p className="text-[11px] text-slate-500 dark:text-white/60 mt-0.5">Cliente: {ev.client}</p>
                   <p className="text-[12px] text-slate-500 dark:text-white/60 flex items-center gap-1 mt-1 font-semibold">
@@ -673,7 +743,7 @@ export default function SchedulePage() {
               <>
                 <div className="px-6 py-5 border-b border-slate-200 dark:border-white/10 bg-white dark:bg-[#111] flex justify-between items-center">
                   <h2 className="text-[20px] font-bold text-build-main dark:text-white flex items-center gap-2">
-                    <span className="material-symbols-outlined text-build-accent">edit_calendar</span> Agendar cita
+                    <span className="material-symbols-outlined text-arch-gold">edit_calendar</span> Agendar cita
                   </h2>
                   <button type="button" onClick={() => setModalOpen(false)} disabled={isSaving} className="text-slate-400 dark:text-white/50 hover:text-[#ba1a1a]">
                     <span className="material-symbols-outlined">close</span>
@@ -693,7 +763,7 @@ export default function SchedulePage() {
                     <select
                       value={clientId}
                       onChange={e => setClientId(e.target.value)}
-                      className="w-full px-3 py-2.5 border border-slate-200 dark:border-white/10 rounded-xl text-sm text-build-main dark:text-white bg-white dark:bg-white/5 focus:outline-none focus:border-build-accent focus:ring-1 focus:ring-build-accent"
+                      className="w-full px-3 py-2.5 border border-slate-200 dark:border-white/10 rounded-xl text-sm text-build-main dark:text-white bg-white dark:bg-white/5 focus:outline-none focus:border-arch-gold focus:ring-1 focus:ring-arch-gold/20"
                     >
                       <option value="">-- Seleccionar Cliente --</option>
                       {clients.map((c) => <option key={c.id} value={String(c.id)}>{c.nombre} {c.apellidos}</option>)}
@@ -706,7 +776,7 @@ export default function SchedulePage() {
                       <select
                         value={selectedUnitId}
                         onChange={e => setSelectedUnitId(e.target.value)}
-                        className="w-full px-3 py-2.5 border border-slate-200 dark:border-white/10 rounded-xl text-sm text-build-main dark:text-white bg-white dark:bg-white/5 focus:outline-none focus:border-build-accent focus:ring-1 focus:ring-build-accent"
+                        className="w-full px-3 py-2.5 border border-slate-200 dark:border-white/10 rounded-xl text-sm text-build-main dark:text-white bg-white dark:bg-white/5 focus:outline-none focus:border-arch-gold focus:ring-1 focus:ring-arch-gold/20"
                       >
                         <option value="">-- Seleccionar Unidad --</option>
                         {clientUnits.map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}
@@ -719,7 +789,7 @@ export default function SchedulePage() {
                     <select
                       value={eventType}
                       onChange={e => setEventType(e.target.value)}
-                      className="w-full px-3 py-2.5 border border-slate-200 dark:border-white/10 rounded-xl text-sm text-build-main dark:text-white bg-white dark:bg-white/5 focus:outline-none focus:border-build-accent focus:ring-1 focus:ring-build-accent"
+                      className="w-full px-3 py-2.5 border border-slate-200 dark:border-white/10 rounded-xl text-sm text-build-main dark:text-white bg-white dark:bg-white/5 focus:outline-none focus:border-arch-gold focus:ring-1 focus:ring-arch-gold/20"
                     >
                       {EVENT_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
                     </select>
@@ -728,21 +798,21 @@ export default function SchedulePage() {
                   <div className="grid grid-cols-2 gap-4 mb-4">
                     <div className="col-span-2">
                       <label className="block text-[11px] font-bold text-slate-500 dark:text-white/60 uppercase mb-1">Día Protocolar *</label>
-                      <input type="date" value={eventDate} onChange={e => setEventDate(e.target.value)} className="w-full px-3 py-2.5 border border-slate-200 dark:border-white/10 rounded-xl text-sm text-build-main dark:text-white bg-white dark:bg-white/5 focus:outline-none focus:border-build-accent focus:ring-1 focus:ring-build-accent" />
+                      <input type="date" value={eventDate} onChange={e => setEventDate(e.target.value)} className="w-full px-3 py-2.5 border border-slate-200 dark:border-white/10 rounded-xl text-sm text-build-main dark:text-white bg-white dark:bg-white/5 focus:outline-none focus:border-arch-gold focus:ring-1 focus:ring-arch-gold/20" />
                     </div>
                     <div>
                       <label className="block text-[11px] font-bold text-slate-500 dark:text-white/60 uppercase mb-1">Hora Inicio *</label>
-                      <input type="time" value={startTime} onChange={e => setStartTime(e.target.value)} className="w-full px-3 py-2.5 border border-slate-200 dark:border-white/10 rounded-xl text-sm text-build-main dark:text-white bg-white dark:bg-white/5 focus:outline-none focus:border-build-accent focus:ring-1 focus:ring-build-accent" />
+                      <input type="time" value={startTime} onChange={e => setStartTime(e.target.value)} className="w-full px-3 py-2.5 border border-slate-200 dark:border-white/10 rounded-xl text-sm text-build-main dark:text-white bg-white dark:bg-white/5 focus:outline-none focus:border-arch-gold focus:ring-1 focus:ring-arch-gold/20" />
                     </div>
                     <div>
                       <label className="block text-[11px] font-bold text-slate-500 dark:text-white/60 uppercase mb-1">Hora Fin *</label>
-                      <input type="time" value={endTime} onChange={e => setEndTime(e.target.value)} className="w-full px-3 py-2.5 border border-slate-200 dark:border-white/10 rounded-xl text-sm text-build-main dark:text-white bg-white dark:bg-white/5 focus:outline-none focus:border-build-accent focus:ring-1 focus:ring-build-accent" />
+                      <input type="time" value={endTime} onChange={e => setEndTime(e.target.value)} className="w-full px-3 py-2.5 border border-slate-200 dark:border-white/10 rounded-xl text-sm text-build-main dark:text-white bg-white dark:bg-white/5 focus:outline-none focus:border-arch-gold focus:ring-1 focus:ring-arch-gold/20" />
                     </div>
                   </div>
 
                   <div>
                     <label className="block text-[11px] font-bold text-slate-500 dark:text-white/60 uppercase mb-1">Lugar / Ubicación</label>
-                    <input type="text" value={location} onChange={e => setLocation(e.target.value)} className="w-full px-3 py-2.5 border border-slate-200 dark:border-white/10 rounded-xl text-sm text-build-main dark:text-white bg-white dark:bg-white/5 focus:outline-none focus:border-build-accent focus:ring-1 focus:ring-build-accent" />
+                    <input type="text" value={location} onChange={e => setLocation(e.target.value)} className="w-full px-3 py-2.5 border border-slate-200 dark:border-white/10 rounded-xl text-sm text-build-main dark:text-white bg-white dark:bg-white/5 focus:outline-none focus:border-arch-gold focus:ring-1 focus:ring-arch-gold/20" />
                   </div>
                 </div>
 
@@ -783,7 +853,7 @@ export default function SchedulePage() {
             {/* Header */}
             <div className="px-6 py-5 border-b border-slate-200 dark:border-white/10 bg-white dark:bg-[#111] flex justify-between items-center">
               <h2 className="text-[20px] font-bold text-build-main dark:text-white flex items-center gap-2">
-                <span className="material-symbols-outlined text-build-accent">info</span> 
+                <span className="material-symbols-outlined text-arch-gold">info</span> 
                 {isEditing ? "Editar Cita" : "Detalle de la Cita"}
               </h2>
               <button 
@@ -812,7 +882,7 @@ export default function SchedulePage() {
                       type="text" 
                       value={editTitle} 
                       onChange={e => setEditTitle(e.target.value)} 
-                      className="w-full px-3 py-2 border border-slate-200 dark:border-white/10 rounded-xl text-sm bg-white dark:bg-white/5 text-build-main dark:text-white focus:outline-none focus:border-build-accent" 
+                      className="w-full px-3 py-2 border border-slate-200 dark:border-white/10 rounded-xl text-sm bg-white dark:bg-white/5 text-build-main dark:text-white focus:outline-none focus:border-arch-gold focus:ring-1 focus:ring-arch-gold/20" 
                     />
                   </div>
                   
@@ -821,7 +891,7 @@ export default function SchedulePage() {
                     <textarea 
                       value={editDesc} 
                       onChange={e => setEditDesc(e.target.value)} 
-                      className="w-full px-3 py-2 border border-slate-200 dark:border-white/10 rounded-xl text-sm bg-white dark:bg-white/5 text-build-main dark:text-white focus:outline-none focus:border-build-accent h-20 resize-none" 
+                      className="w-full px-3 py-2 border border-slate-200 dark:border-white/10 rounded-xl text-sm bg-white dark:bg-white/5 text-build-main dark:text-white focus:outline-none focus:border-arch-gold focus:ring-1 focus:ring-arch-gold/20 h-20 resize-none" 
                     />
                   </div>
 
@@ -831,7 +901,7 @@ export default function SchedulePage() {
                       type="text" 
                       value={editLocation} 
                       onChange={e => setEditLocation(e.target.value)} 
-                      className="w-full px-3 py-2 border border-slate-200 dark:border-white/10 rounded-xl text-sm bg-white dark:bg-white/5 text-build-main dark:text-white focus:outline-none focus:border-build-accent" 
+                      className="w-full px-3 py-2 border border-slate-200 dark:border-white/10 rounded-xl text-sm bg-white dark:bg-white/5 text-build-main dark:text-white focus:outline-none focus:border-arch-gold focus:ring-1 focus:ring-arch-gold/20" 
                     />
                   </div>
 
@@ -842,7 +912,7 @@ export default function SchedulePage() {
                         type="date" 
                         value={editDate} 
                         onChange={e => setEditDate(e.target.value)} 
-                        className="w-full px-3 py-2 border border-slate-200 dark:border-white/10 rounded-xl text-sm bg-white dark:bg-white/5 text-build-main dark:text-white focus:outline-none focus:border-build-accent" 
+                        className="w-full px-3 py-2 border border-slate-200 dark:border-white/10 rounded-xl text-sm bg-white dark:bg-white/5 text-build-main dark:text-white focus:outline-none focus:border-arch-gold focus:ring-1 focus:ring-arch-gold/20" 
                       />
                     </div>
                     <div>
@@ -851,7 +921,7 @@ export default function SchedulePage() {
                         type="time" 
                         value={editStartTime} 
                         onChange={e => setEditStartTime(e.target.value)} 
-                        className="w-full px-3 py-2 border border-slate-200 dark:border-white/10 rounded-xl text-sm bg-white dark:bg-white/5 text-build-main dark:text-white focus:outline-none focus:border-build-accent" 
+                        className="w-full px-3 py-2 border border-slate-200 dark:border-white/10 rounded-xl text-sm bg-white dark:bg-white/5 text-build-main dark:text-white focus:outline-none focus:border-arch-gold focus:ring-1 focus:ring-arch-gold/20" 
                       />
                     </div>
                     <div>
@@ -860,7 +930,7 @@ export default function SchedulePage() {
                         type="time" 
                         value={editEndTime} 
                         onChange={e => setEditEndTime(e.target.value)} 
-                        className="w-full px-3 py-2 border border-slate-200 dark:border-white/10 rounded-xl text-sm bg-white dark:bg-white/5 text-build-main dark:text-white focus:outline-none focus:border-build-accent" 
+                        className="w-full px-3 py-2 border border-slate-200 dark:border-white/10 rounded-xl text-sm bg-white dark:bg-white/5 text-build-main dark:text-white focus:outline-none focus:border-arch-gold focus:ring-1 focus:ring-arch-gold/20" 
                       />
                     </div>
                   </div>
@@ -871,7 +941,7 @@ export default function SchedulePage() {
                       <select 
                         value={editEstado} 
                         onChange={e => setEditEstado(e.target.value as any)} 
-                        className="w-full px-3 py-2.5 border border-slate-200 dark:border-white/10 rounded-xl text-sm bg-white dark:bg-white/5 text-build-main dark:text-white focus:outline-none focus:border-build-accent"
+                        className="w-full px-3 py-2.5 border border-slate-200 dark:border-white/10 rounded-xl text-sm bg-white dark:bg-white/5 text-build-main dark:text-white focus:outline-none focus:border-arch-gold focus:ring-1 focus:ring-arch-gold/20"
                       >
                         <option value="PROGRAMADA">PROGRAMADA</option>
                         <option value="CONFIRMADA">CONFIRMADA</option>
@@ -886,7 +956,7 @@ export default function SchedulePage() {
                           type="checkbox" 
                           checked={editPermiteReprog} 
                           onChange={e => setEditPermiteReprog(e.target.checked)} 
-                          className="w-4 h-4 accent-build-accent" 
+                          className="w-4 h-4 accent-arch-gold" 
                         />
                         <span className="text-[12px] font-semibold text-slate-600 dark:text-white/70">Permite Reprogramación</span>
                       </label>

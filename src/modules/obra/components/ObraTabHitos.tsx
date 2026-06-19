@@ -90,8 +90,7 @@ export default function ObraTabHitos({ projectId, etapas, onRefresh }: ObraTabHi
       .then((data) => {
         if (cancelled) return;
         setTorres(data);
-        setSelectedTorreId("");
-        setSelectedPisoId("");
+
 
         // Cargar pisos para cada torre de manera individual e incremental
         data.forEach((t) => {
@@ -205,6 +204,52 @@ export default function ObraTabHitos({ projectId, etapas, onRefresh }: ObraTabHi
     }
   }
 
+  // ── State para toggle global ────────────────────────────────────────────
+  const [globalToggling, setGlobalToggling] = useState<string | null>(null);
+
+  // ── Completar / deshacer hito maestro (impacto global en todos los pisos) ──
+  async function handleToggleEstadoGlobal(etapa: EtapaResponseDTO) {
+    const newEstado = etapa.estado === "COMPLETADO" ? "PENDIENTE" : "COMPLETADO";
+    setGlobalToggling(String(etapa.id));
+    setError("");
+    try {
+      const page = await fetchActivosPorProyecto(projectId);
+      const activos: ActivoResponseDTO[] = page?.content || [];
+      const proxyAssetIds = new Map<number, string>();
+      activos.forEach((a) => {
+        if (a.pisoId && !proxyAssetIds.has(a.pisoId)) {
+          proxyAssetIds.set(a.pisoId, a.id);
+        }
+      });
+      const assetIds = Array.from(proxyAssetIds.values());
+
+      let errors = 0;
+      for (const assetId of assetIds) {
+        const avances = await getAvancesActivo(assetId).catch(() => []);
+        const matching = avances.find((a) => a.hitoOrden === etapa.orden);
+        if (matching) {
+          try {
+            await updateAvanceUnidad(matching.id, newEstado);
+          } catch {
+            errors++;
+          }
+        }
+      }
+
+      if (errors > 0) {
+        setError(`Se actualizaron ${assetIds.length - errors} de ${assetIds.length} pisos. Algunos hitos no se pudieron modificar (verifica el orden secuencial).`);
+      } else {
+        setSuccess(`Hito "${etapa.nombre}" marcado como ${newEstado === "COMPLETADO" ? "completado" : "pendiente"} en todos los pisos.`);
+        setTimeout(() => setSuccess(""), 4000);
+      }
+      await onRefresh();
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Error al actualizar el hito global.");
+    } finally {
+      setGlobalToggling(null);
+    }
+  }
+
   // ── Completar / deshacer hito de piso ────────────────────────────────────
   async function handleToggleEstadoPiso(avanceId: string, currentEstado: string) {
     setErrorPiso("");
@@ -312,7 +357,7 @@ export default function ObraTabHitos({ projectId, etapas, onRefresh }: ObraTabHi
                 type="button"
                 onClick={handleGenerarEstandar}
                 disabled={saving}
-                className="rounded-xl bg-build-accent px-5 py-2.5 text-sm font-bold text-white hover:bg-build-accent/90 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                className="rounded-xl bg-arch-gold px-5 py-2.5 text-sm font-bold text-white hover:bg-arch-gold/90 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
               >
                 {saving ? (
                   <>
@@ -347,7 +392,7 @@ export default function ObraTabHitos({ projectId, etapas, onRefresh }: ObraTabHi
             <table className="w-full text-left">
               <thead className="bg-slate-50 dark:bg-white/5 border-b border-slate-100 dark:border-white/10">
                 <tr>
-                  {["#", "Hito", "Descripción", "Estado"].map((h) => (
+                  {["#", "Hito", "Descripción", "Estado", "Acción"].map((h) => (
                     <th
                       key={h}
                       className="px-5 py-3 text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-white/40"
@@ -379,6 +424,25 @@ export default function ObraTabHitos({ projectId, etapas, onRefresh }: ObraTabHi
                         >
                           {ESTADO_LABELS[etapa.estado ?? "PENDIENTE"] ?? "Pendiente"}
                         </span>
+                      </td>
+                      <td className="px-5 py-3">
+                        <button
+                          type="button"
+                          disabled={globalToggling === String(etapa.id)}
+                          onClick={() => handleToggleEstadoGlobal(etapa)}
+                          className={`text-xs font-bold px-3 py-1 rounded-lg transition-colors border ${
+                            etapa.estado === "COMPLETADO"
+                              ? "border-red-200 text-red-600 hover:bg-red-50 dark:border-red-900/50 dark:hover:bg-red-900/20"
+                              : "border-green-200 text-green-600 hover:bg-green-50 dark:border-green-900/50 dark:hover:bg-green-900/20"
+                          } disabled:opacity-50 disabled:cursor-not-allowed`}
+                        >
+                          {globalToggling === String(etapa.id) ? (
+                            <svg className="animate-spin w-3.5 h-3.5" viewBox="0 0 24 24" fill="none">
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+                            </svg>
+                          ) : etapa.estado === "COMPLETADO" ? "Restablecer" : "Completar"}
+                        </button>
                       </td>
                     </tr>
                   ))}

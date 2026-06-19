@@ -18,12 +18,12 @@ export default function ProjectCard({ project, clientesCount, dptosCount, avance
       href={`/proyectos/${project.id}`}
       className="group block rounded-2xl border border-slate-200
             dark:border-white/10 bg-white dark:bg-white/5
-            p-5 shadow-sm hover:border-build-accent
+            p-5 shadow-sm hover:border-arch-gold
             hover:shadow-md transition-all"
     >
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-lg font-bold text-build-main dark:text-white group-hover:text-build-accent transition-colors">
+          <h3 className="text-lg font-bold text-build-main dark:text-white group-hover:text-arch-gold transition-colors">
             {project.nombre}
           </h3>
           <div className="flex flex-wrap gap-2 items-center mt-1">
@@ -51,11 +51,11 @@ export default function ProjectCard({ project, clientesCount, dptosCount, avance
       <div className="mt-4 border-t border-slate-100 dark:border-white/5 pt-4">
         <div className="flex justify-between text-[11px] font-semibold mb-1.5">
           <span className="text-slate-500 uppercase">Avance de Obra</span>
-          <span className="text-build-accent font-bold">{avance.toFixed(0)}%</span>
+          <span className="text-arch-gold font-bold">{avance.toFixed(0)}%</span>
         </div>
         <div className="w-full bg-slate-100 dark:bg-white/10 rounded-full h-1.5 overflow-hidden">
           <div
-            className="bg-build-accent h-1.5 rounded-full transition-all duration-500"
+            className="bg-arch-gold h-1.5 rounded-full transition-all duration-500"
             style={{ width: `${Math.min(100, Math.max(0, avance))}%` }}
           />
         </div>
