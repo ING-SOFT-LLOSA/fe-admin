@@ -3,8 +3,8 @@ import type { PerfilConPermisos } from "@/types/auth";
 const TOKEN_KEY = "llosa_id_token";
 const PERFIL_KEY = "llosa_perfil";
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export function saveSession(token: string, _perfil: PerfilConPermisos): void {
-  void _perfil;
   if (typeof window === "undefined") return;
   document.cookie = `${TOKEN_KEY}=${token}; path=/; max-age=86400; SameSite=Lax`;
 }
