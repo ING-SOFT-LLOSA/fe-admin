@@ -38,10 +38,9 @@ export interface CrearEmpleadoPayload {
   nombre: string;
   apellidos: string;
   email: string;
+  telefono?: string;
   tipoUsuario: "EMPLEADO";
   idRol: number;
-    telefono?: string; 
-
 }
 
 export interface ClienteRow {

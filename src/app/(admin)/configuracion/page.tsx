@@ -44,6 +44,7 @@ export default function EmployeeManagementPage() {
     nombres: "",
     apellidos: "",
     email: "",
+    telefono: "",
     rol: "ASESOR",
   });
   const [userToDeactivate, setUserToDeactivate] = useState<Usuario | null>(null);
@@ -77,7 +78,7 @@ export default function EmployeeManagementPage() {
   function openCreateModal() {
     setError(null);
     setSuccess(null);
-    setForm({ nombres: "", apellidos: "", email: "", rol: employeeRoles[0]?.nombre ?? "ASESOR" });
+    setForm({ nombres: "", apellidos: "", email: "", telefono: "", rol: employeeRoles[0]?.nombre ?? "ASESOR" });
     setModalOpen(true);
   }
 
@@ -95,6 +96,7 @@ export default function EmployeeManagementPage() {
         nombre: form.nombres.trim(),
         apellidos: form.apellidos.trim(),
         email: form.email.trim(),
+        telefono: form.telefono.trim() || undefined,
         tipoUsuario: "EMPLEADO",
         idRol: role.idRol,
       });
@@ -389,6 +391,11 @@ export default function EmployeeManagementPage() {
                 <div>
                   <label className="mb-1.5 block text-xs font-bold uppercase text-slate-500">Correo corporativo</label>
                   <input type="email" required value={form.email} onChange={(event) => setForm({ ...form, email: event.target.value })} className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm focus:outline-none focus:border-build-accent dark:bg-white/5 dark:border-white/10 dark:text-white" />
+                </div>
+
+                <div>
+                  <label className="mb-1.5 block text-xs font-bold uppercase text-slate-500">Teléfono</label>
+                  <input type="tel" value={form.telefono} onChange={(event) => setForm({ ...form, telefono: event.target.value })} placeholder="+51 999 888 777" className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm focus:outline-none focus:border-build-accent dark:bg-white/5 dark:border-white/10 dark:text-white" />
                 </div>
 
                 <div>
