@@ -1,8 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import type { PagoResponse, CronogramaPagoResponse, CronogramaResumenResponse } from "@/modules/finanzas/types";
-import type { CartaAprobacionResponse } from "@/modules/finanzas/types";
 import InstallmentStatusBadge from "../details/InstallmentStatusBadge";
-import { updatePagoEstado, uploadPagoComprobante, addPago, deletePago, createCronograma, updateCronograma } from "@/lib/api/finanzas";
+import { updatePagoEstado, uploadPagoComprobante, addPago, deletePago, updatePago, createCronograma, updateCronograma } from "@/lib/api/finanzas";
 import type { UsuarioActivoResponseDTO } from "@/lib/api/expedientes";
 import { fetchSignedUrl } from "@/lib/api/documents";
 import DialogModal from "@/components/ui/DialogModal";
@@ -24,7 +23,8 @@ import DialogModal from "@/components/ui/DialogModal";
 
     interface CronogramaFormData {
         totalPactado: string;
-        cuotaInicial: string;
+        pagoSeparacion: string;
+        pagoInicial: string;
         numeroCuotas: string;
     }
 
@@ -48,12 +48,29 @@ export default function DirectFinancingView({ expediente, cronograma, pagos, res
     });
     const [cronogramaForm, setCronogramaForm] = useState<CronogramaFormData>({
         totalPactado: cronograma?.totalPactado?.toString() ?? "",
-        cuotaInicial: cronograma?.cuotaInicial?.toString() ?? "",
+        pagoSeparacion: cronograma?.pagoSeparacion?.toString() ?? "",
+        pagoInicial: cronograma?.pagoInicial?.toString() ?? "",
             numeroCuotas: cronograma?.numeroCuotas?.toString() ?? "",
         });
-        const [addForm, setAddForm] = useState({ nroCuota: "", montoProgramado: "", fechaVencimiento: "" });
+        const [addForm, setAddForm] = useState({ nroCuota: "", montoProgramado: "", fechaVencimiento: "", concepto: "CUOTA" });
+
+        useEffect(() => {
+            if (showCronogramaForm && cronograma) {
+                setCronogramaForm({
+                    totalPactado: cronograma.totalPactado?.toString() ?? "",
+                    pagoSeparacion: cronograma.pagoSeparacion?.toString() ?? "",
+                    pagoInicial: cronograma.pagoInicial?.toString() ?? "",
+                    numeroCuotas: cronograma.numeroCuotas?.toString() ?? "",
+                });
+            }
+        }, [showCronogramaForm, cronograma]);
+
         const [isSaving, setIsSaving] = useState(false);
         const [activeDropzoneId, setActiveDropzoneId] = useState<string | null>(null);
+        const [dropzoneComentario, setDropzoneComentario] = useState("");
+        const [dropzoneFile, setDropzoneFile] = useState<File | null>(null);
+        const [editingId, setEditingId] = useState<string | null>(null);
+        const [editForm, setEditForm] = useState({ montoProgramado: "", fechaVencimiento: "" });
 
         const getPagoStatusInfo = (pago: PagoResponse) => {
             if (pago.estado === "PAGADO") {
@@ -97,24 +114,40 @@ export default function DirectFinancingView({ expediente, cronograma, pagos, res
             }
         };
 
-        const handleFastPayment = async (uuidPago: string, file: File) => {
+        const handleSelectFile = (uuidPago: string, file: File) => {
+            setDropzoneFile(file);
+        };
+
+        const handleConfirmUpload = async (uuidPago: string, currentEstado: string) => {
+            if (!dropzoneFile) return;
             setUpdatingId(uuidPago);
-            setActiveDropzoneId(null);
-        try {
-            await uploadPagoComprobante(uuidPago, file);
-            await updatePagoEstado(uuidPago, "PAGADO");
-            onUpdate();
-        } catch (err) {
-            setDialog({
-                isOpen: true,
-                title: "Error",
-                message: err instanceof Error ? err.message : "Error al registrar el cobro rápido",
-                type: "danger",
-                confirmText: "Aceptar",
-            });
-        } finally {
-            setUpdatingId(null);
-        }
+            const comentario = dropzoneComentario.trim() || undefined;
+            try {
+                await uploadPagoComprobante(uuidPago, dropzoneFile, comentario);
+                if (currentEstado !== "PAGADO") {
+                    await updatePagoEstado(uuidPago, "PAGADO");
+                }
+                setActiveDropzoneId(null);
+                setDropzoneComentario("");
+                setDropzoneFile(null);
+                onUpdate();
+            } catch (err) {
+                setDialog({
+                    isOpen: true,
+                    title: "Error",
+                    message: err instanceof Error ? err.message : "Error al subir comprobante",
+                    type: "danger",
+                    confirmText: "Aceptar",
+                });
+            } finally {
+                setUpdatingId(null);
+            }
+        };
+
+        const openDropzone = (uuidPago: string) => {
+            setDropzoneFile(null);
+            setDropzoneComentario("");
+            setActiveDropzoneId(prev => prev === uuidPago ? null : uuidPago);
         };
 
         const estadoStyle = resumen?.estadoGlobal ? estadoGlobalStyles[resumen.estadoGlobal] : null;
@@ -125,17 +158,19 @@ export default function DirectFinancingView({ expediente, cronograma, pagos, res
             setIsSaving(true);
         try {
             if (cronograma) {
-                await updateCronograma(cronograma.uuidCronograma, {
+                    await updateCronograma(cronograma.uuidCronograma, {
                         uuidUsuarioActivo: expediente.uuidUsuarioActivo,
                         totalPactado: parseFloat(cronogramaForm.totalPactado),
-                        cuotaInicial: parseFloat(cronogramaForm.cuotaInicial),
+                        pagoSeparacion: parseFloat(cronogramaForm.pagoSeparacion),
+                        pagoInicial: parseFloat(cronogramaForm.pagoInicial),
                         numeroCuotas: parseInt(cronogramaForm.numeroCuotas),
                     });
                 } else {
                     await createCronograma({
                         uuidUsuarioActivo: expediente.uuidUsuarioActivo,
                         totalPactado: parseFloat(cronogramaForm.totalPactado),
-                        cuotaInicial: parseFloat(cronogramaForm.cuotaInicial),
+                        pagoSeparacion: parseFloat(cronogramaForm.pagoSeparacion),
+                        pagoInicial: parseFloat(cronogramaForm.pagoInicial),
                         numeroCuotas: parseInt(cronogramaForm.numeroCuotas),
                 });
             }
@@ -167,26 +202,6 @@ export default function DirectFinancingView({ expediente, cronograma, pagos, res
                 isOpen: true,
                 title: "Error",
                 message: e instanceof Error ? e.message : "Error al actualizar estado",
-                type: "danger",
-                confirmText: "Aceptar",
-            });
-        } finally {
-            setUpdatingId(null);
-        }
-        };
-
-        const handleFileUpload = async (uuidPago: string, e: React.ChangeEvent<HTMLInputElement>) => {
-            const file = e.target.files?.[0];
-            if (!file) return;
-            setUpdatingId(uuidPago);
-        try {
-            await uploadPagoComprobante(uuidPago, file);
-            onUpdate();
-        } catch (err) {
-            setDialog({
-                isOpen: true,
-                title: "Error",
-                message: err instanceof Error ? err.message : "Error al subir comprobante",
                 type: "danger",
                 confirmText: "Aceptar",
             });
@@ -246,16 +261,61 @@ export default function DirectFinancingView({ expediente, cronograma, pagos, res
         });
     };
 
+    const startEditingPago = (pago: PagoResponse) => {
+        setEditingId(pago.uuidPago);
+        setEditForm({
+            montoProgramado: pago.montoProgramado.toString(),
+            fechaVencimiento: pago.fechaVencimiento,
+        });
+        setActiveDropzoneId(null);
+    };
+
+    const cancelEditing = () => {
+        setEditingId(null);
+        setEditForm({ montoProgramado: "", fechaVencimiento: "" });
+    };
+
+    const handleSaveEdit = async (uuidPago: string) => {
+        setIsSaving(true);
+        try {
+            await updatePago(uuidPago, {
+                nroCuota: pagos.find(p => p.uuidPago === uuidPago)!.nroCuota,
+                montoProgramado: parseFloat(editForm.montoProgramado),
+                fechaVencimiento: editForm.fechaVencimiento,
+            });
+            cancelEditing();
+            onUpdate();
+        } catch (e) {
+            setDialog({
+                isOpen: true,
+                title: "Error",
+                message: e instanceof Error ? e.message : "Error al actualizar cuota",
+                type: "danger",
+                confirmText: "Aceptar",
+            });
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
         const handleAddPago = async () => {
             if (!cronograma) return;
             setIsSaving(true);
+            const concepto = addForm.concepto as "CUOTA" | "SEPARACION" | "INICIAL";
+            const rawNro = addForm.nroCuota.trim();
+            const nroCuota = rawNro !== ""
+                ? parseInt(rawNro)
+                : concepto === "SEPARACION" ? -1
+                : concepto === "INICIAL" ? 0
+                : 1;
             try {
                 await addPago(cronograma.uuidCronograma, {
-                    nroCuota: parseInt(addForm.nroCuota),
+                    nroCuota,
                     montoProgramado: parseFloat(addForm.montoProgramado),
                     fechaVencimiento: addForm.fechaVencimiento,
+                    concepto,
                 });
-                setAddForm({ nroCuota: "", montoProgramado: "", fechaVencimiento: "" });
+                setAddForm({ nroCuota: "", montoProgramado: "", fechaVencimiento: "", concepto: "CUOTA" });
                 setShowAddForm(false);
                 onUpdate();
             } catch (e) {
@@ -283,7 +343,7 @@ export default function DirectFinancingView({ expediente, cronograma, pagos, res
                                 { label: "Total Pactado", value: resumen.totalPactado, color: "text-build-main dark:text-white" },
                                 { label: "Total Pagado", value: resumen.totalPagado, color: "text-green-600 dark:text-green-400" },
                                 { label: "Saldo Pendiente", value: resumen.totalPendiente, color: "text-red-600 dark:text-red-400" },
-                                { label: "Próx. Vencimiento", value: null, extra: resumen.proximoVencimiento ? new Date(resumen.proximoVencimiento).toLocaleDateString("es-PE") : "—", color: "text-arch-gold" },
+                                { label: "Próx. Vencimiento", value: null, extra: resumen.proximoVencimiento ? new Date(resumen.proximoVencimiento).toLocaleDateString("es-PE") : "—", color: "text-build-accent" },
                             ].map((item) => (
                                 <div key={item.label} className="bg-slate-50 dark:bg-white/5 rounded-xl px-4 py-3">
                                     <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">{item.label}</p>
@@ -314,14 +374,15 @@ export default function DirectFinancingView({ expediente, cronograma, pagos, res
 
                 {/* Cronograma — Configuración */}
                 {showCronogramaForm ? (
-                    <div className="rounded-2xl border border-arch-gold/30 bg-arch-gold/5 dark:bg-arch-gold/10 p-6">
+                    <div className="rounded-2xl border border-build-accent/30 bg-build-accent/5 dark:bg-build-accent/10 p-6">
                         <h3 className="text-base font-bold text-build-main dark:text-white mb-4">
                             {cronograma ? "Editar" : "Crear"} Cronograma de Pagos
                         </h3>
-                        <div className="grid gap-4 md:grid-cols-3">
+                        <div className="grid gap-4 md:grid-cols-4">
                             {[
                                 { key: "totalPactado", label: "Total Pactado (S/)", placeholder: "350000" },
-                                { key: "cuotaInicial", label: "Cuota Inicial (S/)", placeholder: "50000" },
+                                { key: "pagoSeparacion", label: "Pago Separación (S/)", placeholder: "1000" },
+                                { key: "pagoInicial", label: "Pago Inicial (S/)", placeholder: "50000" },
                                 { key: "numeroCuotas", label: "N° de Cuotas", placeholder: "12" },
                             ].map(({ key, label, placeholder }) => (
                                 <div key={key}>
@@ -352,29 +413,39 @@ export default function DirectFinancingView({ expediente, cronograma, pagos, res
                 ) : cronograma && (
                     <div className="flex items-center justify-between px-4 py-3 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-100 dark:border-white/5">
                         <div className="flex items-center gap-3">
-                            <span className="material-symbols-outlined text-arch-gold text-[20px]">event_note</span>
+                            <span className="material-symbols-outlined text-build-accent text-[20px]">event_note</span>
                             <div>
                                 <p className="text-sm font-bold text-build-main dark:text-white">Cronograma Activo</p>
                                 <p className="text-xs text-slate-400">{cronograma.numeroCuotas} cuotas · Estado: {cronograma.estado}</p>
                             </div>
                         </div>
                         <button
-                            onClick={() => setShowCronogramaForm(true)}
-className="text-xs font-bold text-arch-gold hover:underline"
-                                                        >
-                                                            Editar
-                                                        </button>
-                                                    </div>
-                                                )}
-                
-                                                {/* Tabla de Cuotas */}
-                                                {cronograma && (
-                                                    <div className="rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 shadow-sm overflow-hidden">
-                                                        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-white/5">
-                                                            <h3 className="text-sm font-bold text-build-main dark:text-white uppercase tracking-wide">Cuotas del Cronograma</h3>
-                                                            <button
-                                                                onClick={() => setShowAddForm((v) => !v)}
-                                                                className="flex items-center gap-1.5 text-xs font-bold text-arch-gold hover:underline"
+                            onClick={() => {
+                                if (cronograma) {
+                                    setCronogramaForm({
+                                        totalPactado: cronograma.totalPactado?.toString() ?? "",
+                                        pagoSeparacion: cronograma.pagoSeparacion?.toString() ?? "",
+                                        pagoInicial: cronograma.pagoInicial?.toString() ?? "",
+                                        numeroCuotas: cronograma.numeroCuotas?.toString() ?? "",
+                                    });
+                                }
+                                setShowCronogramaForm(true);
+                            }}
+                            className="text-xs font-bold text-build-accent hover:underline"
+                        >
+                            Editar
+                        </button>
+                    </div>
+                )}
+
+                {/* Tabla de Cuotas */}
+                {cronograma && (
+                    <div className="rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 shadow-sm overflow-hidden">
+                        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-white/5">
+                            <h3 className="text-sm font-bold text-build-main dark:text-white uppercase tracking-wide">Cuotas del Cronograma</h3>
+                            <button
+                                onClick={() => setShowAddForm((v) => !v)}
+                                className="flex items-center gap-1.5 text-xs font-bold text-build-accent hover:underline"
                             >
                                 <span className="material-symbols-outlined text-[16px]">add_circle</span>
                                 Agregar Cuota
@@ -383,12 +454,21 @@ className="text-xs font-bold text-arch-gold hover:underline"
 
                         {/* Formulario agregar cuota */}
                         {showAddForm && (
-                            <div className="px-6 py-4 bg-arch-gold/5 border-b border-arch-gold/20">
-                                <div className="grid gap-3 md:grid-cols-4 items-end">
+                            <div className="px-6 py-4 bg-build-accent/5 border-b border-build-accent/20">
+                                <div className="grid gap-3 md:grid-cols-5 items-end">
                                     <div>
                                         <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">N° Cuota</label>
                                         <input type="number" value={addForm.nroCuota} onChange={(e) => setAddForm((p) => ({ ...p, nroCuota: e.target.value }))}
                                             className="w-full rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 px-3 py-2 text-sm text-build-main dark:text-white outline-none focus:border-build-accent" />
+                                    </div>
+                                    <div>
+                                        <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Concepto</label>
+                                        <select value={addForm.concepto} onChange={(e) => setAddForm((p) => ({ ...p, concepto: e.target.value }))}
+                                            className="w-full rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 px-3 py-2 text-sm text-build-main dark:text-white outline-none focus:border-build-accent">
+                                            <option value="CUOTA">CUOTA</option>
+                                            <option value="SEPARACION">SEPARACION</option>
+                                            <option value="INICIAL">INICIAL</option>
+                                        </select>
                                     </div>
                                     <div>
                                         <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Monto (S/)</label>
@@ -416,6 +496,7 @@ className="text-xs font-bold text-arch-gold hover:underline"
                                 <thead className="bg-slate-50 dark:bg-white/5 border-b border-slate-100 dark:border-white/5">
                                     <tr>
                                         <th className="px-6 py-3 text-[11px] font-bold uppercase tracking-wider text-slate-400">N°</th>
+                                        <th className="px-4 py-3 text-[11px] font-bold uppercase tracking-wider text-slate-400">Concepto</th>
                                         <th className="px-4 py-3 text-[11px] font-bold uppercase tracking-wider text-slate-400">Vencimiento</th>
                                         <th className="px-4 py-3 text-[11px] font-bold uppercase tracking-wider text-slate-400">Monto</th>
                                         <th className="px-4 py-3 text-[11px] font-bold uppercase tracking-wider text-slate-400">Estado</th>
@@ -426,18 +507,32 @@ className="text-xs font-bold text-arch-gold hover:underline"
                                     {pagos.sort((a, b) => a.nroCuota - b.nroCuota).map((pago) => {
                                         const busy = updatingId === pago.uuidPago;
                                         const showDropzone = activeDropzoneId === pago.uuidPago;
+                                        const isEditing = editingId === pago.uuidPago;
                                         const statusInfo = getPagoStatusInfo(pago);
                                         return (
                                             <React.Fragment key={pago.uuidPago}>
                                                 <tr className={`transition-colors ${busy ? "opacity-60" : "hover:bg-slate-50/50 dark:hover:bg-white/[0.02]"}`}>
                                                     <td className="px-6 py-3 font-bold text-build-main dark:text-white text-sm">
-                                                        {pago.nroCuota === 0 ? <span className="text-arch-gold">Inicial</span> : pago.nroCuota}
+                                                        {pago.concepto === "SEPARACION" || pago.concepto === "INICIAL" ? <span className="text-slate-300 dark:text-white/20">—</span> : pago.nroCuota}
+                                                    </td>
+                                                    <td className="px-4 py-3 text-xs font-semibold text-slate-500 dark:text-white/50">
+                                                        {pago.concepto ?? (pago.nroCuota === -1 ? "SEPARACION" : pago.nroCuota === 0 ? "INICIAL" : "CUOTA")}
                                                     </td>
                                                     <td className="px-4 py-3 text-slate-600 dark:text-white/60">
-                                                        {new Date(pago.fechaVencimiento).toLocaleDateString("es-PE")}
+                                                        {isEditing ? (
+                                                            <input type="date" value={editForm.fechaVencimiento} onChange={(e) => setEditForm(p => ({ ...p, fechaVencimiento: e.target.value }))}
+                                                                className="w-full rounded-lg border border-build-accent bg-white dark:bg-white/5 px-2 py-1 text-xs text-build-main dark:text-white outline-none" />
+                                                        ) : (
+                                                            new Date(pago.fechaVencimiento).toLocaleDateString("es-PE")
+                                                        )}
                                                     </td>
                                                     <td className="px-4 py-3 font-semibold text-build-main dark:text-white">
-                                                        S/ {pago.montoProgramado.toLocaleString("es-PE", { minimumFractionDigits: 2 })}
+                                                        {isEditing ? (
+                                                            <input type="number" value={editForm.montoProgramado} onChange={(e) => setEditForm(p => ({ ...p, montoProgramado: e.target.value }))}
+                                                                className="w-28 rounded-lg border border-build-accent bg-white dark:bg-white/5 px-2 py-1 text-xs text-build-main dark:text-white outline-none" />
+                                                        ) : (
+                                                            <>S/ {pago.montoProgramado.toLocaleString("es-PE", { minimumFractionDigits: 2 })}</>
+                                                        )}
                                                     </td>
                                                     <td className="px-4 py-3">
                                                         <div className="flex flex-col gap-1">
@@ -454,93 +549,147 @@ className="text-xs font-bold text-arch-gold hover:underline"
                                                     </td>
                                                     <td className="px-4 py-3">
                                                         <div className="flex items-center gap-2 flex-wrap">
-                                                            {/* Toggle estado */}
-                                                            <button
-                                                                disabled={busy}
-                                                                onClick={() => handleStatusChange(pago.uuidPago, pago.estado)}
-                                                                title={pago.estado === "PAGADO" ? "Marcar Pendiente" : "Marcar Pagado"}
-                                                                className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-white/10 transition-colors"
-                                                            >
-                                                                <span className={`material-symbols-outlined text-[18px] ${pago.estado === "PAGADO" ? "text-green-500" : "text-slate-300 dark:text-white/30"}`}>
-                                                                    {pago.estado === "PAGADO" ? "check_circle" : "radio_button_unchecked"}
-                                                                </span>
-                                                            </button>
+                                                            {isEditing ? (
+                                                                <>
+                                                                    <button
+                                                                        disabled={isSaving}
+                                                                        onClick={() => handleSaveEdit(pago.uuidPago)}
+                                                                        className="p-1.5 rounded-lg bg-build-accent text-white hover:bg-build-accent/80 transition-colors"
+                                                                        title="Guardar"
+                                                                    >
+                                                                        <span className="material-symbols-outlined text-[18px]">check</span>
+                                                                    </button>
+                                                                    <button
+                                                                        disabled={isSaving}
+                                                                        onClick={cancelEditing}
+                                                                        className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-white/10 transition-colors"
+                                                                        title="Cancelar"
+                                                                    >
+                                                                        <span className="material-symbols-outlined text-[18px] text-slate-400">close</span>
+                                                                    </button>
+                                                                </>
+                                                            ) : (
+                                                                <>
+                                                                    {/* Editar */}
+                                                                    <button
+                                                                        disabled={busy}
+                                                                        onClick={() => startEditingPago(pago)}
+                                                                        title="Editar cuota"
+                                                                        className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-white/10 transition-colors"
+                                                                    >
+                                                                        <span className="material-symbols-outlined text-[18px] text-slate-400 hover:text-build-accent">edit</span>
+                                                                    </button>
 
-                                                            {/* Cobro Rápido (Dropzone Toggle) */}
-                                                            {pago.estado !== "PAGADO" && (
-                                                                <button
-                                                                    disabled={busy}
-                                                                    onClick={() => setActiveDropzoneId(showDropzone ? null : pago.uuidPago)}
-                                                                    title="Registrar Cobro Rápido"
-                                                                     className={`p-1.5 rounded-lg transition-colors ${showDropzone ? "bg-arch-gold/15 text-arch-gold" : "hover:bg-slate-100 dark:hover:bg-white/10 text-slate-400 hover:text-arch-gold"}`}
-                                                                >
-                                                                    <span className="material-symbols-outlined text-[18px]">payments</span>
-                                                                </button>
+                                                                    {/* Toggle estado */}
+                                                                    <button
+                                                                        disabled={busy}
+                                                                        onClick={() => handleStatusChange(pago.uuidPago, pago.estado)}
+                                                                        title={pago.estado === "PAGADO" ? "Marcar Pendiente" : "Marcar Pagado"}
+                                                                        className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-white/10 transition-colors"
+                                                                    >
+                                                                        <span className={`material-symbols-outlined text-[18px] ${pago.estado === "PAGADO" ? "text-green-500" : "text-slate-300 dark:text-white/30"}`}>
+                                                                            {pago.estado === "PAGADO" ? "check_circle" : "radio_button_unchecked"}
+                                                                        </span>
+                                                                    </button>
+
+                                                                    {/* Subir comprobante */}
+                                                                    <button
+                                                                        disabled={busy}
+                                                                        onClick={() => openDropzone(pago.uuidPago)}
+                                                                        title="Subir comprobante"
+                                                                        className={`p-1.5 rounded-lg transition-colors ${showDropzone ? "bg-build-accent/15 text-build-accent" : "hover:bg-slate-100 dark:hover:bg-white/10 text-slate-400 hover:text-build-accent"}`}
+                                                                    >
+                                                                        <span className="material-symbols-outlined text-[18px]">upload_file</span>
+                                                                    </button>
+
+                                                                    {/* Descargar comprobante */}
+                                                                    {pago.uuidComprobante && (
+                                                                        <button
+                                                                            title="Descargar comprobante"
+                                                                            onClick={() => handleDownloadVoucher(pago.uuidComprobante!)}
+                                                                            className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-white/10 transition-colors"
+                                                                        >
+                                                                            <span className="material-symbols-outlined text-[18px] text-build-main dark:text-white/70">download</span>
+                                                                        </button>
+                                                                    )}
+
+                                                                    {/* Eliminar */}
+                                                                    <button
+                                                                        title="Eliminar cuota"
+                                                                        disabled={busy}
+                                                                        onClick={() => handleDeletePago(pago.uuidPago)}
+                                                                        className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/10 transition-colors"
+                                                                    >
+                                                                        <span className="material-symbols-outlined text-[18px] text-slate-300 dark:text-white/20 hover:text-red-500">delete</span>
+                                                                    </button>
+                                                                </>
                                                             )}
-
-                                                            {/* Subir comprobante — solo si está PAGADO */}
-                                                            {pago.estado === "PAGADO" && (
-                                                                <label title="Subir comprobante" className="cursor-pointer p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-white/10 transition-colors">
-                                                                        <span className="material-symbols-outlined text-[18px] text-arch-gold">upload_file</span>
-                                                                    <input type="file" className="hidden" onChange={(e) => handleFileUpload(pago.uuidPago, e)} accept="application/pdf,image/*" />
-                                                                </label>
-                                                            )}
-
-                                                            {/* Descargar comprobante */}
-                                                            {pago.uuidComprobante && (
-                                                                <button
-                                                                    title="Descargar comprobante"
-                                                                    onClick={() => handleDownloadVoucher(pago.uuidComprobante!)}
-                                                                    className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-white/10 transition-colors"
-                                                                >
-                                                                    <span className="material-symbols-outlined text-[18px] text-build-main dark:text-white/70">download</span>
-                                                                </button>
-                                                            )}
-
-                                                            {/* Eliminar */}
-                                                            <button
-                                                                title="Eliminar cuota"
-                                                                disabled={busy}
-                                                                onClick={() => handleDeletePago(pago.uuidPago)}
-                                                                className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/10 transition-colors"
-                                                            >
-                                                                <span className="material-symbols-outlined text-[18px] text-slate-300 dark:text-white/20 hover:text-red-500">delete</span>
-                                                            </button>
                                                         </div>
                                                     </td>
                                                 </tr>
                                                 {showDropzone && (
                                                     <tr key={`${pago.uuidPago}-dropzone`}>
-                                                        <td colSpan={5} className="bg-slate-50/50 dark:bg-white/[0.01] px-6 py-4">
+                                                        <td colSpan={6} className="bg-slate-50/50 dark:bg-white/[0.01] px-6 py-4">
                                                             <div 
-                                                                className="border-2 border-dashed border-arch-gold/40 hover:border-arch-gold rounded-xl p-4 text-center cursor-pointer bg-white dark:bg-white/5 transition flex flex-col items-center justify-center gap-1.5"
-                                                                onClick={() => document.getElementById(`file-input-${pago.uuidPago}`)?.click()}
+                                                                className="border-2 border-dashed border-build-accent/40 rounded-xl p-4 bg-white dark:bg-white/5 transition flex flex-col gap-3"
                                                                 onDragOver={(e) => { e.preventDefault(); }}
-                                                                onDrop={async (e) => {
+                                                                onDrop={(e) => {
                                                                     e.preventDefault();
                                                                     const file = e.dataTransfer.files?.[0];
-                                                                    if (file) handleFastPayment(pago.uuidPago, file);
+                                                                    if (file) handleSelectFile(pago.uuidPago, file);
                                                                 }}
                                                             >
-                                                                <span className="material-symbols-outlined text-arch-gold text-[28px] animate-bounce">upload_file</span>
-                                                                <p className="text-xs font-bold text-slate-600 dark:text-white/80">Arrastra el comprobante de pago o haz clic para subir</p>
-                                                                <p className="text-[10px] text-slate-400">PDF, JPG, PNG (máx 10MB)</p>
-                                                                <input
-                                                                    type="file"
-                                                                    id={`file-input-${pago.uuidPago}`}
-                                                                    className="hidden"
-                                                                    accept="application/pdf,image/*"
-                                                                    onChange={(e) => {
-                                                                        const file = e.target.files?.[0];
-                                                                        if (file) handleFastPayment(pago.uuidPago, file);
-                                                                    }}
-                                                                />
-                                                                <button 
-                                                                    onClick={(e) => { e.stopPropagation(); setActiveDropzoneId(null); }}
-                                                                    className="mt-1 text-[11px] font-bold text-slate-400 hover:text-red-500"
+                                                                <div 
+                                                                    className="text-center cursor-pointer flex flex-col items-center justify-center gap-1.5"
+                                                                    onClick={() => document.getElementById(`file-input-${pago.uuidPago}`)?.click()}
                                                                 >
-                                                                    Cancelar
-                                                                </button>
+                                                                    <span className="material-symbols-outlined text-build-accent text-[28px]">upload_file</span>
+                                                                    {dropzoneFile ? (
+                                                                        <p className="text-xs font-bold text-build-main">{dropzoneFile.name}</p>
+                                                                    ) : (
+                                                                        <>
+                                                                            <p className="text-xs font-bold text-slate-600 dark:text-white/80">Arrastra el comprobante o haz clic para seleccionar</p>
+                                                                            <p className="text-[10px] text-slate-400">PDF, JPG, PNG (máx 10MB)</p>
+                                                                        </>
+                                                                    )}
+                                                                    <input
+                                                                        type="file"
+                                                                        id={`file-input-${pago.uuidPago}`}
+                                                                        className="hidden"
+                                                                        accept="application/pdf,image/*"
+                                                                        onChange={(e) => {
+                                                                            const file = e.target.files?.[0];
+                                                                            if (file) handleSelectFile(pago.uuidPago, file);
+                                                                        }}
+                                                                    />
+                                                                </div>
+                                                                <div>
+                                                                    <textarea
+                                                                        value={dropzoneComentario}
+                                                                        onChange={(e) => setDropzoneComentario(e.target.value)}
+                                                                        placeholder="Comentario opcional del pago..."
+                                                                        rows={2}
+                                                                        className="w-full rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 px-3 py-2 text-xs text-build-main dark:text-white outline-none focus:border-build-accent resize-none"
+                                                                        onClick={(e) => e.stopPropagation()}
+                                                                        onDragOver={(e) => e.stopPropagation()}
+                                                                    />
+                                                                </div>
+                                                                <div className="flex gap-2 justify-end">
+                                                                    <button 
+                                                                        onClick={(e) => { e.stopPropagation(); setActiveDropzoneId(null); setDropzoneFile(null); setDropzoneComentario(""); }}
+                                                                        className="px-3 py-1.5 text-[11px] font-bold text-slate-400 hover:text-red-500 rounded-lg hover:bg-slate-100 dark:hover:bg-white/5 transition-colors"
+                                                                    >
+                                                                        Cancelar
+                                                                    </button>
+                                                                    <button
+                                                                        disabled={!dropzoneFile || isSaving}
+                                                                        onClick={(e) => { e.stopPropagation(); handleConfirmUpload(pago.uuidPago, pago.estado); }}
+                                                                        className="bg-build-main text-white px-4 py-1.5 rounded-lg text-[11px] font-bold hover:bg-build-main/80 transition-all disabled:opacity-50 flex items-center gap-1"
+                                                                    >
+                                                                        <span className="material-symbols-outlined text-[14px]">cloud_upload</span>
+                                                                        {isSaving ? "Subiendo…" : "Subir"}
+                                                                    </button>
+                                                                </div>
                                                             </div>
                                                         </td>
                                                     </tr>

@@ -1,19 +1,33 @@
-import type { DocumentoResponse } from "@/lib/api/documents";
-
 export type PaymentStatus = "PENDIENTE" | "PAGADO" | "VENCIDO";
 export type FinanceType = "Crédito Directo" | "Crédito Hipotecario";
 export type CronogramaEstado = "ACTIVO" | "LIQUIDADO" | "REESTRUCTURADO";
 export type GlobalStatus = "AL_DIA" | "EN_RIESGO" | "EN_MORA" | "LIQUIDADO";
+export type ConceptoPago = "SEPARACION" | "INICIAL" | "CUOTA" | "COMPLETO";
 
 export interface CronogramaPagoResponse {
   uuidCronograma: string;
   uuidUsuarioActivo: string;
   totalPactado: number;
-  cuotaInicial: number;
   numeroCuotas: number;
+  pagoSeparacion: number;
+  pagoInicial: number;
   estado: CronogramaEstado;
   createdAt: string;
   updatedAt: string;
+}
+
+export function normalizeCronograma(raw: Record<string, unknown>): CronogramaPagoResponse {
+  return {
+    uuidCronograma: raw.uuidCronograma as string,
+    uuidUsuarioActivo: raw.uuidUsuarioActivo as string,
+    totalPactado: (raw.totalPactado as number) ?? 0,
+    numeroCuotas: (raw.numeroCuotas as number) ?? 0,
+    pagoSeparacion: (raw.pagoSeparacion as number) ?? 0,
+    pagoInicial: (raw.pagoInicial as number) ?? (raw.cuotaInicial as number) ?? 0,
+    estado: (raw.estado as CronogramaEstado) ?? "ACTIVO",
+    createdAt: raw.createdAt as string,
+    updatedAt: raw.updatedAt as string,
+  };
 }
 
 export interface PagoResponse {
@@ -27,6 +41,9 @@ export interface PagoResponse {
   fechaPago: string | null;
   uuidComprobante: string | null;
   actualizadoPor: number | null;
+  concepto: ConceptoPago;
+  comentario: string | null;
+  uuidRequisitoDocumental: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -42,28 +59,15 @@ export interface CronogramaResumenResponse {
   proximoVencimiento: string | null;
 }
 
-export interface CartaAprobacionResponse {
-  uuidCarta: string;
-  uuidUsuarioActivo: string;
-  banco: string;
-  montoAprobado: number;
-  fechaEmision: string;
-  fechaVencimiento: string;
-  fechaDesembolsoProyectada: string;
-  comentarios: string;
-  createdAt: string;
-}
-
 export interface FinancingDetailsDTO {
   cronograma: CronogramaPagoResponse | null;
   pagos: PagoResponse[];
   resumen: CronogramaResumenResponse | null;
-  cartaAprobacion: CartaAprobacionResponse | null;
 }
+
 export interface ContratoDetalleResponse {
   expediente: import("@/lib/api/expedientes").UsuarioActivoResponseDTO;
   cronograma: CronogramaPagoResponse | null;
-  cartaAprobacion: CartaAprobacionResponse | null;
   resumen: CronogramaResumenResponse | null;
 }
 
