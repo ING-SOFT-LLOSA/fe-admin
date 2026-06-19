@@ -89,6 +89,20 @@ describe("documents API", () => {
         "Error al subir el documento"
       );
     });
+
+    it("extrae mensaje de error desde JSON del backend", async () => {
+      mockGetFreshToken.mockResolvedValue("token-ok");
+      const mockRes = {
+        ok: false,
+        text: vi.fn().mockResolvedValue(JSON.stringify({ error: "Archivo demasiado grande" })),
+      };
+      (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValue(mockRes);
+
+      const file = new File(["content"], "doc.pdf");
+      await expect(uploadDocument("ref-1", file, "PDF_LEGAL")).rejects.toThrow(
+        "Archivo demasiado grande"
+      );
+    });
   });
 
   describe("uploadDocumentExplicito", () => {
@@ -153,6 +167,20 @@ describe("documents API", () => {
       await expect(
         uploadDocumentExplicito("ref-1", file, "PDF_LEGAL", "REPORTE")
       ).rejects.toThrow("Error al subir el documento");
+    });
+
+    it("extrae mensaje de error desde JSON del backend en upload explícito", async () => {
+      mockGetFreshToken.mockResolvedValue("token-ok");
+      const mockRes = {
+        ok: false,
+        text: vi.fn().mockResolvedValue(JSON.stringify({ message: "Formato no soportado" })),
+      };
+      (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValue(mockRes);
+
+      const file = new File(["content"], "doc.pdf");
+      await expect(
+        uploadDocumentExplicito("ref-1", file, "PDF_LEGAL", "REPORTE")
+      ).rejects.toThrow("Formato no soportado");
     });
   });
 
