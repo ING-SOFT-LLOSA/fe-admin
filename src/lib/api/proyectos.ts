@@ -41,6 +41,7 @@ export interface ActivoResponseDTO {
   nro: string;
   tipo: string;
   areaM2: number;
+  areaTechada: number;
   estadoComercial: string;
   precio: number;
   descripcion: string;
@@ -96,6 +97,7 @@ export interface ActivoRequestDTO {
   nro: string;
   tipo: string;
   areaM2: number;
+  areaTechada: number;
   estadoComercial: string;
   precio: number;
   descripcion: string;

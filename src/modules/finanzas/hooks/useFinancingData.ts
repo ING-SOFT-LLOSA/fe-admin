@@ -5,13 +5,11 @@ import {
     fetchCronograma,
     fetchPagos,
     fetchResumenPagos,
-    fetchCartaAprobacion,
 } from "@/lib/api/finanzas";
 import type {
     CronogramaPagoResponse,
     PagoResponse,
     CronogramaResumenResponse,
-    CartaAprobacionResponse,
     CreditoHipotecarioResumen,
     CreditoHipotecarioItem,
 } from "@/modules/finanzas/types";
@@ -21,7 +19,6 @@ export function useFinancingData(uuidExpediente: string | null, expedienteBase?:
     const [cronograma, setCronograma] = useState<CronogramaPagoResponse | null>(null);
     const [pagos, setPagos] = useState<PagoResponse[]>([]);
     const [resumen, setResumen] = useState<CronogramaResumenResponse | null>(null);
-    const [cartaAprobacion, setCartaAprobacion] = useState<CartaAprobacionResponse | null>(null);
     const [creditoHipotecario, setCreditoHipotecario] = useState<CreditoHipotecarioResumen | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -34,7 +31,6 @@ export function useFinancingData(uuidExpediente: string | null, expedienteBase?:
             setCronograma(null);
             setPagos([]);
             setResumen(null);
-            setCartaAprobacion(null);
             setCreditoHipotecario(null);
             setHasExpediente(null);
             return;
@@ -85,15 +81,38 @@ export function useFinancingData(uuidExpediente: string | null, expedienteBase?:
                     setPagos([]);
                 }
                 setCreditoHipotecario(null);
-                setCartaAprobacion(null);
             } else if (rawType.includes("hipotecario")) {
-                let carta: CartaAprobacionResponse | null = null;
+                let cronoData: CronogramaPagoResponse | null = null;
                 try {
-                    carta = await fetchCartaAprobacion(uuid);
-                } catch { /* sin carta aún */ }
-                setCartaAprobacion(carta);
+                    cronoData = await fetchCronograma(uuid);
+                    setCronograma(cronoData);
+                } catch (e) {
+                    console.warn("Error fetching cronograma", e);
+                    setCronograma(null);
+                }
 
-                // Obtener hitos reales desde el stepper comercial (tienen UUID → toggleables)
+                if (cronoData) {
+                    try {
+                        const resumenData = await fetchResumenPagos(cronoData.uuidCronograma);
+                        setResumen(resumenData);
+                    } catch (e) {
+                        console.warn("Error fetching resumen", e);
+                        setResumen(null);
+                    }
+
+                    try {
+                        const pagosList = await fetchPagos(cronoData.uuidCronograma);
+                        setPagos(pagosList);
+                    } catch (e) {
+                        console.warn("Error fetching payments", e);
+                        setPagos([]);
+                    }
+                } else {
+                    setResumen(null);
+                    setPagos([]);
+                }
+
+                // Obtener hitos reales desde el stepper comercial
                 let stepperItems: CreditoHipotecarioItem[] = [];
                 try {
                     const stepper = await fetchCommercialStepper(uuid);
@@ -111,25 +130,12 @@ export function useFinancingData(uuidExpediente: string | null, expedienteBase?:
                     }
                 } catch { /* sin stepper */ }
 
-                // Fallback: mostrar los 4 hitos estándar (sin UUID, solo lectura)
-                if (stepperItems.length === 0) {
-                    stepperItems = [
-                        { uuidHitoComercial: null, nombre: "Carta de aprobación", fecha: carta?.fechaEmision ?? null, estado: carta ? "COMPLETADO" : "PENDIENTE", monto: 0, documentId: null, downloadUrl: null },
-                        { uuidHitoComercial: null, nombre: "Pago de separación", fecha: null, estado: "PENDIENTE", monto: 0, documentId: null, downloadUrl: null },
-                        { uuidHitoComercial: null, nombre: "Pago inicial", fecha: null, estado: "PENDIENTE", monto: 0, documentId: null, downloadUrl: null },
-                        { uuidHitoComercial: null, nombre: "Desembolso", fecha: carta?.fechaDesembolsoProyectada ?? null, estado: "PENDIENTE", monto: carta?.montoAprobado ?? 0, documentId: null, downloadUrl: null },
-                    ];
-                }
-
                 const completados = stepperItems.filter(i => i.estado === "COMPLETADO").length;
                 setCreditoHipotecario({
                     items: stepperItems,
-                    montoTotal: carta?.montoAprobado ?? 0,
+                    montoTotal: cronoData?.totalPactado ?? 0,
                     progreso: stepperItems.length > 0 ? (completados / stepperItems.length) * 100 : 0,
                 });
-                setPagos([]);
-                setCronograma(null);
-                setResumen(null);
             }
         } catch (err) {
             setError(err instanceof Error ? err.message : "Error al cargar datos de financiamiento");
@@ -147,7 +153,6 @@ export function useFinancingData(uuidExpediente: string | null, expedienteBase?:
         cronograma,
         pagos,
         resumen,
-        cartaAprobacion,
         creditoHipotecario,
         hasExpediente,
         isLoading,

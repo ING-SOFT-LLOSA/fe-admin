@@ -4,41 +4,50 @@ import type {
     CronogramaPagoResponse,
     PagoResponse,
     CronogramaResumenResponse,
-    CartaAprobacionResponse,
     PaymentStatus
 } from "@/modules/finanzas/types";
+import { normalizeCronograma } from "@/modules/finanzas/types";
 
 const API_URL = (process.env.NEXT_PUBLIC_API_URL_LLOSA ?? "http://localhost:8080").replace(/\/$/, "");
 
 // ─── Cronogramas ──────────────────────────────────────────────────────────────
 
-export function fetchCronograma(uuidUsuarioActivo: string): Promise<CronogramaPagoResponse> {
-    return apiFetch<CronogramaPagoResponse>(`/api/cronogramas/${uuidUsuarioActivo}`);
+export async function fetchCronograma(uuidUsuarioActivo: string): Promise<CronogramaPagoResponse> {
+    const raw = await apiFetch<Record<string, unknown>>(`/api/cronogramas/${uuidUsuarioActivo}`);
+    return normalizeCronograma(raw);
 }
 
-export function createCronograma(payload: {
+interface CronogramaPayload {
     uuidUsuarioActivo: string;
     totalPactado: number;
-    cuotaInicial: number;
+    pagoSeparacion: number;
+    pagoInicial: number;
     numeroCuotas: number;
-}): Promise<CronogramaPagoResponse> {
+}
+
+function toCronogramaBody(p: CronogramaPayload) {
+    return {
+        uuidUsuarioActivo: p.uuidUsuarioActivo,
+        totalPactado: p.totalPactado,
+        pagoSeparacion: p.pagoSeparacion,
+        pagoInicial: p.pagoInicial,
+        numeroCuotas: p.numeroCuotas,
+    };
+}
+
+export function createCronograma(payload: CronogramaPayload): Promise<CronogramaPagoResponse> {
     return apiFetch<CronogramaPagoResponse>("/api/cronogramas", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        body: JSON.stringify(toCronogramaBody(payload)),
     });
 }
 
-export function updateCronograma(uuidCronograma: string, payload: {
-    uuidUsuarioActivo: string;
-    totalPactado: number;
-    cuotaInicial: number;
-    numeroCuotas: number;
-}): Promise<CronogramaPagoResponse> {
+export function updateCronograma(uuidCronograma: string, payload: CronogramaPayload): Promise<CronogramaPagoResponse> {
     return apiFetch<CronogramaPagoResponse>(`/api/cronogramas/${uuidCronograma}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        body: JSON.stringify(toCronogramaBody(payload)),
     });
 }
 
@@ -60,6 +69,8 @@ export function addPago(uuidCronograma: string, payload: {
     nroCuota: number;
     montoProgramado: number;
     fechaVencimiento: string;
+    concepto?: string;
+    comentario?: string | null;
 }): Promise<PagoResponse> {
     return apiFetch<PagoResponse>(`/api/cronogramas/${uuidCronograma}/pagos`, {
         method: "POST",
@@ -72,6 +83,8 @@ export function updatePago(uuidPago: string, payload: {
     nroCuota: number;
     montoProgramado: number;
     fechaVencimiento: string;
+    concepto?: string;
+    comentario?: string | null;
 }): Promise<PagoResponse> {
     return apiFetch<PagoResponse>(`/api/pagos/${uuidPago}`, {
         method: "PUT",
@@ -90,12 +103,13 @@ export function updatePagoEstado(uuidPago: string, estado: PaymentStatus): Promi
     });
 }
 
-export async function uploadPagoComprobante(uuidPago: string, file: File): Promise<PagoResponse> {
+export async function uploadPagoComprobante(uuidPago: string, file: File, comentario?: string): Promise<PagoResponse> {
     const token = await getFreshToken();
     if (!token) throw new Error("No hay sesión activa. Inicia sesión de nuevo.");
 
     const formData = new FormData();
     formData.append("file", file);
+    if (comentario) formData.append("comentario", comentario);
 
     const res = await fetch(`${API_URL}/api/pagos/${uuidPago}/comprobante`, {
         method: "POST",
@@ -112,43 +126,4 @@ export async function uploadPagoComprobante(uuidPago: string, file: File): Promi
     return res.json();
 }
 
-// ─── Cartas de Aprobación ─────────────────────────────────────────────────────
 
-export function fetchCartaAprobacion(uuidUsuarioActivo: string): Promise<CartaAprobacionResponse> {
-    return apiFetch<CartaAprobacionResponse>(`/api/cartas-aprobacion/${uuidUsuarioActivo}`);
-}
-
-export function fetchCreditoHipotecario(uuidUsuarioActivo: string): Promise<import("@/modules/finanzas/types").CreditoHipotecarioResumen> {
-    return apiFetch<import("@/modules/finanzas/types").CreditoHipotecarioResumen>(`/api/credito-hipotecario/${uuidUsuarioActivo}`);
-}
-
-
-export interface CartaAprobacionPayload {
-    uuidUsuarioActivo: string;
-    banco: string;
-    montoAprobado: number;
-    fechaEmision: string;
-    fechaVencimiento: string;
-    fechaDesembolsoProyectada: string;
-    comentarios?: string;
-}
-
-export function createCartaAprobacion(payload: CartaAprobacionPayload): Promise<CartaAprobacionResponse> {
-    return apiFetch<CartaAprobacionResponse>("/api/cartas-aprobacion", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-    });
-}
-
-export function updateCartaAprobacion(uuidCarta: string, payload: CartaAprobacionPayload): Promise<CartaAprobacionResponse> {
-    return apiFetch<CartaAprobacionResponse>(`/api/cartas-aprobacion/${uuidCarta}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-    });
-}
-
-export function deleteCartaAprobacion(uuidCarta: string): Promise<void> {
-    return apiFetch<void>(`/api/cartas-aprobacion/${uuidCarta}`, { method: "DELETE" });
-}

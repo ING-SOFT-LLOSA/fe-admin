@@ -275,17 +275,17 @@ export type RequisitoPredef = {
 
 export const PREDEFINED_REQUISITOS: Record<StageId, RequisitoPredef[]> = {
   SEPARACION: [
-    { titulo: "Proforma firmada",         descripcion: "Documento de proforma firmado por el cliente.",     icono: "description"  },
-    { titulo: "Voucher de separación",    descripcion: "Comprobante de pago de la separación.",             icono: "payments"     },
-    { titulo: "DNI del cliente",          descripcion: "Copia del documento de identidad del cliente.",     icono: "badge"        },
-    { titulo: "Ficha de datos",           descripcion: "Ficha con datos personales completos del cliente.", icono: "person"       },
+    { titulo: "Proforma firmada",              descripcion: "Documento de proforma firmado por el cliente.",     icono: "description"  },
+    { titulo: "Comprobante de separación",     descripcion: "Recibo o boleta que acredita que el cliente pagó el monto de separación de la unidad.", icono: "receipt_long" },
+    { titulo: "DNI del cliente",               descripcion: "Copia del documento de identidad del cliente.",     icono: "badge"        },
+    { titulo: "Ficha de datos",                descripcion: "Ficha con datos personales completos del cliente.", icono: "person"       },
   ],
   CONTRATO: [
-    { titulo: "Borrador del contrato",    descripcion: "Borrador revisado por el área legal.",              icono: "manage_search" },
-    { titulo: "Contrato firmado",         descripcion: "Contrato de compraventa firmado por ambas partes.", icono: "draw"          },
-    { titulo: "Voucher cuota inicial",    descripcion: "Comprobante del pago de la cuota inicial.",         icono: "payments"      },
-    { titulo: "DNI cónyuge (si aplica)",  descripcion: "Documento de identidad del cónyuge.",               icono: "badge"         },
-    { titulo: "Estado de cuenta",         descripcion: "Estado de cuenta bancario del cliente.",            icono: "account_balance" },
+    { titulo: "Borrador del contrato",         descripcion: "Borrador revisado por el área legal.",              icono: "manage_search" },
+    { titulo: "Contrato firmado",              descripcion: "Contrato de compraventa firmado por ambas partes.", icono: "draw"          },
+    { titulo: "Pago Inicial",                  descripcion: "Comprobante del pago de la cuota inicial para formalizar la compra.", icono: "payments" },
+    { titulo: "DNI cónyuge (si aplica)",       descripcion: "Documento de identidad del cónyuge.",               icono: "badge"         },
+    { titulo: "Estado de cuenta",              descripcion: "Estado de cuenta bancario del cliente.",            icono: "account_balance" },
   ],
   PAGO: [],
   ENTREGA: [

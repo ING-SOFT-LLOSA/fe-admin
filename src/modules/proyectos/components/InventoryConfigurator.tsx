@@ -36,7 +36,6 @@ export default function InventoryConfigurator({
   return (
     <form onSubmit={handleSubmit} className="space-y-8">
 
-
       <div className="grid gap-x-8 gap-y-6 md:grid-cols-2">
         <div className="space-y-5">
           <h3 className="border-b border-slate-100 dark:border-white/5 pb-2 font-bold text-build-main dark:text-white">
@@ -120,7 +119,7 @@ export default function InventoryConfigurator({
         </div>
       </div>
 
-      <div className="mt-8 rounded-2xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 p-6">
+      <div className="rounded-2xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 p-6">
         <h4 className="mb-6 text-center text-sm font-bold uppercase tracking-widest text-slate-500 dark:text-white/60">
           Resumen estimado
         </h4>
@@ -145,7 +144,7 @@ export default function InventoryConfigurator({
         </div>
       </div>
 
-      <div className="mt-8 flex items-center justify-between border-t border-slate-100 dark:border-white/5 pt-6">
+      <div className="flex items-center justify-between border-t border-slate-100 dark:border-white/5 pt-6">
         <button
           type="button"
           onClick={onBack}
@@ -158,8 +157,8 @@ export default function InventoryConfigurator({
           type="submit"
           className="flex items-center gap-2 rounded-xl bg-build-main px-6 py-2.5 text-sm font-bold text-white shadow-sm transition-colors hover:bg-arch-gold"
         >
-          <span className="material-symbols-outlined text-[18px]">save</span>
-          Crear proyecto
+          <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
+          Siguiente paso
         </button>
       </div>
     </form>

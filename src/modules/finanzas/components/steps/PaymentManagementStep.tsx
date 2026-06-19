@@ -16,7 +16,6 @@ export default function PaymentManagementStep({ expediente, onBack }: PaymentMan
         cronograma,
         pagos,
         resumen,
-        cartaAprobacion,
         creditoHipotecario,
         isLoading,
         error,
@@ -39,7 +38,7 @@ export default function PaymentManagementStep({ expediente, onBack }: PaymentMan
                     <div>
                         <h3 className="text-lg font-bold text-build-main dark:text-white">Gestionar Pagos</h3>
                         <p className="text-sm text-slate-500 dark:text-white/50">
-                            {isDirecto ? "Cronograma y vouchers de cuotas" : "Hitos de desembolso y carta bancaria"}
+                            {isDirecto ? "Cronograma y vouchers de cuotas" : "Cronograma y etapas de desembolso"}
                         </p>
                     </div>
                 </div>
@@ -74,7 +73,9 @@ export default function PaymentManagementStep({ expediente, onBack }: PaymentMan
                     ) : (
                         <MortgageFinancingView
                             expediente={activeExpediente}
-                            carta={cartaAprobacion}
+                            cronograma={cronograma}
+                            pagos={pagos}
+                            resumen={resumen}
                             creditoHipotecario={creditoHipotecario}
                             onUpdate={refresh}
                         />

@@ -5,17 +5,20 @@ import { useRouter } from "next/navigation";
 
 import GeneralDataForm from "./GeneralDataForm";
 import InventoryConfigurator from "./InventoryConfigurator";
+import UnitEditorStep from "./UnitEditorStep";
 import LoadingOverlay from "./LoadingOverlay";
 import {
-  InventoryConfig,
   ProjectFormData,
+  InventoryConfig,
+  TorreData,
 } from "@/modules/proyectos/utils/wizard-logic";
 import {
   createProject,
   createInventory,
+  generateEstructura,
 } from "@/modules/proyectos/utils/api-client";
 
-type Step = "GENERAL" | "INVENTORY";
+type Step = "GENERAL" | "INVENTORY" | "UNIT_EDITOR";
 
 export default function NewProjectWizard() {
   const router = useRouter();
@@ -43,13 +46,20 @@ export default function NewProjectWizard() {
     depositosPorPiso: 1,
   });
 
+  const [torres, setTorres] = useState<TorreData[]>([]);
+
   const handleGeneralSubmit = (data: ProjectFormData) => {
     setGeneralData(data);
     setStep("INVENTORY");
   };
 
-  const handleCreateProject = async (config: InventoryConfig) => {
+  const handleInventorySubmit = (config: InventoryConfig) => {
     setInventoryConfig(config);
+    setTorres(generateEstructura(config));
+    setStep("UNIT_EDITOR");
+  };
+
+  const handleCreateProject = async (editedTorres: TorreData[]) => {
     setIsLoading(true);
     setError(null);
 
@@ -58,7 +68,7 @@ export default function NewProjectWizard() {
       const { id: projectId } = await createProject(generalData);
 
       setLoadingMessage("Generando estructura física y unidades...");
-      await createInventory(projectId, config);
+      await createInventory(projectId, editedTorres);
 
       setLoadingMessage("Proyecto creado exitosamente.");
       setTimeout(() => {
@@ -93,10 +103,19 @@ export default function NewProjectWizard() {
         <div className="mx-6 h-px flex-1 bg-slate-200 dark:bg-white/15" />
 
         <div className={`flex items-center gap-3 ${step === "INVENTORY" ? "opacity-100" : "opacity-50"}`}>
-          <div className={`flex h-8 w-8 items-center justify-center rounded-full text-sm font-bold ${step === "INVENTORY" ? "bg-build-main text-white" : "bg-slate-100 dark:bg-white/10 text-slate-500 dark:text-white/60"}`}>
+          <div className={`flex h-8 w-8 items-center justify-center rounded-full text-sm font-bold ${step === "INVENTORY" || step === "UNIT_EDITOR" ? "bg-build-main text-white" : "bg-slate-100 dark:bg-white/10 text-slate-500 dark:text-white/60"}`}>
             2
           </div>
-          <span className="font-semibold text-build-main dark:text-white">Previsualización de inventario</span>
+          <span className="font-semibold text-build-main dark:text-white">Inventario</span>
+        </div>
+
+        <div className="mx-6 h-px flex-1 bg-slate-200 dark:bg-white/15" />
+
+        <div className={`flex items-center gap-3 ${step === "UNIT_EDITOR" ? "opacity-100" : "opacity-50"}`}>
+          <div className={`flex h-8 w-8 items-center justify-center rounded-full text-sm font-bold ${step === "UNIT_EDITOR" ? "bg-build-main text-white" : "bg-slate-100 dark:bg-white/10 text-slate-500 dark:text-white/60"}`}>
+            3
+          </div>
+          <span className="font-semibold text-build-main dark:text-white">Editar unidades</span>
         </div>
       </div>
 
@@ -112,6 +131,14 @@ export default function NewProjectWizard() {
         <InventoryConfigurator
           initialData={inventoryConfig}
           onBack={() => setStep("GENERAL")}
+          onSubmit={handleInventorySubmit}
+        />
+      )}
+
+      {step === "UNIT_EDITOR" && (
+        <UnitEditorStep
+          torres={torres}
+          onBack={() => setStep("INVENTORY")}
           onSubmit={handleCreateProject}
         />
       )}

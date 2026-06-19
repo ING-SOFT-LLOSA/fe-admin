@@ -128,6 +128,9 @@ export default function ContractSelectionStep({ client, onSelectContract, onBack
                                             <span className="material-symbols-outlined text-build-main dark:text-white text-[22px]">apartment</span>
                                         </div>
                                         <div>
+                                            <p className="text-[11px] font-mono text-build-accent font-semibold">
+                                                EXP-{exp.uuidUsuarioActivo.slice(0, 8).toUpperCase()}
+                                            </p>
                                             <p className="text-base font-bold text-build-main dark:text-white">
                                             {exp.activos?.length > 0 
                                                 ? exp.activos.map(a => `Unidad ${a.nro}`).join(" + ") + ` — ${exp.activos[0].proyectoNombre}`
@@ -136,7 +139,7 @@ export default function ContractSelectionStep({ client, onSelectContract, onBack
                                             {exp.activos?.[0] && (
                                             <p className="text-xs text-slate-400 dark:text-white/40 mt-0.5">
                                                 {exp.activos[0].torreNombre ? `${exp.activos[0].torreNombre} · ` : ""}
-                                                {exp.activos.length > 1 ? `${exp.activos.length} unidades` : `Piso ${exp.activos[0].nroPiso} · ${exp.activos[0].areaM2} m²`}
+                                                {exp.activos.length > 1 ? `${exp.activos.length} unidades` : `Piso ${exp.activos[0].nroPiso} · ${exp.activos[0].areaM2} m² · Tech. ${exp.activos[0].areaTechada} m²`}
                                             </p>
                                             )}
                                         </div>

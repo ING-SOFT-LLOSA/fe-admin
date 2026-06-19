@@ -495,6 +495,13 @@ function NuevoReporteForm({ projectId, projectName, onClose, onSubmit }: NuevoRe
   const [titulo,      setTitulo]      = useState("");
   const [comentarios, setComentarios] = useState("");
   const [fecha,       setFecha]       = useState(new Date().toISOString().split("T")[0]);
+
+  useEffect(() => {
+    const d = new Date(fecha + "T12:00:00");
+    const mes = d.toLocaleDateString("es-PE", { month: "long" });
+    const año = d.getFullYear();
+    setTitulo(`${mes.charAt(0).toUpperCase() + mes.slice(1)} ${año}`);
+  }, [fecha]);
   const [files,       setFiles]       = useState<File[]>([]);
   
   const [availableHitos, setAvailableHitos] = useState<HitoResponseDTO[]>([]);

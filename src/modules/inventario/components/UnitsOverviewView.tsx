@@ -54,18 +54,27 @@ export default function UnitsOverviewView({ projectId }: UnitsOverviewViewProps)
     };
   }, [projectId]);
 
+  const TYPE_ORDER: Record<string, number> = { DEPARTAMENTO: 1, COCHERA: 2, DEPOSITO: 3 };
+
   const visibleUnits = useMemo(() => {
     const query = deferredSearch.trim().toLowerCase();
-    return units.filter((unit) => {
-      const matchesQuery =
-        query.length === 0 ||
-        unit.nro.toLowerCase().includes(query) ||
-        unit.tipo.toLowerCase().includes(query) ||
-        unit.descripcion?.toLowerCase().includes(query);
-      const matchesStatus = statusFilter === "all" || unit.estadoComercial === statusFilter;
-      const matchesType = typeFilter === "all" || unit.tipo === typeFilter;
-      return matchesQuery && matchesStatus && matchesType;
-    });
+    return units
+      .filter((unit) => {
+        const matchesQuery =
+          query.length === 0 ||
+          unit.nro.toLowerCase().includes(query) ||
+          unit.tipo.toLowerCase().includes(query) ||
+          unit.descripcion?.toLowerCase().includes(query);
+        const matchesStatus = statusFilter === "all" || unit.estadoComercial === statusFilter;
+        const matchesType = typeFilter === "all" || unit.tipo === typeFilter;
+        return matchesQuery && matchesStatus && matchesType;
+      })
+      .sort((a, b) => {
+        const orderA = TYPE_ORDER[a.tipo] ?? 99;
+        const orderB = TYPE_ORDER[b.tipo] ?? 99;
+        if (orderA !== orderB) return orderA - orderB;
+        return a.nro.localeCompare(b.nro, undefined, { numeric: true });
+      });
   }, [deferredSearch, statusFilter, typeFilter, units]);
 
   const unitTypes = Array.from(new Set(units.map((unit) => unit.tipo))).sort((a, b) => a.localeCompare(b));
@@ -131,7 +140,7 @@ export default function UnitsOverviewView({ projectId }: UnitsOverviewViewProps)
           <table className="w-full border-collapse text-left">
             <thead>
               <tr className="bg-slate-50 dark:bg-white/5">
-                {["Unidad", "Piso", "Tipo", "Área", "Precio base", "Estado", "Acciones"].map((header) => (
+                {["Unidad", "Piso", "Tipo", "Área", "Techada", "Precio base", "Estado", "Acciones"].map((header) => (
                   <th key={header} className="px-6 py-3 text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-white/60">
                     {header}
                   </th>
@@ -141,13 +150,13 @@ export default function UnitsOverviewView({ projectId }: UnitsOverviewViewProps)
             <tbody className="divide-y divide-slate-200 dark:divide-white/10">
               {isLoading ? (
                 <tr>
-                  <td colSpan={7} className="px-6 py-10 text-center text-sm text-slate-500 dark:text-white/60">
+                  <td colSpan={8} className="px-6 py-10 text-center text-sm text-slate-500 dark:text-white/60">
                     Cargando inventario...
                   </td>
                 </tr>
               ) : visibleUnits.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-6 py-10 text-center text-sm text-slate-500 dark:text-white/60">
+                  <td colSpan={8} className="px-6 py-10 text-center text-sm text-slate-500 dark:text-white/60">
                     No hay unidades para los filtros seleccionados.
                   </td>
                 </tr>
@@ -155,9 +164,10 @@ export default function UnitsOverviewView({ projectId }: UnitsOverviewViewProps)
                 visibleUnits.map((unit) => (
                   <tr key={unit.id} className="hover:bg-slate-50 dark:bg-white/5 transition-colors">
                     <td className="px-6 py-4 text-sm font-bold text-build-main dark:text-white">{unit.nro}</td>
-                    <td className="px-6 py-4 text-sm text-slate-500 dark:text-white/60">{unit.pisoId}</td>
+                    <td className="px-6 py-4 text-sm text-slate-500 dark:text-white/60">{unit.nroPiso ?? unit.pisoId}</td>
                     <td className="px-6 py-4 text-sm text-slate-500 dark:text-white/60">{unit.tipo}</td>
                     <td className="px-6 py-4 text-sm text-slate-500 dark:text-white/60">{unit.areaM2} m2</td>
+                    <td className="px-6 py-4 text-sm text-slate-500 dark:text-white/60">{unit.areaTechada} m2</td>
                     <td className="px-6 py-4 text-sm font-semibold text-build-main dark:text-white">
                       S/ {unit.precio.toLocaleString("es-PE")}
                     </td>

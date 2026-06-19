@@ -17,6 +17,7 @@ export default function UnitDetailView({ projectId, unitId }: UnitDetailViewProp
     nro: "",
     tipo: "",
     areaM2: 0,
+    areaTechada: 0,
     estadoComercial: "DISPONIBLE",
     precio: 0,
     descripcion: "",
@@ -42,6 +43,7 @@ export default function UnitDetailView({ projectId, unitId }: UnitDetailViewProp
             nro: selectedUnit.nro,
             tipo: selectedUnit.tipo,
             areaM2: selectedUnit.areaM2,
+            areaTechada: selectedUnit.areaTechada ?? 0,
             estadoComercial: selectedUnit.estadoComercial,
             precio: selectedUnit.precio,
             descripcion: selectedUnit.descripcion ?? "",
@@ -134,6 +136,10 @@ export default function UnitDetailView({ projectId, unitId }: UnitDetailViewProp
             <div>
               <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-white/60">Área m2</label>
               <input type="number" value={form.areaM2} onChange={(event) => setForm({ ...form, areaM2: Number(event.target.value) })} className="w-full rounded-xl border border-slate-200 dark:border-white/10 px-3 py-2 text-sm outline-none focus:border-arch-gold focus:ring-1 focus:ring-arch-gold/20" />
+            </div>
+            <div>
+              <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-white/60">Área techada</label>
+              <input type="number" value={form.areaTechada} onChange={(event) => setForm({ ...form, areaTechada: Number(event.target.value) })} className="w-full rounded-xl border border-slate-200 dark:border-white/10 px-3 py-2 text-sm outline-none focus:border-arch-gold focus:ring-1 focus:ring-arch-gold/20" />
             </div>
             <div>
               <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-white/60">Precio base</label>

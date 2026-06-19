@@ -301,6 +301,7 @@ export interface ActivoUsuarioDTO {
   nro:              string;
   tipo:             string;   // DEPARTAMENTO | ESTACIONAMIENTO | DEPOSITO
   areaM2:           number;
+  areaTechada:      number;
   estadoComercial:  string;
   precio:           number;
   descripcion:      string;
