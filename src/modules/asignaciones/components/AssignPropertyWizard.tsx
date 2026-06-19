@@ -9,9 +9,9 @@ import type { Proyecto } from "@/modules/proyectos/types";
 import type { ClienteRow } from "@/types/user";
 
 interface AssignPropertyWizardProps {
-  onClose: () => void;
-  onSuccess: () => void;
-  client?: ClienteRow;
+  readonly onClose: () => void;
+  readonly onSuccess: () => void;
+  readonly client?: ClienteRow;
 }
 
 interface UnitSelection {
@@ -21,28 +21,35 @@ interface UnitSelection {
 }
 
 interface UnitCardProps {
-  unit: UnitSelection;
-  isSelected: boolean;
-  onToggle: (id: string) => void;
+  readonly unit: UnitSelection;
+  readonly isSelected: boolean;
+  readonly onToggle: (id: string) => void;
+}
+
+function getUnitIcon(type?: string): string {
+  if (type === "ESTACIONAMIENTO" || type === "COCHERA") return "directions_car";
+  if (type === "DEPOSITO") return "inventory_2";
+  return "apartment";
 }
 
 function UnitCard({ unit, isSelected, onToggle }: UnitCardProps) {
   return (
-    <div
+    <button
+      type="button"
       onClick={() => onToggle(unit.id)}
-      className={`cursor-pointer border-2 rounded-xl p-4 transition-all ${isSelected
+      className={`w-full text-left cursor-pointer border-2 rounded-xl p-4 transition-all ${isSelected
         ? "border-build-main bg-build-main/5"
         : "border-slate-200 dark:border-white/10 hover:border-build-accent bg-white dark:bg-white/5"
         }`}
     >
       <div className="flex justify-between items-start mb-2">
         <span className={`material-symbols-outlined text-[20px] ${isSelected ? "text-build-main dark:text-white" : "text-slate-400 dark:text-white/50"}`}>
-          {unit.type === "ESTACIONAMIENTO" || unit.type === "COCHERA" ? "directions_car" : unit.type === "DEPOSITO" ? "inventory_2" : "apartment"}
+          {getUnitIcon(unit.type)}
         </span>
         {isSelected && <span className="material-symbols-outlined text-[16px] text-build-main dark:text-white">check_circle</span>}
       </div>
       <h4 className="text-[13px] font-bold leading-tight text-build-main dark:text-white">{unit.name}</h4>
-    </div>
+    </button>
   );
 }
 
@@ -78,28 +85,27 @@ export default function AssignPropertyWizard({ onClose, onSuccess, client }: Ass
   // Load Projects on mount
   useEffect(() => {
     let active = true;
-    Promise.resolve().then(() => {
-      fetchProyectos().then(data => {
-          if (!active) return;
-          setProjects(data);
-      }).catch(() => {
-        if (active) setErrorMsg("No se pudieron cargar los proyectos");
-      });
-      
-      // Preload clients for search
-      if (!client) {
-        setClientsLoading(true);
-        fetchUsuarios()
-          .then(data => {
-            if (!active) return;
-            setAllClients(data.filter(u => u.activo).map(mapUsuarioToClienteRow));
-          })
-          .catch(console.error)
-          .finally(() => {
-            if (active) setClientsLoading(false);
-          });
-      }
+    fetchProyectos().then(data => {
+        if (!active) return;
+        setProjects(data);
+    }).catch(() => {
+      if (active) setErrorMsg("No se pudieron cargar los proyectos");
     });
+    
+    // Preload clients for search
+    if (!client) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setClientsLoading(true);
+      fetchUsuarios()
+        .then(data => {
+          if (!active) return;
+          setAllClients(data.filter(u => u.activo).map(mapUsuarioToClienteRow));
+        })
+        .catch(console.error)
+        .finally(() => {
+          if (active) setClientsLoading(false);
+        });
+    }
 
     return () => {
       active = false;
@@ -109,28 +115,27 @@ export default function AssignPropertyWizard({ onClose, onSuccess, client }: Ass
   useEffect(() => {
     if (!selectedProjectId) return;
     let active = true;
-    Promise.resolve().then(() => {
-      setLoadingUnits(true);
-      setUnits([]);
-      setSelectedUnitIds([]);
-      
-      fetchActivosPorProyecto(selectedProjectId, "DISPONIBLE")
-        .then(page => {
-          if (!active) return;
-          const availableUnits: UnitSelection[] = page.content.map(a => ({
-            id: a.id,
-            name: a.nro,
-            type: a.tipo
-          }));
-          setUnits(availableUnits);
-        })
-        .catch(() => {
-          if (active) setErrorMsg("Error cargando inventario del proyecto");
-        })
-        .finally(() => {
-          if (active) setLoadingUnits(false);
-        });
-    });
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setLoadingUnits(true);
+    setUnits([]);
+    setSelectedUnitIds([]);
+    
+    fetchActivosPorProyecto(selectedProjectId, "DISPONIBLE")
+      .then(page => {
+        if (!active) return;
+        const availableUnits: UnitSelection[] = page.content.map(a => ({
+          id: a.id,
+          name: a.nro,
+          type: a.tipo
+        }));
+        setUnits(availableUnits);
+      })
+      .catch(() => {
+        if (active) setErrorMsg("Error cargando inventario del proyecto");
+      })
+      .finally(() => {
+        if (active) setLoadingUnits(false);
+      });
 
     return () => {
       active = false;
@@ -262,6 +267,26 @@ export default function AssignPropertyWizard({ onClose, onSuccess, client }: Ass
   const selectedProject = projects.find(p => p.id === selectedProjectId);
   const currentStep = getCurrentStep();
 
+  let confirmBtnContent;
+  if (loading) {
+    confirmBtnContent = (
+      <>
+        <svg className="animate-spin w-4 h-4 text-white" viewBox="0 0 24 24" fill="none">
+          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+        </svg> Procesando...
+      </>
+    );
+  } else if (successMsg) {
+    confirmBtnContent = "Asignado";
+  } else {
+    confirmBtnContent = (
+      <>
+        Confirmar asignación <span className="material-symbols-outlined text-[18px]">assignment_turned_in</span>
+      </>
+    );
+  }
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#050a0e]/50 backdrop-blur-sm p-4 animate-fade-in">
       <div className="bg-white dark:bg-white/5 rounded-2xl shadow-2xl w-full max-w-3xl overflow-hidden flex flex-col h-[650px] animate-slide-up relative">
@@ -338,15 +363,16 @@ export default function AssignPropertyWizard({ onClose, onSuccess, client }: Ass
           <button
             disabled={loading || successMsg !== ""}
             onClick={() => {
-              if (client) {
-                // 2-step flow
-                if (step === 1) onClose();
-                else setStep(1);
+              if (client && step === 1) {
+                onClose();
+              } else if (client) {
+                setStep(1);
+              } else if (step === 1) {
+                onClose();
+              } else if (step === 2) {
+                setStep(1);
               } else {
-                // 3-step flow
-                if (step === 1) onClose();
-                else if (step === 2) setStep(1);
-                else setStep(2);
+                setStep(2);
               }
             }}
             className="px-5 py-2.5 text-sm font-bold text-slate-500 dark:text-white/60 hover:bg-slate-50 dark:bg-white/5 hover:text-build-main dark:text-white rounded-xl transition-colors"
@@ -375,18 +401,7 @@ export default function AssignPropertyWizard({ onClose, onSuccess, client }: Ass
               disabled={loading || successMsg !== ""}
               className="px-6 py-2.5 bg-build-main text-white rounded-xl text-sm font-bold hover:bg-build-main/90 transition-all disabled:opacity-50 flex items-center gap-2 shadow-sm relative overflow-hidden"
             >
-              {loading ? (
-                <>
-                  <svg className="animate-spin w-4 h-4 text-white" viewBox="0 0 24 24" fill="none">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
-                  </svg> Procesando...
-                </>
-              ) : successMsg ? "Asignado" : (
-                <>
-                  Confirmar asignación <span className="material-symbols-outlined text-[18px]">assignment_turned_in</span>
-                </>
-              )}
+              {confirmBtnContent}
             </button>
           )}
         </div>
@@ -400,13 +415,13 @@ export default function AssignPropertyWizard({ onClose, onSuccess, client }: Ass
 }
 
 interface StepSelectPersonsProps {
-  searchQuery: string;
-  setSearchQuery: (val: string) => void;
-  selectedClients: ClienteRow[];
-  toggleClientSelection: (c: ClienteRow) => void;
-  clientsLoading: boolean;
-  filteredClients: ClienteRow[];
-  errorMsg: string;
+  readonly searchQuery: string;
+  readonly setSearchQuery: (val: string) => void;
+  readonly selectedClients: ClienteRow[];
+  readonly toggleClientSelection: (c: ClienteRow) => void;
+  readonly clientsLoading: boolean;
+  readonly filteredClients: ClienteRow[];
+  readonly errorMsg: string;
 }
 
 function StepSelectPersons({
@@ -470,10 +485,11 @@ function StepSelectPersons({
             filteredClients.map(c => {
               const isSelected = selectedClients.some(sc => sc.id === c.id);
               return (
-                <div
+                <button
                   key={c.id}
+                  type="button"
                   onClick={() => toggleClientSelection(c)}
-                  className={`cursor-pointer flex items-center justify-between border-2 rounded-xl p-3 transition-all ${
+                  className={`w-full text-left cursor-pointer flex items-center justify-between border-2 rounded-xl p-3 transition-all ${
                     isSelected
                       ? "border-build-main bg-build-main/5"
                       : "border-slate-200 dark:border-white/10 hover:border-build-accent bg-white dark:bg-white/5"
@@ -489,13 +505,13 @@ function StepSelectPersons({
                     </div>
                     <div>
                       <p className="text-[13px] font-bold text-build-main dark:text-white">{c.name}</p>
-                      <p className="text-[11px] text-slate-500 dark:text-white/50">{c.dni !== "—" ? `DNI: ${c.dni} · ` : ""}{c.email}</p>
+                      <p className="text-[11px] text-slate-500 dark:text-white/50">{c.dni === "—" ? "" : `DNI: ${c.dni} · `}{c.email}</p>
                     </div>
                   </div>
                   {isSelected && (
                     <span className="material-symbols-outlined text-build-main dark:text-white text-[20px]">check_circle</span>
                   )}
-                </div>
+                </button>
               );
             })
           )}
@@ -508,18 +524,18 @@ function StepSelectPersons({
 }
 
 interface StepSelectUnitsProps {
-  projectSearch: string;
-  setProjectSearch: (val: string) => void;
-  showProjectSuggestions: boolean;
-  setShowProjectSuggestions: (val: boolean) => void;
-  projects: Proyecto[];
-  selectedProjectId: string;
-  setSelectedProjectId: (val: string) => void;
-  loadingUnits: boolean;
-  units: UnitSelection[];
-  selectedUnitIds: string[];
-  handleToggleUnit: (id: string) => void;
-  errorMsg: string;
+  readonly projectSearch: string;
+  readonly setProjectSearch: (val: string) => void;
+  readonly showProjectSuggestions: boolean;
+  readonly setShowProjectSuggestions: (val: boolean) => void;
+  readonly projects: Proyecto[];
+  readonly selectedProjectId: string;
+  readonly setSelectedProjectId: (val: string) => void;
+  readonly loadingUnits: boolean;
+  readonly units: UnitSelection[];
+  readonly selectedUnitIds: string[];
+  readonly handleToggleUnit: (id: string) => void;
+  readonly errorMsg: string;
 }
 
 function StepSelectUnits({
@@ -536,6 +552,84 @@ function StepSelectUnits({
   handleToggleUnit,
   errorMsg,
 }: StepSelectUnitsProps) {
+  let inventoryContent;
+  if (loadingUnits) {
+    inventoryContent = (
+      <p className="text-[13px] text-slate-500 dark:text-white/60 p-4 bg-slate-50 dark:bg-white/5 rounded-xl text-center flex items-center justify-center gap-2">
+         <svg className="animate-spin w-4 h-4 text-build-main dark:text-white" viewBox="0 0 24 24" fill="none">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+         </svg>
+        Cargando inventario...
+      </p>
+    );
+  } else if (units.length === 0) {
+    inventoryContent = (
+      <p className="text-[13px] text-slate-500 dark:text-white/60 p-4 bg-slate-50 dark:bg-white/5 rounded-xl text-center">No hay unidades disponibles en este proyecto.</p>
+    );
+  } else {
+    inventoryContent = (
+      <div className="space-y-6">
+        {/* Departamentos */}
+        {units.some(u => u.type !== "ESTACIONAMIENTO" && u.type !== "COCHERA" && u.type !== "DEPOSITO") && (
+          <div>
+            <h4 className="text-xs font-bold text-slate-400 dark:text-white/50 uppercase tracking-wider mb-3">Departamentos</h4>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+              {units
+                .filter(u => u.type !== "ESTACIONAMIENTO" && u.type !== "COCHERA" && u.type !== "DEPOSITO")
+                .map(u => (
+                  <UnitCard
+                    key={u.id}
+                    unit={u}
+                    isSelected={selectedUnitIds.includes(u.id)}
+                    onToggle={handleToggleUnit}
+                  />
+                ))}
+            </div>
+          </div>
+        )}
+
+        {/* Estacionamientos */}
+        {units.some(u => u.type === "ESTACIONAMIENTO" || u.type === "COCHERA") && (
+          <div>
+            <h4 className="text-xs font-bold text-slate-400 dark:text-white/50 uppercase tracking-wider mb-3">Estacionamientos</h4>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+              {units
+                .filter(u => u.type === "ESTACIONAMIENTO" || u.type === "COCHERA")
+                .map(u => (
+                  <UnitCard
+                    key={u.id}
+                    unit={u}
+                    isSelected={selectedUnitIds.includes(u.id)}
+                    onToggle={handleToggleUnit}
+                  />
+                ))}
+            </div>
+          </div>
+        )}
+
+        {/* Depósitos */}
+        {units.some(u => u.type === "DEPOSITO") && (
+          <div>
+            <h4 className="text-xs font-bold text-slate-400 dark:text-white/50 uppercase tracking-wider mb-3">Depósitos</h4>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+              {units
+                .filter(u => u.type === "DEPOSITO")
+                .map(u => (
+                  <UnitCard
+                    key={u.id}
+                    unit={u}
+                    isSelected={selectedUnitIds.includes(u.id)}
+                    onToggle={handleToggleUnit}
+                  />
+                ))}
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6 animate-fade-in">
       <div>
@@ -544,10 +638,11 @@ function StepSelectUnits({
       </div>
 
       <div className="relative">
-        <label className="block text-[11px] font-bold text-slate-500 dark:text-white/60 uppercase tracking-wider mb-2">Proyecto</label>
+        <label htmlFor="project-search-input" className="block text-[11px] font-bold text-slate-500 dark:text-white/60 uppercase tracking-wider mb-2">Proyecto</label>
         <div className="relative w-full lg:w-1/2">
           <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-white/50 text-[18px]">search</span>
           <input
+            id="project-search-input"
             type="text"
             placeholder="Buscar proyecto por nombre..."
             value={projectSearch}
@@ -571,20 +666,21 @@ function StepSelectUnits({
                   projects
                     .filter(p => p.nombre.toLowerCase().includes(projectSearch.toLowerCase()))
                     .map(p => (
-                      <div
+                      <button
                         key={p.id}
+                        type="button"
                         onClick={() => {
                           setSelectedProjectId(p.id);
                           setProjectSearch(p.nombre);
                           setShowProjectSuggestions(false);
                         }}
-                        className="px-4 py-2.5 text-sm cursor-pointer hover:bg-slate-50 dark:hover:bg-white/5 text-slate-700 dark:text-slate-200 flex justify-between items-center"
+                        className="w-full px-4 py-2.5 text-sm cursor-pointer hover:bg-slate-50 dark:hover:bg-white/5 text-slate-700 dark:text-slate-200 flex justify-between items-center text-left"
                       >
                         <span>{p.nombre}</span>
                         {selectedProjectId === p.id && (
                           <span className="material-symbols-outlined text-[16px] text-build-main dark:text-white">check</span>
                         )}
-                      </div>
+                      </button>
                     ))
                 )}
             </div>
@@ -593,77 +689,8 @@ function StepSelectUnits({
       </div>
 
       <div>
-        <label className="block text-[11px] font-bold text-slate-500 dark:text-white/60 uppercase tracking-wider mb-2">Unidades Disponibles (Inventario)</label>
-        {loadingUnits ? (
-          <p className="text-[13px] text-slate-500 dark:text-white/60 p-4 bg-slate-50 dark:bg-white/5 rounded-xl text-center flex items-center justify-center gap-2">
-             <svg className="animate-spin w-4 h-4 text-build-main dark:text-white" viewBox="0 0 24 24" fill="none">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
-             </svg>
-            Cargando inventario...
-          </p>
-        ) : units.length === 0 ? (
-          <p className="text-[13px] text-slate-500 dark:text-white/60 p-4 bg-slate-50 dark:bg-white/5 rounded-xl text-center">No hay unidades disponibles en este proyecto.</p>
-        ) : (
-          <div className="space-y-6">
-            {/* Departamentos */}
-            {units.filter(u => u.type !== "ESTACIONAMIENTO" && u.type !== "COCHERA" && u.type !== "DEPOSITO").length > 0 && (
-              <div>
-                <h4 className="text-xs font-bold text-slate-400 dark:text-white/50 uppercase tracking-wider mb-3">Departamentos</h4>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                  {units
-                    .filter(u => u.type !== "ESTACIONAMIENTO" && u.type !== "COCHERA" && u.type !== "DEPOSITO")
-                    .map(u => (
-                      <UnitCard
-                        key={u.id}
-                        unit={u}
-                        isSelected={selectedUnitIds.includes(u.id)}
-                        onToggle={handleToggleUnit}
-                      />
-                    ))}
-                </div>
-              </div>
-            )}
-
-            {/* Estacionamientos */}
-            {units.filter(u => u.type === "ESTACIONAMIENTO" || u.type === "COCHERA").length > 0 && (
-              <div>
-                <h4 className="text-xs font-bold text-slate-400 dark:text-white/50 uppercase tracking-wider mb-3">Estacionamientos</h4>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                  {units
-                    .filter(u => u.type === "ESTACIONAMIENTO" || u.type === "COCHERA")
-                    .map(u => (
-                      <UnitCard
-                        key={u.id}
-                        unit={u}
-                        isSelected={selectedUnitIds.includes(u.id)}
-                        onToggle={handleToggleUnit}
-                      />
-                    ))}
-                </div>
-              </div>
-            )}
-
-            {/* Depósitos */}
-            {units.filter(u => u.type === "DEPOSITO").length > 0 && (
-              <div>
-                <h4 className="text-xs font-bold text-slate-400 dark:text-white/50 uppercase tracking-wider mb-3">Depósitos</h4>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                  {units
-                    .filter(u => u.type === "DEPOSITO")
-                    .map(u => (
-                      <UnitCard
-                        key={u.id}
-                        unit={u}
-                        isSelected={selectedUnitIds.includes(u.id)}
-                        onToggle={handleToggleUnit}
-                      />
-                    ))}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
+        <span className="block text-[11px] font-bold text-slate-500 dark:text-white/60 uppercase tracking-wider mb-2">Unidades Disponibles (Inventario)</span>
+        {inventoryContent}
         {errorMsg && <p className="text-[#ba1a1a] text-[12px] font-bold mt-3 animate-pulse">{errorMsg}</p>}
       </div>
     </div>
@@ -671,14 +698,14 @@ function StepSelectUnits({
 }
 
 interface StepConfirmProps {
-  tipoFinanciamiento: string;
-  setTipoFinanciamiento: (val: string) => void;
-  selectedClients: ClienteRow[];
-  selectedUnitIds: string[];
-  selectedProject?: Proyecto;
-  units: UnitSelection[];
-  errorMsg: string;
-  successMsg: string;
+  readonly tipoFinanciamiento: string;
+  readonly setTipoFinanciamiento: (val: string) => void;
+  readonly selectedClients: ClienteRow[];
+  readonly selectedUnitIds: string[];
+  readonly selectedProject?: Proyecto;
+  readonly units: UnitSelection[];
+  readonly errorMsg: string;
+  readonly successMsg: string;
 }
 
 function StepConfirm({
@@ -701,7 +728,7 @@ function StepConfirm({
 
       {/* Financing selection */}
       <div className="mb-4">
-        <label className="block text-[11px] font-bold text-slate-500 dark:text-white/60 uppercase tracking-wider mb-3">Tipo de Financiamiento</label>
+        <span className="block text-[11px] font-bold text-slate-500 dark:text-white/60 uppercase tracking-wider mb-3">Tipo de Financiamiento</span>
         <div className="grid grid-cols-2 gap-3">
           <button
             type="button"
@@ -743,9 +770,9 @@ function StepConfirm({
       {/* Summary card */}
       <div className="bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl p-5 grid grid-cols-2 gap-6 relative overflow-hidden">
         <div className="relative z-10">
-          <label className="block text-[11px] font-bold text-slate-500 dark:text-white/60 uppercase tracking-wider mb-2">
+          <span className="block text-[11px] font-bold text-slate-500 dark:text-white/60 uppercase tracking-wider mb-2">
             {selectedClients.length > 1 ? "Clientes Asignados" : "Cliente Asignado"}
-          </label>
+          </span>
           <div className="space-y-1.5">
             {selectedClients.map(c => (
               <div key={c.id} className="flex items-center gap-2">
@@ -761,14 +788,14 @@ function StepConfirm({
           </div>
         </div>
         <div className="relative z-10 border-l border-slate-200 dark:border-white/10 pl-6">
-          <label className="block text-[11px] font-bold text-slate-500 dark:text-white/60 uppercase tracking-wider mb-2">Unidades ({selectedProject?.nombre})</label>
+          <span className="block text-[11px] font-bold text-slate-500 dark:text-white/60 uppercase tracking-wider mb-2">Unidades ({selectedProject?.nombre})</span>
           <div className="space-y-1">
             {selectedUnitIds.map(id => {
               const u = units.find(unit => unit.id === id);
               return (
                 <div key={id} className="flex items-center gap-2">
                   <span className="material-symbols-outlined text-[14px] text-slate-400">
-                    {u?.type === "ESTACIONAMIENTO" || u?.type === "COCHERA" ? "directions_car" : u?.type === "DEPOSITO" ? "inventory_2" : "apartment"}
+                    {getUnitIcon(u?.type)}
                   </span>
                   <span className="text-[13px] font-bold text-build-main dark:text-white">{u?.name}</span>
                 </div>
