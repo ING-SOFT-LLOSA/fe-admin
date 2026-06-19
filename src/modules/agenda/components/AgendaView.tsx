@@ -2,6 +2,8 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { fetchUsuarios } from "@/lib/api/users";
 import type { Usuario } from "@/types/user";
+import type { UsuarioActivoResponseDTO } from "@/lib/api/expedientes";
+import type { ActivoResponseDTO } from "@/lib/api/proyectos";
 import {
   fetchCitasCalendario,
   crearCita,
@@ -229,6 +231,19 @@ function getTipoLabel(tipo: string): string {
   return "Dpto";
 }
 
+function mapExpedienteActivoToUnit(act: ActivoResponseDTO) {
+  return {
+    id: act.id,
+    name: `${getTipoLabel(act.tipo)} ${act.nro}`
+  };
+}
+
+function mapExpedientesToUnits(exps: UsuarioActivoResponseDTO[] | null | undefined): { id: string; name: string }[] {
+  return (exps || []).flatMap((exp) =>
+    (exp.activos || []).map(mapExpedienteActivoToUnit)
+  );
+}
+
 function getCellBgClass(grey?: boolean): string {
   return grey
     ? "bg-slate-50 dark:bg-white/5/50"
@@ -424,12 +439,7 @@ export default function SchedulePage() {
     import("@/lib/api/users")
       .then(m => m.fetchExpedientesPorUsuario(Number(clientId)))
       .then(exps => {
-        const uList = (exps || []).flatMap(exp => 
-          (exp.activos || []).map(act => ({
-            id: act.id,
-            name: `${getTipoLabel(act.tipo)} ${act.nro}`
-          }))
-        );
+        const uList = mapExpedientesToUnits(exps);
         setClientUnits(uList);
         if (uList.length > 0) {
           setSelectedUnitId(uList[0].id);
