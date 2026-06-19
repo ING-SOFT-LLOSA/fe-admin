@@ -18,12 +18,12 @@ type SubmitButtonProps = {
 };
 
 function SubmitButton({ loading, disabled, isResetView, submitHover, onMouseEnter, onMouseLeave }: SubmitButtonProps) {
-  const label = isResetView ? "Enviar enlace" : "Acceder";
+  const label = isResetView ? "Enviar enlace de recuperación" : "Acceder";
   const bgClass = disabled
-    ? "opacity-50 cursor-not-allowed bg-build-main"
+    ? "opacity-50 cursor-not-allowed bg-build-accent/50"
     : submitHover
-    ? "bg-arch-gold"
-    : "bg-build-main";
+    ? "bg-build-accent/90 lg:bg-build-main/90"
+    : "bg-build-accent lg:bg-build-main";
 
   return (
     <button
@@ -31,7 +31,7 @@ function SubmitButton({ loading, disabled, isResetView, submitHover, onMouseEnte
       disabled={disabled}
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
-      className={`mt-1 h-11 w-full text-white rounded-xl font-bold text-[15px] tracking-wide transition-all duration-300 shadow-sm flex items-center justify-center gap-2 border-none ${bgClass}`}
+      className={`h-11 w-full text-build-main lg:text-build-bg rounded-xl font-bold text-[15px] tracking-wide transition-all duration-200 shadow-sm flex items-center justify-center gap-2 border-none lg:h-[44px] active:scale-[0.98] ${bgClass}`}
     >
       {loading ? (
         <svg className="animate-spin w-5 h-5" viewBox="0 0 24 24" fill="none">
@@ -173,33 +173,33 @@ export default function LoginForm({ redirectTo = "/proyectos" }: LoginFormProps)
   const handleFormSubmit = isResetView ? handleResetPassword : handleSubmit;
 
   const googleBgClass = loading
-    ? "opacity-60 cursor-not-allowed bg-white dark:bg-white/5"
+    ? "opacity-60 cursor-not-allowed bg-transparent"
     : googleHover
-    ? "bg-slate-50 dark:bg-white/5"
-    : "bg-white dark:bg-white/5";
+    ? "bg-build-accent/10"
+    : "bg-transparent";
 
   return (
     <div className="h-screen w-full flex overflow-hidden" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
 
       {/* ─── Left panel: Branding ─── */}
-      <div className="hidden lg:flex lg:w-[55%] relative bg-black flex-col justify-between p-14 overflow-hidden">
+      <div className="hidden lg:flex lg:w-1/2 relative bg-build-main flex-col justify-between p-14 overflow-hidden">
         <div className="absolute inset-0 opacity-10 pointer-events-none">
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_30%,rgba(196,158,93,0.4)_0%,transparent_60%),radial-gradient(circle_at_80%_70%,rgba(196,158,93,0.2)_0%,transparent_50%)]" />
-          <div className="absolute bottom-0 right-0 w-96 h-96 rounded-full border border-arch-gold/20 -mr-32 -mb-32" />
-          <div className="absolute top-0 left-0 w-64 h-64 rounded-full border border-arch-gold/10 -ml-20 -mt-20" />
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_30%,rgba(157,153,144,0.4)_0%,transparent_60%),radial-gradient(circle_at_80%_70%,rgba(157,153,144,0.2)_0%,transparent_50%)]" />
+          <div className="absolute bottom-0 right-0 w-96 h-96 rounded-full border border-build-accent/20 -mr-32 -mb-32" />
+          <div className="absolute top-0 left-0 w-64 h-64 rounded-full border border-build-accent/10 -ml-20 -mt-20" />
         </div>
 
         <div className="relative z-10 mb-8">
-          <img src="/logo_llosa.png" alt="Llosa Logo" className="w-[180px] object-contain" />
+          <img src="/logo_llosa.png" alt="Llosa Logo" className="w-[180px] object-contain brightness-0 invert" />
         </div>
 
         <div className="relative z-10 max-w-lg">
-          <div className="w-12 h-0.5 bg-arch-gold mb-6" />
-          <h1 className="text-5xl font-bold text-white leading-[1.2] mb-6 tracking-tight" style={{ fontFamily: "'Outfit', sans-serif" }}>
+          <div className="w-12 h-0.5 bg-build-accent mb-6" />
+          <h1 className="text-5xl font-bold text-build-bg leading-[1.2] mb-6 tracking-tight" style={{ fontFamily: "'Outfit', sans-serif" }}>
             Gestiona tus<br />
             <span className="text-arch-gold">proyectos.</span>
           </h1>
-          <p className="text-base text-blue-100 leading-relaxed">
+          <p className="text-base text-build-bg/80 leading-relaxed">
             Plataforma integral para administrar proyectos inmobiliarios, clientes, contratos y pagos desde un solo lugar.
           </p>
         </div>
@@ -214,25 +214,25 @@ export default function LoginForm({ redirectTo = "/proyectos" }: LoginFormProps)
               <p className="text-3xl font-bold text-arch-gold leading-none" style={{ fontFamily: "'Outfit', sans-serif" }}>
                 {s.value}
               </p>
-              <p className="text-[13px] text-blue-100 mt-1">{s.label}</p>
+              <p className="text-[13px] text-blue-300 mt-1">{s.label}</p>
             </div>
           ))}
         </div>
       </div>
 
       {/* ─── Right panel: Form ─── */}
-      <div className="flex-1 flex flex-col items-center py-12 px-6 bg-build-bg h-screen overflow-y-auto w-full lg:w-[45%]">
-        <div className="w-full max-w-[448px] my-auto flex flex-col">
+      <div className="flex-1 flex flex-col items-center justify-center py-12 px-6 bg-build-main lg:bg-build-bg min-h-screen w-full lg:w-1/2">
+        <div className="w-full max-w-sm flex flex-col">
 
           <div className="mb-8 mt-6 lg:hidden flex justify-center">
-            <img src="/logo_llosa.png" alt="Llosa Logo" className="h-12 w-auto object-contain invert dark:invert-0" />
+            <img src="/logo_llosa.png" alt="Llosa Logo" className="h-12 w-auto object-contain brightness-0 invert" />
           </div>
 
           {/* Card */}
           <div className="bg-white dark:bg-white/5 rounded-2xl shadow-[0_8px_40px_rgba(0,22,41,0.08)] border border-slate-100 dark:border-white/10 p-6">
             <div className="mb-7">
               <h2 className="text-3xl font-bold text-build-main dark:text-white leading-tight" style={{ fontFamily: "'Outfit', sans-serif" }}>
-                {formTitle} {/* ✅ sin ternario */}
+                {formTitle}
               </h2>
             </div>
 
@@ -262,7 +262,7 @@ export default function LoginForm({ redirectTo = "/proyectos" }: LoginFormProps)
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="usuario@correo.com"
-                  className="h-10 w-full px-4 rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 text-[15px] text-build-main dark:text-white outline-none transition-all duration-200 focus:border-arch-gold focus:ring-4 focus:ring-arch-gold/20 box-border"
+                  className="h-10 w-full px-4 rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 text-[15px] text-build-main dark:text-white outline-none transition-all duration-200 focus:border-arch-gold focus:ring-4 focus:ring-arch-gold/20 box-border lg:h-[44px] lg:border-build-accent/30 lg:bg-build-bg lg:text-build-main lg:placeholder-build-accent/50 lg:focus:ring-build-accent/20"
                 />
               </div>
 
@@ -280,7 +280,7 @@ export default function LoginForm({ redirectTo = "/proyectos" }: LoginFormProps)
                       value={pass}
                       onChange={(e) => setPass(e.target.value)}
                       placeholder="••••••••"
-                      className="h-10 w-full pl-4 pr-12 rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 text-[15px] text-build-main dark:text-white outline-none transition-all duration-200 focus:border-arch-gold focus:ring-4 focus:ring-arch-gold/20 box-border"
+                      className="h-10 w-full pl-4 pr-12 rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 text-[15px] text-build-main dark:text-white outline-none transition-all duration-200 focus:border-arch-gold focus:ring-4 focus:ring-arch-gold/20 box-border lg:h-[44px] lg:border-build-accent/30 lg:bg-build-bg lg:text-build-main lg:placeholder-build-accent/50 lg:focus:ring-build-accent/20"
                     />
                     <button
                       type="button"
@@ -309,9 +309,9 @@ export default function LoginForm({ redirectTo = "/proyectos" }: LoginFormProps)
               {!isResetView && (
                 <>
                   <div className="flex items-center gap-3 my-2">
-                    <div className="flex-1 h-[1px] bg-slate-200 dark:bg-white/15" />
-                    <span className="text-[12px] font-semibold text-slate-400 dark:text-white/50 uppercase">O</span>
-                    <div className="flex-1 h-[1px] bg-slate-200 dark:bg-white/15" />
+                    <div className="flex-1 h-px bg-slate-200 dark:bg-white/15" />
+                    <div className="w-2 h-2 rounded-full bg-slate-300 dark:bg-white/40 shrink-0" />
+                    <div className="flex-1 h-px bg-slate-200 dark:bg-white/15" />
                   </div>
 
                   <button
@@ -320,7 +320,7 @@ export default function LoginForm({ redirectTo = "/proyectos" }: LoginFormProps)
                     disabled={loading}
                     onMouseEnter={() => setGoogleHover(true)}
                     onMouseLeave={() => setGoogleHover(false)}
-                    className={`h-11 w-full border border-slate-200 dark:border-white/10 rounded-xl text-[15px] font-semibold tracking-wide transition-all duration-300 flex items-center justify-center gap-2.5 text-build-main dark:text-white ${googleBgClass}`} 
+                    className={`h-11 w-full border border-build-accent/30 rounded-xl text-[15px] font-semibold tracking-wide transition-all duration-200 flex items-center justify-center gap-2.5 active:scale-[0.98] lg:h-[44px] lg:border-build-main/30 ${googleBgClass} ${loading ? "text-build-bg/50 cursor-not-allowed lg:text-build-main/50" : "text-build-bg lg:text-build-main hover:bg-build-accent/10 lg:hover:bg-build-main/5"}`} 
                   >
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                       <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
@@ -341,7 +341,7 @@ export default function LoginForm({ redirectTo = "/proyectos" }: LoginFormProps)
               )}
 
               {/* Forgot password */}
-              <div className="pt-2 text-center border-t border-slate-200 dark:border-white/10">
+              <div className="pt-2 text-center">
                 <button
                   type="button"
                   onClick={() => {
@@ -349,7 +349,7 @@ export default function LoginForm({ redirectTo = "/proyectos" }: LoginFormProps)
                     setError(null);
                     setResetSuccess(false);
                   }}
-                  className="text-[12px] font-semibold text-arch-gold hover:text-build-main dark:text-white transition-colors duration-300 cursor-pointer border-none bg-transparent p-0"
+                  className="text-[12px] font-semibold text-arch-gold underline underline-offset-2 hover:text-build-main transition-colors duration-200 cursor-pointer border-none bg-transparent p-0"
                 >
                   {backLinkLabel}
                 </button>
