@@ -215,6 +215,150 @@ function mapCitasToGrid(citas: CitaResponse[], gridCells: CalDay[], currentDate:
   });
 }
 
+function getStatusBadgeClass(s: string) {
+  if (s === "CONFIRMADA") return "bg-green-100 text-green-800";
+  if (s === "CANCELADA") return "bg-red-100 text-red-800";
+  if (s === "COMPLETADA") return "bg-slate-200 text-slate-800";
+  if (s === "REPROGRAMACION_PENDIENTE") return "bg-orange-100 text-orange-800";
+  return "bg-blue-100 text-blue-800";
+}
+
+function getTipoLabel(tipo: string): string {
+  if (tipo === "ESTACIONAMIENTO") return "Cochera";
+  if (tipo === "DEPOSITO") return "Depósito";
+  return "Dpto";
+}
+
+function getCellBgClass(grey?: boolean): string {
+  return grey
+    ? "bg-slate-50 dark:bg-white/5/50"
+    : "cursor-pointer hover:bg-slate-50 dark:bg-white/5 transition-colors";
+}
+
+function getSyncIconAnimClass(isSyncing: boolean): string {
+  return isSyncing ? "animate-spin" : "";
+}
+
+function getSyncButtonText(isSyncing: boolean): string {
+  return isSyncing ? "Sincronizando..." : "Sincronizar Google Calendar";
+}
+
+function getSaveButtonText(isSaving: boolean, isEdit: boolean): string {
+  if (isSaving) return "Guardando...";
+  return isEdit ? "Guardar Cambios" : "Guardar y sincronizar calendario";
+}
+
+function getBannerTitle(success: boolean): string {
+  return success ? "Cita agendada" : "Aviso de sincronización";
+}
+
+function getBannerColor(success: boolean): string {
+  return success ? "text-[#1c663b]" : "text-[#e65100]";
+}
+
+function getModalTitle(isEditing: boolean): string {
+  return isEditing ? "Editar Cita" : "Detalle de la Cita";
+}
+
+function getSyncIconColor(syncDot?: string): string {
+  return syncDot === "bg-emerald-500" ? "text-emerald-500" : "text-amber-500";
+}
+
+function getCellDayClass(today?: boolean, grey?: boolean): string {
+  if (today) return "w-7 h-7 flex items-center justify-center bg-build-main text-white rounded-full font-bold shadow-sm";
+  if (grey) return "text-slate-400 dark:text-white/50";
+  return "text-build-main dark:text-white font-bold";
+}
+
+function getConnectionDisplay(isConnecting: boolean, justConnected: boolean, field: "icon" | "text"): string {
+  if (isConnecting) return field === "icon" ? "more_horiz" : "Conectando...";
+  if (justConnected) return field === "icon" ? "check_circle" : "¡Conectado!";
+  return field === "icon" ? "calendar_month" : "Conectar Google Calendar";
+}
+
+function getConnectionBorderClass(justConnected: boolean): string {
+  return justConnected
+    ? "border border-green-200 dark:border-green-900/40 bg-green-50 dark:bg-green-900/10 text-green-700 dark:text-green-400"
+    : "border border-arch-gold/30 bg-arch-gold/5 hover:bg-arch-gold/10 text-arch-gold";
+}
+
+function getConfirmationText(confirmacion: boolean | null): string {
+  if (confirmacion === true) return "Confirmado ✓";
+  if (confirmacion === false) return "Declinado ✕";
+  return "Sin respuesta";
+}
+
+function canEditCita(estado: string): boolean {
+  return estado !== "CANCELADA" && estado !== "COMPLETADA";
+}
+
+function validateAppointmentForm(clientId: string | null, selectedUnitId: string, eventDate: string, startTime: string, endTime: string): string | null {
+  if (!clientId || !selectedUnitId || !eventDate || !startTime || !endTime) {
+    return "Por favor completa todos los campos requeridos.";
+  }
+  const selectedDateTime = new Date(`${eventDate}T${startTime}`);
+  if (selectedDateTime < new Date()) {
+    return "Error: No puedes agendar citas en fechas/horas pasadas.";
+  }
+  return null;
+}
+
+function useGoogleCalendar(fetchAppointments: () => void) {
+  const [isConnectingGoogle, setIsConnectingGoogle] = useState(false);
+  const [justConnected, setJustConnected] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
+
+  const handleConnectGoogle = async () => {
+    setIsConnectingGoogle(true);
+    try {
+      const { url } = await getGoogleAuthUrl();
+      const popup = window.open(url, "google-oauth", "width=600,height=700");
+      if (!popup) {
+        alert("El navegador bloqueó la ventana emergente. Permite popups e intenta de nuevo.");
+        setIsConnectingGoogle(false);
+        return;
+      }
+      const timer = setInterval(() => {
+        if (popup.closed) {
+          clearInterval(timer);
+          setIsConnectingGoogle(false);
+          setJustConnected(true);
+          setTimeout(() => setJustConnected(false), 6000);
+        }
+      }, 500);
+    } catch (err) {
+      setIsConnectingGoogle(false);
+      alert(err instanceof Error ? err.message : "Error al conectar Google Calendar.");
+    }
+  };
+
+  const handleDisconnectGoogle = async () => {
+    if (!confirm("¿Desconectar Google Calendar?")) return;
+    try {
+      await disconnectGoogleCalendar();
+      alert("Google Calendar desconectado.");
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Error al desconectar.");
+    }
+  };
+
+  const handleSyncManual = () => {
+    setIsSyncing(true);
+    forzarSincronizacionManual()
+      .then((res) => {
+        setIsSyncing(false);
+        alert(res.mensaje || "Sincronización forzada correctamente.");
+        fetchAppointments();
+      })
+      .catch(err => {
+        setIsSyncing(false);
+        alert(err instanceof Error ? err.message : "Error al sincronizar.");
+      });
+  };
+
+  return { isConnectingGoogle, justConnected, isSyncing, handleConnectGoogle, handleDisconnectGoogle, handleSyncManual };
+}
+
 export default function SchedulePage() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [calDays, setCalDays] = useState<CalDay[]>([]);
@@ -246,8 +390,6 @@ export default function SchedulePage() {
   const [isEditing, setIsEditing] = useState(false);
   const [showCancelForm, setShowCancelForm] = useState(false);
   const [motivoCancelacion, setMotivoCancelacion] = useState("");
-  const [isSyncing, setIsSyncing] = useState(false);
-
   // Edit fields state
   const [editTitle, setEditTitle] = useState("");
   const [editDesc, setEditDesc] = useState("");
@@ -285,7 +427,7 @@ export default function SchedulePage() {
         const uList = (exps || []).flatMap(exp => 
           (exp.activos || []).map(act => ({
             id: act.id,
-            name: `${act.tipo === "ESTACIONAMIENTO" ? "Cochera" : act.tipo === "DEPOSITO" ? "Depósito" : "Dpto"} ${act.nro}`
+            name: `${getTipoLabel(act.tipo)} ${act.nro}`
           }))
         );
         setClientUnits(uList);
@@ -465,56 +607,7 @@ export default function SchedulePage() {
       });
   };
 
-  const [isConnectingGoogle, setIsConnectingGoogle] = useState(false);
-  const [justConnected, setJustConnected] = useState(false);
-
-  const handleConnectGoogle = async () => {
-    setIsConnectingGoogle(true);
-    try {
-      const { url } = await getGoogleAuthUrl();
-      const popup = window.open(url, "google-oauth", "width=600,height=700");
-      if (!popup) {
-        alert("El navegador bloqueó la ventana emergente. Permite popups e intenta de nuevo.");
-        setIsConnectingGoogle(false);
-        return;
-      }
-      const timer = setInterval(() => {
-        if (popup.closed) {
-          clearInterval(timer);
-          setIsConnectingGoogle(false);
-          setJustConnected(true);
-          setTimeout(() => setJustConnected(false), 6000);
-        }
-      }, 500);
-    } catch (err) {
-      setIsConnectingGoogle(false);
-      alert(err instanceof Error ? err.message : "Error al conectar Google Calendar.");
-    }
-  };
-
-  const handleDisconnectGoogle = async () => {
-    if (!confirm("¿Desconectar Google Calendar?")) return;
-    try {
-      await disconnectGoogleCalendar();
-      alert("Google Calendar desconectado.");
-    } catch (err) {
-      alert(err instanceof Error ? err.message : "Error al desconectar.");
-    }
-  };
-
-  const handleSyncManual = () => {
-    setIsSyncing(true);
-    forzarSincronizacionManual()
-      .then((res) => {
-        setIsSyncing(false);
-        alert(res.mensaje || "Sincronización forzada correctamente.");
-        fetchAppointments();
-      })
-      .catch(err => {
-        setIsSyncing(false);
-        alert(err instanceof Error ? err.message : "Error al sincronizar.");
-      });
-  };
+  const { isConnectingGoogle, justConnected, isSyncing, handleConnectGoogle, handleDisconnectGoogle, handleSyncManual } = useGoogleCalendar(fetchAppointments);
 
   function saveEvent(e: React.FormEvent) {
     e.preventDefault();
@@ -522,14 +615,9 @@ export default function SchedulePage() {
     setSuccessMsg("");
     setWarningMsg("");
 
-    if (!clientId || !selectedUnitId || !eventDate || !startTime || !endTime) {
-      setErrorMsg("Por favor completa todos los campos requeridos.");
-      return;
-    }
-
-    const selectedDateTime = new Date(`${eventDate}T${startTime}`);
-    if (selectedDateTime < new Date()) {
-      setErrorMsg("Error: No puedes agendar citas en fechas/horas pasadas.");
+    const validationError = validateAppointmentForm(clientId, selectedUnitId, eventDate, startTime, endTime);
+    if (validationError) {
+      setErrorMsg(validationError);
       return;
     }
 
@@ -585,16 +673,12 @@ export default function SchedulePage() {
           <button
             onClick={handleConnectGoogle}
             disabled={isConnectingGoogle}
-            className={`inline-flex items-center justify-center gap-1.5 rounded-xl px-2 py-2.5 text-xs font-semibold shadow-sm transition-all disabled:opacity-50 ${
-              justConnected
-                ? "border border-green-200 dark:border-green-900/40 bg-green-50 dark:bg-green-900/10 text-green-700 dark:text-green-400"
-                : "border border-arch-gold/30 bg-arch-gold/5 hover:bg-arch-gold/10 text-arch-gold"
-            }`}
+            className={`inline-flex items-center justify-center gap-1.5 rounded-xl px-2 py-2.5 text-xs font-semibold shadow-sm transition-all disabled:opacity-50 ${getConnectionBorderClass(justConnected)}`}
           >
             <span className="material-symbols-outlined text-[16px] shrink-0">
-              {isConnectingGoogle ? "more_horiz" : justConnected ? "check_circle" : "calendar_month"}
+              {getConnectionDisplay(isConnectingGoogle, justConnected, "icon")}
             </span>
-            <span className="truncate">{isConnectingGoogle ? "Conectando..." : justConnected ? "¡Conectado!" : "Conectar Google Calendar"}</span>
+            <span className="truncate">{getConnectionDisplay(isConnectingGoogle, justConnected, "text")}</span>
           </button>
 
           {/* Disconnect */}
@@ -612,10 +696,10 @@ export default function SchedulePage() {
             disabled={isSyncing}
             className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-2 py-2.5 text-xs font-semibold shadow-sm transition-all text-build-main hover:bg-slate-50 disabled:opacity-50 dark:border-white/10 dark:bg-white/5 dark:text-white dark:hover:bg-white/10"
           >
-            <span className={`material-symbols-outlined text-[16px] shrink-0 ${isSyncing ? "animate-spin" : ""}`}>
+            <span className={`material-symbols-outlined text-[16px] shrink-0 ${getSyncIconAnimClass(isSyncing)}`}>
               sync
             </span>
-            <span className="truncate">{isSyncing ? "Sincronizando..." : "Sincronizar Google Calendar"}</span>
+            <span className="truncate">{getSyncButtonText(isSyncing)}</span>
           </button>
 
           {/* New Appointment */}
@@ -669,9 +753,9 @@ export default function SchedulePage() {
               <div 
                 key={idx} 
                 onClick={() => handleCellClick(cell)}
-                className={`min-h-[120px] border-b border-r border-slate-200 dark:border-white/10 p-2 flex flex-col gap-1 ${cell.grey ? "bg-slate-50 dark:bg-white/5/50" : "cursor-pointer hover:bg-slate-50 dark:bg-white/5 transition-colors"}`}
+                className={`min-h-[120px] border-b border-r border-slate-200 dark:border-white/10 p-2 flex flex-col gap-1 ${getCellBgClass(cell.grey)}`}
               >
-                <span className={`text-sm pl-1 mb-1 ${cell.today ? "w-7 h-7 flex items-center justify-center bg-build-main text-white rounded-full font-bold shadow-sm" : cell.grey ? "text-slate-400 dark:text-white/50" : "text-build-main dark:text-white font-bold"}`}>
+                <span className={`text-sm pl-1 mb-1 ${getCellDayClass(cell.today, cell.grey)}`}>
                   {cell.day}
                 </span>
                 {cell.events.map((ev, i) => (
@@ -687,7 +771,7 @@ export default function SchedulePage() {
                       <span className={`w-1.5 h-1.5 rounded-full ${ev.rsvpDot}`} title={`Confirmación: ${ev.rsvpText}`} />
                       <span className="text-[11px] font-bold truncate">{ev.label}</span>
                       {ev.syncIcon && (
-                        <span className={`material-symbols-outlined text-[12px] ml-auto shrink-0 ${ev.syncDot === "bg-emerald-500" ? "text-emerald-500" : "text-amber-500"}`} title={ev.syncText}>
+                        <span className={`material-symbols-outlined text-[12px] ml-auto shrink-0 ${getSyncIconColor(ev.syncDot)}`} title={ev.syncText}>
                           {ev.syncIcon}
                         </span>
                       )}
@@ -717,7 +801,7 @@ export default function SchedulePage() {
                     <h4 className="text-[13px] font-bold text-build-main dark:text-white truncate hover:underline">{ev.label}</h4>
                       <div className="flex items-center gap-1.5 shrink-0">
                         {ev.syncIcon && (
-                          <span className={`material-symbols-outlined text-[14px] ${ev.syncDot === "bg-emerald-500" ? "text-emerald-500" : "text-amber-500"}`} title={ev.syncText}>
+                          <span className={`material-symbols-outlined text-[14px] ${getSyncIconColor(ev.syncDot)}`} title={ev.syncText}>
                             {ev.syncIcon}
                           </span>
                         )}
@@ -821,7 +905,7 @@ export default function SchedulePage() {
                     Cancelar
                   </button>
                   <button type="submit" disabled={isSaving} className="px-6 py-2.5 bg-build-main text-white rounded-xl text-sm font-bold hover:bg-build-main/90 transition-all flex items-center gap-2 shadow-sm">
-                    {isSaving ? "Guardando..." : "Guardar y sincronizar calendario"}
+                    {getSaveButtonText(isSaving, false)}
                   </button>
                 </div>
               </>
@@ -835,8 +919,8 @@ export default function SchedulePage() {
                 ) : (
                   <span className="material-symbols-outlined text-[64px] text-[#e65100] mb-4">sync_problem</span>
                 )}
-                <h3 className={`text-[18px] font-bold mb-2 ${successMsg ? "text-[#1c663b]" : "text-[#e65100]"}`}>
-                  {successMsg ? "Cita agendada" : "Aviso de sincronización"}
+                <h3 className={`text-[18px] font-bold mb-2 ${getBannerColor(!!successMsg)}`}>
+                  {getBannerTitle(!!successMsg)}
                 </h3>
                 <p className="text-[14px] text-[#41484c] dark:text-white/70">{successMsg || warningMsg}</p>
               </div>
@@ -854,7 +938,7 @@ export default function SchedulePage() {
             <div className="px-6 py-5 border-b border-slate-200 dark:border-white/10 bg-white dark:bg-[#111] flex justify-between items-center">
               <h2 className="text-[20px] font-bold text-build-main dark:text-white flex items-center gap-2">
                 <span className="material-symbols-outlined text-arch-gold">info</span> 
-                {isEditing ? "Editar Cita" : "Detalle de la Cita"}
+                {getModalTitle(isEditing)}
               </h2>
               <button 
                 type="button" 
@@ -968,13 +1052,7 @@ export default function SchedulePage() {
                   <div className="bg-slate-50 dark:bg-white/5 p-4 rounded-xl border border-slate-100 dark:border-white/5 space-y-2">
                     <div className="flex justify-between items-start">
                       <h3 className="text-base font-bold text-build-main dark:text-white">{selectedCita.titulo}</h3>
-                      <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
-                        selectedCita.estadoCita === "CONFIRMADA" ? "bg-green-100 text-green-800" :
-                        selectedCita.estadoCita === "CANCELADA" ? "bg-red-100 text-red-800" :
-                        selectedCita.estadoCita === "COMPLETADA" ? "bg-slate-200 text-slate-800" :
-                        selectedCita.estadoCita === "REPROGRAMACION_PENDIENTE" ? "bg-orange-100 text-orange-800" :
-                        "bg-blue-100 text-blue-800"
-                      }`}>
+                      <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${getStatusBadgeClass(selectedCita.estadoCita)}`}>
                         {selectedCita.estadoCita}
                       </span>
                     </div>
@@ -1017,7 +1095,7 @@ export default function SchedulePage() {
                     <div>
                       <span className="block text-slate-400 font-semibold mb-0.5">Confirmación del Cliente:</span>
                       <span className="text-build-main dark:text-white font-bold">
-                        {selectedCita.confirmacionCliente === true ? "Confirmado ✓" : selectedCita.confirmacionCliente === false ? "Declinado ✕" : "Sin respuesta"}
+                        {getConfirmationText(selectedCita.confirmacionCliente)}
                       </span>
                     </div>
                   </div>
@@ -1089,7 +1167,7 @@ export default function SchedulePage() {
                     disabled={isSaving}
                     className="px-6 py-2 bg-build-main text-white rounded-xl text-sm font-bold hover:bg-build-main/90 transition-all disabled:opacity-50"
                   >
-                    {isSaving ? "Guardando..." : "Guardar Cambios"}
+                    {getSaveButtonText(isSaving, true)}
                   </button>
                 </>
               ) : (
