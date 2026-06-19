@@ -266,7 +266,7 @@ const [torresOptions, setTorresOptions]   = useState<string[]>([]);
 useEffect(() => {
   fetchProyectos().then((list) => {
     setProyectosList(list);
-    setProyectosOptions(list.map((p) => p.nombre).sort());
+    setProyectosOptions(list.map((p) => p.nombre).sort((a, b) => a.localeCompare(b)));
   });
 }, []);
   // Reset page to 0 when filters change
@@ -344,7 +344,7 @@ useEffect(() => {
 useEffect(() => {
   fetchProyectos().then((list) => {
     setProyectosList(list);
-    setProyectosOptions(list.map((p) => p.nombre).sort());
+    setProyectosOptions(list.map((p) => p.nombre).sort((a, b) => a.localeCompare(b)));
   });
 }, []);
 
@@ -355,7 +355,7 @@ useEffect(() => {
   const proyecto = proyectosList.find((p) => p.nombre === selectedProyecto);
   if (!proyecto) return;
   fetchTorresPorProyecto(proyecto.id).then((list) =>
-    setTorresOptions(list.map((t) => t.nombre).sort())
+    setTorresOptions(list.map((t) => t.nombre).sort((a, b) => a.localeCompare(b)))
   );
 }, [selectedProyecto, proyectosList]);
 
