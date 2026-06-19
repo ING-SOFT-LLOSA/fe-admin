@@ -7,11 +7,11 @@ import { linkComprobanteToLegal } from "@/modules/finanzas/utils/linkComprobante
 import DialogModal from "@/components/ui/DialogModal";
 
     interface DirectFinancingViewProps {
-        expediente: UsuarioActivoResponseDTO;
-        cronograma: CronogramaPagoResponse | null;
-        pagos: PagoResponse[];
-        resumen: CronogramaResumenResponse | null;
-        onUpdate: () => void;
+        readonly expediente: UsuarioActivoResponseDTO;
+        readonly cronograma: CronogramaPagoResponse | null;
+        readonly pagos: PagoResponse[];
+        readonly resumen: CronogramaResumenResponse | null;
+        readonly onUpdate: () => void;
     }
 
     const estadoGlobalStyles: Record<string, { bg: string; text: string; label: string }> = {
@@ -28,7 +28,7 @@ import DialogModal from "@/components/ui/DialogModal";
         numeroCuotas: string;
     }
 
-export default function DirectFinancingView({ expediente, cronograma, pagos, resumen, onUpdate }: DirectFinancingViewProps) {
+export default function DirectFinancingView({ expediente, cronograma, pagos, resumen, onUpdate }: Readonly<DirectFinancingViewProps>) {
     const [updatingId, setUpdatingId] = useState<string | null>(null);
     const [showAddForm, setShowAddForm] = useState(false);
     const [showCronogramaForm, setShowCronogramaForm] = useState(!cronograma);
@@ -132,18 +132,18 @@ export default function DirectFinancingView({ expediente, cronograma, pagos, res
             if (cronograma) {
                     await updateCronograma(cronograma.uuidCronograma, {
                         uuidUsuarioActivo: expediente.uuidUsuarioActivo,
-                        totalPactado: parseFloat(cronogramaForm.totalPactado),
-                        pagoSeparacion: parseFloat(cronogramaForm.pagoSeparacion),
-                        pagoInicial: parseFloat(cronogramaForm.pagoInicial),
-                        numeroCuotas: parseInt(cronogramaForm.numeroCuotas),
+                        totalPactado: Number.parseFloat(cronogramaForm.totalPactado),
+                        pagoSeparacion: Number.parseFloat(cronogramaForm.pagoSeparacion),
+                        pagoInicial: Number.parseFloat(cronogramaForm.pagoInicial),
+                        numeroCuotas: Number.parseInt(cronogramaForm.numeroCuotas, 10),
                     });
                 } else {
                     await createCronograma({
                         uuidUsuarioActivo: expediente.uuidUsuarioActivo,
-                        totalPactado: parseFloat(cronogramaForm.totalPactado),
-                        pagoSeparacion: parseFloat(cronogramaForm.pagoSeparacion),
-                        pagoInicial: parseFloat(cronogramaForm.pagoInicial),
-                        numeroCuotas: parseInt(cronogramaForm.numeroCuotas),
+                        totalPactado: Number.parseFloat(cronogramaForm.totalPactado),
+                        pagoSeparacion: Number.parseFloat(cronogramaForm.pagoSeparacion),
+                        pagoInicial: Number.parseFloat(cronogramaForm.pagoInicial),
+                        numeroCuotas: Number.parseInt(cronogramaForm.numeroCuotas, 10),
                 });
             }
             setShowCronogramaForm(false);
@@ -252,7 +252,7 @@ export default function DirectFinancingView({ expediente, cronograma, pagos, res
         try {
             await updatePago(uuidPago, {
                 nroCuota: pagos.find(p => p.uuidPago === uuidPago)!.nroCuota,
-                montoProgramado: parseFloat(editForm.montoProgramado),
+                montoProgramado: Number.parseFloat(editForm.montoProgramado),
                 fechaVencimiento: editForm.fechaVencimiento,
             });
             cancelEditing();
@@ -275,15 +275,22 @@ export default function DirectFinancingView({ expediente, cronograma, pagos, res
             setIsSaving(true);
             const concepto = addForm.concepto as "CUOTA" | "SEPARACION" | "INICIAL";
             const rawNro = addForm.nroCuota.trim();
-            const nroCuota = rawNro !== ""
-                ? parseInt(rawNro)
-                : concepto === "SEPARACION" ? -1
-                : concepto === "INICIAL" ? 0
-                : 1;
+            let nroCuota;
+            if (rawNro === "") {
+                if (concepto === "SEPARACION") {
+                    nroCuota = -1;
+                } else if (concepto === "INICIAL") {
+                    nroCuota = 0;
+                } else {
+                    nroCuota = 1;
+                }
+            } else {
+                nroCuota = Number.parseInt(rawNro, 10);
+            }
             try {
                 await addPago(cronograma.uuidCronograma, {
                     nroCuota,
-                    montoProgramado: parseFloat(addForm.montoProgramado),
+                    montoProgramado: Number.parseFloat(addForm.montoProgramado),
                     fechaVencimiento: addForm.fechaVencimiento,
                     concepto,
                 });
@@ -320,15 +327,15 @@ export default function DirectFinancingView({ expediente, cronograma, pagos, res
                                 <div key={item.label} className="bg-slate-50 dark:bg-white/5 rounded-xl px-4 py-3">
                                     <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">{item.label}</p>
                                     <p className={`text-base font-bold ${item.color}`}>
-                                        {item.value != null ? `S/ ${item.value.toLocaleString("es-PE", { minimumFractionDigits: 2 })}` : item.extra}
+                                        {item.value === null || typeof item.value === "undefined" ? item.extra : `S/ ${item.value.toLocaleString("es-PE", { minimumFractionDigits: 2 })}`}
                                     </p>
                                 </div>
                             ))}
                         </div>
                         <div className="mt-3 grid grid-cols-3 gap-2 text-center text-xs text-slate-400 dark:text-white/40">
-                            <span>{resumen.cuotasPagadas} cuota{resumen.cuotasPagadas !== 1 ? "s" : ""} pagada{resumen.cuotasPagadas !== 1 ? "s" : ""}</span>
-                            <span>{resumen.cuotasPendientes} pendiente{resumen.cuotasPendientes !== 1 ? "s" : ""}</span>
-                            <span>{resumen.cuotasVencidas} vencida{resumen.cuotasVencidas !== 1 ? "s" : ""}</span>
+                            <span>{resumen.cuotasPagadas} cuota{resumen.cuotasPagadas === 1 ? "" : "s"} pagada{resumen.cuotasPagadas === 1 ? "" : "s"}</span>
+                            <span>{resumen.cuotasPendientes} pendiente{resumen.cuotasPendientes === 1 ? "" : "s"}</span>
+                            <span>{resumen.cuotasVencidas} vencida{resumen.cuotasVencidas === 1 ? "" : "s"}</span>
                         </div>
                     </div>
                 )}
@@ -420,7 +427,7 @@ export default function DirectFinancingView({ expediente, cronograma, pagos, res
                                 className="flex items-center gap-1.5 text-xs font-bold text-build-accent hover:underline"
                             >
                                 <span className="material-symbols-outlined text-[16px]">add_circle</span>
-                                Agregar Cuota
+                                {" "}Agregar Cuota
                             </button>
                         </div>
 
@@ -484,7 +491,7 @@ export default function DirectFinancingView({ expediente, cronograma, pagos, res
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-50 dark:divide-white/5">
-                                    {pagos.sort((a, b) => a.nroCuota - b.nroCuota).map((pago) => (
+                                    {[...pagos].sort((a, b) => a.nroCuota - b.nroCuota).map((pago) => (
                                         <PagoRow
                                             key={pago.uuidPago}
                                             pago={pago}
@@ -580,25 +587,25 @@ function isSpecialConcepto(pago: PagoResponse): boolean {
 /* ── Sub-component: action buttons for a pago row ── */
 
 interface PagoActionsProps {
-    pago: PagoResponse;
-    busy: boolean;
-    showDropzone: boolean;
-    isEditing: boolean;
-    isSaving: boolean;
-    handleSaveEdit: (uuidPago: string) => Promise<void>;
-    cancelEditing: () => void;
-    startEditingPago: (pago: PagoResponse) => void;
-    handleStatusChange: (uuidPago: string, estadoActual: string) => Promise<void>;
-    openDropzone: (uuidPago: string) => void;
-    handleDownloadVoucher: (uuidComprobante: string) => Promise<void>;
-    handleDeletePago: (uuidPago: string) => Promise<void>;
+    readonly pago: PagoResponse;
+    readonly busy: boolean;
+    readonly showDropzone: boolean;
+    readonly isEditing: boolean;
+    readonly isSaving: boolean;
+    readonly handleSaveEdit: (uuidPago: string) => Promise<void>;
+    readonly cancelEditing: () => void;
+    readonly startEditingPago: (pago: PagoResponse) => void;
+    readonly handleStatusChange: (uuidPago: string, estadoActual: string) => Promise<void>;
+    readonly openDropzone: (uuidPago: string) => void;
+    readonly handleDownloadVoucher: (uuidComprobante: string) => Promise<void>;
+    readonly handleDeletePago: (uuidPago: string) => Promise<void>;
 }
 
 function PagoActions({
     pago, busy, showDropzone, isEditing, isSaving,
     handleSaveEdit, cancelEditing, startEditingPago,
     handleStatusChange, openDropzone, handleDownloadVoucher, handleDeletePago,
-}: PagoActionsProps) {
+}: Readonly<PagoActionsProps>) {
     if (isEditing) {
         return (
             <>
@@ -688,17 +695,17 @@ function PagoActions({
 /* ── Sub-component: file upload dropzone ── */
 
 interface PagoDropzoneProps {
-    uuidPago: string;
-    estado: string;
-    concepto?: string;
-    isSaving: boolean;
-    dropzoneComentario: string;
-    setDropzoneComentario: (val: string) => void;
-    dropzoneFile: File | null;
-    handleSelectFile: (uuidPago: string, file: File) => void;
-    setActiveDropzoneId: (id: string | null) => void;
-    setDropzoneFile: (val: File | null) => void;
-    handleConfirmUpload: (uuidPago: string, currentEstado: string, concepto?: string) => Promise<void>;
+    readonly uuidPago: string;
+    readonly estado: string;
+    readonly concepto?: string;
+    readonly isSaving: boolean;
+    readonly dropzoneComentario: string;
+    readonly setDropzoneComentario: (val: string) => void;
+    readonly dropzoneFile: File | null;
+    readonly handleSelectFile: (uuidPago: string, file: File) => void;
+    readonly setActiveDropzoneId: (id: string | null) => void;
+    readonly setDropzoneFile: (val: File | null) => void;
+    readonly handleConfirmUpload: (uuidPago: string, currentEstado: string, concepto?: string) => Promise<void>;
 }
 
 function PagoDropzone({
@@ -706,11 +713,13 @@ function PagoDropzone({
     dropzoneComentario, setDropzoneComentario,
     dropzoneFile, handleSelectFile,
     setActiveDropzoneId, setDropzoneFile, handleConfirmUpload,
-}: PagoDropzoneProps) {
+}: Readonly<PagoDropzoneProps>) {
     return (
         <tr key={`${uuidPago}-dropzone`}>
             <td colSpan={6} className="bg-slate-50/50 dark:bg-white/[0.01] px-6 py-4">
                 <div
+                    role="region"
+                    aria-label="Subir comprobante"
                     className="border-2 border-dashed border-build-accent/40 rounded-xl p-4 bg-white dark:bg-white/5 transition flex flex-col gap-3"
                     onDragOver={(e) => { e.preventDefault(); }}
                     onDrop={(e) => {
@@ -719,8 +728,9 @@ function PagoDropzone({
                         if (file) handleSelectFile(uuidPago, file);
                     }}
                 >
-                    <div
-                        className="text-center cursor-pointer flex flex-col items-center justify-center gap-1.5"
+                    <button
+                        type="button"
+                        className="w-full text-center cursor-pointer flex flex-col items-center justify-center gap-1.5 bg-transparent border-0 outline-none"
                         onClick={() => document.getElementById(`file-input-${uuidPago}`)?.click()}
                     >
                         <span className="material-symbols-outlined text-build-accent text-[28px]">upload_file</span>
@@ -732,17 +742,17 @@ function PagoDropzone({
                                 <p className="text-[10px] text-slate-400">PDF, JPG, PNG (máx 10MB)</p>
                             </>
                         )}
-                        <input
-                            type="file"
-                            id={`file-input-${uuidPago}`}
-                            className="hidden"
-                            accept="application/pdf,image/*"
-                            onChange={(e) => {
-                                const file = e.target.files?.[0];
-                                if (file) handleSelectFile(uuidPago, file);
-                            }}
-                        />
-                    </div>
+                    </button>
+                    <input
+                        type="file"
+                        id={`file-input-${uuidPago}`}
+                        className="hidden"
+                        accept="application/pdf,image/*"
+                        onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) handleSelectFile(uuidPago, file);
+                        }}
+                    />
                     <div>
                         <textarea
                             value={dropzoneComentario}
@@ -779,27 +789,27 @@ function PagoDropzone({
 /* ── Main pago row component ── */
 
 interface PagoRowProps {
-    pago: PagoResponse;
-    busy: boolean;
-    showDropzone: boolean;
-    isEditing: boolean;
-    editForm: { fechaVencimiento: string; montoProgramado: string };
-    setEditForm: React.Dispatch<React.SetStateAction<{ fechaVencimiento: string; montoProgramado: string }>>;
-    handleSaveEdit: (uuidPago: string) => Promise<void>;
-    cancelEditing: () => void;
-    startEditingPago: (pago: PagoResponse) => void;
-    handleStatusChange: (uuidPago: string, estadoActual: string) => Promise<void>;
-    openDropzone: (uuidPago: string) => void;
-    handleDownloadVoucher: (uuidComprobante: string) => Promise<void>;
-    handleDeletePago: (uuidPago: string) => Promise<void>;
-    isSaving: boolean;
-    dropzoneComentario: string;
-    setDropzoneComentario: (val: string) => void;
-    dropzoneFile: File | null;
-    handleSelectFile: (uuidPago: string, file: File) => void;
-    setActiveDropzoneId: (id: string | null) => void;
-    setDropzoneFile: (val: File | null) => void;
-    handleConfirmUpload: (uuidPago: string, currentEstado: string, concepto?: string) => Promise<void>;
+    readonly pago: PagoResponse;
+    readonly busy: boolean;
+    readonly showDropzone: boolean;
+    readonly isEditing: boolean;
+    readonly editForm: { readonly fechaVencimiento: string; readonly montoProgramado: string };
+    readonly setEditForm: React.Dispatch<React.SetStateAction<{ fechaVencimiento: string; montoProgramado: string }>>;
+    readonly handleSaveEdit: (uuidPago: string) => Promise<void>;
+    readonly cancelEditing: () => void;
+    readonly startEditingPago: (pago: PagoResponse) => void;
+    readonly handleStatusChange: (uuidPago: string, estadoActual: string) => Promise<void>;
+    readonly openDropzone: (uuidPago: string) => void;
+    readonly handleDownloadVoucher: (uuidComprobante: string) => Promise<void>;
+    readonly handleDeletePago: (uuidPago: string) => Promise<void>;
+    readonly isSaving: boolean;
+    readonly dropzoneComentario: string;
+    readonly setDropzoneComentario: (val: string) => void;
+    readonly dropzoneFile: File | null;
+    readonly handleSelectFile: (uuidPago: string, file: File) => void;
+    readonly setActiveDropzoneId: (id: string | null) => void;
+    readonly setDropzoneFile: (val: File | null) => void;
+    readonly handleConfirmUpload: (uuidPago: string, currentEstado: string, concepto?: string) => Promise<void>;
 }
 
 function PagoRow({
@@ -808,7 +818,7 @@ function PagoRow({
     handleStatusChange, openDropzone, handleDownloadVoucher, handleDeletePago,
     isSaving, dropzoneComentario, setDropzoneComentario,
     dropzoneFile, handleSelectFile, setActiveDropzoneId, setDropzoneFile, handleConfirmUpload,
-}: PagoRowProps) {
+}: Readonly<PagoRowProps>) {
     const statusInfo = getPagoStatusInfo(pago);
     return (
         <React.Fragment key={pago.uuidPago}>
