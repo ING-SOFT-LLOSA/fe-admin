@@ -563,6 +563,218 @@ const getPagoStatusInfo = (pago: PagoResponse) => {
     }
 };
 
+function getConceptoLabel(pago: PagoResponse): string {
+    if (pago.concepto) return pago.concepto;
+    if (pago.nroCuota === -1) return "SEPARACION";
+    if (pago.nroCuota === 0) return "INICIAL";
+    return "CUOTA";
+}
+
+function isSpecialConcepto(pago: PagoResponse): boolean {
+    return pago.concepto === "SEPARACION" || pago.concepto === "INICIAL";
+}
+
+/* ── Sub-component: action buttons for a pago row ── */
+
+interface PagoActionsProps {
+    pago: PagoResponse;
+    busy: boolean;
+    showDropzone: boolean;
+    isEditing: boolean;
+    isSaving: boolean;
+    handleSaveEdit: (uuidPago: string) => Promise<void>;
+    cancelEditing: () => void;
+    startEditingPago: (pago: PagoResponse) => void;
+    handleStatusChange: (uuidPago: string, estadoActual: string) => Promise<void>;
+    openDropzone: (uuidPago: string) => void;
+    handleDownloadVoucher: (uuidComprobante: string) => Promise<void>;
+    handleDeletePago: (uuidPago: string) => Promise<void>;
+}
+
+function PagoActions({
+    pago, busy, showDropzone, isEditing, isSaving,
+    handleSaveEdit, cancelEditing, startEditingPago,
+    handleStatusChange, openDropzone, handleDownloadVoucher, handleDeletePago,
+}: PagoActionsProps) {
+    if (isEditing) {
+        return (
+            <>
+                <button
+                    disabled={isSaving}
+                    onClick={() => handleSaveEdit(pago.uuidPago)}
+                    className="p-1.5 rounded-lg bg-build-accent text-white hover:bg-build-accent/80 transition-colors"
+                    title="Guardar"
+                >
+                    <span className="material-symbols-outlined text-[18px]">check</span>
+                </button>
+                <button
+                    disabled={isSaving}
+                    onClick={cancelEditing}
+                    className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-white/10 transition-colors"
+                    title="Cancelar"
+                >
+                    <span className="material-symbols-outlined text-[18px] text-slate-400">close</span>
+                </button>
+            </>
+        );
+    }
+
+    const isPagado = pago.estado === "PAGADO";
+    const dropzoneClass = showDropzone
+        ? "bg-build-accent/15 text-build-accent"
+        : "hover:bg-slate-100 dark:hover:bg-white/10 text-slate-400 hover:text-build-accent";
+
+    return (
+        <>
+            {/* Editar */}
+            <button
+                disabled={busy}
+                onClick={() => startEditingPago(pago)}
+                title="Editar cuota"
+                className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-white/10 transition-colors"
+            >
+                <span className="material-symbols-outlined text-[18px] text-slate-400 hover:text-build-accent">edit</span>
+            </button>
+
+            {/* Toggle estado */}
+            <button
+                disabled={busy}
+                onClick={() => handleStatusChange(pago.uuidPago, pago.estado)}
+                title={isPagado ? "Marcar Pendiente" : "Marcar Pagado"}
+                className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-white/10 transition-colors"
+            >
+                <span className={`material-symbols-outlined text-[18px] ${isPagado ? "text-green-500" : "text-slate-300 dark:text-white/30"}`}>
+                    {isPagado ? "check_circle" : "radio_button_unchecked"}
+                </span>
+            </button>
+
+            {/* Subir comprobante */}
+            <button
+                disabled={busy}
+                onClick={() => openDropzone(pago.uuidPago)}
+                title="Subir comprobante"
+                className={`p-1.5 rounded-lg transition-colors ${dropzoneClass}`}
+            >
+                <span className="material-symbols-outlined text-[18px]">upload_file</span>
+            </button>
+
+            {/* Descargar comprobante */}
+            {pago.uuidComprobante && (
+                <button
+                    title="Descargar comprobante"
+                    onClick={() => handleDownloadVoucher(pago.uuidComprobante!)}
+                    className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-white/10 transition-colors"
+                >
+                    <span className="material-symbols-outlined text-[18px] text-build-main dark:text-white/70">download</span>
+                </button>
+            )}
+
+            {/* Eliminar */}
+            <button
+                title="Eliminar cuota"
+                disabled={busy}
+                onClick={() => handleDeletePago(pago.uuidPago)}
+                className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/10 transition-colors"
+            >
+                <span className="material-symbols-outlined text-[18px] text-slate-300 dark:text-white/20 hover:text-red-500">delete</span>
+            </button>
+        </>
+    );
+}
+
+/* ── Sub-component: file upload dropzone ── */
+
+interface PagoDropzoneProps {
+    uuidPago: string;
+    estado: string;
+    concepto?: string;
+    isSaving: boolean;
+    dropzoneComentario: string;
+    setDropzoneComentario: (val: string) => void;
+    dropzoneFile: File | null;
+    handleSelectFile: (uuidPago: string, file: File) => void;
+    setActiveDropzoneId: (id: string | null) => void;
+    setDropzoneFile: (val: File | null) => void;
+    handleConfirmUpload: (uuidPago: string, currentEstado: string, concepto?: string) => Promise<void>;
+}
+
+function PagoDropzone({
+    uuidPago, estado, concepto, isSaving,
+    dropzoneComentario, setDropzoneComentario,
+    dropzoneFile, handleSelectFile,
+    setActiveDropzoneId, setDropzoneFile, handleConfirmUpload,
+}: PagoDropzoneProps) {
+    return (
+        <tr key={`${uuidPago}-dropzone`}>
+            <td colSpan={6} className="bg-slate-50/50 dark:bg-white/[0.01] px-6 py-4">
+                <div
+                    className="border-2 border-dashed border-build-accent/40 rounded-xl p-4 bg-white dark:bg-white/5 transition flex flex-col gap-3"
+                    onDragOver={(e) => { e.preventDefault(); }}
+                    onDrop={(e) => {
+                        e.preventDefault();
+                        const file = e.dataTransfer.files?.[0];
+                        if (file) handleSelectFile(uuidPago, file);
+                    }}
+                >
+                    <div
+                        className="text-center cursor-pointer flex flex-col items-center justify-center gap-1.5"
+                        onClick={() => document.getElementById(`file-input-${uuidPago}`)?.click()}
+                    >
+                        <span className="material-symbols-outlined text-build-accent text-[28px]">upload_file</span>
+                        {dropzoneFile ? (
+                            <p className="text-xs font-bold text-build-main">{dropzoneFile.name}</p>
+                        ) : (
+                            <>
+                                <p className="text-xs font-bold text-slate-600 dark:text-white/80">Arrastra el comprobante o haz clic para seleccionar</p>
+                                <p className="text-[10px] text-slate-400">PDF, JPG, PNG (máx 10MB)</p>
+                            </>
+                        )}
+                        <input
+                            type="file"
+                            id={`file-input-${uuidPago}`}
+                            className="hidden"
+                            accept="application/pdf,image/*"
+                            onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (file) handleSelectFile(uuidPago, file);
+                            }}
+                        />
+                    </div>
+                    <div>
+                        <textarea
+                            value={dropzoneComentario}
+                            onChange={(e) => setDropzoneComentario(e.target.value)}
+                            placeholder="Comentario opcional del pago..."
+                            rows={2}
+                            className="w-full rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 px-3 py-2 text-xs text-build-main dark:text-white outline-none focus:border-build-accent resize-none"
+                            onClick={(e) => e.stopPropagation()}
+                            onDragOver={(e) => e.stopPropagation()}
+                        />
+                    </div>
+                    <div className="flex gap-2 justify-end">
+                        <button
+                            onClick={(e) => { e.stopPropagation(); setActiveDropzoneId(null); setDropzoneFile(null); setDropzoneComentario(""); }}
+                            className="px-3 py-1.5 text-[11px] font-bold text-slate-400 hover:text-red-500 rounded-lg hover:bg-slate-100 dark:hover:bg-white/5 transition-colors"
+                        >
+                            Cancelar
+                        </button>
+                        <button
+                            disabled={!dropzoneFile || isSaving}
+                            onClick={(e) => { e.stopPropagation(); handleConfirmUpload(uuidPago, estado, concepto); }}
+                            className="bg-build-main text-white px-4 py-1.5 rounded-lg text-[11px] font-bold hover:bg-build-main/80 transition-all disabled:opacity-50 flex items-center gap-1"
+                        >
+                            <span className="material-symbols-outlined text-[14px]">cloud_upload</span>
+                            {isSaving ? "Subiendo…" : "Subir"}
+                        </button>
+                    </div>
+                </div>
+            </td>
+        </tr>
+    );
+}
+
+/* ── Main pago row component ── */
+
 interface PagoRowProps {
     pago: PagoResponse;
     busy: boolean;
@@ -588,37 +800,21 @@ interface PagoRowProps {
 }
 
 function PagoRow({
-    pago,
-    busy,
-    showDropzone,
-    isEditing,
-    editForm,
-    setEditForm,
-    handleSaveEdit,
-    cancelEditing,
-    startEditingPago,
-    handleStatusChange,
-    openDropzone,
-    handleDownloadVoucher,
-    handleDeletePago,
-    isSaving,
-    dropzoneComentario,
-    setDropzoneComentario,
-    dropzoneFile,
-    handleSelectFile,
-    setActiveDropzoneId,
-    setDropzoneFile,
-    handleConfirmUpload,
+    pago, busy, showDropzone, isEditing, editForm, setEditForm,
+    handleSaveEdit, cancelEditing, startEditingPago,
+    handleStatusChange, openDropzone, handleDownloadVoucher, handleDeletePago,
+    isSaving, dropzoneComentario, setDropzoneComentario,
+    dropzoneFile, handleSelectFile, setActiveDropzoneId, setDropzoneFile, handleConfirmUpload,
 }: PagoRowProps) {
     const statusInfo = getPagoStatusInfo(pago);
     return (
         <React.Fragment key={pago.uuidPago}>
             <tr className={`transition-colors ${busy ? "opacity-60" : "hover:bg-slate-50/50 dark:hover:bg-white/[0.02]"}`}>
                 <td className="px-6 py-3 font-bold text-build-main dark:text-white text-sm">
-                    {pago.concepto === "SEPARACION" || pago.concepto === "INICIAL" ? <span className="text-slate-300 dark:text-white/20">—</span> : pago.nroCuota}
+                    {isSpecialConcepto(pago) ? <span className="text-slate-300 dark:text-white/20">—</span> : pago.nroCuota}
                 </td>
                 <td className="px-4 py-3 text-xs font-semibold text-slate-500 dark:text-white/50">
-                    {pago.concepto ?? (pago.nroCuota === -1 ? "SEPARACION" : pago.nroCuota === 0 ? "INICIAL" : "CUOTA")}
+                    {getConceptoLabel(pago)}
                 </td>
                 <td className="px-4 py-3 text-slate-600 dark:text-white/60">
                     {isEditing ? (
@@ -651,151 +847,28 @@ function PagoRow({
                 </td>
                 <td className="px-4 py-3">
                     <div className="flex items-center gap-2 flex-wrap">
-                        {isEditing ? (
-                            <>
-                                <button
-                                    disabled={isSaving}
-                                    onClick={() => handleSaveEdit(pago.uuidPago)}
-                                    className="p-1.5 rounded-lg bg-build-accent text-white hover:bg-build-accent/80 transition-colors"
-                                    title="Guardar"
-                                >
-                                    <span className="material-symbols-outlined text-[18px]">check</span>
-                                </button>
-                                <button
-                                    disabled={isSaving}
-                                    onClick={cancelEditing}
-                                    className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-white/10 transition-colors"
-                                    title="Cancelar"
-                                >
-                                    <span className="material-symbols-outlined text-[18px] text-slate-400">close</span>
-                                </button>
-                            </>
-                        ) : (
-                            <>
-                                {/* Editar */}
-                                <button
-                                    disabled={busy}
-                                    onClick={() => startEditingPago(pago)}
-                                    title="Editar cuota"
-                                    className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-white/10 transition-colors"
-                                >
-                                    <span className="material-symbols-outlined text-[18px] text-slate-400 hover:text-build-accent">edit</span>
-                                </button>
-
-                                {/* Toggle estado */}
-                                <button
-                                    disabled={busy}
-                                    onClick={() => handleStatusChange(pago.uuidPago, pago.estado)}
-                                    title={pago.estado === "PAGADO" ? "Marcar Pendiente" : "Marcar Pagado"}
-                                    className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-white/10 transition-colors"
-                                >
-                                    <span className={`material-symbols-outlined text-[18px] ${pago.estado === "PAGADO" ? "text-green-500" : "text-slate-300 dark:text-white/30"}`}>
-                                        {pago.estado === "PAGADO" ? "check_circle" : "radio_button_unchecked"}
-                                    </span>
-                                </button>
-
-                                {/* Subir comprobante */}
-                                <button
-                                    disabled={busy}
-                                    onClick={() => openDropzone(pago.uuidPago)}
-                                    title="Subir comprobante"
-                                    className={`p-1.5 rounded-lg transition-colors ${showDropzone ? "bg-build-accent/15 text-build-accent" : "hover:bg-slate-100 dark:hover:bg-white/10 text-slate-400 hover:text-build-accent"}`}
-                                >
-                                    <span className="material-symbols-outlined text-[18px]">upload_file</span>
-                                </button>
-
-                                {/* Descargar comprobante */}
-                                {pago.uuidComprobante && (
-                                    <button
-                                        title="Descargar comprobante"
-                                        onClick={() => handleDownloadVoucher(pago.uuidComprobante!)}
-                                        className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-white/10 transition-colors"
-                                    >
-                                        <span className="material-symbols-outlined text-[18px] text-build-main dark:text-white/70">download</span>
-                                    </button>
-                                )}
-
-                                {/* Eliminar */}
-                                <button
-                                    title="Eliminar cuota"
-                                    disabled={busy}
-                                    onClick={() => handleDeletePago(pago.uuidPago)}
-                                    className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/10 transition-colors"
-                                >
-                                    <span className="material-symbols-outlined text-[18px] text-slate-300 dark:text-white/20 hover:text-red-500">delete</span>
-                                </button>
-                            </>
-                        )}
+                        <PagoActions
+                            pago={pago} busy={busy} showDropzone={showDropzone}
+                            isEditing={isEditing} isSaving={isSaving}
+                            handleSaveEdit={handleSaveEdit} cancelEditing={cancelEditing}
+                            startEditingPago={startEditingPago} handleStatusChange={handleStatusChange}
+                            openDropzone={openDropzone} handleDownloadVoucher={handleDownloadVoucher}
+                            handleDeletePago={handleDeletePago}
+                        />
                     </div>
                 </td>
             </tr>
             {showDropzone && (
-                <tr key={`${pago.uuidPago}-dropzone`}>
-                    <td colSpan={6} className="bg-slate-50/50 dark:bg-white/[0.01] px-6 py-4">
-                        <div 
-                            className="border-2 border-dashed border-build-accent/40 rounded-xl p-4 bg-white dark:bg-white/5 transition flex flex-col gap-3"
-                            onDragOver={(e) => { e.preventDefault(); }}
-                            onDrop={(e) => {
-                                e.preventDefault();
-                                const file = e.dataTransfer.files?.[0];
-                                if (file) handleSelectFile(pago.uuidPago, file);
-                            }}
-                        >
-                            <div 
-                                className="text-center cursor-pointer flex flex-col items-center justify-center gap-1.5"
-                                onClick={() => document.getElementById(`file-input-${pago.uuidPago}`)?.click()}
-                            >
-                                <span className="material-symbols-outlined text-build-accent text-[28px]">upload_file</span>
-                                {dropzoneFile ? (
-                                    <p className="text-xs font-bold text-build-main">{dropzoneFile.name}</p>
-                                ) : (
-                                    <>
-                                        <p className="text-xs font-bold text-slate-600 dark:text-white/80">Arrastra el comprobante o haz clic para seleccionar</p>
-                                        <p className="text-[10px] text-slate-400">PDF, JPG, PNG (máx 10MB)</p>
-                                    </>
-                                )}
-                                <input
-                                    type="file"
-                                    id={`file-input-${pago.uuidPago}`}
-                                    className="hidden"
-                                    accept="application/pdf,image/*"
-                                    onChange={(e) => {
-                                        const file = e.target.files?.[0];
-                                        if (file) handleSelectFile(pago.uuidPago, file);
-                                    }}
-                                />
-                            </div>
-                            <div>
-                                <textarea
-                                    value={dropzoneComentario}
-                                    onChange={(e) => setDropzoneComentario(e.target.value)}
-                                    placeholder="Comentario opcional del pago..."
-                                    rows={2}
-                                    className="w-full rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 px-3 py-2 text-xs text-build-main dark:text-white outline-none focus:border-build-accent resize-none"
-                                    onClick={(e) => e.stopPropagation()}
-                                    onDragOver={(e) => e.stopPropagation()}
-                                />
-                            </div>
-                            <div className="flex gap-2 justify-end">
-                                <button 
-                                    onClick={(e) => { e.stopPropagation(); setActiveDropzoneId(null); setDropzoneFile(null); setDropzoneComentario(""); }}
-                                    className="px-3 py-1.5 text-[11px] font-bold text-slate-400 hover:text-red-500 rounded-lg hover:bg-slate-100 dark:hover:bg-white/5 transition-colors"
-                                >
-                                    Cancelar
-                                </button>
-                                <button
-                                    disabled={!dropzoneFile || isSaving}
-                                    onClick={(e) => { e.stopPropagation(); handleConfirmUpload(pago.uuidPago, pago.estado, pago.concepto); }}
-                                    className="bg-build-main text-white px-4 py-1.5 rounded-lg text-[11px] font-bold hover:bg-build-main/80 transition-all disabled:opacity-50 flex items-center gap-1"
-                                >
-                                    <span className="material-symbols-outlined text-[14px]">cloud_upload</span>
-                                    {isSaving ? "Subiendo…" : "Subir"}
-                                </button>
-                            </div>
-                        </div>
-                    </td>
-                </tr>
+                <PagoDropzone
+                    uuidPago={pago.uuidPago} estado={pago.estado} concepto={pago.concepto}
+                    isSaving={isSaving}
+                    dropzoneComentario={dropzoneComentario} setDropzoneComentario={setDropzoneComentario}
+                    dropzoneFile={dropzoneFile} handleSelectFile={handleSelectFile}
+                    setActiveDropzoneId={setActiveDropzoneId} setDropzoneFile={setDropzoneFile}
+                    handleConfirmUpload={handleConfirmUpload}
+                />
             )}
         </React.Fragment>
     );
 }
+
