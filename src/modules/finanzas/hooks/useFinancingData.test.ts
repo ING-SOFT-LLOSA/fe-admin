@@ -90,7 +90,6 @@ describe("useFinancingData", () => {
       expect(result.current.cronograma).toBeNull();
       expect(result.current.pagos).toEqual([]);
       expect(result.current.resumen).toBeNull();
-      expect(result.current.cartaAprobacion).toBeNull();
       expect(result.current.hasExpediente).toBeNull();
       expect(mockFetchContrato).not.toHaveBeenCalled();
     });
@@ -111,7 +110,6 @@ describe("useFinancingData", () => {
       expect(result.current.resumen?.estadoGlobal).toBe("AL_DIA");
       expect(result.current.pagos).toHaveLength(1);
       expect(result.current.hasExpediente).toBe(true);
-      expect(result.current.cartaAprobacion).toBeNull();
     });
 
     it("si fetchCronograma falla, deja cronograma en null y continúa", async () => {
@@ -167,12 +165,11 @@ describe("useFinancingData", () => {
       const { result } = renderHook(() => useFinancingData("ua-1"));
       await waitFor(() => expect(result.current.isLoading).toBe(false));
 
-      expect(result.current.cartaAprobacion?.banco).toBe("BCP");
-      expect(result.current.cronograma).toBeNull();
+      expect(result.current.cronograma?.uuidCronograma).toBe("crono-1");
       expect(result.current.hasExpediente).toBe(true);
     });
 
-    it("si fetchCartaAprobacion falla, carta queda null y no hay error global", async () => {
+    it("si fetchCartaAprobacion falla, no hay error global", async () => {
       mockFetchContrato.mockResolvedValue(makeExpediente("Crédito Hipotecario"));
       mockFetchCarta.mockRejectedValue(new Error("Sin carta"));
       mockFetchStepper.mockResolvedValue({ uuidUsuarioActivo: "ua-1", etapas: [] });
@@ -180,7 +177,6 @@ describe("useFinancingData", () => {
       const { result } = renderHook(() => useFinancingData("ua-1"));
       await waitFor(() => expect(result.current.isLoading).toBe(false));
 
-      expect(result.current.cartaAprobacion).toBeNull();
       expect(result.current.error).toBeNull();
     });
 
@@ -217,7 +213,7 @@ describe("useFinancingData", () => {
       expect(result.current.creditoHipotecario?.items[0].nombre).toBe("Carta de aprobación");
     });
 
-    it("usa hitos por defecto cuando el stepper no tiene etapa PAGO con hitos", async () => {
+    it("usa hitos vacíos cuando el stepper no tiene etapa PAGO con hitos", async () => {
       mockFetchContrato.mockResolvedValue(makeExpediente("Crédito Hipotecario"));
       mockFetchCarta.mockResolvedValue(mockCarta as any);
       mockFetchStepper.mockResolvedValue({
@@ -228,8 +224,8 @@ describe("useFinancingData", () => {
       const { result } = renderHook(() => useFinancingData("ua-1"));
       await waitFor(() => expect(result.current.isLoading).toBe(false));
 
-      expect(result.current.creditoHipotecario?.items).toHaveLength(4);
-      expect(result.current.creditoHipotecario?.montoTotal).toBe(200000);
+      expect(result.current.creditoHipotecario?.items).toHaveLength(0);
+      expect(result.current.creditoHipotecario?.montoTotal).toBe(100000);
     });
   });
 

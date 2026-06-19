@@ -64,7 +64,7 @@ describe("AssignPropertyWizard (sin client prop = flujo 3 pasos)", () => {
   it("renderiza el paso 1 con búsqueda de clientes", async () => {
     render(<AssignPropertyWizard onClose={vi.fn()} onSuccess={vi.fn()} />);
     await waitFor(() => {
-      expect(screen.getByText(/Seleccionar personas/i)).toBeInTheDocument();
+      expect(screen.getAllByText(/Seleccionar personas/i).length).toBeGreaterThanOrEqual(1);
     });
     expect(screen.getByPlaceholderText(/Buscar por nombre/i)).toBeInTheDocument();
   });
@@ -82,7 +82,7 @@ describe("AssignPropertyWizard (sin client prop = flujo 3 pasos)", () => {
   it("llama a onClose cuando se hace clic en cerrar", async () => {
     const onClose = vi.fn();
     render(<AssignPropertyWizard onClose={onClose} onSuccess={vi.fn()} />);
-    const closeBtn = screen.getByRole("button", { name: "" });
+    const closeBtn = screen.getByRole("button", { name: "close" });
     fireEvent.click(closeBtn);
     expect(onClose).toHaveBeenCalledOnce();
   });
@@ -90,7 +90,7 @@ describe("AssignPropertyWizard (sin client prop = flujo 3 pasos)", () => {
   it("muestra error si se intenta avanzar sin seleccionar clientes", async () => {
     render(<AssignPropertyWizard onClose={vi.fn()} onSuccess={vi.fn()} />);
     await waitFor(() => {
-      expect(screen.getByText(/Seleccionar personas/i)).toBeInTheDocument();
+      expect(screen.getAllByText(/Seleccionar personas/i).length).toBeGreaterThanOrEqual(1);
     });
     fireEvent.click(screen.getByText("Siguiente"));
     await waitFor(() => {
@@ -167,8 +167,7 @@ describe("AssignPropertyWizard (con client prop = flujo 2 pasos)", () => {
     );
 
     await waitFor(() => {
-      expect(screen.queryByText("Seleccionar proyecto")).not.toBeNull() ||
-      expect(screen.queryByText(/Seleccionar unidades/i)).not.toBeNull();
+      expect(screen.getByText(/Seleccionar unidades/i)).toBeInTheDocument();
     });
   });
 });

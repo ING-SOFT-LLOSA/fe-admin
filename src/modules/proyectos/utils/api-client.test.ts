@@ -3,7 +3,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 vi.mock("@/lib/api/http", () => ({ apiFetch: vi.fn() }));
 
 import { apiFetch } from "@/lib/api/http";
-import { createProject, createInventory } from "./api-client";
+import { createProject, createInventory, generateEstructura } from "./api-client";
 import type { ProjectFormData, InventoryConfig } from "./wizard-logic";
 
 const mockApiFetch = vi.mocked(apiFetch);
@@ -66,7 +66,8 @@ describe("createInventory", () => {
       depositosPorPiso: 1,
     };
 
-    await createInventory("p-1", config);
+    const torres = generateEstructura(config);
+    await createInventory("p-1", torres);
     const [url, init] = mockApiFetch.mock.calls[0];
     expect(url).toBe("/api/proyectos/p-1/estructura-fisica");
     expect((init as RequestInit).method).toBe("POST");
@@ -87,7 +88,8 @@ describe("createInventory", () => {
       depositosPorPiso: 1,
     };
 
-    await createInventory("p-1", config);
+    const torres = generateEstructura(config);
+    await createInventory("p-1", torres);
     const [, init] = mockApiFetch.mock.calls[0];
     const body = JSON.parse((init as RequestInit).body as string);
     const activos = body.torres[0].pisos[0].activos;
@@ -112,7 +114,8 @@ describe("createInventory", () => {
       depositosPorPiso: 0,
     };
 
-    await createInventory("p-2", config);
+    const torres = generateEstructura(config);
+    await createInventory("p-2", torres);
     const [, init] = mockApiFetch.mock.calls[0];
     const body = JSON.parse((init as RequestInit).body as string);
     expect(body.torres).toHaveLength(3);
@@ -130,7 +133,8 @@ describe("createInventory", () => {
       depositosPorPiso: 0,
     };
 
-    await createInventory("p-1", config);
+    const torres = generateEstructura(config);
+    await createInventory("p-1", torres);
     const [, init] = mockApiFetch.mock.calls[0];
     const body = JSON.parse((init as RequestInit).body as string);
     const activos = body.torres[0].pisos[0].activos;

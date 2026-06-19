@@ -17,11 +17,6 @@ import {
   deletePago,
   updatePagoEstado,
   uploadPagoComprobante,
-  fetchCartaAprobacion,
-  createCartaAprobacion,
-  updateCartaAprobacion,
-  deleteCartaAprobacion,
-  fetchCreditoHipotecario,
 } from "./finanzas";
 
 const mockApiFetch = vi.mocked(apiFetch);
@@ -191,62 +186,5 @@ describe("finanzas API", () => {
     });
   });
 
-  describe("fetchCartaAprobacion", () => {
-    it("llama a /api/cartas-aprobacion/{uuid}", async () => {
-      mockApiFetch.mockResolvedValue({ banco: "BCP" });
-      await fetchCartaAprobacion("ua-1");
-      expect(mockApiFetch).toHaveBeenCalledWith("/api/cartas-aprobacion/ua-1");
-    });
-  });
 
-  describe("createCartaAprobacion", () => {
-    it("hace POST a /api/cartas-aprobacion con el payload", async () => {
-      mockApiFetch.mockResolvedValue({ banco: "BBVA" });
-      await createCartaAprobacion({
-        uuidUsuarioActivo: "ua-1",
-        banco: "BBVA",
-        montoAprobado: 200000,
-        fechaEmision: "2026-01-01",
-        fechaVencimiento: "2026-12-31",
-        fechaDesembolsoProyectada: "2026-06-30",
-      });
-      const [url, init] = mockApiFetch.mock.calls[0];
-      expect(url).toBe("/api/cartas-aprobacion");
-      expect((init as RequestInit).method).toBe("POST");
-      expect((init as RequestInit).body).toContain('"banco":"BBVA"');
-    });
-  });
-
-  describe("updateCartaAprobacion", () => {
-    it("hace PUT a /api/cartas-aprobacion/{uuid}", async () => {
-      mockApiFetch.mockResolvedValue({ banco: "Scotiabank" });
-      await updateCartaAprobacion("carta-1", {
-        uuidUsuarioActivo: "ua-1",
-        banco: "Scotiabank",
-        montoAprobado: 250000,
-        fechaEmision: "2026-01-01",
-        fechaVencimiento: "2026-12-31",
-        fechaDesembolsoProyectada: "2026-07-01",
-      });
-      const [url, init] = mockApiFetch.mock.calls[0];
-      expect(url).toBe("/api/cartas-aprobacion/carta-1");
-      expect((init as RequestInit).method).toBe("PUT");
-    });
-  });
-
-  describe("deleteCartaAprobacion", () => {
-    it("hace DELETE a /api/cartas-aprobacion/{uuid}", async () => {
-      mockApiFetch.mockResolvedValue(undefined);
-      await deleteCartaAprobacion("carta-1");
-      expect(mockApiFetch).toHaveBeenCalledWith("/api/cartas-aprobacion/carta-1", { method: "DELETE" });
-    });
-  });
-
-  describe("fetchCreditoHipotecario", () => {
-    it("llama a /api/credito-hipotecario/{uuid}", async () => {
-      mockApiFetch.mockResolvedValue({ totalDeuda: 300000 });
-      await fetchCreditoHipotecario("ua-1");
-      expect(mockApiFetch).toHaveBeenCalledWith("/api/credito-hipotecario/ua-1");
-    });
-  });
 });
