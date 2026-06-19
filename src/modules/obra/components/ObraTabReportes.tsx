@@ -1,6 +1,6 @@
 "use client";
 /* eslint-disable @next/next/no-img-element */
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useState, useCallback, useRef, useId } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import type { Proyecto } from "@/modules/proyectos/types";
 import { uploadDocument } from "@/lib/api/documents";
@@ -17,9 +17,9 @@ import { getEtapasByProyecto, type HitoResponseDTO } from "@/lib/api/obra";
 // ─── Types ────────────────────────────────────────────────────────────────────
  
 type ObraTabReportesProps = {
-  projectId: string;
-  avance: number;
-  project: Proyecto | null;
+  readonly projectId: string;
+  readonly avance: number;
+  readonly project: Proyecto | null;
 };
  
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -89,22 +89,27 @@ export default function ObraTabReportes({ projectId, avance, project }: ObraTabR
       loadReports();
     });
   }, [loadReports]);
+
+  const uploadReportFiles = async (reportId: string, files: File[]) => {
+    let failedUploads = 0;
+    let lastErrorMessage = "";
+    for (const file of files) {
+      const tipo: "FOTO_OBRA" | "VIDEO_OBRA" = file.type.startsWith("image/") ? "FOTO_OBRA" : "VIDEO_OBRA";
+      try {
+        await uploadDocument(reportId, file, tipo);
+      } catch (err) {
+        console.error("Error uploading file to report:", err);
+        failedUploads++;
+        lastErrorMessage = err instanceof Error ? err.message : String(err);
+      }
+    }
+    return { failedUploads, lastErrorMessage };
+  };
  
   const handleCreateReport = async (payload: ReporteCreatePayload, files: File[]) => {
     const report = await createReporte(payload);
     if (files && files.length > 0) {
-      let failedUploads = 0;
-      let lastErrorMessage = "";
-      for (const file of files) {
-        const tipo: "FOTO_OBRA" | "VIDEO_OBRA" = file.type.startsWith("image/") ? "FOTO_OBRA" : "VIDEO_OBRA";
-        try {
-          await uploadDocument(report.id, file, tipo);
-        } catch (err) {
-          console.error("Error uploading file to report:", err);
-          failedUploads++;
-          lastErrorMessage = err instanceof Error ? err.message : String(err);
-        }
-      }
+      const { failedUploads, lastErrorMessage } = await uploadReportFiles(report.id, files);
       if (failedUploads > 0) {
         setDialog({
           isOpen: true,
@@ -153,6 +158,44 @@ export default function ObraTabReportes({ projectId, avance, project }: ObraTabR
  
   const totalPublicados = reports.length;
   const totalBorradores = 0;
+
+  const renderContent = () => {
+    if (loading && reports.length === 0) {
+      return (
+        <div className="flex items-center justify-center py-12">
+          <svg className="animate-spin w-5 h-5 text-build-accent mr-3" viewBox="0 0 24 24" fill="none">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+          </svg>
+          <span className="text-sm text-slate-500 dark:text-white/40 font-medium">Cargando reportes...</span>
+        </div>
+      );
+    }
+    if (sorted.length === 0) {
+      return (
+        <div className="px-6 py-14 flex flex-col items-center gap-3 text-center">
+          <span className="material-symbols-outlined text-[40px] text-slate-200 dark:text-white/20">
+            content_paste_off
+          </span>
+          <p className="text-sm font-semibold text-slate-400 dark:text-white/40">No hay reportes registrados</p>
+          <p className="text-xs text-slate-300 dark:text-white/20">
+            Sube un reporte para comenzar a documentar el avance del proyecto.
+          </p>
+        </div>
+      );
+    }
+    return (
+      <div className="divide-y divide-slate-100 dark:divide-white/5">
+        {sorted.map((report) => (
+          <ReportRow
+            key={report.id}
+            report={report}
+            onView={() => setSelectedReport(report)}
+          />
+        ))}
+      </div>
+    );
+  };
  
   // If a report is selected, show detail view
   if (selectedReport) {
@@ -222,42 +265,14 @@ export default function ObraTabReportes({ projectId, avance, project }: ObraTabR
         <div className="px-6 py-4 border-b border-slate-100 dark:border-white/10">
           <h3 className="text-sm font-bold text-build-main dark:text-white">Reportes de avance</h3>
           <p className="text-xs text-slate-400 dark:text-white/40 mt-0.5">
-            {sorted.length} reporte{sorted.length !== 1 ? "s" : ""} encontrado{sorted.length !== 1 ? "s" : ""}
+            {sorted.length} reporte{sorted.length === 1 ? "" : "s"} encontrado{sorted.length === 1 ? "" : "s"}
             {project ? ` · ${project.nombre}` : ""}
           </p>
         </div>
  
-        {loading && reports.length === 0 ? (
-          <div className="flex items-center justify-center py-12">
-            <svg className="animate-spin w-5 h-5 text-build-accent mr-3" viewBox="0 0 24 24" fill="none">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
-            </svg>
-            <span className="text-sm text-slate-500 dark:text-white/40 font-medium">Cargando reportes...</span>
-          </div>
-        ) : sorted.length === 0 ? (
-          <div className="px-6 py-14 flex flex-col items-center gap-3 text-center">
-            <span className="material-symbols-outlined text-[40px] text-slate-200 dark:text-white/20">
-              content_paste_off
-            </span>
-            <p className="text-sm font-semibold text-slate-400 dark:text-white/40">No hay reportes registrados</p>
-            <p className="text-xs text-slate-300 dark:text-white/20">
-              Sube un reporte para comenzar a documentar el avance del proyecto.
-            </p>
-          </div>
-        ) : (
-          <div className="divide-y divide-slate-100 dark:divide-white/5">
-            {sorted.map((report) => (
-              <ReportRow
-                key={report.id}
-                report={report}
-                onView={() => setSelectedReport(report)}
-              />
-            ))}
-          </div>
-        )}
+        {renderContent()}
       </div>
-
+ 
       <DialogModal
         isOpen={dialog.isOpen}
         title={dialog.title}
@@ -274,14 +289,22 @@ export default function ObraTabReportes({ projectId, avance, project }: ObraTabR
  
 // ─── Report Row ───────────────────────────────────────────────────────────────
  
-function ReportRow({ report, onView }: { report: ReporteResponse; onView: () => void }) {
+function ReportRow({ report, onView }: Readonly<{ report: ReporteResponse; onView: () => void }>) {
   const badge = ESTADO_BADGE.publicado;
   const hasMedia = (report.multimedia?.length ?? 0) > 0;
  
   return (
     <div
+      role="button"
+      tabIndex={0}
       className="flex items-center gap-4 px-6 py-4 hover:bg-slate-50 dark:hover:bg-white/[0.03] transition-colors group cursor-pointer"
       onClick={onView}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onView();
+        }
+      }}
     >
       <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-white/10 flex items-center justify-center shrink-0">
         <span className="material-symbols-outlined text-build-main dark:text-white text-[20px]">article</span>
@@ -292,26 +315,26 @@ function ReportRow({ report, onView }: { report: ReporteResponse; onView: () => 
         <div className="flex items-center gap-3 mt-0.5 flex-wrap">
           <span className="text-xs text-slate-400 dark:text-white/40 flex items-center gap-1">
             <span className="material-symbols-outlined text-[13px]">calendar_today</span>
-            {new Date(report.createdAt).toLocaleDateString("es-PE", { day: "2-digit", month: "short", year: "numeric" })}
+            <span>{new Date(report.createdAt).toLocaleDateString("es-PE", { day: "2-digit", month: "short", year: "numeric" })}</span>
           </span>
           <span className="text-xs text-slate-400 dark:text-white/40 flex items-center gap-1">
             <span className="material-symbols-outlined text-[13px]">person</span>
-            Supervisor
+            <span>Supervisor</span>
           </span>
           <span className="text-xs text-slate-400 dark:text-white/40 flex items-center gap-1">
             <span className="material-symbols-outlined text-[13px]">construction</span>
-            {report.porcentajeAvance}%
+            <span>{report.porcentajeAvance}%</span>
           </span>
           {report.hitosConsolidados && report.hitosConsolidados.length > 0 && (
             <span className="text-xs text-slate-400 dark:text-white/40 flex items-center gap-1">
               <span className="material-symbols-outlined text-[13px]">layers</span>
-              {report.hitosConsolidados.length} hitos consolidados
+              <span>{report.hitosConsolidados.length} hitos consolidados</span>
             </span>
           )}
           {hasMedia && (
             <span className="text-xs text-slate-400 dark:text-white/40 flex items-center gap-1">
               <span className="material-symbols-outlined text-[13px]">photo_library</span>
-              Multimedia
+              <span>Multimedia</span>
             </span>
           )}
         </div>
@@ -342,12 +365,12 @@ function ReporteDetail({
   onBack,
   onDelete,
   canDelete
-}: {
+}: Readonly<{
   report: ReporteResponse;
   onBack: () => void;
   onDelete?: () => void;
   canDelete?: boolean;
-}) {
+}>) {
   const badge = ESTADO_BADGE.publicado;
   const hasMedia = (report.multimedia?.length ?? 0) > 0;
  
@@ -362,7 +385,7 @@ function ReporteDetail({
             className="inline-flex items-center gap-1 text-sm font-semibold text-arch-gold hover:text-build-main dark:hover:text-white transition-colors"
           >
             <span className="material-symbols-outlined text-[18px]">arrow_back</span>
-            Volver a reportes
+            <span>Volver a reportes</span>
           </button>
           
           {canDelete && onDelete && (
@@ -372,7 +395,7 @@ function ReporteDetail({
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-50 dark:bg-red-955/20 border border-red-200 dark:border-red-900/40 text-xs font-bold text-red-600 hover:text-red-700 transition-colors"
             >
               <span className="material-symbols-outlined text-[16px]">delete</span>
-              Eliminar reporte
+              <span>Eliminar reporte</span>
             </button>
           )}
         </div>
@@ -414,8 +437,8 @@ function ReporteDetail({
           </div>
           <div className="p-6">
             <ul className="grid gap-3 sm:grid-cols-2">
-              {report.hitosConsolidados.map((hito, idx) => (
-                <li key={idx} className="flex items-center gap-2 text-sm text-slate-700 dark:text-white/80 font-semibold">
+              {report.hitosConsolidados.map((hito) => (
+                <li key={hito} className="flex items-center gap-2 text-sm text-slate-700 dark:text-white/80 font-semibold">
                   <span className="material-symbols-outlined text-emerald-500 text-[18px] shrink-0">check_circle</span>
                   {hito}
                 </li>
@@ -430,7 +453,7 @@ function ReporteDetail({
         <div className="rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 p-6 shadow-sm">
           <h3 className="text-sm font-bold text-build-main dark:text-white mb-3 flex items-center gap-2">
             <span className="material-symbols-outlined text-[18px] text-slate-400 dark:text-white/40">comment</span>
-            Comentarios del residente / supervisor
+            <span>Comentarios del residente / supervisor</span>
           </h3>
           <p className="text-sm text-slate-600 dark:text-white/70 leading-relaxed">{report.descripcion}</p>
         </div>
@@ -440,7 +463,7 @@ function ReporteDetail({
       <div className="rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 p-6 shadow-sm">
         <h3 className="text-sm font-bold text-build-main dark:text-white mb-1 flex items-center gap-2">
           <span className="material-symbols-outlined text-[18px] text-slate-400 dark:text-white/40">photo_library</span>
-          Fotos y videos del período
+          <span>Fotos y videos del período</span>
         </h3>
         <p className="text-xs text-slate-400 dark:text-white/40 mb-5">
           Evidencias multimedia adjuntadas a este reporte.
@@ -450,10 +473,21 @@ function ReporteDetail({
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
             {report.multimedia.map((media) => {
               const isImage = media.tipoMime?.startsWith("image/");
+              const iconName = isImage ? "image" : "video_library";
               return (
                 <div
                   key={media.id}
+                  role="button"
+                  tabIndex={0}
                   onClick={() => media.urlAcceso && window.open(media.urlAcceso, "_blank", "noopener,noreferrer")}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      if (media.urlAcceso) {
+                        window.open(media.urlAcceso, "_blank", "noopener,noreferrer");
+                      }
+                    }
+                  }}
                   className="aspect-video rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 flex flex-col items-center justify-center gap-2 text-center hover:border-build-accent hover:bg-slate-100 dark:hover:bg-white/10 transition-colors cursor-pointer overflow-hidden relative group"
                 >
                   {isImage && media.urlAcceso ? (
@@ -461,7 +495,7 @@ function ReporteDetail({
                   ) : (
                     <>
                       <span className="material-symbols-outlined text-[28px] text-slate-400 dark:text-white/30">
-                        {isImage ? "image" : "video_library"}
+                        {iconName}
                       </span>
                       <span className="text-[10px] text-slate-400 dark:text-white/40 px-2 truncate max-w-full">
                         {media.nombreOriginal}
@@ -486,9 +520,19 @@ function ReporteDetail({
 // ─── New Report Form ──────────────────────────────────────────────────────────
  
 type NuevoReporteFormProps = {
-  projectId: string;
-  onClose: () => void;
-  onSubmit: (payload: ReporteCreatePayload, files: File[]) => Promise<void>;
+  readonly projectId: string;
+  readonly onClose: () => void;
+  readonly onSubmit: (payload: ReporteCreatePayload, files: File[]) => Promise<void>;
+};
+
+const getEstadoBadgeClass = (estado: string) => {
+  if (estado === "COMPLETADO") {
+    return "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-400";
+  }
+  if (estado === "EN_PROGRESO") {
+    return "bg-blue-100 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400";
+  }
+  return "bg-slate-100 text-slate-500 dark:bg-white/10 dark:text-white/40";
 };
  
 function NuevoReporteForm({ projectId, onClose, onSubmit }: NuevoReporteFormProps) {
@@ -496,6 +540,11 @@ function NuevoReporteForm({ projectId, onClose, onSubmit }: NuevoReporteFormProp
   const [comentarios, setComentarios] = useState("");
   const [fecha,       setFecha]       = useState(new Date().toISOString().split("T")[0]);
 
+  const tituloId = useId();
+  const fechaId = useId();
+  const comentariosId = useId();
+  const filesId = useId();
+ 
   useEffect(() => {
     const d = new Date(fecha + "T12:00:00");
     const mes = d.toLocaleDateString("es-PE", { month: "long" });
@@ -515,25 +564,35 @@ function NuevoReporteForm({ projectId, onClose, onSubmit }: NuevoReporteFormProp
  
   useEffect(() => {
     if (!projectId) return;
-    Promise.resolve().then(() => {
+
+    let active = true;
+    const fetchHitos = async () => {
       setLoadingHitos(true);
-      getEtapasByProyecto(projectId)
-        .then((etapas) => {
-          const hitos = etapas.map((e) => ({
-            id: e.id,
-            titulo: e.nombre,
-            orden: e.orden,
-            tipo: "OBRA",
-            estado: e.estado,
-            fechaCompletado: null,
-          }));
-          setAvailableHitos(hitos);
-        })
-        .catch((err) => {
-          console.error("Error loading project hitos:", err);
-        })
-        .finally(() => setLoadingHitos(false));
-    });
+      try {
+        const etapas = await getEtapasByProyecto(projectId);
+        if (!active) return;
+        const hitos = etapas.map((e) => ({
+          id: e.id,
+          titulo: e.nombre,
+          orden: e.orden,
+          tipo: "OBRA",
+          estado: e.estado,
+          fechaCompletado: null,
+        }));
+        setAvailableHitos(hitos);
+      } catch (err) {
+        console.error("Error loading project hitos:", err);
+      } finally {
+        if (active) {
+          setLoadingHitos(false);
+        }
+      }
+    };
+
+    fetchHitos();
+    return () => {
+      active = false;
+    };
   }, [projectId]);
  
   const handleSubmit = async () => {
@@ -555,6 +614,57 @@ function NuevoReporteForm({ projectId, onClose, onSubmit }: NuevoReporteFormProp
       setSubmitting(false);
     }
   };
+
+  const renderHitosSection = () => {
+    if (loadingHitos) {
+      return (
+        <div className="flex items-center gap-2 py-3 text-xs text-slate-400 dark:text-white/40">
+          <svg className="animate-spin w-4 h-4 text-build-accent" viewBox="0 0 24 24" fill="none">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+          </svg>
+          <span>Cargando hitos del proyecto...</span>
+        </div>
+      );
+    }
+    if (availableHitos.length === 0) {
+      return (
+        <p className="text-xs text-slate-400 dark:text-white/30 italic py-2 bg-slate-50 dark:bg-white/[0.02] border border-dashed border-slate-200 dark:border-white/10 rounded-xl text-center">
+          No hay hitos registrados para este proyecto.
+        </p>
+      );
+    }
+    return (
+      <div className="grid gap-2 sm:grid-cols-2 bg-white dark:bg-white/5 p-4 rounded-xl border border-slate-200 dark:border-white/10 max-h-48 overflow-y-auto">
+        {availableHitos.map((h) => {
+          const isChecked = selectedHitos.includes(h.titulo);
+          return (
+            <label
+              key={h.id}
+              className="flex items-center gap-2.5 text-xs text-slate-700 dark:text-white/80 cursor-pointer hover:text-build-main dark:hover:text-white transition-colors py-1"
+            >
+              <input
+                type="checkbox"
+                checked={isChecked}
+                onChange={() => {
+                  if (isChecked) {
+                    setSelectedHitos(selectedHitos.filter((x) => x !== h.titulo));
+                  } else {
+                    setSelectedHitos([...selectedHitos, h.titulo]);
+                  }
+                }}
+                className="rounded text-build-accent border-slate-300 dark:border-white/10 focus:ring-arch-gold/20 focus:ring-1 bg-white dark:bg-transparent"
+              />
+              <span className="font-semibold">{h.titulo}</span>
+              <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${getEstadoBadgeClass(h.estado)}`}>
+                {h.estado}
+              </span>
+            </label>
+          );
+        })}
+      </div>
+    );
+  };
  
   return (
     <div className="rounded-xl border border-arch-gold/30 bg-arch-gold/5 dark:bg-arch-gold/10 p-6 shadow-sm space-y-6">
@@ -563,7 +673,7 @@ function NuevoReporteForm({ projectId, onClose, onSubmit }: NuevoReporteFormProp
         <div>
           <h3 className="text-sm font-bold text-build-main dark:text-white flex items-center gap-2">
             <span className="material-symbols-outlined text-arch-gold text-[18px]">note_add</span>
-            Nuevo reporte de obra
+            <span>Nuevo reporte de obra</span>
           </h3>
           <p className="text-xs text-slate-400 dark:text-white/40 mt-0.5">
             Completa los campos del reporte
@@ -586,10 +696,11 @@ function NuevoReporteForm({ projectId, onClose, onSubmit }: NuevoReporteFormProp
  
       {/* Title */}
       <div>
-        <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-white/50 mb-1.5">
+        <label htmlFor={tituloId} className="block text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-white/50 mb-1.5">
           Título del reporte *
         </label>
         <input
+          id={tituloId}
           type="text"
           value={titulo}
           onChange={(e) => setTitulo(e.target.value)}
@@ -597,20 +708,21 @@ function NuevoReporteForm({ projectId, onClose, onSubmit }: NuevoReporteFormProp
           className="w-full rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 px-3 py-2.5 text-sm text-build-main dark:text-white outline-none focus:border-arch-gold focus:ring-1 focus:ring-arch-gold/20 transition"
         />
       </div>
-
+ 
       {/* Fecha del mes */}
       <div>
-        <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-white/50 mb-1.5">
+        <label htmlFor={fechaId} className="block text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-white/50 mb-1.5">
           Fecha del reporte *
         </label>
         <input
+          id={fechaId}
           type="date"
           value={fecha}
           onChange={(e) => setFecha(e.target.value)}
           className="w-full rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 px-3 py-2.5 text-sm text-build-main dark:text-white outline-none focus:border-arch-gold focus:ring-1 focus:ring-arch-gold/20 transition"
         />
       </div>
-
+ 
       {/* Hitos consolidados */}
       <div>
         <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-white/50 mb-2">
@@ -620,62 +732,16 @@ function NuevoReporteForm({ projectId, onClose, onSubmit }: NuevoReporteFormProp
           Selecciona los hitos del proyecto que se han completado o consolidado en este periodo de reporte.
         </p>
         
-        {loadingHitos ? (
-          <div className="flex items-center gap-2 py-3 text-xs text-slate-400 dark:text-white/40">
-            <svg className="animate-spin w-4 h-4 text-build-accent" viewBox="0 0 24 24" fill="none">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
-            </svg>
-            <span>Cargando hitos del proyecto...</span>
-          </div>
-        ) : availableHitos.length === 0 ? (
-          <p className="text-xs text-slate-400 dark:text-white/30 italic py-2 bg-slate-50 dark:bg-white/[0.02] border border-dashed border-slate-200 dark:border-white/10 rounded-xl text-center">
-            No hay hitos registrados para este proyecto.
-          </p>
-        ) : (
-          <div className="grid gap-2 sm:grid-cols-2 bg-white dark:bg-white/5 p-4 rounded-xl border border-slate-200 dark:border-white/10 max-h-48 overflow-y-auto">
-            {availableHitos.map((h) => {
-              const isChecked = selectedHitos.includes(h.titulo);
-              return (
-                <label
-                  key={h.id}
-                  className="flex items-center gap-2.5 text-xs text-slate-700 dark:text-white/80 cursor-pointer hover:text-build-main dark:hover:text-white transition-colors py-1"
-                >
-                  <input
-                    type="checkbox"
-                    checked={isChecked}
-                    onChange={() => {
-                      if (isChecked) {
-                        setSelectedHitos(selectedHitos.filter((x) => x !== h.titulo));
-                      } else {
-                        setSelectedHitos([...selectedHitos, h.titulo]);
-                      }
-                    }}
-                    className="rounded text-build-accent border-slate-300 dark:border-white/10 focus:ring-arch-gold/20 focus:ring-1 bg-white dark:bg-transparent"
-                  />
-                  <span className="font-semibold">{h.titulo}</span>
-                  <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${
-                    h.estado === "COMPLETADO" 
-                      ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-400" 
-                      : h.estado === "EN_PROGRESO" 
-                      ? "bg-blue-100 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400" 
-                      : "bg-slate-100 text-slate-500 dark:bg-white/10 dark:text-white/40"
-                  }`}>
-                    {h.estado}
-                  </span>
-                </label>
-              );
-            })}
-          </div>
-        )}
+        {renderHitosSection()}
       </div>
  
       {/* Comentarios */}
       <div>
-        <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-white/50 mb-1.5">
+        <label htmlFor={comentariosId} className="block text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-white/50 mb-1.5">
           Comentarios del residente / supervisor
         </label>
         <textarea
+          id={comentariosId}
           rows={4}
           value={comentarios}
           onChange={(e) => setComentarios(e.target.value)}
@@ -683,14 +749,15 @@ function NuevoReporteForm({ projectId, onClose, onSubmit }: NuevoReporteFormProp
           className="w-full rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 px-3 py-2.5 text-sm text-build-main dark:text-white outline-none focus:border-arch-gold focus:ring-1 focus:ring-arch-gold/20 transition resize-none"
         />
       </div>
-
+ 
       {/* Fotos y Videos selector */}
       <div>
-        <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-white/50 mb-1.5">
+        <label htmlFor={filesId} className="block text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-white/50 mb-1.5">
           Adjuntar fotos y videos del período
         </label>
         <div className="flex flex-col gap-3">
           <input
+            id={filesId}
             type="file"
             multiple
             accept="image/*,video/*"
@@ -711,8 +778,8 @@ function NuevoReporteForm({ projectId, onClose, onSubmit }: NuevoReporteFormProp
             <div className="text-xs text-slate-500 dark:text-white/50 bg-slate-50 dark:bg-white/[0.02] p-3 rounded-xl border border-slate-200 dark:border-white/10">
               <p className="font-semibold mb-1">Archivos seleccionados:</p>
               <ul className="list-disc pl-4 space-y-1">
-                {files.map((file, idx) => (
-                  <li key={idx} className="truncate">
+                {files.map((file) => (
+                  <li key={`${file.name}-${file.size}`} className="truncate">
                     {file.name} ({(file.size / 1024 / 1024).toFixed(2)} MB)
                   </li>
                 ))}
@@ -721,8 +788,6 @@ function NuevoReporteForm({ projectId, onClose, onSubmit }: NuevoReporteFormProp
           )}
         </div>
       </div>
- 
-
  
       {/* Submit */}
       <div className="flex justify-end gap-3 pt-2">
@@ -760,9 +825,9 @@ function NuevoReporteForm({ projectId, onClose, onSubmit }: NuevoReporteFormProp
 function KpiMini({
   icon, label, value,
   accent = "text-build-main dark:text-white",
-}: {
+}: Readonly<{
   icon: string; label: string; value: string; accent?: string;
-}) {
+}>) {
   return (
     <div className="rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 p-4 shadow-sm flex items-center gap-4">
       <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-white/10 flex items-center justify-center shrink-0">
