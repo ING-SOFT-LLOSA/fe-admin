@@ -98,4 +98,14 @@ describe("fetchPerfil", () => {
 
     await expect(fetchPerfil("token")).rejects.toThrow("Parámetro inválido");
   });
+
+  it("usa mensaje del JSON cuando no tiene error ni message", async () => {
+    (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValue({
+      ok: false,
+      status: 500,
+      text: vi.fn().mockResolvedValue(JSON.stringify({ code: 500 })),
+    });
+
+    await expect(fetchPerfil("token")).rejects.toThrow(JSON.stringify({ code: 500 }));
+  });
 });

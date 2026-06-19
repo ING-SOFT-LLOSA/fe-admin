@@ -1,133 +1,138 @@
 import { describe, it, expect } from "vitest";
 import { canGestionarUsuarios, canEliminarUsuario } from "./permissions";
+import * as permissionsModule from "./permissions";
 import type { PerfilConPermisos } from "@/types/auth";
 import type { ClienteRow } from "@/types/user";
 
-describe("Permissions Helpers", () => {
-  describe("canGestionarUsuarios", () => {
-    it("should return false if profile is null", () => {
-      expect(canGestionarUsuarios(null)).toBe(false);
-    });
+const makeAdmin = (overrides?: Partial<PerfilConPermisos>): PerfilConPermisos => ({
+  id: 1,
+  nombre: "Admin Sistema",
+  email: "admin@llosaedificaciones.com",
+  tipoUsuario: "EMPLEADO",
+  rol: "ADMIN",
+  activo: true,
+  funciones: [],
+  ...overrides,
+});
 
-    it("should return true if profile role is ADMIN", () => {
-      const adminProfile: PerfilConPermisos = {
-        id: 1,
-        nombre: "Admin User",
-        email: "admin@test.com",
-        tipoUsuario: "EMPLEADO",
-        rol: "ADMIN",
-        activo: true,
-        funciones: [],
-      };
-      expect(canGestionarUsuarios(adminProfile)).toBe(true);
-    });
+const makeEmpleado = (funciones: string[] = [], overrides?: Partial<PerfilConPermisos>): PerfilConPermisos => ({
+  id: 2,
+  nombre: "Carlos Pérez",
+  email: "cperez@llosaedificaciones.com",
+  tipoUsuario: "EMPLEADO",
+  rol: "AREA_TECNICA",
+  activo: true,
+  funciones,
+  ...overrides,
+});
 
-    it("should return true if profile has USER_GESTIONAR function", () => {
-      const userProfile: PerfilConPermisos = {
-        id: 2,
-        nombre: "Manager User",
-        email: "manager@test.com",
-        tipoUsuario: "EMPLEADO",
-        rol: "USER",
-        activo: true,
-        funciones: ["USER_GESTIONAR"],
-      };
-      expect(canGestionarUsuarios(userProfile)).toBe(true);
-    });
+const makeClienteRow = (overrides?: Partial<ClienteRow>): ClienteRow => ({
+  id: 10,
+  initials: "CP",
+  name: "Carlos Perez",
+  dni: "12345678",
+  email: "cperez@llosaedificaciones.com",
+  phone: "999999999",
+  project: "Aurora",
+  status: "Activo",
+  statusBg: "green",
+  tipoUsuario: "EMPLEADO",
+  rol: "AREA_TECNICA",
+  ...overrides,
+});
 
-    it("should return false if profile is not ADMIN and lacks USER_GESTIONAR function", () => {
-      const userProfile: PerfilConPermisos = {
-        id: 3,
-        nombre: "Regular User",
-        email: "regular@test.com",
-        tipoUsuario: "EMPLEADO",
-        rol: "USER",
-        activo: true,
-        funciones: ["OTHER_FUNCTION"],
-      };
-      expect(canGestionarUsuarios(userProfile)).toBe(false);
-    });
+describe("canGestionarUsuarios", () => {
+  it("ADMIN puede gestionar usuarios", () => {
+    expect(canGestionarUsuarios(makeAdmin())).toBe(true);
   });
 
-  describe("canEliminarUsuario", () => {
-    const adminPerfil: PerfilConPermisos = {
-      id: 1,
-      nombre: "Admin",
-      email: "admin@test.com",
-      tipoUsuario: "EMPLEADO",
-      rol: "ADMIN",
-      activo: true,
-      funciones: [],
-    };
+  it("empleado con USER_GESTIONAR puede gestionar usuarios", () => {
+    expect(canGestionarUsuarios(makeEmpleado(["USER_GESTIONAR"]))).toBe(true);
+  });
 
-    const regularPerfil: PerfilConPermisos = {
-      id: 2,
-      nombre: "User",
-      email: "user@test.com",
-      tipoUsuario: "EMPLEADO",
-      rol: "USER",
-      activo: true,
-      funciones: [],
-    };
+  it("empleado sin USER_GESTIONAR NO puede gestionar usuarios", () => {
+    expect(canGestionarUsuarios(makeEmpleado(["OBRA_VER", "PROYECTO_VER"]))).toBe(false);
+  });
 
-    const targetUser: ClienteRow = {
-      id: 3,
-      name: "Target",
-      email: "target@test.com",
-      tipoUsuario: "CLIENTE",
-      rol: "USER",
-      initials: "T",
-      dni: "12345678",
-      phone: "999999999",
-      project: "Proyecto A",
-      status: "Activo",
-      statusBg: "bg-green-100",
-    };
+  it("empleado sin ningún permiso NO puede gestionar usuarios", () => {
+    expect(canGestionarUsuarios(makeEmpleado([]))).toBe(false);
+  });
 
-    it("should return false if acting profile is null", () => {
-      expect(canEliminarUsuario(null, targetUser)).toBe(false);
-    });
+  it("perfil null devuelve false (usuario no autenticado)", () => {
+    expect(canGestionarUsuarios(null)).toBe(false);
+  });
 
-    it("should return false if acting profile is not ADMIN", () => {
-      expect(canEliminarUsuario(regularPerfil, targetUser)).toBe(false);
-    });
+  it("cliente (tipoUsuario CLIENTE) sin USER_GESTIONAR no puede gestionar", () => {
+    const cliente = makeEmpleado([], { tipoUsuario: "CLIENTE", rol: null as any });
+    expect(canGestionarUsuarios(cliente)).toBe(false);
+  });
 
-    it("should return false if acting profile tries to delete themselves", () => {
-      const selfTarget: ClienteRow = {
-        id: 1,
-        name: "Admin Target",
-        email: "admin@test.com",
-        tipoUsuario: "EMPLEADO",
-        rol: "ADMIN",
-        initials: "A",
-        dni: "87654321",
-        phone: "999999999",
-        project: "Proyecto B",
-        status: "Activo",
-        statusBg: "bg-green-100",
-      };
-      expect(canEliminarUsuario(adminPerfil, selfTarget)).toBe(false);
-    });
+  it("permiso USER_GESTIONAR sobrescribe las restricciones del rol base", () => {
+    const empleadoConOverride = makeEmpleado(["USER_GESTIONAR"]);
+    expect(canGestionarUsuarios(empleadoConOverride)).toBe(true);
+  });
 
-    it("should return false if target user is an ADMIN", () => {
-      const adminTarget: ClienteRow = {
-        id: 4,
-        name: "Another Admin",
-        email: "another-admin@test.com",
-        tipoUsuario: "EMPLEADO",
-        rol: "ADMIN",
-        initials: "AA",
-        dni: "11111111",
-        phone: "999999999",
-        project: "Proyecto C",
-        status: "Activo",
-        statusBg: "bg-green-100",
-      };
-      expect(canEliminarUsuario(adminPerfil, adminTarget)).toBe(false);
-    });
+  it("permiso ROL_GESTIONAR solo NO es suficiente para gestionar usuarios", () => {
+    const empleadoSoloRol = makeEmpleado(["ROL_GESTIONAR"]);
+    expect(canGestionarUsuarios(empleadoSoloRol)).toBe(false);
+  });
+});
 
-    it("should return true if acting profile is ADMIN, target is not self, and target is not ADMIN", () => {
-      expect(canEliminarUsuario(adminPerfil, targetUser)).toBe(true);
-    });
+describe("canEliminarUsuario", () => {
+  const admin = makeAdmin();
+  const otroAdmin = makeAdmin({ id: 99, email: "otro@llosaedificaciones.com" });
+
+  it("ADMIN puede eliminar a un empleado que no sea admin", () => {
+    const target = makeClienteRow({ id: 10, rol: "AREA_TECNICA" });
+    expect(canEliminarUsuario(admin, target)).toBe(true);
+  });
+
+  it("ADMIN NO puede eliminarse a sí mismo", () => {
+    const selfTarget = makeClienteRow({ id: admin.id, rol: "ADMIN" });
+    expect(canEliminarUsuario(admin, selfTarget)).toBe(false);
+  });
+
+  it("ADMIN NO puede eliminar a otro ADMIN", () => {
+    const adminTarget = makeClienteRow({ id: otroAdmin.id, rol: "ADMIN" });
+    expect(canEliminarUsuario(admin, adminTarget)).toBe(false);
+  });
+
+  it("empleado sin rol ADMIN NO puede eliminar a nadie", () => {
+    const empleado = makeEmpleado(["USER_GESTIONAR"]);
+    const target = makeClienteRow({ id: 20 });
+    expect(canEliminarUsuario(empleado, target)).toBe(false);
+  });
+
+  it("perfil null devuelve false", () => {
+    const target = makeClienteRow();
+    expect(canEliminarUsuario(null, target)).toBe(false);
+  });
+});
+
+describe("brechas de funcionalidad pendiente", () => {
+  const permissions = permissionsModule as unknown as Record<string, unknown>;
+
+  it("canRecuperarContrasena no está definido en el módulo de permisos", () => {
+    expect(permissions.canRecuperarContrasena).toBeUndefined();
+  });
+
+  it("saveGranularPermisos no está definido en el módulo de permisos", () => {
+    expect(permissions.saveGranularPermisos).toBeUndefined();
+  });
+
+  it("canDesactivarUsuario no está definido — solo existe canEliminarUsuario", () => {
+    expect(permissions.canDesactivarUsuario).toBeUndefined();
+  });
+
+  it("canAccederPortalCompleto no está definido", () => {
+    expect(permissions.canAccederPortalCompleto).toBeUndefined();
+  });
+
+  it("isClienteActivo no está definido", () => {
+    expect(permissions.isClienteActivo).toBeUndefined();
+  });
+
+  it("isModoEspera no está definido", () => {
+    expect(permissions.isModoEspera).toBeUndefined();
   });
 });

@@ -185,7 +185,48 @@ describe("finanzas API", () => {
         "Error al subir el comprobante"
       );
     });
+
+    it("envía comentario como parte del FormData", async () => {
+      mockGetFreshToken.mockResolvedValue("token-valid");
+      const mockRes = {
+        ok: true,
+        json: vi.fn().mockResolvedValue({ uuidPago: "pago-1" }),
+      };
+      (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValue(mockRes);
+
+      const file = new File(["content"], "comprobante.pdf");
+      await uploadPagoComprobante("pago-1", file, "Comentario de prueba");
+
+      const [, init] = (global.fetch as ReturnType<typeof vi.fn>).mock.calls[0];
+      expect(init.body).toBeInstanceOf(FormData);
+      expect((init.body as FormData).get("comentario")).toBe("Comentario de prueba");
+    });
+
+    it("extrae mensaje de error desde JSON del backend en upload fallido", async () => {
+      mockGetFreshToken.mockResolvedValue("token-valid");
+      const mockRes = {
+        ok: false,
+        text: vi.fn().mockResolvedValue(JSON.stringify({ error: "Archivo corrupto" })),
+      };
+      (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValue(mockRes);
+
+      const file = new File(["content"], "file.pdf");
+      await expect(uploadPagoComprobante("pago-1", file)).rejects.toThrow("Archivo corrupto");
+    });
+
+    it("extrae mensaje desde campo message en JSON del backend en upload fallido", async () => {
+      mockGetFreshToken.mockResolvedValue("token-valid");
+      const mockRes = {
+        ok: false,
+        text: vi.fn().mockResolvedValue(JSON.stringify({ message: "Archivo muy grande" })),
+      };
+      (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValue(mockRes);
+
+      const file = new File(["content"], "file.pdf");
+      await expect(uploadPagoComprobante("pago-1", file)).rejects.toThrow("Archivo muy grande");
   });
+});
+
 
 
 });
