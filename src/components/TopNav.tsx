@@ -1,6 +1,5 @@
 "use client";
 import { usePathname } from "next/navigation";
-import ThemeToggle from "@/components/ThemeToggle";
 
 const crumbs: Record<string, string> = {
   projects: "Proyectos e Inventario",
@@ -32,7 +31,6 @@ export default function TopNav() {
 
         {/* Right: actions + avatar */}
         <div className="flex items-center gap-2">
-          <ThemeToggle />
           <div className="w-px h-5 bg-build-accent/30 mx-1" />
           <div className="flex items-center gap-2 pl-1 cursor-pointer group">
             <div className="w-7 h-7 rounded-full flex items-center justify-center border-2 border-build-accent/50 group-hover:border-build-main dark:group-hover:border-white transition-colors bg-slate-50 dark:bg-white/5">
