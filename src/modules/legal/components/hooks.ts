@@ -19,7 +19,6 @@ import {
 import {
   DEFAULT_HITOS,
   STAGE_META,
-  STAGE_ORDER,
   DOCUMENT_STAGES,
   PREDEFINED_REQUISITOS,
   BACKEND_A_ESTADO,
@@ -113,6 +112,7 @@ export function useCommercialStepper(contrato: UsuarioActivoResponseDTO | null) 
   }, [uuidUsuarioActivo]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     void refresh();
   }, [refresh]);
 
@@ -231,6 +231,7 @@ export function useStageDocuments(
   }, [uuidUsuarioActivo, stepper]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     void load();
   }, [load]);
 
@@ -410,6 +411,7 @@ export function useExpediente(uuidUsuarioActivo: string | null) {
   }, [uuidUsuarioActivo]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     void refresh();
   }, [refresh]);
 

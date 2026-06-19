@@ -82,92 +82,98 @@ export default function ObraTabHitos({ projectId, etapas, onRefresh }: ObraTabHi
     if (nivel !== "piso") return;
 
     let cancelled = false;
-    setLoadingTorres(true);
-    setPisosMap({});
-    setLoadingPisosMap({});
+    Promise.resolve().then(() => {
+      setLoadingTorres(true);
+      setPisosMap({});
+      setLoadingPisosMap({});
 
-    fetchTorresPorProyecto(projectId)
-      .then((data) => {
-        if (cancelled) return;
-        setTorres(data);
+      fetchTorresPorProyecto(projectId)
+        .then((data) => {
+          if (cancelled) return;
+          setTorres(data);
 
 
-        // Cargar pisos para cada torre de manera individual e incremental
-        data.forEach((t) => {
-          setLoadingPisosMap((prev) => ({ ...prev, [t.id]: true }));
-          fetchPisosPorTorre(t.id)
-            .then((pisoList) => {
-              if (cancelled) return;
-              setPisosMap((prev) => ({ ...prev, [t.id]: pisoList }));
-              setLoadingPisosMap((prev) => ({ ...prev, [t.id]: false }));
-            })
-            .catch((err) => {
-              console.error(`Error cargando pisos de torre ${t.id}:`, err);
-              if (cancelled) return;
-              setLoadingPisosMap((prev) => ({ ...prev, [t.id]: false }));
-            });
+          // Cargar pisos para cada torre de manera individual e incremental
+          data.forEach((t) => {
+            setLoadingPisosMap((prev) => ({ ...prev, [t.id]: true }));
+            fetchPisosPorTorre(t.id)
+              .then((pisoList) => {
+                if (cancelled) return;
+                setPisosMap((prev) => ({ ...prev, [t.id]: pisoList }));
+                setLoadingPisosMap((prev) => ({ ...prev, [t.id]: false }));
+              })
+              .catch((err) => {
+                console.error(`Error cargando pisos de torre ${t.id}:`, err);
+                if (cancelled) return;
+                setLoadingPisosMap((prev) => ({ ...prev, [t.id]: false }));
+              });
+          });
+        })
+        .catch((err: unknown) => {
+          if (!cancelled) {
+            console.error(err);
+          }
         });
-      })
-      .catch((err: unknown) => {
-        if (!cancelled) {
-          console.error(err);
-        }
-      });
 
-    fetchActivosPorProyecto(projectId)
-      .then((page) => {
-        if (!cancelled) {
-          setActivos(page.content || []);
-        }
-      })
-      .catch((err: unknown) => {
-        if (!cancelled) console.error(err);
-      })
-      .finally(() => {
-        if (!cancelled) setLoadingTorres(false);
-      });
+      fetchActivosPorProyecto(projectId)
+        .then((page) => {
+          if (!cancelled) {
+            setActivos(page.content || []);
+          }
+        })
+        .catch((err: unknown) => {
+          if (!cancelled) console.error(err);
+        })
+        .finally(() => {
+          if (!cancelled) setLoadingTorres(false);
+        });
+    });
 
     return () => { cancelled = true; };
   }, [nivel, projectId]);
 
   // ── Resetear piso seleccionado cuando cambia la torre ──────────────────────
   useEffect(() => {
-    setSelectedPisoId("");
+    Promise.resolve().then(() => {
+      setSelectedPisoId("");
+    });
   }, [selectedTorreId]);
 
   // ── Cargar avances del piso seleccionado (usando Activo proxy) ────────────────
   useEffect(() => {
-    if (!selectedPisoId) {
-      setAvances([]);
-      setErrorPiso("");
-      return;
-    }
-
     let cancelled = false;
-    setLoadingAvances(true);
-    setErrorPiso("");
-
-    const activoProxy = activos.find((a) => a.pisoId === Number(selectedPisoId));
-    if (!activoProxy) {
-      if (!cancelled) {
-        setErrorPiso("El piso seleccionado no tiene unidades registradas, por lo que no se pueden calcular sus hitos.");
-        setLoadingAvances(false);
+    Promise.resolve().then(() => {
+      if (!selectedPisoId) {
+        setAvances([]);
+        setErrorPiso("");
+        return;
       }
-      return;
-    }
 
-    getAvancesActivo(activoProxy.id)
-      .then((data) => {
-        if (!cancelled) setAvances(data);
-      })
-      .catch((err: unknown) => {
+      setLoadingAvances(true);
+      setErrorPiso("");
+
+      const activoProxy = activos.find((a) => a.pisoId === Number(selectedPisoId));
+      if (!activoProxy) {
         if (!cancelled) {
-          setErrorPiso(err instanceof Error ? err.message : "No se pudieron cargar los hitos.");
+          setErrorPiso("El piso seleccionado no tiene unidades registradas, por lo que no se pueden calcular sus hitos.");
+          setLoadingAvances(false);
         }
-      })
-      .finally(() => {
-        if (!cancelled) setLoadingAvances(false);
-      });
+        return;
+      }
+
+      getAvancesActivo(activoProxy.id)
+        .then((data) => {
+          if (!cancelled) setAvances(data);
+        })
+        .catch((err: unknown) => {
+          if (!cancelled) {
+            setErrorPiso(err instanceof Error ? err.message : "No se pudieron cargar los hitos.");
+          }
+        })
+        .finally(() => {
+          if (!cancelled) setLoadingAvances(false);
+        });
+    });
 
     return () => { cancelled = true; };
   }, [selectedPisoId, activos]);
@@ -533,7 +539,7 @@ export default function ObraTabHitos({ projectId, etapas, onRefresh }: ObraTabHi
                 No hay hitos registrados para este piso.
                 {etapas.length === 0 && (
                   <p className="mt-2 text-xs">
-                    Primero carga los hitos maestros del proyecto desde la pestaña "Por proyecto".
+                    Primero carga los hitos maestros del proyecto desde la pestaña &quot;Por proyecto&quot;.
                   </p>
                 )}
               </div>

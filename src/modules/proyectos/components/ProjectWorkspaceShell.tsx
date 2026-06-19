@@ -20,9 +20,13 @@ type ProjectHeader = {
 };
 
 export default function ProjectWorkspaceShell({ projectId, children }: ProjectWorkspaceShellProps) {
+  interface UnitHeader {
+    estadoComercial: string;
+  }
+
   const [project, setProject] = useState<ProjectHeader | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [units, setUnits] = useState<any[]>([]);
+  const [units, setUnits] = useState<UnitHeader[]>([]);
   useEffect(() => {
     let mounted = true;
 
@@ -30,8 +34,15 @@ export default function ProjectWorkspaceShell({ projectId, children }: ProjectWo
       setIsLoading(true);
       try {
         const { apiFetch } = await import("@/lib/api/http");
-        const allProjects = await apiFetch<any[]>("/api/proyectos");
-        const backendProject = allProjects.find((entry) => entry.id === projectId);
+        const allProjects = await apiFetch<unknown[]>("/api/proyectos");
+        const backendProject = allProjects.find((entry) => (entry as { id: string }).id === projectId) as {
+          id: string;
+          nombre: string;
+          distrito?: string;
+          direccion?: string;
+          fechaInicio?: string;
+          createdAt?: string;
+        } | undefined;
         const { fetchActivosPorProyecto } = await import("@/modules/inventario/services");
         if (!mounted) return;
 
@@ -51,7 +62,7 @@ export default function ProjectWorkspaceShell({ projectId, children }: ProjectWo
         const activosPage = await fetchActivosPorProyecto(projectId).catch(() => null);
 
         if (mounted) {
-          setUnits(activosPage?.content ?? []);
+          setUnits((activosPage?.content ?? []) as UnitHeader[]);
         }
 
       } finally {

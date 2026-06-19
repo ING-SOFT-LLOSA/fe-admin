@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import type { PagoResponse, CronogramaPagoResponse, CronogramaResumenResponse } from "@/modules/finanzas/types";
-import InstallmentStatusBadge from "../details/InstallmentStatusBadge";
 import { updatePagoEstado, uploadPagoComprobante, addPago, deletePago, updatePago, createCronograma, updateCronograma } from "@/lib/api/finanzas";
 import type { UsuarioActivoResponseDTO } from "@/lib/api/expedientes";
 import { fetchSignedUrl } from "@/lib/api/documents";
@@ -57,11 +56,13 @@ export default function DirectFinancingView({ expediente, cronograma, pagos, res
 
         useEffect(() => {
             if (showCronogramaForm && cronograma) {
-                setCronogramaForm({
-                    totalPactado: cronograma.totalPactado?.toString() ?? "",
-                    pagoSeparacion: cronograma.pagoSeparacion?.toString() ?? "",
-                    pagoInicial: cronograma.pagoInicial?.toString() ?? "",
-                    numeroCuotas: cronograma.numeroCuotas?.toString() ?? "",
+                Promise.resolve().then(() => {
+                    setCronogramaForm({
+                        totalPactado: cronograma.totalPactado?.toString() ?? "",
+                        pagoSeparacion: cronograma.pagoSeparacion?.toString() ?? "",
+                        pagoInicial: cronograma.pagoInicial?.toString() ?? "",
+                        numeroCuotas: cronograma.numeroCuotas?.toString() ?? "",
+                    });
                 });
             }
         }, [showCronogramaForm, cronograma]);
@@ -69,7 +70,9 @@ export default function DirectFinancingView({ expediente, cronograma, pagos, res
         useEffect(() => {
             const existing = new Set(pagos.map(p => p.concepto).filter(Boolean));
             const valid = (["CUOTA", "SEPARACION", "INICIAL"] as const).filter(c => c === "CUOTA" || !existing.has(c));
-            setAddForm(p => valid.includes(p.concepto as any) ? p : { ...p, concepto: valid[0] ?? "CUOTA" });
+            Promise.resolve().then(() => {
+                setAddForm(p => valid.includes(p.concepto as "CUOTA" | "SEPARACION" | "INICIAL") ? p : { ...p, concepto: valid[0] ?? "CUOTA" });
+            });
         }, [pagos]);
 
         const [isSaving, setIsSaving] = useState(false);
@@ -164,7 +167,7 @@ export default function DirectFinancingView({ expediente, cronograma, pagos, res
             const newStatus = current === "PAGADO" ? "PENDIENTE" : "PAGADO";
             setUpdatingId(uuidPago);
         try {
-            await updatePagoEstado(uuidPago, newStatus as any);
+            await updatePagoEstado(uuidPago, newStatus as PagoResponse["estado"]);
             onUpdate();
         } catch (e) {
             setDialog({
@@ -511,7 +514,7 @@ export default function DirectFinancingView({ expediente, cronograma, pagos, res
                             </table>
                             {pagos.length === 0 && (
                                 <div className="py-10 text-center text-sm text-slate-400">
-                                    Sin cuotas registradas. Usa "+ Agregar Cuota" para comenzar.
+                                    Sin cuotas registradas. Usa &quot;+ Agregar Cuota&quot; para comenzar.
                                 </div>
                             )}
                         </div>

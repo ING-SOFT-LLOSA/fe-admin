@@ -49,8 +49,8 @@ export default function ProjectDetailView({ projectId }: ProjectDetailViewProps)
     async function loadProject() {
       try {
         const { apiFetch } = await import("@/lib/api/http");
-        const allProjects = await apiFetch<any[]>("/api/proyectos");
-        const backendProject = allProjects.find((entry) => entry.id === projectId);
+        const allProjects = await apiFetch<unknown[]>("/api/proyectos");
+        const backendProject = allProjects.find((entry) => (entry as { id: string }).id === projectId) as (ProyectoCreateDTO & { id: string }) | undefined;
 
         if (!mounted) return;
         if (!backendProject) {

@@ -11,10 +11,11 @@ type ClientHeaderProps = {
  
 export default function ClientHeader({
   client,
-  hasActiveProperties,
+  hasActiveProperties: _hasActiveProperties,
   onEdit,
   onDelete,
 }: ClientHeaderProps) {
+  void _hasActiveProperties;
   const initials = client.name
     .split(" ")
     .slice(0, 2)

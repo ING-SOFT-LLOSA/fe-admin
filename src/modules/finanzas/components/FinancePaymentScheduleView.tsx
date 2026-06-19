@@ -14,8 +14,9 @@ type FinancePaymentScheduleViewProps = {
 };
 
 export default function FinancePaymentScheduleView({
-  initialProjectId = null,
+  initialProjectId: _initialProjectId = null,
 }: FinancePaymentScheduleViewProps) {
+  void _initialProjectId;
   const [step, setStep] = useState<Step>("search");
   const [selectedClient, setSelectedClient] = useState<Usuario | null>(null);
   const [selectedExpediente, setSelectedExpediente] = useState<UsuarioActivoResponseDTO | null>(null);

@@ -6,7 +6,6 @@ import Link from "next/link";
 import {
   fetchCommercialStepper,
   updateCommercialHitoEstado,
-  fetchEtapasExpediente,
   asignarAsesorAContrato,
   desasignarAsesorDelContrato,
   type StepperResponseDTO,
@@ -29,14 +28,13 @@ import {
   STAGE_ORDER,
   DOCUMENT_STAGES,
   STAGE_META,
-  OPCIONES_ESTADO,
   ESTADO_BADGE,
   BACKEND_A_ESTADO,
   type EstadoHito,
   type StageId,
 } from "./constants";
 
-import { InfoChip, ResumenKpi, LoadingSpinner, Spinner, ErrorBanner } from "./ui";
+import { LoadingSpinner, Spinner, ErrorBanner } from "./ui";
 
 import { useExpediente } from "./hooks";
 import DialogModal from "@/components/ui/DialogModal";
@@ -93,7 +91,9 @@ export default function ExpedienteDetailView({ uuidUsuarioActivo }: Props) {
 
   useEffect(() => {
     if (!stepperLoaded) {
-      void loadStepper();
+      Promise.resolve().then(() => {
+        void loadStepper();
+      });
     }
   }, [activeTab, stepperLoaded, loadStepper]);
 
@@ -109,7 +109,7 @@ export default function ExpedienteDetailView({ uuidUsuarioActivo }: Props) {
       const results = await Promise.all(
         activeStages.map(async (stage) => {
           try {
-            const res = await fetchStageDocuments(stage as any, uuidUsuarioActivo);
+             const res = await fetchStageDocuments(stage as "SEPARACION" | "CONTRATO" | "PAGO" | "ENTREGA" | "SANEAMIENTO" | "OTRO", uuidUsuarioActivo);
             return { stage, docs: res.documents ?? [] };
           } catch (err) {
             console.error(`Error loading documents for ${stage}:`, err);
@@ -133,7 +133,9 @@ export default function ExpedienteDetailView({ uuidUsuarioActivo }: Props) {
   // Load Documents data lazy when "documentos" tab is selected
   useEffect(() => {
     if (activeTab === "documentos" && !docsLoaded) {
-      void loadDocs();
+      Promise.resolve().then(() => {
+        void loadDocs();
+      });
     }
   }, [activeTab, docsLoaded, loadDocs]);
 

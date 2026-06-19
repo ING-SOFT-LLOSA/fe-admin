@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { fetchContratoPorId, fetchCommercialStepper } from "@/lib/api/expedientes";
-import type { UsuarioActivoResponseDTO, HitoComercialResponseDTO } from "@/lib/api/expedientes";
+import type { UsuarioActivoResponseDTO } from "@/lib/api/expedientes";
 import {
     fetchCronograma,
     fetchPagos,
@@ -133,6 +133,7 @@ export function useFinancingData(uuidExpediente: string | null, expedienteBase?:
     }, [uuidExpediente, expedienteBase]);
 
     useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         loadData();
     }, [loadData]);
 

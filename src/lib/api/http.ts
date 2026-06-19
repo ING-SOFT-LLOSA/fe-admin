@@ -21,7 +21,7 @@ export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> 
     throw new Error("No hay sesión activa. Inicia sesión de nuevo.");
   }
 
-  const body = init?.body ? JSON.parse(init.body as string) : undefined;
+
 
 
   const res = await fetch(`${API_URL}${path}`, {

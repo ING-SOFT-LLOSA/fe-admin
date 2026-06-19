@@ -142,12 +142,15 @@ export function unlinkAssignment(uuid: string): Promise<void> {
  * Lista todos los expedientes (UsuarioActivo) de la empresa.
  */
 export function fetchTodosLosContratos(): Promise<UsuarioActivoResponseDTO[]> {
-  return apiFetch<any>("/api/expedientes?size=1000").then((res) => {
-    const list = Array.isArray(res) ? res : (res?.content || []);
-    return list.map((item: any) => ({
-      ...item,
-      activo: item.activo ?? item.activos?.[0],
-    }));
+  return apiFetch<unknown>("/api/expedientes?size=1000").then((res) => {
+    const list = Array.isArray(res) ? res : ((res as { content?: unknown[] })?.content || []);
+    return list.map((item) => {
+      const u = item as UsuarioActivoResponseDTO & { activos?: unknown[] };
+      return {
+        ...u,
+        activo: u.activo ?? u.activos?.[0],
+      } as UsuarioActivoResponseDTO;
+    });
   });
 }
  

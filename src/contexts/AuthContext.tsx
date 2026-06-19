@@ -13,7 +13,6 @@ import {
 import { onAuthStateChanged } from "firebase/auth";
 
 import { fetchPerfil } from "@/lib/auth/api";
-import { toAuthErrorMessage } from "@/lib/auth/errors";
 import {
   loginWithEmail,
   loginWithGoogle,

@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+
 import type { CronogramaResumenResponse } from "@/modules/finanzas/types";
 
 interface FinancingSummaryCardsProps {

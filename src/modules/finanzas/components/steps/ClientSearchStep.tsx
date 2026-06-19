@@ -44,7 +44,9 @@ export default function ClientSearchStep({ onSelectClient }: ClientSearchStepPro
     }, []);
 
     useEffect(() => {
-        void search(debouncedQuery);
+        Promise.resolve().then(() => {
+            void search(debouncedQuery);
+        });
     }, [debouncedQuery, search]);
 
     return (

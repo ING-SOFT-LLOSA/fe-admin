@@ -22,8 +22,13 @@ function SkeletonCard() {
 }
 
 export default function ProjectsOverview() {
+  interface ContractOverview {
+    activos?: { proyectoNombre: string }[];
+    clientes?: { id: number }[];
+  }
+
   const [projects, setProjects]   = useState<Proyecto[]>([]);
-  const [contracts, setContracts] = useState<any[]>([]);
+  const [contracts, setContracts] = useState<ContractOverview[]>([]);
   const [dptosCountMap, setDptosCountMap] = useState<Record<string, number>>({});
   const [avanceMap, setAvanceMap] = useState<Record<string, number>>({});
   const [isLoading, setIsLoading] = useState(true);
@@ -38,15 +43,15 @@ export default function ProjectsOverview() {
       try {
         const [projData, contractsData] = await Promise.all([
           apiFetch<Proyecto[]>("/api/proyectos"),
-          apiFetch<any>("/api/expedientes?unpaginated=true").catch(() => []),
+          apiFetch<unknown>("/api/expedientes?unpaginated=true").catch(() => []),
         ]);
 
         if (!mounted) return;
 
         setProjects(projData || []);
-        const list = Array.isArray(contractsData)
+        const list = (Array.isArray(contractsData)
           ? contractsData
-          : (contractsData?.content || []);
+          : ((contractsData as { content?: unknown[] })?.content || [])) as ContractOverview[];
         setContracts(list);
 
         // Fetch assets and physical progress for each project in parallel
@@ -57,11 +62,11 @@ export default function ProjectsOverview() {
             projData.map(async (p) => {
               try {
                 const [assetsPage, progressData] = await Promise.all([
-                  apiFetch<any>(`/api/activos/proyecto/${p.id}?size=9999`),
-                  apiFetch<any>(`/api/proyectos/${p.id}/avance-general`).catch(() => null),
+                  apiFetch<{ content?: { tipo: string }[] }>(`/api/activos/proyecto/${p.id}?size=9999`),
+                  apiFetch<{ porcentajeAvance?: number }>(`/api/proyectos/${p.id}/avance-general`).catch(() => null),
                 ]);
                 const content = assetsPage?.content || [];
-                const dptosCount = content.filter((a: any) => a.tipo === "DEPARTAMENTO").length;
+                const dptosCount = content.filter((a) => a.tipo === "DEPARTAMENTO").length;
                 assetsMap[p.id] = dptosCount;
                 progressMap[p.id] = progressData?.porcentajeAvance ?? 0;
               } catch (err) {
@@ -89,9 +94,12 @@ export default function ProjectsOverview() {
   // ── Derived stats ────────────────────────────────────────────────────────────
   const stats = useMemo(() => ({
     total:     projects.length,
-    activos:   projects.filter((p) => (p as any).estado === "ACTIVO" || (p as any).activo !== false).length,
-    enObra:    projects.filter((p) => (p as any).estado === "EN_CONSTRUCCION").length,
-    entregados:projects.filter((p) => (p as any).estado === "ENTREGADO").length,
+    activos:   projects.filter((p) => {
+      const proj = p as Proyecto & { estado?: string; activo?: boolean };
+      return proj.estado === "ACTIVO" || proj.activo !== false;
+    }).length,
+    enObra:    projects.filter((p) => (p as Proyecto & { estado?: string }).estado === "EN_CONSTRUCCION").length,
+    entregados:projects.filter((p) => (p as Proyecto & { estado?: string }).estado === "ENTREGADO").length,
   }), [projects]);
 
   // ── Filtered list ─────────────────────────────────────────────────────────────
@@ -217,9 +225,9 @@ const filtered = useMemo(() => {
             const dptosCount = dptosCountMap[project.id] ?? 0;
             const projectClients = new Set<number>();
             contracts.forEach((c) => {
-              const hasAssetInProject = c.activos?.some((a: any) => a.proyectoNombre === project.nombre);
+              const hasAssetInProject = c.activos?.some((a) => a.proyectoNombre === project.nombre);
               if (hasAssetInProject) {
-                c.clientes?.forEach((client: any) => {
+                c.clientes?.forEach((client) => {
                   projectClients.add(client.id);
                 });
               }

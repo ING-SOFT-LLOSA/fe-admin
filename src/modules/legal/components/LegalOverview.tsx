@@ -6,7 +6,6 @@ import {
   fetchProyectos,
   fetchTorresPorProyecto,
   type Proyecto,
-  type TorreResponseDTO,
 } from "@/lib/api/proyectos";
 import {
   fetchTodosLosContratos,
@@ -152,7 +151,7 @@ function MetricCards({
   isLoading: boolean;
 }) {
   const stats = useMemo(() => {
-    let total      = contracts.length;
+    const total      = contracts.length;
     let enProceso  = 0;
     let firmaPend  = 0;
     let bloqueados = 0;
@@ -171,7 +170,7 @@ function MetricCards({
       );
       if (needsSignature) firmaPend++;
 
-      const days = daysSince((c as any).ultimaActualizacion ?? null);
+      const days = daysSince((c as { ultimaActualizacion?: string }).ultimaActualizacion ?? null);
       if (days !== null && days > STALLED_DAYS) bloqueados++;
     }
 
@@ -271,7 +270,9 @@ useEffect(() => {
 }, []);
   // Reset page to 0 when filters change
   useEffect(() => {
-    setCurrentPage(0);
+    Promise.resolve().then(() => {
+      setCurrentPage(0);
+    });
   }, [selectedProyecto, selectedTorre, selectedEstado, selectedEtapa, search, ocultarDesistidos]);
 
   // ── Data loading ───────────────────────────────────────────────────────────
@@ -340,7 +341,11 @@ useEffect(() => {
   }, []);
 
   // Reset Torre when Proyecto changes
-  useEffect(() => { setSelectedTorre(""); }, [selectedProyecto]);
+  useEffect(() => {
+    Promise.resolve().then(() => {
+      setSelectedTorre("");
+    });
+  }, [selectedProyecto]);
 useEffect(() => {
   fetchProyectos().then((list) => {
     setProyectosList(list);
@@ -349,14 +354,16 @@ useEffect(() => {
 }, []);
 
 useEffect(() => {
-  setSelectedTorre("");
-  setTorresOptions([]);
-  if (!selectedProyecto) return;
-  const proyecto = proyectosList.find((p) => p.nombre === selectedProyecto);
-  if (!proyecto) return;
-  fetchTorresPorProyecto(proyecto.id).then((list) =>
-    setTorresOptions(list.map((t) => t.nombre).sort((a, b) => a.localeCompare(b)))
-  );
+  Promise.resolve().then(() => {
+    setSelectedTorre("");
+    setTorresOptions([]);
+    if (!selectedProyecto) return;
+    const proyecto = proyectosList.find((p) => p.nombre === selectedProyecto);
+    if (!proyecto) return;
+    fetchTorresPorProyecto(proyecto.id).then((list) =>
+      setTorresOptions(list.map((t) => t.nombre).sort((a, b) => a.localeCompare(b)))
+    );
+  });
 }, [selectedProyecto, proyectosList]);
 
   // ── Filtered list ──────────────────────────────────────────────────────────
@@ -630,7 +637,7 @@ useEffect(() => {
                 const isVigente  = contract.vigente !== false;
 
                 // Stalled detection
-                const dias = daysSince((contract as any).ultimaActualizacion ?? null);
+                const dias = daysSince((contract as { ultimaActualizacion?: string }).ultimaActualizacion ?? null);
                 const isStalled = dias !== null && dias > STALLED_DAYS;
 
                 return (

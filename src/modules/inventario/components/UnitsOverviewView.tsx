@@ -19,6 +19,8 @@ function getStatusClass(status: string) {
   return "bg-slate-100 dark:bg-white/10 text-slate-600 dark:text-white/70";
 }
 
+const TYPE_ORDER: Record<string, number> = { DEPARTAMENTO: 1, COCHERA: 2, DEPOSITO: 3 };
+
 export default function UnitsOverviewView({ projectId }: UnitsOverviewViewProps) {
   const [units, setUnits] = useState<ActivoResponseDTO[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -54,7 +56,6 @@ export default function UnitsOverviewView({ projectId }: UnitsOverviewViewProps)
     };
   }, [projectId]);
 
-  const TYPE_ORDER: Record<string, number> = { DEPARTAMENTO: 1, COCHERA: 2, DEPOSITO: 3 };
 
   const visibleUnits = useMemo(() => {
     const query = deferredSearch.trim().toLowerCase();

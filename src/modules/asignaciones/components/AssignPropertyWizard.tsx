@@ -78,56 +78,59 @@ export default function AssignPropertyWizard({ onClose, onSuccess, client }: Ass
   // Load Projects on mount
   useEffect(() => {
     let active = true;
-    fetchProyectos().then(data => {
-        if (!active) return;
-        setProjects(data);
-    }).catch(() => {
-      if (active) setErrorMsg("No se pudieron cargar los proyectos");
-    });
-    
-    // Preload clients for search
-    if (!client) {
-      setClientsLoading(true);
-      fetchUsuarios()
-        .then(data => {
+    Promise.resolve().then(() => {
+      fetchProyectos().then(data => {
           if (!active) return;
-          setAllClients(data.filter(u => u.activo).map(mapUsuarioToClienteRow));
-        })
-        .catch(console.error)
-        .finally(() => {
-          if (active) setClientsLoading(false);
-        });
-    }
+          setProjects(data);
+      }).catch(() => {
+        if (active) setErrorMsg("No se pudieron cargar los proyectos");
+      });
+      
+      // Preload clients for search
+      if (!client) {
+        setClientsLoading(true);
+        fetchUsuarios()
+          .then(data => {
+            if (!active) return;
+            setAllClients(data.filter(u => u.activo).map(mapUsuarioToClienteRow));
+          })
+          .catch(console.error)
+          .finally(() => {
+            if (active) setClientsLoading(false);
+          });
+      }
+    });
 
     return () => {
       active = false;
     };
   }, [client]);
 
-  // Load Units when project changes
   useEffect(() => {
     if (!selectedProjectId) return;
     let active = true;
-    setLoadingUnits(true);
-    setUnits([]);
-    setSelectedUnitIds([]);
-    
-    fetchActivosPorProyecto(selectedProjectId, "DISPONIBLE")
-      .then(page => {
-        if (!active) return;
-        const availableUnits: UnitSelection[] = page.content.map(a => ({
-          id: a.id,
-          name: a.nro,
-          type: a.tipo
-        }));
-        setUnits(availableUnits);
-      })
-      .catch(() => {
-        if (active) setErrorMsg("Error cargando inventario del proyecto");
-      })
-      .finally(() => {
-        if (active) setLoadingUnits(false);
-      });
+    Promise.resolve().then(() => {
+      setLoadingUnits(true);
+      setUnits([]);
+      setSelectedUnitIds([]);
+      
+      fetchActivosPorProyecto(selectedProjectId, "DISPONIBLE")
+        .then(page => {
+          if (!active) return;
+          const availableUnits: UnitSelection[] = page.content.map(a => ({
+            id: a.id,
+            name: a.nro,
+            type: a.tipo
+          }));
+          setUnits(availableUnits);
+        })
+        .catch(() => {
+          if (active) setErrorMsg("Error cargando inventario del proyecto");
+        })
+        .finally(() => {
+          if (active) setLoadingUnits(false);
+        });
+    });
 
     return () => {
       active = false;

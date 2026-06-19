@@ -90,25 +90,27 @@ export default function ClientActivos({ clientId, refreshKey = 0 }: ClientActivo
 
   useEffect(() => {
     let mounted = true;
-    setLoading(true);
-    setError(null);
+    Promise.resolve().then(() => {
+      setLoading(true);
+      setError(null);
 
-    Promise.all([
-      fetchActivosPorUsuario(clientId),
-      fetchProyectos().catch(() => [])
-    ])
-      .then(([activosData, proyectosData]) => {
-        if (!mounted) return;
-        setActivos(activosData || []);
-        setProyectos(proyectosData || []);
-      })
-      .catch((err) => {
-        if (!mounted) return;
-        setError(err instanceof Error ? err.message : "No se pudieron cargar los activos.");
-      })
-      .finally(() => {
-        if (mounted) setLoading(false);
-      });
+      Promise.all([
+        fetchActivosPorUsuario(clientId),
+        fetchProyectos().catch(() => [])
+      ])
+        .then(([activosData, proyectosData]) => {
+          if (!mounted) return;
+          setActivos(activosData || []);
+          setProyectos(proyectosData || []);
+        })
+        .catch((err) => {
+          if (!mounted) return;
+          setError(err instanceof Error ? err.message : "No se pudieron cargar los activos.");
+        })
+        .finally(() => {
+          if (mounted) setLoading(false);
+        });
+    });
 
     return () => {
       mounted = false;

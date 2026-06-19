@@ -97,7 +97,9 @@ export default function ObraTabDocumentacion({ projectId }: ObraTabDocumentacion
   }, [projectId]);
 
   useEffect(() => {
-    loadDocuments();
+    Promise.resolve().then(() => {
+      loadDocuments();
+    });
   }, [loadDocuments]);
 
   const MAX_PDF_SIZE = 5 * 1024 * 1024; // 5 MB

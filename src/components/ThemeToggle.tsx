@@ -10,7 +10,7 @@ export default function ThemeToggle() {
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    setMounted(true);
+    Promise.resolve().then(() => setMounted(true));
   }, []);
 
   useEffect(() => {

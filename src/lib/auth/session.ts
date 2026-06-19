@@ -3,7 +3,8 @@ import type { PerfilConPermisos } from "@/types/auth";
 const TOKEN_KEY = "llosa_id_token";
 const PERFIL_KEY = "llosa_perfil";
 
-export function saveSession(token: string, perfil: PerfilConPermisos): void {
+export function saveSession(token: string, _perfil: PerfilConPermisos): void {
+  void _perfil;
   if (typeof window === "undefined") return;
   document.cookie = `${TOKEN_KEY}=${token}; path=/; max-age=86400; SameSite=Lax`;
 }
@@ -43,7 +44,7 @@ export async function getFreshToken(): Promise<string | null> {
       const stored = getStoredToken();
       if (freshToken !== stored) {
         // We only care about the token here since we don't persist the profile anymore
-        saveSession(freshToken, null as any); // We can pass null because we removed PERFIL storage
+        saveSession(freshToken, null as unknown as PerfilConPermisos); // We can pass null because we removed PERFIL storage
       }
     }
 

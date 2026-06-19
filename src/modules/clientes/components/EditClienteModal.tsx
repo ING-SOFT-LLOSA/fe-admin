@@ -35,14 +35,16 @@ export default function EditClienteModal({
       // pero por simplicidad usaremos todo como "nombre" ya que la tabla los concatena.
       // Lo ideal es tener el original, pero como ClienteRow tiene `name` combinado:
       const parts = cliente.name.split(" ");
-      setForm({
-        nombre: parts[0] || "",
-        apellidos: parts.slice(1).join(" ") || "",
-        email: cliente.email,
-        telefono: cliente.phone !== "—" ? cliente.phone : "",
-        documentoIdentidad: cliente.dni !== "—" ? cliente.dni : "",
+      Promise.resolve().then(() => {
+        setForm({
+          nombre: parts[0] || "",
+          apellidos: parts.slice(1).join(" ") || "",
+          email: cliente.email,
+          telefono: cliente.phone !== "—" ? cliente.phone : "",
+          documentoIdentidad: cliente.dni !== "—" ? cliente.dni : "",
+        });
+        setErrors({});
       });
-      setErrors({});
     }
   }, [cliente, open]);
 

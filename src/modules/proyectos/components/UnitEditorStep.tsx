@@ -111,7 +111,8 @@ export default function UnitEditorStep({ torres: initialTorres, onBack, onSubmit
   const handleEdit = (tIdx: number, pIdx: number, aIdx: number, field: keyof ActivoData, value: string | number) => {
     setTorres((prev) => {
       const next = structuredClone(prev);
-      (next[tIdx].pisos[pIdx].activos[aIdx] as any)[field] = value;
+      const activo = next[tIdx].pisos[pIdx].activos[aIdx] as unknown as Record<string, string | number>;
+      activo[field as string] = value;
       return next;
     });
   };
@@ -202,7 +203,7 @@ export default function UnitEditorStep({ torres: initialTorres, onBack, onSubmit
                             </p>
                             {units.length > 0 && (
                               <div className="mb-2 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                                {units.map((activo, aIdx) => {
+                                {units.map((activo) => {
                                   const actualIdx = piso.activos.indexOf(activo);
                                   return (
                                     <UnitCard

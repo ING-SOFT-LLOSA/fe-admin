@@ -303,9 +303,7 @@ function getConfirmationText(confirmacion: boolean | null): string {
   return "Sin respuesta";
 }
 
-function canEditCita(estado: string): boolean {
-  return estado !== "CANCELADA" && estado !== "COMPLETADA";
-}
+
 
 function validateAppointmentForm(clientId: string | null, selectedUnitId: string, eventDate: string, startTime: string, endTime: string): string | null {
   if (!clientId || !selectedUnitId || !eventDate || !startTime || !endTime) {
@@ -428,24 +426,26 @@ export default function SchedulePage() {
 
   // Load client units when selected client changes
   useEffect(() => {
-    if (!clientId) {
+    Promise.resolve().then(() => {
+      if (!clientId) {
+        setClientUnits([]);
+        setSelectedUnitId("");
+        return;
+      }
       setClientUnits([]);
       setSelectedUnitId("");
-      return;
-    }
-    setClientUnits([]);
-    setSelectedUnitId("");
-    
-    import("@/lib/api/users")
-      .then(m => m.fetchExpedientesPorUsuario(Number(clientId)))
-      .then(exps => {
-        const uList = mapExpedientesToUnits(exps);
-        setClientUnits(uList);
-        if (uList.length > 0) {
-          setSelectedUnitId(uList[0].id);
-        }
-      })
-      .catch(console.error);
+      
+      import("@/lib/api/users")
+        .then(m => m.fetchExpedientesPorUsuario(Number(clientId)))
+        .then(exps => {
+          const uList = mapExpedientesToUnits(exps);
+          setClientUnits(uList);
+          if (uList.length > 0) {
+            setSelectedUnitId(uList[0].id);
+          }
+        })
+        .catch(console.error);
+    });
   }, [clientId]);
 
   // Generate grid cells base layout
@@ -475,7 +475,9 @@ export default function SchedulePage() {
   }, [gridCells, currentDate]);
 
   useEffect(() => {
-    fetchAppointments();
+    Promise.resolve().then(() => {
+      fetchAppointments();
+    });
   }, [fetchAppointments]);
 
   // Next/prev month handlers
@@ -570,7 +572,7 @@ export default function SchedulePage() {
       estadoCita: editEstado,
       permiteReprogramacion: editPermiteReprog
     })
-      .then((updated) => {
+      .then(() => {
         setIsSaving(false);
         setIsEditing(false);
         setDetailModalOpen(false);
@@ -1034,7 +1036,7 @@ export default function SchedulePage() {
                       <label className="block text-[11px] font-bold text-slate-500 dark:text-white/60 uppercase mb-1">Estado Cita</label>
                       <select 
                         value={editEstado} 
-                        onChange={e => setEditEstado(e.target.value as any)} 
+                        onChange={e => setEditEstado(e.target.value as "PROGRAMADA" | "CONFIRMADA" | "CANCELADA" | "COMPLETADA" | "REPROGRAMACION_PENDIENTE")} 
                         className="w-full px-3 py-2.5 border border-slate-200 dark:border-white/10 rounded-xl text-sm bg-white dark:bg-white/5 text-build-main dark:text-white focus:outline-none focus:border-arch-gold focus:ring-1 focus:ring-arch-gold/20"
                       >
                         <option value="PROGRAMADA">PROGRAMADA</option>

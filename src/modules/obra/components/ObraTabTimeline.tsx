@@ -42,7 +42,7 @@ export default function ObraTabTimeline({ etapas }: ObraTabTimelineProps) {
 
       {sortedEtapas.length === 0 ? (
         <div className="p-3 text-center text-xs text-slate-400">
-          No hay hitos maestros configurados. Créalos desde "Por proyecto".
+          No hay hitos maestros configurados. Créalos desde &quot;Por proyecto&quot;.
         </div>
       ) : (
         <div className="relative flex flex-col gap-0">

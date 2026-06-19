@@ -1,7 +1,15 @@
 // Removed mock import
 
+interface Assignment {
+  status: string;
+  projectName: string;
+  unitLabel: string;
+  financing: string;
+  estadoTramiteLegal: string;
+}
+
 type ClientGeneralStatusProps = {
-  assignments: any[];
+  assignments: Assignment[];
 };
 
 export default function ClientGeneralStatus({ assignments }: ClientGeneralStatusProps) {

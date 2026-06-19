@@ -6,13 +6,14 @@ import { ResumenKpi } from "./ui";
 
 type Props = {
   client:         Usuario | null;
-  expediente:     any;
+  expediente:     UsuarioActivoResponseDTO | null;
   contrato:       UsuarioActivoResponseDTO | null;
   etapas:         ProcesoEtapa[];
   loadingStepper: boolean;
 };
 
-export function TabResumen({ client, expediente, contrato, etapas, loadingStepper }: Props) {
+export function TabResumen({ client, expediente, contrato, etapas, loadingStepper: _loadingStepper }: Props) {
+  void _loadingStepper;
   const etapaActual =
     etapas.find((e) => e.estado === "en_proceso") ??
     etapas.find((e) => e.estado === "pendiente")  ??

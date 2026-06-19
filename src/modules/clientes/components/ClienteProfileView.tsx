@@ -34,39 +34,41 @@ export default function ClienteProfileView({ clientId }: ClienteProfileViewProps
 
   useEffect(() => {
     let mounted = true;
-    setLoading(true);
+    Promise.resolve().then(() => {
+      setLoading(true);
 
-    Promise.all([
-      fetchUsuarioPorId(Number(clientId)),
-      fetchActivosPorUsuario(Number(clientId)),
-    ])
-      .then(([user, activosData]) => {
-        if (!mounted) return;
-        setClient(user ? mapUsuarioToClienteRow(user) : null);
-        
-        const mappedAssignments = (activosData || []).map((act: ActivoUsuarioDTO) => {
-          const label = `${act.tipo === "ESTACIONAMIENTO" ? "Cochera" : act.tipo === "DEPOSITO" ? "Depósito" : "Dpto"} ${act.nro}`;
+      Promise.all([
+        fetchUsuarioPorId(Number(clientId)),
+        fetchActivosPorUsuario(Number(clientId)),
+      ])
+        .then(([user, activosData]) => {
+          if (!mounted) return;
+          setClient(user ? mapUsuarioToClienteRow(user) : null);
           
-          return {
-            clientId: Number(clientId),
-            unitId: act.id,
-            unitLabel: label,
-            projectName: act.proyectoNombre || "Proyecto",
-            financing: "Contrato",
-            assignedAt: new Date().toISOString().split("T")[0],
-            status: "Vigente",
-            estadoTramiteLegal: act.estadoComercial,
-            uuidUsuarioActivo: act.id,
-          };
+          const mappedAssignments = (activosData || []).map((act: ActivoUsuarioDTO) => {
+            const label = `${act.tipo === "ESTACIONAMIENTO" ? "Cochera" : act.tipo === "DEPOSITO" ? "Depósito" : "Dpto"} ${act.nro}`;
+            
+            return {
+              clientId: Number(clientId),
+              unitId: act.id,
+              unitLabel: label,
+              projectName: act.proyectoNombre || "Proyecto",
+              financing: "Contrato",
+              assignedAt: new Date().toISOString().split("T")[0],
+              status: "Vigente",
+              estadoTramiteLegal: act.estadoComercial,
+              uuidUsuarioActivo: act.id,
+            };
+          });
+          setAssignments(mappedAssignments);
+        })
+        .catch((err) => {
+          if (mounted) setError(err instanceof Error ? err.message : "No se pudo cargar el cliente.");
+        })
+        .finally(() => {
+          if (mounted) setLoading(false);
         });
-        setAssignments(mappedAssignments);
-      })
-      .catch((err) => {
-        if (mounted) setError(err instanceof Error ? err.message : "No se pudo cargar el cliente.");
-      })
-      .finally(() => {
-        if (mounted) setLoading(false);
-      });
+    });
 
     return () => { mounted = false; };
   }, [clientId, refreshCount]);

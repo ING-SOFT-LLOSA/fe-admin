@@ -10,6 +10,16 @@ import type { HitoComercialResponseDTO } from "@/lib/api/expedientes";
 import { linkComprobanteToLegal } from "@/modules/finanzas/utils/linkComprobanteToLegal";
 import DialogModal from "@/components/ui/DialogModal";
 
+interface DialogState {
+    isOpen: boolean;
+    title: string;
+    message: string;
+    type: "info" | "success" | "warning" | "danger";
+    confirmText?: string;
+    cancelText?: string;
+    onConfirm?: () => void;
+}
+
 interface MortgageFinancingViewProps {
     expediente: UsuarioActivoResponseDTO;
     cronograma: CronogramaPagoResponse | null;
@@ -125,7 +135,7 @@ interface CronogramaSeccionProps {
     cronograma: CronogramaPagoResponse | null;
     expediente: UsuarioActivoResponseDTO;
     onUpdate: () => void;
-    setDialog: React.Dispatch<React.SetStateAction<any>>;
+    setDialog: React.Dispatch<React.SetStateAction<DialogState>>;
 }
 
 function CronogramaSeccion({ cronograma, expediente, onUpdate, setDialog }: CronogramaSeccionProps) {
@@ -139,10 +149,12 @@ function CronogramaSeccion({ cronograma, expediente, onUpdate, setDialog }: Cron
 
     useEffect(() => {
         if (showCronogramaForm && cronograma) {
-            setCronogramaForm({
-                totalPactado: cronograma.totalPactado?.toString() ?? "",
-                pagoSeparacion: cronograma.pagoSeparacion?.toString() ?? "",
-                pagoInicial: cronograma.pagoInicial?.toString() ?? "",
+            Promise.resolve().then(() => {
+                setCronogramaForm({
+                    totalPactado: cronograma.totalPactado?.toString() ?? "",
+                    pagoSeparacion: cronograma.pagoSeparacion?.toString() ?? "",
+                    pagoInicial: cronograma.pagoInicial?.toString() ?? "",
+                });
             });
         }
     }, [showCronogramaForm, cronograma]);
@@ -256,7 +268,7 @@ interface MortgagePagoRowProps {
     pago: PagoResponse;
     expediente: UsuarioActivoResponseDTO;
     onUpdate: () => void;
-    setDialog: React.Dispatch<React.SetStateAction<any>>;
+    setDialog: React.Dispatch<React.SetStateAction<DialogState>>;
     editingId: string | null;
     setEditingId: (id: string | null) => void;
     activeDropzoneId: string | null;
@@ -285,17 +297,21 @@ function MortgagePagoRow({
 
     useEffect(() => {
         if (isEditing) {
-            setEditForm({
-                montoProgramado: pago.montoProgramado.toString(),
-                fechaVencimiento: pago.fechaVencimiento,
+            Promise.resolve().then(() => {
+                setEditForm({
+                    montoProgramado: pago.montoProgramado.toString(),
+                    fechaVencimiento: pago.fechaVencimiento,
+                });
             });
         }
     }, [isEditing, pago]);
 
     useEffect(() => {
         if (!showDropzone) {
-            setDropzoneFile(null);
-            setDropzoneComentario("");
+            Promise.resolve().then(() => {
+                setDropzoneFile(null);
+                setDropzoneComentario("");
+            });
         }
     }, [showDropzone]);
 
@@ -335,7 +351,7 @@ function MortgagePagoRow({
         const newStatus = pago.estado === "PAGADO" ? "PENDIENTE" : "PAGADO";
         setIsBusy(true);
         try {
-            await updatePagoEstado(pago.uuidPago, newStatus as any);
+            await updatePagoEstado(pago.uuidPago, newStatus as PagoResponse["estado"]);
             onUpdate();
         } catch (e) {
             setDialog({
@@ -374,7 +390,7 @@ function MortgagePagoRow({
             confirmText: "Eliminar",
             cancelText: "Cancelar",
             onConfirm: async () => {
-                setDialog((prev: any) => ({ ...prev, isOpen: false }));
+                setDialog((prev) => ({ ...prev, isOpen: false }));
                 setIsBusy(true);
                 try {
                     await deletePago(pago.uuidPago);
@@ -621,7 +637,7 @@ interface CuotasSeccionProps {
     pagos: PagoResponse[];
     expediente: UsuarioActivoResponseDTO;
     onUpdate: () => void;
-    setDialog: React.Dispatch<React.SetStateAction<any>>;
+    setDialog: React.Dispatch<React.SetStateAction<DialogState>>;
 }
 
 function CuotasSeccion({ cronograma, pagos, expediente, onUpdate, setDialog }: CuotasSeccionProps) {
@@ -634,7 +650,9 @@ function CuotasSeccion({ cronograma, pagos, expediente, onUpdate, setDialog }: C
     useEffect(() => {
         const existing = new Set(pagos.map(p => p.concepto).filter(Boolean));
         const valid = (["COMPLETO", "SEPARACION", "INICIAL"] as const).filter(c => !existing.has(c));
-        setAddForm(p => valid.includes(p.concepto as any) ? p : { ...p, concepto: valid[0] ?? "COMPLETO" });
+        Promise.resolve().then(() => {
+            setAddForm(p => valid.includes(p.concepto as "COMPLETO" | "SEPARACION" | "INICIAL") ? p : { ...p, concepto: valid[0] ?? "COMPLETO" });
+        });
     }, [pagos]);
 
     const handleAddPago = async () => {
@@ -751,7 +769,7 @@ function CuotasSeccion({ cronograma, pagos, expediente, onUpdate, setDialog }: C
                 </table>
                 {pagos.length === 0 && (
                     <div className="py-10 text-center text-sm text-slate-400">
-                        Sin cuotas registradas. Usa "+ Agregar Cuota" para comenzar.
+                        Sin cuotas registradas. Usa &quot;+ Agregar Cuota&quot; para comenzar.
                     </div>
                 )}
             </div>
@@ -797,8 +815,17 @@ function getHitoIcon(estado: string, isUpdating: boolean): string {
     return "radio_button_unchecked";
 }
 
+interface HitoRowItem {
+    uuidHitoComercial?: string | null;
+    nombre: string;
+    estado: string;
+    monto: number;
+    fecha?: string | null;
+    downloadUrl?: string | null;
+}
+
 interface HitoRowProps {
-    item: any;
+    item: HitoRowItem;
     idx: number;
     isUpdating: string | null;
     handleHitoToggle: (uuidHito: string, currentEstado: string) => Promise<void>;
@@ -879,8 +906,8 @@ function HitoRow({ item, idx, isUpdating, handleHitoToggle, startEditingHito, ha
                                             nombreHito: item.nombre,
                                             descripcion: "",
                                             orden: idx,
-                                            estado: item.estado as any,
-                                            fechaCompletado: item.fecha,
+                                            estado: item.estado as HitoComercialResponseDTO["estado"],
+                                            fechaCompletado: item.fecha ?? null,
                                             createdAt: "",
                                         };
                                         startEditingHito(h);
@@ -1079,15 +1106,7 @@ function HitosDesembolsoSection({ creditoHipotecario, expediente, onUpdate }: Hi
 // ─── Componente Principal ────────────────────────────────────────────────────
 
 export default function MortgageFinancingView({ expediente, cronograma, pagos, resumen, creditoHipotecario, onUpdate }: MortgageFinancingViewProps) {
-    const [dialog, setDialog] = useState<{
-        isOpen: boolean;
-        title: string;
-        message: string;
-        type: "info" | "success" | "warning" | "danger";
-        confirmText?: string;
-        cancelText?: string;
-        onConfirm?: () => void;
-    }>({ isOpen: false, title: "", message: "", type: "info" });
+    const [dialog, setDialog] = useState<DialogState>({ isOpen: false, title: "", message: "", type: "info" });
 
     const progress = creditoHipotecario?.progreso ?? 0;
 

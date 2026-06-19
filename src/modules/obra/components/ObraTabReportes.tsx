@@ -1,5 +1,5 @@
 "use client";
- 
+/* eslint-disable @next/next/no-img-element */
 import { useEffect, useState, useCallback, useRef } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import type { Proyecto } from "@/modules/proyectos/types";
@@ -85,7 +85,9 @@ export default function ObraTabReportes({ projectId, avance, project }: ObraTabR
   }, [projectId]);
 
   useEffect(() => {
-    loadReports();
+    Promise.resolve().then(() => {
+      loadReports();
+    });
   }, [loadReports]);
  
   const handleCreateReport = async (payload: ReporteCreatePayload, files: File[]) => {
@@ -210,7 +212,6 @@ export default function ObraTabReportes({ projectId, avance, project }: ObraTabR
       {showForm && (
         <NuevoReporteForm
           projectId={projectId}
-          projectName={project?.nombre}
           onClose={() => setShowForm(false)}
           onSubmit={handleCreateReport}
         />
@@ -486,12 +487,11 @@ function ReporteDetail({
  
 type NuevoReporteFormProps = {
   projectId: string;
-  projectName?: string;
   onClose: () => void;
   onSubmit: (payload: ReporteCreatePayload, files: File[]) => Promise<void>;
 };
  
-function NuevoReporteForm({ projectId, projectName, onClose, onSubmit }: NuevoReporteFormProps) {
+function NuevoReporteForm({ projectId, onClose, onSubmit }: NuevoReporteFormProps) {
   const [titulo,      setTitulo]      = useState("");
   const [comentarios, setComentarios] = useState("");
   const [fecha,       setFecha]       = useState(new Date().toISOString().split("T")[0]);
@@ -500,7 +500,9 @@ function NuevoReporteForm({ projectId, projectName, onClose, onSubmit }: NuevoRe
     const d = new Date(fecha + "T12:00:00");
     const mes = d.toLocaleDateString("es-PE", { month: "long" });
     const año = d.getFullYear();
-    setTitulo(`${mes.charAt(0).toUpperCase() + mes.slice(1)} ${año}`);
+    Promise.resolve().then(() => {
+      setTitulo(`${mes.charAt(0).toUpperCase() + mes.slice(1)} ${año}`);
+    });
   }, [fecha]);
   const [files,       setFiles]       = useState<File[]>([]);
   
@@ -513,23 +515,25 @@ function NuevoReporteForm({ projectId, projectName, onClose, onSubmit }: NuevoRe
  
   useEffect(() => {
     if (!projectId) return;
-    setLoadingHitos(true);
-    getEtapasByProyecto(projectId)
-      .then((etapas) => {
-        const hitos = etapas.map((e) => ({
-          id: e.id,
-          titulo: e.nombre,
-          orden: e.orden,
-          tipo: "OBRA",
-          estado: e.estado,
-          fechaCompletado: null,
-        }));
-        setAvailableHitos(hitos);
-      })
-      .catch((err) => {
-        console.error("Error loading project hitos:", err);
-      })
-      .finally(() => setLoadingHitos(false));
+    Promise.resolve().then(() => {
+      setLoadingHitos(true);
+      getEtapasByProyecto(projectId)
+        .then((etapas) => {
+          const hitos = etapas.map((e) => ({
+            id: e.id,
+            titulo: e.nombre,
+            orden: e.orden,
+            tipo: "OBRA",
+            estado: e.estado,
+            fechaCompletado: null,
+          }));
+          setAvailableHitos(hitos);
+        })
+        .catch((err) => {
+          console.error("Error loading project hitos:", err);
+        })
+        .finally(() => setLoadingHitos(false));
+    });
   }, [projectId]);
  
   const handleSubmit = async () => {

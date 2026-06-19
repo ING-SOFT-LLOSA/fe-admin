@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { renderHook, waitFor, act } from "@testing-library/react";
 
@@ -21,7 +22,7 @@ import {
   fetchEtapasExpediente,
   fetchTodosLosContratos,
 } from "@/lib/api/expedientes";
-import { fetchStageDocuments, createRequisito } from "@/lib/api/requisitos";
+import { fetchStageDocuments } from "@/lib/api/requisitos";
 import {
   useCommercialStepper,
   useStageDocuments,
@@ -35,7 +36,7 @@ const mockUpdateHitoEstado = vi.mocked(updateCommercialHitoEstado);
 const mockFetchEtapas = vi.mocked(fetchEtapasExpediente);
 const mockFetchContratos = vi.mocked(fetchTodosLosContratos);
 const mockFetchStageDocuments = vi.mocked(fetchStageDocuments);
-const mockCreateRequisito = vi.mocked(createRequisito);
+// const mockCreateRequisito = vi.mocked(createRequisito);
 
 function makeContrato(uuid = "ua-1"): UsuarioActivoResponseDTO {
   return {

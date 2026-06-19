@@ -1,41 +1,30 @@
 "use client";
-import Link from "next/link";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import CreateClienteModal from "@/modules/clientes/components/CreateClienteModal";
 import AssignPropertyWizard from "@/modules/asignaciones/components/AssignPropertyWizard";
-import { useAuth } from "@/contexts/AuthContext";
-import { canEliminarUsuario } from "@/lib/auth/permissions";
 import { fetchUsuarios, mapUsuarioToClienteRow } from "@/lib/api/users";
 import type { ClienteRow } from "@/types/user";
 import { useRouter } from "next/navigation";
 
 export default function ClientsPage() {
-  const { perfil } = useAuth();
   const [clients, setClients] = useState<ClienteRow[]>([]);
   const [listLoading, setListLoading] = useState(true);
   const [listError, setListError] = useState<string | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
   const [assignOpen, setAssignOpen] = useState(false);
-  const [userToDelete, setUserToDelete] = useState<ClienteRow | null>(null);
   
-  const [totalCount, setTotalCount] = useState(0);
-  const [activeCount, setActiveCount] = useState(0);
-  const [inactiveCount, setInactiveCount] = useState(0);
-
-  const [selectedStatus, setSelectedStatus] = useState("");
+  const selectedStatus = "";
   // Pagination states
   const [page, setPage] = useState(0);
-  const [size, setSize] = useState(10);
+  const size = 10;
   const [search, setSearch] = useState("");
   const [searchInput, setSearchInput] = useState("");
   const [totalPages, setTotalPages] = useState(1);
-  const [totalElements, setTotalElements] = useState(0);
-
 
   const router = useRouter();
     
 
-  async function reloadClients(showSpinner = true, p = page, s = size, q = search) {
+  const reloadClients = useCallback(async (showSpinner = true, p = page, s = size, q = search) => {
     if (showSpinner) setListLoading(true);
     setListError(null);
     try {
@@ -58,33 +47,23 @@ export default function ClientsPage() {
         });
       }
 
-      setTotalCount(filtered.length);
-      setActiveCount(filtered.filter(u => u.activo).length);
-      setInactiveCount(filtered.filter(u => !u.activo).length);
-
       const start = p * s;
       const paginated = filtered.slice(start, start + s);
 
       setClients(paginated.map(mapUsuarioToClienteRow));
       setTotalPages(Math.ceil(filtered.length / s) || 1);
-      setTotalElements(filtered.length);
     } catch (err) {
       setListError(err instanceof Error ? err.message : "No se pudieron cargar los clientes.");
     } finally {
       if (showSpinner) setListLoading(false);
     }
-  }
+  }, [page, size, search, selectedStatus]);
 
   useEffect(() => {
     queueMicrotask(() => {
-      void reloadClients(true, page, size, search);
+      void reloadClients(true);
     });
-  }, [
-    page,
-    size,
-    search,
-    selectedStatus
-  ]);
+  }, [reloadClients]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();

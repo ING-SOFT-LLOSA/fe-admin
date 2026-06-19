@@ -1,5 +1,5 @@
 import { apiFetch } from "@/lib/api/http";
-import { getStoredToken, getFreshToken } from "@/lib/auth/session";
+import { getFreshToken } from "@/lib/auth/session";
 
 const API_URL = (process.env.NEXT_PUBLIC_API_URL_LLOSA ?? "http://localhost:8080").replace(/\/$/, "");
 
