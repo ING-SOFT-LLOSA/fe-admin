@@ -28,12 +28,16 @@ export function fetchUsuariosPaginado(page = 0, size = 10, search = ""): Promise
   return apiFetch<Page<Usuario>>(`/api/users/paginado?page=${page}&size=${size}&search=${encodeURIComponent(search)}`);
 }
 
-export function registerCliente(payload: CrearClientePayload): Promise<Usuario> {
+function registerUsuario(payload: CrearClientePayload | CrearEmpleadoPayload): Promise<Usuario> {
   return apiFetch<Usuario>("/api/users/register", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
   });
+}
+
+export function registerCliente(payload: CrearClientePayload): Promise<Usuario> {
+  return registerUsuario(payload);
 }
 
 export function updateCliente(id: number, payload: Partial<CrearClientePayload>): Promise<Usuario> {
@@ -45,11 +49,7 @@ export function updateCliente(id: number, payload: Partial<CrearClientePayload>)
 }
 
 export function registerEmpleado(payload: CrearEmpleadoPayload): Promise<Usuario> {
-  return apiFetch<Usuario>("/api/users/register", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-  });
+  return registerUsuario(payload);
 }
 
 export function asignarRol(idUsuario: number, idRol: number): Promise<Usuario> {

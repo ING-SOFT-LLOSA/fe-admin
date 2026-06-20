@@ -8,8 +8,8 @@ export default function ProjectsLoading() {
             <div className="skeleton mt-3 h-5 w-80" />
           </div>
         </div>
-        {Array.from({ length: 3 }).map((_, index) => (
-          <div key={index} className="rounded-xl border border-[#e2e2e4] bg-white dark:bg-white/5 p-5">
+        {["l1", "l2", "l3"].map((key) => (
+          <div key={key} className="rounded-xl border border-[#e2e2e4] bg-white dark:bg-white/5 p-5">
             <div className="skeleton h-4 w-24" />
             <div className="skeleton mt-3 h-7 w-56" />
             <div className="mt-4 grid gap-3 md:grid-cols-3">

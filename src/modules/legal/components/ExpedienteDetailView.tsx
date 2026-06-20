@@ -747,6 +747,11 @@ function ProcesoLegalAccordion({
         const totalHitos = etapa.hitos?.length ?? 0;
         const completedHitos = etapa.hitos?.filter((h) => h.estado === "COMPLETADO").length ?? 0;
         const pct = etapa.porcentajeAvance ?? 0;
+        const progressBarColor = (() => {
+          if (pct === 100) return "bg-emerald-500";
+          if (pct > 0) return "bg-amber-500";
+          return "bg-slate-200";
+        })();
 
         return (
           <div
@@ -778,9 +783,7 @@ function ProcesoLegalAccordion({
                 <div className="hidden sm:flex items-center gap-2">
                   <div className="w-[80px] h-1.5 bg-slate-100 dark:bg-white/10 rounded-full overflow-hidden">
                     <div
-                      className={`h-full rounded-full transition-all duration-300 ${
-                        pct === 100 ? "bg-emerald-500" : (pct > 0 ? "bg-amber-500" : "bg-slate-200")
-                      }`}
+                      className={`h-full rounded-full transition-all duration-300 ${progressBarColor}`}
                       style={{ width: `${pct}%` }}
                     />
                   </div>

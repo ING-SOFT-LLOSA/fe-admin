@@ -46,21 +46,21 @@ export default function ThemeToggle() {
             className={`w-full flex items-center gap-2 px-4 py-2 text-sm transition-colors hover:bg-slate-50 dark:hover:bg-slate-700/50 ${theme === "light" ? "text-build-main dark:text-white font-semibold" : "text-slate-600 dark:text-white/70"}`}
           >
             <span className="material-symbols-outlined text-[18px]">light_mode</span>
-            Claro
+            <span>Claro</span>
           </button>
           <button
             onClick={() => { setTheme("dark"); setIsOpen(false); }}
             className={`w-full flex items-center gap-2 px-4 py-2 text-sm transition-colors hover:bg-slate-50 dark:hover:bg-slate-700/50 ${theme === "dark" ? "text-build-main dark:text-white font-semibold" : "text-slate-600 dark:text-white/70"}`}
           >
             <span className="material-symbols-outlined text-[18px]">dark_mode</span>
-            Oscuro
+            <span>Oscuro</span>
           </button>
           <button
             onClick={() => { setTheme("system"); setIsOpen(false); }}
             className={`w-full flex items-center gap-2 px-4 py-2 text-sm transition-colors hover:bg-slate-50 dark:hover:bg-slate-700/50 ${theme === "system" ? "text-build-main dark:text-white font-semibold" : "text-slate-600 dark:text-white/70"}`}
           >
             <span className="material-symbols-outlined text-[18px]">computer</span>
-            Sistema
+            <span>Sistema</span>
           </button>
         </div>
       )}

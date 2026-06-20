@@ -19,11 +19,12 @@ type SubmitButtonProps = {
 
 function SubmitButton({ loading, disabled, isResetView, submitHover, onMouseEnter, onMouseLeave }: SubmitButtonProps) {
   const label = isResetView ? "Enviar enlace de recuperación" : "Acceder";
-  const bgClass = disabled
-    ? "opacity-50 cursor-not-allowed bg-build-accent/50"
-    : submitHover
-    ? "bg-build-accent/90 lg:bg-build-main/90"
-    : "bg-build-accent lg:bg-build-main";
+  let bgClass = "bg-build-accent lg:bg-build-main";
+  if (disabled) {
+    bgClass = "opacity-50 cursor-not-allowed bg-build-accent/50";
+  } else if (submitHover) {
+    bgClass = "bg-build-accent/90 lg:bg-build-main/90";
+  }
 
   return (
     <button
@@ -170,11 +171,12 @@ export default function LoginForm({ redirectTo = "/proyectos" }: LoginFormProps)
   const isSubmitDisabled = loading || !email || (!isResetView && !pass);
   const handleFormSubmit = isResetView ? handleResetPassword : handleSubmit;
 
-  const googleBgClass = loading
-    ? "opacity-60 cursor-not-allowed bg-transparent"
-    : googleHover
-    ? "bg-build-accent/10"
-    : "bg-transparent";
+  let googleBgClass = "bg-transparent";
+  if (loading) {
+    googleBgClass = "opacity-60 cursor-not-allowed bg-transparent";
+  } else if (googleHover) {
+    googleBgClass = "bg-build-accent/10";
+  }
 
   return (
     <div className="h-screen w-full flex overflow-hidden" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}>

@@ -964,7 +964,12 @@ function HitosDesembolsoSection({ creditoHipotecario, expediente, onUpdate }: Re
     const [hitoFormData, setHitoFormData] = useState({ nombre: "" });
 
     const paymentHitos = creditoHipotecario?.items ?? [];
-    const saveButtonText = isSaving ? "…" : (editingHito ? "Actualizar" : "Agregar");
+    const getSaveButtonLabel = () => {
+        if (isSaving) return "…";
+        if (editingHito) return "Actualizar";
+        return "Agregar";
+    };
+    const saveButtonText = getSaveButtonLabel();
 
     const handleHitoToggle = async (uuidHito: string, currentEstado: string) => {
         let newEstado: "PENDIENTE" | "EN_PROGRESO" | "COMPLETADO";

@@ -35,7 +35,7 @@ export default function ProjectCard({ project, clientesCount, dptosCount, avance
             {project.precertificacionEdgeLeed && (
               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase bg-emerald-100 dark:bg-emerald-950/30 text-emerald-800 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/30">
                 <span className="material-symbols-outlined text-[12px] font-bold">eco</span>
-                LEED / EDGE
+                <span>LEED / EDGE</span>
               </span>
             )}
           </div>

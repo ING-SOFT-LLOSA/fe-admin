@@ -12,8 +12,7 @@ type Props = {
   loadingStepper: boolean;
 };
 
-export function TabResumen({ client, expediente, contrato, etapas, loadingStepper: _loadingStepper }: Props) {
-  void _loadingStepper;
+export function TabResumen({ client, expediente, contrato, etapas }: Props) {
   const etapaActual =
     etapas.find((e) => e.estado === "en_proceso") ??
     etapas.find((e) => e.estado === "pendiente")  ??
@@ -21,6 +20,18 @@ export function TabResumen({ client, expediente, contrato, etapas, loadingSteppe
 
   const completadas = etapas.filter((e) => e.estado === "completado").length;
   const fullName    = [client?.nombre, client?.apellidos].filter(Boolean).join(" ") || "—";
+
+  const getIconColorClass = (estado: string) => {
+    if (estado === "completado") return "text-emerald-500";
+    if (estado === "en_proceso") return "text-blue-500";
+    return "text-slate-300 dark:text-white/20";
+  };
+
+  const getIconName = (estado: string) => {
+    if (estado === "completado") return "check_circle";
+    if (estado === "en_proceso") return "radio_button_checked";
+    return "radio_button_unchecked";
+  };
 
   return (
     <div className="space-y-4">
@@ -42,15 +53,8 @@ export function TabResumen({ client, expediente, contrato, etapas, loadingSteppe
               return (
                 <div key={etapa.id} className="flex items-center justify-between gap-3">
                   <div className="flex items-center gap-2">
-                    <span className={`material-symbols-outlined text-[16px] ${
-                      etapa.estado === "completado" ? "text-emerald-500" :
-                      etapa.estado === "en_proceso" ? "text-blue-500"    : "text-slate-300 dark:text-white/20"
-                    }`}>
-                      {etapa.estado === "completado"
-                        ? "check_circle"
-                        : etapa.estado === "en_proceso"
-                        ? "radio_button_checked"
-                        : "radio_button_unchecked"}
+                    <span className={`material-symbols-outlined text-[16px] ${getIconColorClass(etapa.estado)}`}>
+                      {getIconName(etapa.estado)}
                     </span>
                     <span className={`text-sm font-semibold ${
                       etapa.estado === "pendiente" ? "text-slate-400 dark:text-white/30" : "text-build-main dark:text-white"

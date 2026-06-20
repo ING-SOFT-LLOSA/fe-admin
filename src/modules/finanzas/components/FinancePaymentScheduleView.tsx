@@ -13,10 +13,7 @@ type FinancePaymentScheduleViewProps = {
   initialProjectId?: string | null;
 };
 
-export default function FinancePaymentScheduleView({
-  initialProjectId: _initialProjectId = null,
-}: FinancePaymentScheduleViewProps) {
-  void _initialProjectId;
+export default function FinancePaymentScheduleView({}: FinancePaymentScheduleViewProps) {
   const [step, setStep] = useState<Step>("search");
   const [selectedClient, setSelectedClient] = useState<Usuario | null>(null);
   const [selectedExpediente, setSelectedExpediente] = useState<UsuarioActivoResponseDTO | null>(null);
@@ -60,29 +57,49 @@ export default function FinancePaymentScheduleView({
           { id: "search", label: "Buscar Cliente", active: step === "search", done: !!selectedClient },
           { id: "contracts", label: "Contratos", active: step === "contracts", done: !!selectedExpediente },
           { id: "management", label: "Gestión de Pagos", active: step === "management", done: false },
-        ].map((s, i) => (
+        ].map((s, i) => {
+          const handleClick = () => {
+            if (s.id === "search") return handleBackToSearch();
+            if (s.id === "contracts") return handleBackToContracts();
+            return null;
+          };
+
+          let buttonClass: string;
+          if (s.active) {
+            buttonClass = "bg-arch-gold text-white font-bold shadow-sm";
+          } else if (s.done) {
+            buttonClass = "text-build-main dark:text-white/80 hover:bg-slate-100 dark:hover:bg-white/5 font-semibold";
+          } else {
+            buttonClass = "text-slate-400 dark:text-white/20 cursor-not-allowed font-medium";
+          }
+
+          let badgeClass: string;
+          if (s.active) {
+            badgeClass = "bg-white text-arch-gold";
+          } else if (s.done) {
+            badgeClass = "bg-arch-gold text-white";
+          } else {
+            badgeClass = "bg-slate-200 dark:bg-white/10 text-slate-500";
+          }
+
+          return (
           <div key={s.id} className="flex items-center gap-2 flex-shrink-0">
             {i > 0 && (
               <span className="material-symbols-outlined text-slate-300 dark:text-white/10 text-[18px]">chevron_right</span>
             )}
             <button
               disabled={(s.id === "contracts" && !selectedClient) || (s.id === "management" && !selectedExpediente)}
-              onClick={() => s.id === "search" ? handleBackToSearch() : s.id === "contracts" ? handleBackToContracts() : null}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all ${s.active
-                      ? "bg-arch-gold text-white font-bold shadow-sm"
-                  : s.done
-                    ? "text-build-main dark:text-white/80 hover:bg-slate-100 dark:hover:bg-white/5 font-semibold"
-                    : "text-slate-400 dark:text-white/20 cursor-not-allowed font-medium"
-                }`}
+              onClick={handleClick}
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all ${buttonClass}`}
             >
-              <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] ${s.active ? "bg-white text-arch-gold" : s.done ? "bg-arch-gold text-white" : "bg-slate-200 dark:bg-white/10 text-slate-500"
-                }`}>
+              <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] ${badgeClass}`}>
                 {s.done && !s.active ? "✓" : i + 1}
               </span>
               <span className="text-xs uppercase tracking-wider">{s.label}</span>
             </button>
           </div>
-        ))}
+          );
+        })}
       </nav>
 
       {/* Renderizado de Pasos */}

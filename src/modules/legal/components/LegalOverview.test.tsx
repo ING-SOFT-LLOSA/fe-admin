@@ -170,11 +170,14 @@ describe("LegalOverview", () => {
 
     render(<LegalOverview />);
 
-    const proyectoSelect = await screen.findByDisplayValue("Proyecto");
+    await screen.findByText("EXP-UA-1");
+
+    const proyectoSelect = screen.getByDisplayValue("Proyecto");
     fireEvent.change(proyectoSelect, { target: { value: "Aurora" } });
 
-    expect(screen.getByText("EXP-UA-1")).toBeDefined();
-    expect(screen.queryByText("EXP-UA-2")).toBeNull();
+    await waitFor(() => {
+      expect(screen.queryByText("EXP-UA-2")).toBeNull();
+    });
     expect(mockFetchTorres).toHaveBeenCalledWith("proy-1");
   });
 
@@ -240,7 +243,7 @@ describe("LegalOverview", () => {
     render(<LegalOverview />);
 
     const idCell = await screen.findByText("EXP-UA-1");
-    const row = idCell.closest("[role='button']")!;
+    const row = idCell.closest("tr")!;
     fireEvent.click(row);
 
     expect(mockPush).toHaveBeenCalledWith("/legal/ua-1");
@@ -250,7 +253,8 @@ describe("LegalOverview", () => {
     mockFetchContratos.mockResolvedValue([makeContrato("ua-1")]);
     render(<LegalOverview />);
 
-    const row = await screen.findByRole("button", { name: /EXP-UA-1/i });
+    const idCell = await screen.findByText("EXP-UA-1");
+    const row = idCell.closest("tr")!;
     fireEvent.keyDown(row, { key: "Enter" });
 
     expect(mockPush).toHaveBeenCalledWith("/legal/ua-1");
@@ -260,7 +264,8 @@ describe("LegalOverview", () => {
     mockFetchContratos.mockResolvedValue([makeContrato("ua-1")]);
     render(<LegalOverview />);
 
-    const row = await screen.findByRole("button", { name: /EXP-UA-1/i });
+    const idCell = await screen.findByText("EXP-UA-1");
+    const row = idCell.closest("tr")!;
     fireEvent.keyDown(row, { key: " " });
 
     expect(mockPush).toHaveBeenCalledWith("/legal/ua-1");

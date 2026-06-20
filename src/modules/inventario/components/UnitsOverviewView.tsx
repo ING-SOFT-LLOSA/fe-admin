@@ -93,10 +93,11 @@ export default function UnitsOverviewView({ projectId }: UnitsOverviewViewProps)
       <section className="rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 p-6 shadow-sm">
         <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_220px_220px]">
           <div>
-            <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-white/60">
+            <label htmlFor="units-search" className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-white/60">
               Buscar unidad
             </label>
             <input
+              id="units-search"
               value={search}
               onChange={(event) => setSearch(event.target.value)}
               placeholder="Ej. 101, departamento, terraza"
@@ -104,10 +105,11 @@ export default function UnitsOverviewView({ projectId }: UnitsOverviewViewProps)
             />
           </div>
           <div>
-            <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-white/60">
+            <label htmlFor="units-type-filter" className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-white/60">
               Tipo
             </label>
             <select
+              id="units-type-filter"
               value={typeFilter}
               onChange={(event) => setTypeFilter(event.target.value)}
               className="w-full rounded-xl border border-slate-200 dark:border-white/10 px-3 py-2 text-sm outline-none transition-all focus:border-arch-gold focus:ring-1 focus:ring-arch-gold/20"
@@ -119,10 +121,11 @@ export default function UnitsOverviewView({ projectId }: UnitsOverviewViewProps)
             </select>
           </div>
           <div>
-            <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-white/60">
+            <label htmlFor="units-status-filter" className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-white/60">
               Estado comercial
             </label>
             <select
+              id="units-status-filter"
               value={statusFilter}
               onChange={(event) => setStatusFilter(event.target.value)}
               className="w-full rounded-xl border border-slate-200 dark:border-white/10 px-3 py-2 text-sm outline-none transition-all focus:border-arch-gold focus:ring-1 focus:ring-arch-gold/20"
@@ -149,20 +152,26 @@ export default function UnitsOverviewView({ projectId }: UnitsOverviewViewProps)
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200 dark:divide-white/10">
-              {isLoading ? (
-                <tr>
-                  <td colSpan={8} className="px-6 py-10 text-center text-sm text-slate-500 dark:text-white/60">
-                    Cargando inventario...
-                  </td>
-                </tr>
-              ) : visibleUnits.length === 0 ? (
-                <tr>
-                  <td colSpan={8} className="px-6 py-10 text-center text-sm text-slate-500 dark:text-white/60">
-                    No hay unidades para los filtros seleccionados.
-                  </td>
-                </tr>
-              ) : (
-                visibleUnits.map((unit) => (
+              {(() => {
+                if (isLoading) {
+                  return (
+                    <tr>
+                      <td colSpan={8} className="px-6 py-10 text-center text-sm text-slate-500 dark:text-white/60">
+                        Cargando inventario...
+                      </td>
+                    </tr>
+                  );
+                }
+                if (visibleUnits.length === 0) {
+                  return (
+                    <tr>
+                      <td colSpan={8} className="px-6 py-10 text-center text-sm text-slate-500 dark:text-white/60">
+                        No hay unidades para los filtros seleccionados.
+                      </td>
+                    </tr>
+                  );
+                }
+                return visibleUnits.map((unit) => (
                   <tr key={unit.id} className="hover:bg-slate-50 dark:bg-white/5 transition-colors">
                     <td className="px-6 py-4 text-sm font-bold text-build-main dark:text-white">{unit.nro}</td>
                     <td className="px-6 py-4 text-sm text-slate-500 dark:text-white/60">{unit.nroPiso ?? unit.pisoId}</td>
@@ -183,12 +192,12 @@ export default function UnitsOverviewView({ projectId }: UnitsOverviewViewProps)
                         className="inline-flex items-center gap-2 rounded-xl bg-build-main px-4 py-2 text-[12px] font-bold text-white shadow-sm transition-all hover:bg-build-main/90"
                       >
                         <span className="material-symbols-outlined text-[16px]">open_in_new</span>
-                        Abrir detalle
+                        <span>Abrir detalle</span>
                       </Link>
                     </td>
                   </tr>
-                ))
-              )}
+                ));
+              })()}
             </tbody>
           </table>
         </div>

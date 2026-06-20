@@ -208,13 +208,13 @@
   /* Status badges */
   .badge-active   { background:#E8F5E9; color:#2E7D32; }
   .badge-inactive { background:#e1e3e4; color:#42474d; }
-  .badge-warning  { background:#FFF3E0; color:#E65100; }
+  .badge-warning  { background:#FFF3E0; color:#8A3300; }
   .badge-error    { background:#ffdad6; color:#93000a; }
   .badge-info     { background:#cfe5ff; color:#001d34; }
   
-  .dark .badge-active   { background:rgba(46, 125, 50, 0.2); color:#81c784; }
-  .dark .badge-inactive { background:rgba(255, 255, 255, 0.1); color:#e0e0e0; }
-  .dark .badge-warning  { background:rgba(230, 81, 0, 0.2); color:#ffb74d; }
-  .dark .badge-error    { background:rgba(147, 0, 10, 0.2); color:#e57373; }
-  .dark .badge-info     { background:rgba(255, 255, 255, 0.15); color:#a8caef; }
+  .dark .badge-active   { background:#14321a; color:#a7f3d0; }
+  .dark .badge-inactive { background:#27272a; color:#f4f4f5; }
+  .dark .badge-warning  { background:#3c2005; color:#fed7aa; }
+  .dark .badge-error    { background:#441416; color:#fecaca; }
+  .dark .badge-info     { background:#1e293b; color:#e2e8f0; }
 }

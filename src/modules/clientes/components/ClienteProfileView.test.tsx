@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent, waitFor, act } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import ClienteProfileView from "./ClienteProfileView";
 
 vi.mock("@/lib/api/users", () => ({
@@ -266,6 +266,7 @@ describe("ClienteProfileView", () => {
     mockFetchActivos.mockResolvedValue(null as any);
     render(<ClienteProfileView clientId="1" />);
     await screen.findByTestId("client-header");
+    expect(screen.getByTestId("client-header")).toBeDefined();
   });
 
   it("maneja activos con tipo desconocido y sin proyecto", async () => {
@@ -287,5 +288,6 @@ describe("ClienteProfileView", () => {
     ] as any);
     render(<ClienteProfileView clientId="1" />);
     await screen.findByTestId("client-header");
+    expect(screen.getByTestId("client-header")).toBeDefined();
   });
 });

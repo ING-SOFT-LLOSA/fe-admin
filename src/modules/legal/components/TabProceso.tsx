@@ -30,6 +30,19 @@ function stageEstado(hitos: ProcesoEtapa[]): "completado" | "en_proceso" | "pend
 export function TabProceso({ etapas, loadingStepper, canEdit, onUpdateHito }: Props) {
   const grupos = groupByStage(etapas);
 
+  const getGlobalBadgeClass = (estado: string) => {
+    if (estado === "completado") return "bg-emerald-500 border-emerald-500 text-white";
+    if (estado === "en_proceso") return "bg-white dark:bg-[#111] border-arch-gold text-arch-gold";
+    return "bg-white dark:bg-[#111] border-slate-200 dark:border-white/10 text-slate-300 dark:text-white/20";
+  };
+
+  const getHitoBadgeClass = (estado: string) => {
+    if (estado === "completado") return "bg-emerald-500 border-emerald-500 text-white";
+    if (estado === "en_proceso") return "bg-white dark:bg-[#111] border-arch-gold text-arch-gold";
+    if (estado === "observado") return "bg-white dark:bg-[#111] border-amber-400 text-amber-400";
+    return "bg-white dark:bg-[#111] border-slate-200 dark:border-white/10 text-slate-300 dark:text-white/20";
+  };
+
   return (
     <div className="space-y-4">
       {grupos.map(({ stageId, hitos }) => {
@@ -46,12 +59,7 @@ export function TabProceso({ etapas, loadingStepper, canEdit, onUpdateHito }: Pr
               <div className="flex items-center gap-3">
                 <div className={`
                   w-8 h-8 rounded-full flex items-center justify-center border-2 shrink-0
-                  ${global === "completado"
-                    ? "bg-emerald-500 border-emerald-500 text-white"
-                    : global === "en_proceso"
-                    ? "bg-white dark:bg-[#111] border-arch-gold text-arch-gold"
-                    : "bg-white dark:bg-[#111] border-slate-200 dark:border-white/10 text-slate-300 dark:text-white/20"
-                  }
+                  ${getGlobalBadgeClass(global)}
                 `}>
                   <span className="material-symbols-outlined text-[15px]">{meta.icon}</span>
                 </div>
@@ -93,14 +101,7 @@ export function TabProceso({ etapas, loadingStepper, canEdit, onUpdateHito }: Pr
                         <div className="relative z-10 shrink-0">
                           <div className={`
                             w-8 h-8 rounded-full flex items-center justify-center border-2 transition-all
-                            ${etapa.estado === "completado"
-                              ? "bg-emerald-500 border-emerald-500 text-white"
-                              : etapa.estado === "en_proceso"
-                              ? "bg-white dark:bg-[#111] border-arch-gold text-arch-gold"
-                              : etapa.estado === "observado"
-                              ? "bg-white dark:bg-[#111] border-amber-400 text-amber-400"
-                              : "bg-white dark:bg-[#111] border-slate-200 dark:border-white/10 text-slate-300 dark:text-white/20"
-                            }
+                            ${getHitoBadgeClass(etapa.estado)}
                           `}>
                             <span className="material-symbols-outlined text-[15px]">{etapa.icon}</span>
                           </div>
