@@ -223,7 +223,7 @@ export default function ConstructionProgressView({
 
         {/* Right: Timeline vertical */}
         <div className="w-full lg:w-72 shrink-0">
-          <ObraTabTimeline projectId={projectId} etapas={etapas} />
+          <ObraTabTimeline etapas={etapas} />
         </div>
       </div>
     </section>

@@ -3,8 +3,7 @@
 import type { EtapaResponseDTO } from "@/lib/api/obra";
 
 type ObraTabTimelineProps = {
-  projectId: string;
-  etapas: EtapaResponseDTO[];
+  readonly etapas: readonly EtapaResponseDTO[];
 };
 
 type HitoStatus = "completado" | "en_progreso" | "pendiente";
@@ -30,7 +29,7 @@ function resolveStatus(estadoStr: string | null): HitoStatus {
   return "pendiente";
 }
 
-export default function ObraTabTimeline({ etapas }: ObraTabTimelineProps) {
+export default function ObraTabTimeline({ etapas }: Readonly<ObraTabTimelineProps>) {
   const sortedEtapas = [...etapas].sort((a, b) => a.orden - b.orden);
 
   return (
@@ -51,6 +50,20 @@ export default function ObraTabTimeline({ etapas }: ObraTabTimelineProps) {
             const icon = getIconForHito(etapa.nombre);
             const isLast = index === sortedEtapas.length - 1;
 
+            let statusClasses = "bg-white dark:bg-[#111] border-slate-200 dark:border-white/10 text-slate-400 dark:text-white/30";
+            if (status === "completado") {
+              statusClasses = "bg-arch-gold border-arch-gold text-white";
+            } else if (status === "en_progreso") {
+              statusClasses = "bg-white dark:bg-[#111] border-arch-gold text-arch-gold animate-pulse";
+            }
+
+            let textClasses = "text-slate-400 dark:text-white/40";
+            if (status === "completado") {
+              textClasses = "text-build-main dark:text-white";
+            } else if (status === "en_progreso") {
+              textClasses = "text-arch-gold";
+            }
+
             return (
               <div key={etapa.id} className="relative flex items-stretch gap-4 pb-1">
                 {/* Left column: node + connector */}
@@ -58,12 +71,7 @@ export default function ObraTabTimeline({ etapas }: ObraTabTimelineProps) {
                   <div
                     className={`
                       w-8 h-8 rounded-full flex items-center justify-center border-2 transition-all z-10 shrink-0
-                      ${status === "completado"
-                        ? "bg-arch-gold border-arch-gold text-white"
-                        : status === "en_progreso"
-                        ? "bg-white dark:bg-[#111] border-arch-gold text-arch-gold animate-pulse"
-                        : "bg-white dark:bg-[#111] border-slate-200 dark:border-white/10 text-slate-400 dark:text-white/30"
-                      }
+                      ${statusClasses}
                     `}
                   >
                     <span className="material-symbols-outlined text-[14px]">{icon}</span>
@@ -76,13 +84,7 @@ export default function ObraTabTimeline({ etapas }: ObraTabTimelineProps) {
                 {/* Right column: content */}
                 <div className="flex flex-col justify-center pb-4 min-w-0">
                   <p
-                    className={`text-xs font-bold truncate ${
-                      status === "completado"
-                        ? "text-build-main dark:text-white"
-                        : status === "en_progreso"
-                        ? "text-arch-gold"
-                        : "text-slate-400 dark:text-white/40"
-                    }`}
+                    className={`text-xs font-bold truncate ${textClasses}`}
                     title={etapa.nombre}
                   >
                     {etapa.nombre}
@@ -100,27 +102,27 @@ export default function ObraTabTimeline({ etapas }: ObraTabTimelineProps) {
   );
 }
 
-function StatusBadge({ status }: { status: HitoStatus }) {
+function StatusBadge({ status }: Readonly<{ status: HitoStatus }>) {
   if (status === "completado") {
     return (
       <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400">
-        <span className="material-symbols-outlined text-[11px]">check_circle</span>
-        Completado
+        <span className="material-symbols-outlined text-[11px]">check_circle</span>{" "}
+        <span>Completado</span>
       </span>
     );
   }
   if (status === "en_progreso") {
     return (
       <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400">
-        <span className="material-symbols-outlined text-[11px]">pending</span>
-        En progreso
+        <span className="material-symbols-outlined text-[11px]">pending</span>{" "}
+        <span>En progreso</span>
       </span>
     );
   }
   return (
     <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-white/10 text-slate-400 dark:text-white/40">
-      <span className="material-symbols-outlined text-[11px]">schedule</span>
-      Pendiente
+      <span className="material-symbols-outlined text-[11px]">schedule</span>{" "}
+      <span>Pendiente</span>
     </span>
   );
 }

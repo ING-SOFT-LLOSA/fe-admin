@@ -12,26 +12,26 @@ const mockEtapas: EtapaResponseDTO[] = [
 
 describe("ObraTabTimeline", () => {
   it("muestra el título Timeline Constructivo", () => {
-    render(<ObraTabTimeline projectId="p-1" etapas={mockEtapas} />);
+    render(<ObraTabTimeline etapas={mockEtapas} />);
     expect(screen.getByText("Timeline Constructivo")).toBeDefined();
   });
 
   it("muestra los nombres de las etapas ordenadas", () => {
-    render(<ObraTabTimeline projectId="p-1" etapas={mockEtapas} />);
+    render(<ObraTabTimeline etapas={mockEtapas} />);
     expect(screen.getByText("Cimentación")).toBeDefined();
     expect(screen.getByText("Estructura")).toBeDefined();
     expect(screen.getByText("Acabados")).toBeDefined();
   });
 
   it("muestra los badges de estado", () => {
-    render(<ObraTabTimeline projectId="p-1" etapas={mockEtapas} />);
+    render(<ObraTabTimeline etapas={mockEtapas} />);
     expect(screen.getByText("Completado")).toBeDefined();
     expect(screen.getByText("En progreso")).toBeDefined();
     expect(screen.getByText("Pendiente")).toBeDefined();
   });
 
   it("muestra mensaje cuando no hay hitos", () => {
-    render(<ObraTabTimeline projectId="p-1" etapas={[]} />);
+    render(<ObraTabTimeline etapas={[]} />);
     expect(screen.getByText(/No hay hitos maestros configurados/)).toBeDefined();
   });
 
@@ -43,7 +43,7 @@ describe("ObraTabTimeline", () => {
       { id: "h-4", nombre: "Excavación", orden: 4, estado: "PENDIENTE", proyectoId: "p-1" } as any,
       { id: "h-5", nombre: "Obra húmeda", orden: 4, estado: "PENDIENTE", proyectoId: "p-1" } as any,
     ];
-    render(<ObraTabTimeline projectId="p-1" etapas={hitos} />);
+    render(<ObraTabTimeline etapas={hitos} />);
     expect(screen.getByText("Antecedentes")).toBeDefined();
     expect(screen.getByText("Demolición")).toBeDefined();
     expect(screen.getByText("Inicio de obra")).toBeDefined();
