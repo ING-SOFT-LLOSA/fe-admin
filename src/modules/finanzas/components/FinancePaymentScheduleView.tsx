@@ -13,10 +13,7 @@ type FinancePaymentScheduleViewProps = {
   initialProjectId?: string | null;
 };
 
-export default function FinancePaymentScheduleView({
-  initialProjectId: _initialProjectId = null,
-}: FinancePaymentScheduleViewProps) {
-  void _initialProjectId;
+export default function FinancePaymentScheduleView({}: FinancePaymentScheduleViewProps) {
   const [step, setStep] = useState<Step>("search");
   const [selectedClient, setSelectedClient] = useState<Usuario | null>(null);
   const [selectedExpediente, setSelectedExpediente] = useState<UsuarioActivoResponseDTO | null>(null);
@@ -67,17 +64,23 @@ export default function FinancePaymentScheduleView({
             return null;
           };
 
-          const buttonClass = s.active
-            ? "bg-arch-gold text-white font-bold shadow-sm"
-            : s.done
-              ? "text-build-main dark:text-white/80 hover:bg-slate-100 dark:hover:bg-white/5 font-semibold"
-              : "text-slate-400 dark:text-white/20 cursor-not-allowed font-medium";
+          let buttonClass: string;
+          if (s.active) {
+            buttonClass = "bg-arch-gold text-white font-bold shadow-sm";
+          } else if (s.done) {
+            buttonClass = "text-build-main dark:text-white/80 hover:bg-slate-100 dark:hover:bg-white/5 font-semibold";
+          } else {
+            buttonClass = "text-slate-400 dark:text-white/20 cursor-not-allowed font-medium";
+          }
 
-          const badgeClass = s.active
-            ? "bg-white text-arch-gold"
-            : s.done
-              ? "bg-arch-gold text-white"
-              : "bg-slate-200 dark:bg-white/10 text-slate-500";
+          let badgeClass: string;
+          if (s.active) {
+            badgeClass = "bg-white text-arch-gold";
+          } else if (s.done) {
+            badgeClass = "bg-arch-gold text-white";
+          } else {
+            badgeClass = "bg-slate-200 dark:bg-white/10 text-slate-500";
+          }
 
           return (
           <div key={s.id} className="flex items-center gap-2 flex-shrink-0">

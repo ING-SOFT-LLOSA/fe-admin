@@ -341,7 +341,6 @@ function ContractRow({
 
   return (
     <tr
-      role="button"
       tabIndex={0}
       onClick={() => router.push(`/legal/${contract.uuidUsuarioActivo}`)}
       onKeyDown={(e) => {
@@ -411,7 +410,7 @@ function ContractRow({
             className="flex items-center gap-1 text-[12px] text-arch-gold hover:text-build-main transition-colors"
           >
             <span className="material-symbols-outlined text-[14px]">person_add</span>
-            Asignar
+            <span>Asignar</span>
           </button>
         )}
       </td>
@@ -793,18 +792,22 @@ export default function LegalOverview() {
           </thead>
 
           <tbody className="divide-y divide-slate-100 dark:divide-white/5">
-            {isLoading ? (
-              ["s1", "s2", "s3", "s4", "s5", "s6"].map((key) => <SkeletonRow key={key} />)
-            ) : filtered.length === 0 ? (
-              <tr>
-                <td colSpan={7} className="px-5 py-14 text-center text-sm text-slate-400 dark:text-white/40">
-                  {hasActiveFilters
-                    ? "Sin resultados para los filtros seleccionados."
-                    : "No hay expedientes registrados."}
-                </td>
-              </tr>
-            ) : (
-              paginatedList.map((contract) => (
+            {(() => {
+              if (isLoading) {
+                return ["s1", "s2", "s3", "s4", "s5", "s6"].map((key) => <SkeletonRow key={key} />);
+              }
+              if (filtered.length === 0) {
+                return (
+                  <tr>
+                    <td colSpan={7} className="px-5 py-14 text-center text-sm text-slate-400 dark:text-white/40">
+                      {hasActiveFilters
+                        ? "Sin resultados para los filtros seleccionados."
+                        : "No hay expedientes registrados."}
+                    </td>
+                  </tr>
+                );
+              }
+              return paginatedList.map((contract) => (
                 <ContractRow
                   key={contract.uuidUsuarioActivo}
                   contract={contract}
@@ -813,8 +816,8 @@ export default function LegalOverview() {
                   onRemoveAsesor={handleRemoveAsesor}
                   onAssignAsesor={setAssignTarget}
                 />
-              ))
-            )}
+              ));
+            })()}
           </tbody>
         </table>
 

@@ -762,12 +762,10 @@ export default function SchedulePage() {
               </div>
             ))}
             {calDays.map((cell, idx) => (
-              <div 
+              <button 
+                type="button"
                 key={`${cell.grey ? 'g' : 'm'}-${cell.day}-${idx}`} 
-                role="button"
-                tabIndex={0}
                 onClick={() => handleCellClick(cell)}
-                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleCellClick(cell); } }}
                 className={`min-h-[120px] border-b border-r border-slate-200 dark:border-white/10 p-2 flex flex-col gap-1 ${getCellBgClass(cell.grey)}`}
               >
                 <span className={`text-sm pl-1 mb-1 ${getCellDayClass(cell.today, cell.grey)}`}>
@@ -776,10 +774,13 @@ export default function SchedulePage() {
                 {cell.events.map((ev) => (
                   <div 
                     key={ev.id}
+                    role="button"
+                    tabIndex={0}
                     onClick={(e) => {
                       e.stopPropagation();
                       handleEventClick(ev.id);
                     }}
+                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); handleEventClick(ev.id); } }}
                     className={`${ev.bg} rounded px-2 py-1.5 flex flex-col gap-0.5 shadow-sm border border-build-main/5 hover:scale-[1.02] transition-transform cursor-pointer`}
                   >
                     <div className="flex items-center gap-1.5">
@@ -794,7 +795,7 @@ export default function SchedulePage() {
                     {ev.time && <span className="text-[9px] font-semibold opacity-75 pl-3">{ev.time}</span>}
                   </div>
                 ))}
-              </div>
+              </button>
             ))}
           </div>
         </div>
@@ -807,12 +808,10 @@ export default function SchedulePage() {
               <p className="text-xs text-slate-400 dark:text-white/40">No hay eventos próximos en este período.</p>
             ) : (
               upcomingEvents.map(ev => (
-                <div 
+                <button 
+                  type="button"
                   key={ev.id} 
-                  role="button"
-                  tabIndex={0}
                   onClick={() => handleEventClick(ev.id)}
-                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleEventClick(ev.id); } }}
                   className="mb-4 last:mb-0 pb-3 border-b border-slate-100 last:border-b-0 dark:border-white/5 cursor-pointer hover:bg-slate-50 dark:hover:bg-white/5 p-1 rounded-xl transition-all"
                 >
                   <div className="flex items-center justify-between gap-2">
@@ -830,7 +829,7 @@ export default function SchedulePage() {
                   <p className="text-[12px] text-slate-500 dark:text-white/60 flex items-center gap-1 mt-1 font-semibold">
                     <span className="material-symbols-outlined text-[14px]">schedule</span> {ev.time || "Sin hora"} - {ev.type}
                   </p>
-                </div>
+                </button>
               ))
             )}
           </div>

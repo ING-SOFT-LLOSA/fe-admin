@@ -42,11 +42,23 @@ function SkeletonCard() {
   );
 }
 
-export default function ProjectsOverview() {
-  interface ContractOverview {
-    activos?: { proyectoNombre: string }[];
-    clientes?: { id: number }[];
+interface ContractOverview {
+  activos?: { proyectoNombre: string }[];
+  clientes?: { id: number }[];
+}
+
+const getClientCountForProject = (projectName: string, allContracts: ContractOverview[]) => {
+  const projectClients = new Set<number>();
+  for (const c of allContracts) {
+    const hasAssetInProject = c.activos?.some((a) => a.proyectoNombre === projectName);
+    if (hasAssetInProject) {
+      c.clientes?.forEach((client) => projectClients.add(client.id));
+    }
   }
+  return projectClients.size;
+};
+
+export default function ProjectsOverview() {
 
   const [projects, setProjects]   = useState<Proyecto[]>([]);
   const [contracts, setContracts] = useState<ContractOverview[]>([]);
@@ -121,6 +133,7 @@ const filtered = useMemo(() => {
 }, [projects, search]);
   const hasFilters = !!search;
 
+
   const mainContent = useMemo(() => {
     if (isLoading) {
       return (
@@ -160,16 +173,7 @@ const filtered = useMemo(() => {
       <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
         {filtered.map((project) => {
           const dptosCount = dptosCountMap[project.id] ?? 0;
-          const projectClients = new Set<number>();
-          contracts.forEach((c) => {
-            const hasAssetInProject = c.activos?.some((a) => a.proyectoNombre === project.nombre);
-            if (hasAssetInProject) {
-              c.clientes?.forEach((client) => {
-                projectClients.add(client.id);
-              });
-            }
-          });
-          const clientesCount = projectClients.size;
+          const clientesCount = getClientCountForProject(project.nombre, contracts);
 
           return (
             <ProjectCard
