@@ -38,9 +38,7 @@
     "jsdom": "^24",
     "tailwindcss": "^4",
     "typescript": "^5",
-    "vitest": "^4.1.7"
-  },
-  "optionalDependencies": {
+    "vitest": "^4.1.7",
     "@rolldown/binding-win32-x64-msvc": "^1.0.3"
   }
 }
