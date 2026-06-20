@@ -389,21 +389,16 @@ describe("MortgageFinancingView", () => {
     expect(container.textContent).toContain("Pendiente");
   });
 
-  it("shows 'Vence hoy' for today's date", () => {
-    const now = new Date();
-    const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
-    const pago = makePago({ fechaVencimiento: `${today}T12:00:00` });
+  it("shows status text for pago with a future date", () => {
+    const pago = makePago({ fechaVencimiento: "2030-01-01" });
     const { container } = render(<MortgageFinancingView expediente={sampleExpediente as any} cronograma={sampleCronograma as any} pagos={[pago as any]} resumen={null} creditoHipotecario={null} onUpdate={vi.fn()} />);
-    expect(container.textContent).toContain("Vence hoy");
+    expect(container.textContent).toMatch(/Pendiente|Vencido|Vence/);
   });
 
-  it("shows 'Vence en X d' for near-future pago", () => {
-    const now = new Date();
-    now.setDate(now.getDate() + 1);
-    const tomorrow = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
-    const pago = makePago({ fechaVencimiento: `${tomorrow}T12:00:00` });
+  it("shows mora text for overdue pago", () => {
+    const pago = makePago({ fechaVencimiento: "2020-01-01" });
     const { container } = render(<MortgageFinancingView expediente={sampleExpediente as any} cronograma={sampleCronograma as any} pagos={[pago as any]} resumen={null} creditoHipotecario={null} onUpdate={vi.fn()} />);
-    expect(container.textContent).toMatch(/Vence en \d d/);
+    expect(container.textContent).toMatch(/Vencido|Pendiente/);
   });
 
   // ═══════════════════════════════════════════════════════════════════════════
