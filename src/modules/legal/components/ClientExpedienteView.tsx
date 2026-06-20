@@ -233,7 +233,6 @@ export default function ClientExpedienteView({ clientId }: Readonly<Props>) {
             expediente={selectedExpediente}
             contrato={selectedExpediente}
             etapas={etapas}
-            loadingStepper={stepperLoading}
           />
         )}
         {activeTab === "proceso" && (

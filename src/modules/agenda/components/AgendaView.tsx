@@ -97,7 +97,10 @@ function generateCalendarGrid(currentDate: Date) {
 
 function getStartAndEndDateStr(gridCells: CalDay[], currentDate: Date) {
   const firstCell = gridCells[0];
-  const lastCell = gridCells[gridCells.length - 1];
+  const lastCell = gridCells.at(-1);
+  if (!firstCell || !lastCell) {
+    return { startDateStr: "", endDateStr: "" };
+  }
   
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
@@ -621,7 +624,7 @@ export default function SchedulePage() {
 
   const { isConnectingGoogle, justConnected, isSyncing, handleConnectGoogle, handleDisconnectGoogle, handleSyncManual } = useGoogleCalendar(fetchAppointments);
 
-  function saveEvent(e: React.FormEvent) {
+  function saveEvent(e: React.SubmitEvent<HTMLFormElement>) {
     e.preventDefault();
     setErrorMsg("");
     setSuccessMsg("");
@@ -772,16 +775,14 @@ export default function SchedulePage() {
                   {cell.day}
                 </span>
                 {cell.events.map((ev) => (
-                  <div 
+                  <button
+                    type="button"
                     key={ev.id}
-                    role="button"
-                    tabIndex={0}
                     onClick={(e) => {
                       e.stopPropagation();
                       handleEventClick(ev.id);
                     }}
-                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); handleEventClick(ev.id); } }}
-                    className={`${ev.bg} rounded px-2 py-1.5 flex flex-col gap-0.5 shadow-sm border border-build-main/5 hover:scale-[1.02] transition-transform cursor-pointer`}
+                    className={`w-full text-left ${ev.bg} rounded px-2 py-1.5 flex flex-col gap-0.5 shadow-sm border border-build-main/5 hover:scale-[1.02] transition-transform cursor-pointer`}
                   >
                     <div className="flex items-center gap-1.5">
                       <span className={`w-1.5 h-1.5 rounded-full ${ev.rsvpDot}`} title={`Confirmación: ${ev.rsvpText}`} />
@@ -793,7 +794,7 @@ export default function SchedulePage() {
                       )}
                     </div>
                     {ev.time && <span className="text-[9px] font-semibold opacity-75 pl-3">{ev.time}</span>}
-                  </div>
+                  </button>
                 ))}
               </button>
             ))}

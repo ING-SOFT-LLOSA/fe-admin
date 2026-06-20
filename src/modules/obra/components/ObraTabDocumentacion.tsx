@@ -16,7 +16,7 @@ type Documento = {
 };
 
 type ObraTabDocumentacionProps = {
-  projectId: string;
+  readonly projectId: string;
 };
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -31,7 +31,7 @@ const CATEGORIAS: { id: DocCategoria; label: string; icon: string; description: 
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export default function ObraTabDocumentacion({ projectId }: ObraTabDocumentacionProps) {
+export default function ObraTabDocumentacion({ projectId }: Readonly<ObraTabDocumentacionProps>) {
   const [documents, setDocuments] = useState<Documento[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);

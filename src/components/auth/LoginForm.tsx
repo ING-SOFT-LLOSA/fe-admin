@@ -9,15 +9,15 @@ import { toAuthErrorMessage } from "@/lib/auth/errors";
 
 // ─── Sub-componente extraído ───────────────────────────────────────────────
 type SubmitButtonProps = {
-  loading: boolean;
-  disabled: boolean;
-  isResetView: boolean;
-  submitHover: boolean;
-  onMouseEnter: () => void;
-  onMouseLeave: () => void;
+  readonly loading: boolean;
+  readonly disabled: boolean;
+  readonly isResetView: boolean;
+  readonly submitHover: boolean;
+  readonly onMouseEnter: () => void;
+  readonly onMouseLeave: () => void;
 };
 
-function SubmitButton({ loading, disabled, isResetView, submitHover, onMouseEnter, onMouseLeave }: SubmitButtonProps) {
+function SubmitButton({ loading, disabled, isResetView, submitHover, onMouseEnter, onMouseLeave }: Readonly<SubmitButtonProps>) {
   const label = isResetView ? "Enviar enlace de recuperación" : "Acceder";
   let bgClass = "bg-build-accent lg:bg-build-main";
   if (disabled) {
@@ -51,7 +51,7 @@ function SubmitButton({ loading, disabled, isResetView, submitHover, onMouseEnte
 
 // ─── Componente principal ──────────────────────────────────────────────────
 type LoginFormProps = {
-  redirectTo?: string;
+  readonly redirectTo?: string;
 };
 
 function useLoginFormLogic(redirectTo: string) {
@@ -78,7 +78,7 @@ function useLoginFormLogic(redirectTo: string) {
     }
   }, [authLoading, isAuthenticated, perfil, redirectTo, router, logout]);
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.SubmitEvent<HTMLFormElement>) {
     e.preventDefault();
     setError(null);
     setLoading(true);
@@ -91,7 +91,7 @@ function useLoginFormLogic(redirectTo: string) {
     }
   }
 
-  async function handleResetPassword(e: React.FormEvent) {
+  async function handleResetPassword(e: React.SubmitEvent<HTMLFormElement>) {
     e.preventDefault();
     setError(null);
     setResetSuccess(false);
@@ -140,7 +140,7 @@ function useLoginFormLogic(redirectTo: string) {
   };
 }
 
-export default function LoginForm({ redirectTo = "/proyectos" }: LoginFormProps) {
+export default function LoginForm({ redirectTo = "/proyectos" }: Readonly<LoginFormProps>) {
   const {
     email,
     setEmail,

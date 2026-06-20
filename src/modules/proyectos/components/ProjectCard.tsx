@@ -3,13 +3,13 @@ import { formatProjectDate } from "@/modules/proyectos/utils/format";
 import type { Proyecto } from "../types/proyecto";
 
 type Props = {
-  project: Proyecto;
-  clientesCount: number;
-  dptosCount: number;
-  avance: number;
+  readonly project: Proyecto;
+  readonly clientesCount: number;
+  readonly dptosCount: number;
+  readonly avance: number;
 };
 
-export default function ProjectCard({ project, clientesCount, dptosCount, avance }: Props) {
+export default function ProjectCard({ project, clientesCount, dptosCount, avance }: Readonly<Props>) {
   const showInicio = !!project.fechaInicio;
   const showLocation = !!(project.distrito || project.departamento);
 

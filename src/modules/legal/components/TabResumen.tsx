@@ -5,14 +5,13 @@ import { ESTADO_BADGE } from "./constants";
 import { ResumenKpi } from "./ui";
 
 type Props = {
-  client:         Usuario | null;
-  expediente:     UsuarioActivoResponseDTO | null;
-  contrato:       UsuarioActivoResponseDTO | null;
-  etapas:         ProcesoEtapa[];
-  loadingStepper: boolean;
+  readonly client:         Usuario | null;
+  readonly expediente:     UsuarioActivoResponseDTO | null;
+  readonly contrato:       UsuarioActivoResponseDTO | null;
+  readonly etapas:         ProcesoEtapa[];
 };
 
-export function TabResumen({ client, expediente, contrato, etapas }: Props) {
+export function TabResumen({ client, expediente, contrato, etapas }: Readonly<Props>) {
   const etapaActual =
     etapas.find((e) => e.estado === "en_proceso") ??
     etapas.find((e) => e.estado === "pendiente")  ??

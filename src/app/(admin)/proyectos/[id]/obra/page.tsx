@@ -3,17 +3,13 @@ import ConstructionProgressView from "@/modules/obra/components/ConstructionProg
 export const dynamic = "force-dynamic";
 
 type ProjectObraPageProps = {
-  params: Promise<{
-    id: string;
+  readonly params: Promise<{
+    readonly id: string;
   }>;
 };
 
-export default async function ProjectObraPage({ params }: ProjectObraPageProps) {
+export default async function ProjectObraPage({ params }: Readonly<ProjectObraPageProps>) {
   const { id } = await params;
 
-  return (
-    <>
-      <ConstructionProgressView projectId={id} context="project" />
-    </>
-  );
+  return <ConstructionProgressView projectId={id} context="project" />;
 }

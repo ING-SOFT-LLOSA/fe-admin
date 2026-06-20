@@ -378,7 +378,7 @@ function ContractRow({
         {stages || !isStagesLoading ? (
           <div className="flex flex-col gap-1.5">
             <MiniStepper stages={stages} current={etapaLabel} />
-            {isStalled && <StalledChip days={dias!} />}
+            {isStalled && <StalledChip days={dias} />}
           </div>
         ) : (
           <span className="inline-block h-3 w-16 animate-pulse rounded bg-slate-100 dark:bg-white/10" />

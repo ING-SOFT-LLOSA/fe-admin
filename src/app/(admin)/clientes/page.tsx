@@ -65,7 +65,7 @@ export default function ClientsPage() {
     });
   }, [reloadClients]);
 
-  const handleSearch = (e: React.FormEvent) => {
+  const handleSearch = (e: React.SubmitEvent<HTMLFormElement>) => {
     e.preventDefault();
     setPage(0);
     setSearch(searchInput);

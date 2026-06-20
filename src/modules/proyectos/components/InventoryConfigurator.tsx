@@ -28,7 +28,7 @@ export default function InventoryConfigurator({
     }));
   };
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = (event: React.SubmitEvent<HTMLFormElement>) => {
     event.preventDefault();
     onSubmit(config);
   };

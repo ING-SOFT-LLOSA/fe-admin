@@ -3,7 +3,7 @@
 import type { EtapaResponseDTO } from "@/lib/api/obra";
 
 type ObraTabDashboardProps = {
-  etapas: EtapaResponseDTO[];
+  readonly etapas: EtapaResponseDTO[];
 };
 
 const ESTADO_LABELS: Record<string, { label: string; color: string }> = {
@@ -13,7 +13,7 @@ const ESTADO_LABELS: Record<string, { label: string; color: string }> = {
   RETRASADA:   { label: "Retrasada",   color: "text-red-700 bg-red-100 dark:bg-red-900/30 dark:text-red-400" },
 };
 
-export default function ObraTabDashboard({ etapas }: ObraTabDashboardProps) {
+export default function ObraTabDashboard({ etapas }: Readonly<ObraTabDashboardProps>) {
   return (
     <div className="space-y-6">
       {/* Etapas summary */}

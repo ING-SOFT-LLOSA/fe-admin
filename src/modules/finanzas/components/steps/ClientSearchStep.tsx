@@ -5,7 +5,7 @@ import { fetchUsuariosPaginado } from "@/lib/api/users";
 import type { Usuario } from "@/types/user";
 
 interface ClientSearchStepProps {
-    onSelectClient: (client: Usuario) => void;
+    readonly onSelectClient: (client: Usuario) => void;
 }
 
 function useDebounce(value: string, delay: number) {
@@ -23,7 +23,7 @@ function getInitials(nombre: string, apellidos?: string) {
     return `${a}${b}`;
 }
 
-export default function ClientSearchStep({ onSelectClient }: ClientSearchStepProps) {
+export default function ClientSearchStep({ onSelectClient }: Readonly<ClientSearchStepProps>) {
     const [query, setQuery] = useState("");
     const debouncedQuery = useDebounce(query, 300);
     const [clients, setClients] = useState<Usuario[]>([]);

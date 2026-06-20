@@ -4,7 +4,7 @@ import Footer from "@/components/Footer";
 
 import RoleGuard from "@/components/auth/RoleGuard";
 
-export default function AdminRouteLayout({ children }: { children: React.ReactNode }) {
+export default function AdminRouteLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <RoleGuard allowedTipos={["EMPLEADO", "GERENTE", "ADMIN"]} fallbackUrl="/login">
       <div className="min-h-screen bg-white dark:bg-white/5 antialiased tracking-tight">

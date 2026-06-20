@@ -7,11 +7,11 @@ import { fetchActivosPorProyecto, updateActivo } from "@/modules/inventario/serv
 import type { ActivoRequestDTO, ActivoResponseDTO } from "@/modules/inventario/types";
 
 type UnitDetailViewProps = {
-  projectId: string;
-  unitId: string;
+  readonly projectId: string;
+  readonly unitId: string;
 };
 
-export default function UnitDetailView({ projectId, unitId }: UnitDetailViewProps) {
+export default function UnitDetailView({ projectId, unitId }: Readonly<UnitDetailViewProps>) {
   const [unit, setUnit] = useState<ActivoResponseDTO | null>(null);
   const [form, setForm] = useState<ActivoRequestDTO>({
     nro: "",

@@ -49,8 +49,8 @@ export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> 
       // Token expired or invalid — purge local session and signal the
       // AuthContext to wipe React state so AuthGuard redirects to /login.
       clearSession();
-      if (typeof window !== "undefined") {
-        window.dispatchEvent(new Event("llosa:unauthorized"));
+      if (globalThis.window !== undefined) {
+        globalThis.dispatchEvent(new Event("llosa:unauthorized"));
       }
       throw new ApiError(
         "Tu sesión ha expirado. Por favor, inicia sesión de nuevo.",

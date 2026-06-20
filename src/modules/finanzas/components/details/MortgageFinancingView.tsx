@@ -68,8 +68,8 @@ function getPagoStatusInfo(pago: PagoResponse) {
     }
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    const dueDate = new Date(pago.fechaVencimiento);
-    dueDate.setHours(0, 0, 0, 0);
+    const [y, m, d] = pago.fechaVencimiento.split("-").map(Number);
+    const dueDate = new Date(y, m - 1, d);
     const diffTime = today.getTime() - dueDate.getTime();
     const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
     if (diffDays > 0) {

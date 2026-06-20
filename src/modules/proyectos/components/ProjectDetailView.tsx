@@ -9,10 +9,10 @@ import type { ProyectoCreateDTO } from "@/modules/proyectos/types";
 import DialogModal from "@/components/ui/DialogModal";
 
 type ProjectDetailViewProps = {
-  projectId: string;
+  readonly projectId: string;
 };
 
-export default function ProjectDetailView({ projectId }: ProjectDetailViewProps) {
+export default function ProjectDetailView({ projectId }: Readonly<ProjectDetailViewProps>) {
   const router = useRouter();
   const [formValues, setFormValues] = useState<ProyectoCreateDTO>({
     nombre: "",

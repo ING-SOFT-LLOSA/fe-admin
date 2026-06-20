@@ -1,7 +1,6 @@
 export default function ProjectsLoading() {
   return (
-    <>
-      <div className="space-y-4">
+    <div className="space-y-4">
         <div className="flex items-end justify-between">
           <div>
             <div className="skeleton h-9 w-48" />
@@ -20,6 +19,5 @@ export default function ProjectsLoading() {
           </div>
         ))}
       </div>
-    </>
   );
 }

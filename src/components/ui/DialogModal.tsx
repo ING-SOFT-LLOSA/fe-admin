@@ -1,14 +1,14 @@
 "use client";
 
 interface DialogModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onConfirm?: () => void; // If not provided, acts as an alert (only single confirm button)
-  title: string;
-  message: string;
-  confirmText?: string;
-  cancelText?: string;
-  type?: "info" | "success" | "warning" | "danger";
+  readonly isOpen: boolean;
+  readonly onClose: () => void;
+  readonly onConfirm?: () => void;
+  readonly title: string;
+  readonly message: string;
+  readonly confirmText?: string;
+  readonly cancelText?: string;
+  readonly type?: "info" | "success" | "warning" | "danger";
 }
 
 export default function DialogModal({
@@ -20,7 +20,7 @@ export default function DialogModal({
   confirmText = "Aceptar",
   cancelText = "Cancelar",
   type = "info",
-}: DialogModalProps) {
+}: Readonly<DialogModalProps>) {
   if (!isOpen) return null;
 
   // Configure icon and colors based on dialog type

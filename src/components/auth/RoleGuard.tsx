@@ -6,16 +6,16 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 
 interface RoleGuardProps {
-  children: React.ReactNode;
-  allowedTipos: string[];
-  fallbackUrl?: string;
+  readonly children: React.ReactNode;
+  readonly allowedTipos: string[];
+  readonly fallbackUrl?: string;
 }
 
 export default function RoleGuard({
   children,
   allowedTipos,
   fallbackUrl = "/login",
-}: RoleGuardProps) {
+}: Readonly<RoleGuardProps>) {
   const { perfil, isLoading, isAuthenticated } = useAuth();
   const router = useRouter();
 

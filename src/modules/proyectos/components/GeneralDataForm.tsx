@@ -81,7 +81,7 @@ export default function GeneralDataForm({ initialData, onSubmit, onCancel }: Rea
     }
   };
  
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = (e: React.SubmitEvent<HTMLFormElement>) => {
     e.preventDefault();
     const validationErrors = validateForm(formData);
     if (Object.keys(validationErrors).length > 0) {

@@ -26,7 +26,7 @@ export default function NewClientPage() {
   const telefonoId = useId();
   const documentoIdentidadId = useId();
  
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.SubmitEvent<HTMLFormElement>) {
     e.preventDefault();
     setError(null);
     setSuccess(null);

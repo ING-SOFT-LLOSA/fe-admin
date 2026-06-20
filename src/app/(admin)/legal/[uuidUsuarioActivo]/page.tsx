@@ -6,7 +6,7 @@ export const metadata: Metadata = {
   description: "Detalle y seguimiento del expediente legal y unidades vinculadas.",
 };
 
-export default async function ExpedienteDetailRoute({ params }: { params: Promise<{ uuidUsuarioActivo: string }> }) {
+export default async function ExpedienteDetailRoute({ params }: Readonly<{ params: Promise<{ uuidUsuarioActivo: string }> }>) {
   const { uuidUsuarioActivo } = await params;
   return (
     <div className="p-6">

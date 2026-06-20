@@ -5,12 +5,12 @@ const PERFIL_KEY = "llosa_perfil";
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 export function saveSession(token: string, _perfil: PerfilConPermisos): void {
-  if (typeof window === "undefined") return;
+  if (globalThis.window === undefined) return;
   document.cookie = `${TOKEN_KEY}=${token}; path=/; max-age=86400; SameSite=Lax`;
 }
 
 export function clearSession(): void {
-  if (typeof window === "undefined") return;
+  if (globalThis.window === undefined) return;
   try {
     localStorage?.removeItem(TOKEN_KEY);
     localStorage?.removeItem(PERFIL_KEY);
@@ -21,13 +21,14 @@ export function clearSession(): void {
 }
 
 export function getStoredToken(): string | null {
-  if (typeof window === "undefined") return null;
-  const match = document.cookie.match(new RegExp('(^| )' + TOKEN_KEY + '=([^;]+)'));
-  return match ? match[2] : null;
+  if (globalThis.window === undefined) return null;
+  const reg = new RegExp('(?:^| )' + TOKEN_KEY + '=([^;]+)');
+  const match = reg.exec(document.cookie);
+  return match ? match[1] : null;
 }
 
 export async function getFreshToken(): Promise<string | null> {
-  if (typeof window === "undefined") return null;
+  if (globalThis.window === undefined) return null;
 
   try {
     const { getFirebaseAuth } = await import("@/lib/firebase");
