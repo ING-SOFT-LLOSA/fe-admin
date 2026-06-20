@@ -65,6 +65,7 @@ describe("LegalOverview", () => {
   it("renders without crashing", async () => {
     render(<LegalOverview />);
     expect(screen.getByText("Gestión Legal")).toBeDefined();
+    expect(await screen.findByText("EXP-UUID-1")).toBeDefined();
   });
 
   it("shows loading skeleton while fetching", () => {
