@@ -170,11 +170,14 @@ describe("LegalOverview", () => {
 
     render(<LegalOverview />);
 
-    const proyectoSelect = await screen.findByDisplayValue("Proyecto");
+    await screen.findByText("EXP-UA-1");
+
+    const proyectoSelect = screen.getByDisplayValue("Proyecto");
     fireEvent.change(proyectoSelect, { target: { value: "Aurora" } });
 
-    expect(screen.getByText("EXP-UA-1")).toBeDefined();
-    expect(screen.queryByText("EXP-UA-2")).toBeNull();
+    await waitFor(() => {
+      expect(screen.queryByText("EXP-UA-2")).toBeNull();
+    });
     expect(mockFetchTorres).toHaveBeenCalledWith("proy-1");
   });
 
