@@ -1,6 +1,6 @@
 "use client";
  
-import { useEffect, useState } from "react";
+import { useEffect, useState, useId } from "react";
 import Link from "next/link";
  
 import { fetchUsuarios } from "@/lib/api/users";
@@ -18,10 +18,11 @@ import { TabResumen } from "./TabResumen";
 import { TabProceso } from "./TabProceso";
 import { TabDocumentos } from "./TabDocumentos";
  
-type Props = { clientId: number };
+type Props = { readonly clientId: number };
  
-export default function ClientExpedienteView({ clientId }: Props) {
+export default function ClientExpedienteView({ clientId }: Readonly<Props>) {
   const { perfil } = useAuth();
+  const unidadSelectId = useId();
   const [client,             setClient]             = useState<Usuario | null>(null);
   const [expedientes,        setExpedientes]        = useState<UsuarioActivoResponseDTO[]>([]);
   const [selectedExpediente, setSelectedExpediente] = useState<UsuarioActivoResponseDTO | null>(null);
@@ -88,11 +89,12 @@ export default function ClientExpedienteView({ clientId }: Props) {
     selectedExpediente?.clientes?.[0] ??
     null;
  
-  const fullName = clienteDTO
-    ? [clienteDTO.nombre, clienteDTO.apellidos].filter(Boolean).join(" ")
-    : client
-    ? [client.nombre, client.apellidos].filter(Boolean).join(" ")
-    : "Cliente no encontrado";
+  let fullName = "Cliente no encontrado";
+  if (clienteDTO) {
+    fullName = [clienteDTO.nombre, clienteDTO.apellidos].filter(Boolean).join(" ");
+  } else if (client) {
+    fullName = [client.nombre, client.apellidos].filter(Boolean).join(" ");
+  }
  
   const initials = fullName
     .split(" ")
@@ -116,7 +118,7 @@ export default function ClientExpedienteView({ clientId }: Props) {
           className="inline-flex items-center gap-1 text-sm font-semibold text-arch-gold hover:text-build-main dark:hover:text-white mb-4 transition-colors"
         >
           <span className="material-symbols-outlined text-[18px]">arrow_back</span>
-          Volver a Gestión Legal
+          <span>Volver a Gestión Legal</span>
         </Link>
         <h2 className="text-2xl md:text-3xl font-bold text-build-main dark:text-white">
           Expediente Legal
@@ -129,10 +131,11 @@ export default function ClientExpedienteView({ clientId }: Props) {
       {/* Selector de unidad */}
       {expedientes.length > 0 ? (
         <div className="flex items-center gap-4 bg-white dark:bg-white/5 p-4 rounded-xl border border-slate-200 dark:border-white/10 shadow-sm">
-          <label className="text-sm font-bold text-build-main dark:text-white whitespace-nowrap">
+          <label htmlFor={unidadSelectId} className="text-sm font-bold text-build-main dark:text-white whitespace-nowrap">
             Unidad:
           </label>
           <select
+            id={unidadSelectId}
             value={selectedExpediente?.uuidUsuarioActivo ?? ""}
             onChange={(e) =>
               setSelectedExpediente(
@@ -185,14 +188,14 @@ export default function ClientExpedienteView({ clientId }: Props) {
             />
             {selectedExpediente && (
               <span className={`inline-flex items-center gap-1.5 text-[11px] font-bold px-3 py-1.5 rounded-full ${
-                selectedExpediente.vigente !== false
-                  ? "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400"
-                  : "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400"
+                selectedExpediente.vigente === false
+                  ? "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400"
+                  : "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400"
               }`}>
                 <span className="material-symbols-outlined text-[13px]">
-                  {selectedExpediente.vigente !== false ? "check_circle" : "cancel"}
+                  {selectedExpediente.vigente === false ? "cancel" : "check_circle"}
                 </span>
-                {selectedExpediente.vigente !== false ? "Vigente" : "Desvinculado"}
+                {selectedExpediente.vigente === false ? "Desvinculado" : "Vigente"}
               </span>
             )}
           </div>
@@ -215,7 +218,7 @@ export default function ClientExpedienteView({ clientId }: Props) {
             `}
           >
             <span className="material-symbols-outlined text-[17px]">{tab.icon}</span>
-            {tab.label}
+            <span>{tab.label}</span>
           </button>
         ))}
       </div>
