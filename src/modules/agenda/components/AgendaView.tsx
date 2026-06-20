@@ -763,16 +763,19 @@ export default function SchedulePage() {
             ))}
             {calDays.map((cell, idx) => (
               <div 
-                key={idx} 
+                key={`${cell.grey ? 'g' : 'm'}-${cell.day}-${idx}`} 
+                role="button"
+                tabIndex={0}
                 onClick={() => handleCellClick(cell)}
+                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleCellClick(cell); } }}
                 className={`min-h-[120px] border-b border-r border-slate-200 dark:border-white/10 p-2 flex flex-col gap-1 ${getCellBgClass(cell.grey)}`}
               >
                 <span className={`text-sm pl-1 mb-1 ${getCellDayClass(cell.today, cell.grey)}`}>
                   {cell.day}
                 </span>
-                {cell.events.map((ev, i) => (
+                {cell.events.map((ev) => (
                   <div 
-                    key={i}
+                    key={ev.id}
                     onClick={(e) => {
                       e.stopPropagation();
                       handleEventClick(ev.id);
@@ -806,7 +809,10 @@ export default function SchedulePage() {
               upcomingEvents.map(ev => (
                 <div 
                   key={ev.id} 
+                  role="button"
+                  tabIndex={0}
                   onClick={() => handleEventClick(ev.id)}
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleEventClick(ev.id); } }}
                   className="mb-4 last:mb-0 pb-3 border-b border-slate-100 last:border-b-0 dark:border-white/5 cursor-pointer hover:bg-slate-50 dark:hover:bg-white/5 p-1 rounded-xl transition-all"
                 >
                   <div className="flex items-center justify-between gap-2">
@@ -855,8 +861,9 @@ export default function SchedulePage() {
                   )}
 
                   <div className="mb-4">
-                    <label className="block text-[11px] font-bold text-slate-500 dark:text-white/60 uppercase mb-1">Cliente *</label>
+                    <label htmlFor="agenda-client-select" className="block text-[11px] font-bold text-slate-500 dark:text-white/60 uppercase mb-1">Cliente *</label>
                     <select
+                      id="agenda-client-select"
                       value={clientId}
                       onChange={e => setClientId(e.target.value)}
                       className="w-full px-3 py-2.5 border border-slate-200 dark:border-white/10 rounded-xl text-sm text-build-main dark:text-white bg-white dark:bg-white/5 focus:outline-none focus:border-arch-gold focus:ring-1 focus:ring-arch-gold/20"
@@ -868,8 +875,9 @@ export default function SchedulePage() {
 
                   {clientId && (
                     <div className="mb-4">
-                      <label className="block text-[11px] font-bold text-slate-500 dark:text-white/60 uppercase mb-1">Unidad vinculada *</label>
+                      <label htmlFor="agenda-unit-select" className="block text-[11px] font-bold text-slate-500 dark:text-white/60 uppercase mb-1">Unidad vinculada *</label>
                       <select
+                        id="agenda-unit-select"
                         value={selectedUnitId}
                         onChange={e => setSelectedUnitId(e.target.value)}
                         className="w-full px-3 py-2.5 border border-slate-200 dark:border-white/10 rounded-xl text-sm text-build-main dark:text-white bg-white dark:bg-white/5 focus:outline-none focus:border-arch-gold focus:ring-1 focus:ring-arch-gold/20"
@@ -881,8 +889,9 @@ export default function SchedulePage() {
                   )}
 
                   <div className="mb-4">
-                    <label className="block text-[11px] font-bold text-slate-500 dark:text-white/60 uppercase mb-1">Tipo de Evento *</label>
+                    <label htmlFor="agenda-event-type" className="block text-[11px] font-bold text-slate-500 dark:text-white/60 uppercase mb-1">Tipo de Evento *</label>
                     <select
+                      id="agenda-event-type"
                       value={eventType}
                       onChange={e => setEventType(e.target.value)}
                       className="w-full px-3 py-2.5 border border-slate-200 dark:border-white/10 rounded-xl text-sm text-build-main dark:text-white bg-white dark:bg-white/5 focus:outline-none focus:border-arch-gold focus:ring-1 focus:ring-arch-gold/20"
@@ -893,22 +902,22 @@ export default function SchedulePage() {
 
                   <div className="grid grid-cols-2 gap-4 mb-4">
                     <div className="col-span-2">
-                      <label className="block text-[11px] font-bold text-slate-500 dark:text-white/60 uppercase mb-1">Día Protocolar *</label>
-                      <input type="date" value={eventDate} onChange={e => setEventDate(e.target.value)} className="w-full px-3 py-2.5 border border-slate-200 dark:border-white/10 rounded-xl text-sm text-build-main dark:text-white bg-white dark:bg-white/5 focus:outline-none focus:border-arch-gold focus:ring-1 focus:ring-arch-gold/20" />
+                      <label htmlFor="agenda-event-date" className="block text-[11px] font-bold text-slate-500 dark:text-white/60 uppercase mb-1">Día Protocolar *</label>
+                      <input id="agenda-event-date" type="date" value={eventDate} onChange={e => setEventDate(e.target.value)} className="w-full px-3 py-2.5 border border-slate-200 dark:border-white/10 rounded-xl text-sm text-build-main dark:text-white bg-white dark:bg-white/5 focus:outline-none focus:border-arch-gold focus:ring-1 focus:ring-arch-gold/20" />
                     </div>
                     <div>
-                      <label className="block text-[11px] font-bold text-slate-500 dark:text-white/60 uppercase mb-1">Hora Inicio *</label>
-                      <input type="time" value={startTime} onChange={e => setStartTime(e.target.value)} className="w-full px-3 py-2.5 border border-slate-200 dark:border-white/10 rounded-xl text-sm text-build-main dark:text-white bg-white dark:bg-white/5 focus:outline-none focus:border-arch-gold focus:ring-1 focus:ring-arch-gold/20" />
+                      <label htmlFor="agenda-start-time" className="block text-[11px] font-bold text-slate-500 dark:text-white/60 uppercase mb-1">Hora Inicio *</label>
+                      <input id="agenda-start-time" type="time" value={startTime} onChange={e => setStartTime(e.target.value)} className="w-full px-3 py-2.5 border border-slate-200 dark:border-white/10 rounded-xl text-sm text-build-main dark:text-white bg-white dark:bg-white/5 focus:outline-none focus:border-arch-gold focus:ring-1 focus:ring-arch-gold/20" />
                     </div>
                     <div>
-                      <label className="block text-[11px] font-bold text-slate-500 dark:text-white/60 uppercase mb-1">Hora Fin *</label>
-                      <input type="time" value={endTime} onChange={e => setEndTime(e.target.value)} className="w-full px-3 py-2.5 border border-slate-200 dark:border-white/10 rounded-xl text-sm text-build-main dark:text-white bg-white dark:bg-white/5 focus:outline-none focus:border-arch-gold focus:ring-1 focus:ring-arch-gold/20" />
+                      <label htmlFor="agenda-end-time" className="block text-[11px] font-bold text-slate-500 dark:text-white/60 uppercase mb-1">Hora Fin *</label>
+                      <input id="agenda-end-time" type="time" value={endTime} onChange={e => setEndTime(e.target.value)} className="w-full px-3 py-2.5 border border-slate-200 dark:border-white/10 rounded-xl text-sm text-build-main dark:text-white bg-white dark:bg-white/5 focus:outline-none focus:border-arch-gold focus:ring-1 focus:ring-arch-gold/20" />
                     </div>
                   </div>
 
                   <div>
-                    <label className="block text-[11px] font-bold text-slate-500 dark:text-white/60 uppercase mb-1">Lugar / Ubicación</label>
-                    <input type="text" value={location} onChange={e => setLocation(e.target.value)} className="w-full px-3 py-2.5 border border-slate-200 dark:border-white/10 rounded-xl text-sm text-build-main dark:text-white bg-white dark:bg-white/5 focus:outline-none focus:border-arch-gold focus:ring-1 focus:ring-arch-gold/20" />
+                    <label htmlFor="agenda-location" className="block text-[11px] font-bold text-slate-500 dark:text-white/60 uppercase mb-1">Lugar / Ubicación</label>
+                    <input id="agenda-location" type="text" value={location} onChange={e => setLocation(e.target.value)} className="w-full px-3 py-2.5 border border-slate-200 dark:border-white/10 rounded-xl text-sm text-build-main dark:text-white bg-white dark:bg-white/5 focus:outline-none focus:border-arch-gold focus:ring-1 focus:ring-arch-gold/20" />
                   </div>
                 </div>
 
@@ -973,8 +982,9 @@ export default function SchedulePage() {
               {isEditing ? (
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-[11px] font-bold text-slate-500 dark:text-white/60 uppercase mb-1">Título</label>
+                    <label htmlFor="edit-title" className="block text-[11px] font-bold text-slate-500 dark:text-white/60 uppercase mb-1">Título</label>
                     <input 
+                      id="edit-title"
                       type="text" 
                       value={editTitle} 
                       onChange={e => setEditTitle(e.target.value)} 
@@ -983,8 +993,9 @@ export default function SchedulePage() {
                   </div>
                   
                   <div>
-                    <label className="block text-[11px] font-bold text-slate-500 dark:text-white/60 uppercase mb-1">Descripción</label>
+                    <label htmlFor="edit-description" className="block text-[11px] font-bold text-slate-500 dark:text-white/60 uppercase mb-1">Descripción</label>
                     <textarea 
+                      id="edit-description" 
                       value={editDesc} 
                       onChange={e => setEditDesc(e.target.value)} 
                       className="w-full px-3 py-2 border border-slate-200 dark:border-white/10 rounded-xl text-sm bg-white dark:bg-white/5 text-build-main dark:text-white focus:outline-none focus:border-arch-gold focus:ring-1 focus:ring-arch-gold/20 h-20 resize-none" 
@@ -992,8 +1003,9 @@ export default function SchedulePage() {
                   </div>
 
                   <div>
-                    <label className="block text-[11px] font-bold text-slate-500 dark:text-white/60 uppercase mb-1">Ubicación</label>
+                    <label htmlFor="edit-location" className="block text-[11px] font-bold text-slate-500 dark:text-white/60 uppercase mb-1">Ubicación</label>
                     <input 
+                      id="edit-location"
                       type="text" 
                       value={editLocation} 
                       onChange={e => setEditLocation(e.target.value)} 
@@ -1003,8 +1015,9 @@ export default function SchedulePage() {
 
                   <div className="grid grid-cols-2 gap-4">
                     <div className="col-span-2">
-                      <label className="block text-[11px] font-bold text-slate-500 dark:text-white/60 uppercase mb-1">Fecha</label>
+                      <label htmlFor="edit-date" className="block text-[11px] font-bold text-slate-500 dark:text-white/60 uppercase mb-1">Fecha</label>
                       <input 
+                        id="edit-date"
                         type="date" 
                         value={editDate} 
                         onChange={e => setEditDate(e.target.value)} 
@@ -1012,8 +1025,9 @@ export default function SchedulePage() {
                       />
                     </div>
                     <div>
-                      <label className="block text-[11px] font-bold text-slate-500 dark:text-white/60 uppercase mb-1">Hora Inicio</label>
+                      <label htmlFor="edit-start-time" className="block text-[11px] font-bold text-slate-500 dark:text-white/60 uppercase mb-1">Hora Inicio</label>
                       <input 
+                        id="edit-start-time"
                         type="time" 
                         value={editStartTime} 
                         onChange={e => setEditStartTime(e.target.value)} 
@@ -1021,8 +1035,9 @@ export default function SchedulePage() {
                       />
                     </div>
                     <div>
-                      <label className="block text-[11px] font-bold text-slate-500 dark:text-white/60 uppercase mb-1">Hora Fin</label>
+                      <label htmlFor="edit-end-time" className="block text-[11px] font-bold text-slate-500 dark:text-white/60 uppercase mb-1">Hora Fin</label>
                       <input 
+                        id="edit-end-time"
                         type="time" 
                         value={editEndTime} 
                         onChange={e => setEditEndTime(e.target.value)} 
@@ -1033,8 +1048,9 @@ export default function SchedulePage() {
 
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-[11px] font-bold text-slate-500 dark:text-white/60 uppercase mb-1">Estado Cita</label>
+                      <label htmlFor="edit-estado" className="block text-[11px] font-bold text-slate-500 dark:text-white/60 uppercase mb-1">Estado Cita</label>
                       <select 
+                        id="edit-estado"
                         value={editEstado} 
                         onChange={e => setEditEstado(e.target.value as "PROGRAMADA" | "CONFIRMADA" | "CANCELADA" | "COMPLETADA" | "REPROGRAMACION_PENDIENTE")} 
                         className="w-full px-3 py-2.5 border border-slate-200 dark:border-white/10 rounded-xl text-sm bg-white dark:bg-white/5 text-build-main dark:text-white focus:outline-none focus:border-arch-gold focus:ring-1 focus:ring-arch-gold/20"
@@ -1139,9 +1155,10 @@ export default function SchedulePage() {
 
                   {showCancelForm && (
                     <div className="pt-3 border-t border-slate-100 dark:border-white/5 space-y-2">
-                      <label className="block text-[11px] font-bold text-red-500 uppercase">Motivo de cancelación *</label>
+                      <label htmlFor="cancel-reason" className="block text-[11px] font-bold text-red-500 uppercase">Motivo de cancelación *</label>
                       <div className="flex gap-2">
                         <input 
+                          id="cancel-reason"
                           type="text" 
                           placeholder="Ej. Cambio de horario solicitado" 
                           value={motivoCancelacion}

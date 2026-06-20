@@ -50,7 +50,7 @@ export default function EmployeeSchedulePage() {
             </div>
             {/* Simple Grid Placeholder */}
             <div className="grid grid-cols-7 text-center gap-1 mb-2">
-              {["D","L","M","M","J","V","S"].map((d, index) => <span key={`dow-${index}`} className="text-[10px] font-bold text-[#72787c]">{d}</span>)}
+              {["Dom","Lun","Mar","Mie","Jue","Vie","Sab"].map((d) => <span key={d} className="text-[10px] font-bold text-[#72787c]">{d.charAt(0)}</span>)}
             </div>
             <div className="grid grid-cols-7 gap-1 text-center">
               {Array.from({ length: 31 }).map((_, i) => (
