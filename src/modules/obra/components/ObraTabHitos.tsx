@@ -88,6 +88,26 @@ async function loadPisosParaTorre(
   }
 }
 
+async function updateAssetsProgress(
+  assetIds: string[],
+  hitoOrden: number,
+  newEstado: string
+): Promise<number> {
+  let errors = 0;
+  for (const assetId of assetIds) {
+    const avances = await getAvancesActivo(assetId).catch(() => []);
+    const matching = avances.find((a) => a.hitoOrden === hitoOrden);
+    if (matching) {
+      try {
+        await updateAvanceUnidad(matching.id, newEstado);
+      } catch {
+        errors++;
+      }
+    }
+  }
+  return errors;
+}
+
 // ─── HitoMaestroRow Component ──────────────────────────────────────────────────
 
 function HitoMaestroRow({
@@ -220,18 +240,7 @@ function ObraTabHitosProyecto({
       });
       const assetIds = Array.from(proxyAssetIds.values());
 
-      let errors = 0;
-      for (const assetId of assetIds) {
-        const avances = await getAvancesActivo(assetId).catch(() => []);
-        const matching = avances.find((a) => a.hitoOrden === etapa.orden);
-        if (matching) {
-          try {
-            await updateAvanceUnidad(matching.id, newEstado);
-          } catch {
-            errors++;
-          }
-        }
-      }
+      const errors = await updateAssetsProgress(assetIds, etapa.orden, newEstado);
 
       if (errors > 0) {
         setError(
@@ -543,11 +552,6 @@ function ObraTabHitosPiso({
     };
   }, [projectId]);
 
-  // ── Resetear piso seleccionado cuando cambia la torre ──────────────────────
-  useEffect(() => {
-    setSelectedPisoId("");
-  }, [selectedTorreId]);
-
   // ── Cargar avances del piso seleccionado (usando Activo proxy) ────────────────
   useEffect(() => {
     let cancelled = false;
@@ -627,7 +631,10 @@ function ObraTabHitosPiso({
         ) : (
           <select
             value={selectedTorreId}
-            onChange={(e) => setSelectedTorreId(e.target.value)}
+            onChange={(e) => {
+              setSelectedTorreId(e.target.value);
+              setSelectedPisoId("");
+            }}
             className="w-full sm:w-auto rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 px-3 py-2 text-sm focus:outline-none focus:border-build-accent dark:text-white"
           >
             <option value="">— Torre —</option>
