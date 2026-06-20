@@ -6,11 +6,11 @@ import MortgageFinancingView from "../details/MortgageFinancingView";
 import type { UsuarioActivoResponseDTO } from "@/lib/api/expedientes";
 
 interface PaymentManagementStepProps {
-    expediente: UsuarioActivoResponseDTO;
-    onBack: () => void;
+    readonly expediente: UsuarioActivoResponseDTO;
+    readonly onBack: () => void;
 }
 
-export default function PaymentManagementStep({ expediente, onBack }: PaymentManagementStepProps) {
+export default function PaymentManagementStep({ expediente, onBack }: Readonly<PaymentManagementStepProps>) {
     const {
         expediente: refreshedExpediente,
         cronograma,
@@ -26,6 +26,45 @@ export default function PaymentManagementStep({ expediente, onBack }: PaymentMan
     const activeExpediente = refreshedExpediente || expediente;
     const rawType = (activeExpediente.tipoFinanciamiento || "").toLowerCase();
     const isDirecto = rawType.includes("directo");
+
+    let content;
+    if (isLoading) {
+        content = (
+            <div className="py-20 text-center">
+                <div className="animate-spin inline-block w-8 h-8 border-4 border-current border-t-transparent text-build-accent rounded-full mb-4"></div>
+                <p className="text-slate-500 text-sm">Cargando información del contrato…</p>
+            </div>
+        );
+    } else if (error) {
+        content = (
+            <div className="rounded-xl border border-red-200 dark:border-red-900/50 bg-red-50 dark:bg-red-900/20 px-4 py-3 text-sm text-red-800 dark:text-red-400">
+                {error}
+            </div>
+        );
+    } else {
+        content = (
+            <div className="animate-in fade-in slide-in-from-bottom-2 duration-500">
+                {isDirecto ? (
+                    <DirectFinancingView
+                        expediente={activeExpediente}
+                        cronograma={cronograma}
+                        pagos={pagos}
+                        resumen={resumen}
+                        onUpdate={refresh}
+                    />
+                ) : (
+                    <MortgageFinancingView
+                        expediente={activeExpediente}
+                        cronograma={cronograma}
+                        pagos={pagos}
+                        resumen={resumen}
+                        creditoHipotecario={creditoHipotecario}
+                        onUpdate={refresh}
+                    />
+                )}
+            </div>
+        );
+    }
 
     return (
         <div className="space-y-6">
@@ -47,41 +86,11 @@ export default function PaymentManagementStep({ expediente, onBack }: PaymentMan
                     className="text-xs font-bold uppercase tracking-wider text-slate-400 hover:text-build-main dark:hover:text-white transition-colors flex items-center gap-1"
                 >
                     <span className="material-symbols-outlined text-[16px]">arrow_back</span>
-                    Regresar a Contratos
+                    <span>Regresar a Contratos</span>
                 </button>
             </div>
 
-            {isLoading ? (
-                <div className="py-20 text-center">
-                    <div className="animate-spin inline-block w-8 h-8 border-4 border-current border-t-transparent text-build-accent rounded-full mb-4"></div>
-                    <p className="text-slate-500 text-sm">Cargando información del contrato…</p>
-                </div>
-            ) : error ? (
-                <div className="rounded-xl border border-red-200 dark:border-red-900/50 bg-red-50 dark:bg-red-900/20 px-4 py-3 text-sm text-red-800 dark:text-red-400">
-                    {error}
-                </div>
-            ) : (
-                <div className="animate-in fade-in slide-in-from-bottom-2 duration-500">
-                    {isDirecto ? (
-                        <DirectFinancingView
-                            expediente={activeExpediente}
-                            cronograma={cronograma}
-                            pagos={pagos}
-                            resumen={resumen}
-                            onUpdate={refresh}
-                        />
-                    ) : (
-                        <MortgageFinancingView
-                            expediente={activeExpediente}
-                            cronograma={cronograma}
-                            pagos={pagos}
-                            resumen={resumen}
-                            creditoHipotecario={creditoHipotecario}
-                            onUpdate={refresh}
-                        />
-                    )}
-                </div>
-            )}
+            {content}
         </div>
     );
 }
