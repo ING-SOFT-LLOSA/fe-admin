@@ -17,6 +17,12 @@ function barColor(pct: number): string {
   return "bg-red-400";
 }
 
+function textColor(pct: number): string {
+  if (pct >= 70) return "text-emerald-600 dark:text-emerald-400";
+  if (pct >= 30) return "text-amber-600 dark:text-amber-400";
+  return "text-red-500 dark:text-red-400";
+}
+
 export default function ObraOverview() {
   const [projects, setProjects] = useState<ProjectProgressRow[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -65,6 +71,75 @@ export default function ObraOverview() {
     return () => { mounted = false; };
   }, []);
 
+  const tableContent = useMemo(() => {
+    if (isLoading) {
+      return (
+        <tr>
+          <td colSpan={4} className="px-5 py-10 text-center text-sm text-slate-500 dark:text-white/60">
+            Cargando avances...
+          </td>
+        </tr>
+      );
+    }
+
+    if (filtered.length === 0) {
+      return (
+        <tr>
+          <td colSpan={4} className="px-5 py-10 text-center text-sm text-slate-500 dark:text-white/60">
+            {search ? "Ningún proyecto coincide con la búsqueda." : "No hay proyectos registrados."}
+          </td>
+        </tr>
+      );
+    }
+
+    return filtered.map((project) => {
+      const pct = project.porcentajeAvance ?? 0;
+      return (
+        <tr
+          key={project.id}
+          className="group cursor-pointer hover:bg-slate-50 dark:hover:bg-white/[0.04] transition-colors"
+          onClick={() => { globalThis.location.href = `/obra/${project.id}`; }}
+        >
+          <td className="px-5 py-4">
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-bold text-build-main dark:text-white group-hover:text-arch-gold dark:group-hover:text-arch-gold transition-colors">
+                {project.nombre}
+              </span>
+              <span className="material-symbols-outlined text-[14px] text-slate-300 dark:text-white/20 group-hover:text-arch-gold dark:group-hover:text-arch-gold transition-colors">
+                arrow_forward
+              </span>
+            </div>
+          </td>
+          <td className="px-5 py-4 text-sm text-slate-600 dark:text-white/70">
+            {project.direccion || "—"}
+          </td>
+          <td className="px-5 py-4">
+            <div className="flex items-center gap-3">
+              <div className="h-2 w-32 rounded-full bg-slate-100 dark:bg-white/10">
+                <div
+                  className={`h-2 rounded-full ${barColor(pct)} transition-all`}
+                  style={{ width: `${Math.min(pct, 100)}%` }}
+                />
+              </div>
+              <span className={`text-sm font-bold ${textColor(pct)}`}>
+                {pct}%
+              </span>
+            </div>
+          </td>
+          <td className="px-5 py-4" onClick={(e) => e.stopPropagation()}>
+            <Link
+              href={`/obra/${project.id}`}
+              className="inline-flex items-center gap-2 rounded-lg bg-build-main px-3 py-2 text-xs font-bold text-white hover:bg-build-main/90 transition-colors"
+            >
+              <span className="material-symbols-outlined text-[16px]">engineering</span>
+              <span>Abrir obra</span>
+            </Link>
+          </td>
+        </tr>
+      );
+    });
+  }, [isLoading, filtered, search]);
+
   return (
     <section className="space-y-6">
       <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
@@ -111,66 +186,7 @@ export default function ObraOverview() {
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100 dark:divide-white/5">
-            {isLoading ? (
-              <tr>
-                <td colSpan={4} className="px-5 py-10 text-center text-sm text-slate-500 dark:text-white/60">
-                  Cargando avances...
-                </td>
-              </tr>
-            ) : filtered.length === 0 ? (
-              <tr>
-                <td colSpan={4} className="px-5 py-10 text-center text-sm text-slate-500 dark:text-white/60">
-                  {search ? "Ningún proyecto coincide con la búsqueda." : "No hay proyectos registrados."}
-                </td>
-              </tr>
-            ) : (
-              filtered.map((project) => {
-                const pct = project.porcentajeAvance ?? 0;
-                return (
-                  <tr
-                    key={project.id}
-                    className="group cursor-pointer hover:bg-slate-50 dark:hover:bg-white/[0.04] transition-colors"
-                    onClick={() => { window.location.href = `/obra/${project.id}`; }}
-                  >
-                    <td className="px-5 py-4">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-bold text-build-main dark:text-white group-hover:text-arch-gold dark:group-hover:text-arch-gold transition-colors">
-                          {project.nombre}
-                        </span>
-                        <span className="material-symbols-outlined text-[14px] text-slate-300 dark:text-white/20 group-hover:text-arch-gold dark:group-hover:text-arch-gold transition-colors">
-                          arrow_forward
-                        </span>
-                      </div>
-                    </td>
-                    <td className="px-5 py-4 text-sm text-slate-600 dark:text-white/70">
-                      {project.direccion || "—"}
-                    </td>
-                    <td className="px-5 py-4">
-                      <div className="flex items-center gap-3">
-                        <div className="h-2 w-32 rounded-full bg-slate-100 dark:bg-white/10">
-                          <div
-                            className={`h-2 rounded-full ${barColor(pct)} transition-all`}
-                            style={{ width: `${Math.min(pct, 100)}%` }}
-                          />
-                        </div>
-                        <span className={`text-sm font-bold ${pct >= 70 ? "text-emerald-600 dark:text-emerald-400" : pct >= 30 ? "text-amber-600 dark:text-amber-400" : "text-red-500 dark:text-red-400"}`}>
-                          {pct}%
-                        </span>
-                      </div>
-                    </td>
-                    <td className="px-5 py-4" onClick={(e) => e.stopPropagation()}>
-                      <Link
-                        href={`/obra/${project.id}`}
-                        className="inline-flex items-center gap-2 rounded-lg bg-build-main px-3 py-2 text-xs font-bold text-white hover:bg-build-main/90 transition-colors"
-                      >
-                        <span className="material-symbols-outlined text-[16px]">engineering</span>
-                        Abrir obra
-                      </Link>
-                    </td>
-                  </tr>
-                );
-              })
-            )}
+            {tableContent}
           </tbody>
         </table>
       </div>
