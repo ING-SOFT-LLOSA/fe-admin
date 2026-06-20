@@ -16,6 +16,8 @@ const sampleCliente: ClienteRow = {
   id: 1,
   initials: "AG",
   name: "Ana García",
+  nombre: "Ana",
+  apellidos: "García",
   dni: "12345678",
   email: "ana@test.com",
   phone: "+51999888777",
@@ -25,7 +27,7 @@ const sampleCliente: ClienteRow = {
   tipoUsuario: "CLIENTE",
   rol: "USER",
   createdAt: "2026-01-01",
-};
+} as any;
 
 describe("EditClienteModal", () => {
   beforeEach(() => {
