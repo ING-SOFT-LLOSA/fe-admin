@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useMemo, useCallback } from "react";
+import { useEffect, useState, useMemo, useCallback, useRef } from "react";
 
 import { crearEtapaProyecto, getAvancesActivo, updateAvanceUnidad } from "@/lib/api/obra";
 import type { EtapaResponseDTO, AvanceUnidadResponseDTO } from "@/lib/api/obra";
@@ -160,6 +160,16 @@ function ObraTabHitosProyecto({
   const [error, setError] = useState("");
   const [globalToggling, setGlobalToggling] = useState<string | null>(null);
 
+  const successTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (successTimeoutRef.current) {
+        clearTimeout(successTimeoutRef.current);
+      }
+    };
+  }, []);
+
   // FIX: guardia de idempotencia — no crear si ya existen hitos en el backend
   async function handleGenerarEstandar() {
     if (etapas.length > 0) {
@@ -181,7 +191,8 @@ function ObraTabHitosProyecto({
       }
       setSuccess("Secuencia estándar generada correctamente.");
       await onRefresh();
-      setTimeout(() => setSuccess(""), 4000);
+      if (successTimeoutRef.current) clearTimeout(successTimeoutRef.current);
+      successTimeoutRef.current = setTimeout(() => setSuccess(""), 4000);
     } catch (err: unknown) {
       setError(
         err instanceof Error
@@ -229,7 +240,8 @@ function ObraTabHitosProyecto({
       } else {
         const estadoLabel = newEstado === "COMPLETADO" ? "completado" : "pendiente";
         setSuccess(`Hito "${etapa.nombre}" marcado como ${estadoLabel} en todos los pisos.`);
-        setTimeout(() => setSuccess(""), 4000);
+        if (successTimeoutRef.current) clearTimeout(successTimeoutRef.current);
+        successTimeoutRef.current = setTimeout(() => setSuccess(""), 4000);
       }
       await onRefresh();
     } catch (err: unknown) {
