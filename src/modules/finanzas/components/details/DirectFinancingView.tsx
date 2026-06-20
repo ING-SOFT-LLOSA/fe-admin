@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useId } from "react";
 import type { PagoResponse, CronogramaPagoResponse, CronogramaResumenResponse } from "@/modules/finanzas/types";
 import { updatePagoEstado, uploadPagoComprobante, addPago, deletePago, updatePago, createCronograma, updateCronograma } from "@/lib/api/finanzas";
 import type { UsuarioActivoResponseDTO } from "@/lib/api/expedientes";
@@ -29,6 +29,18 @@ import DialogModal from "@/components/ui/DialogModal";
     }
 
 export default function DirectFinancingView({ expediente, cronograma, pagos, resumen, onUpdate }: Readonly<DirectFinancingViewProps>) {
+    const nroCuotaId = useId();
+    const conceptoId = useId();
+    const montoId = useId();
+    const vencimientoId = useId();
+
+    const cronogramaIds = {
+        totalPactado: useId(),
+        pagoSeparacion: useId(),
+        pagoInicial: useId(),
+        numeroCuotas: useId(),
+    };
+
     const [updatingId, setUpdatingId] = useState<string | null>(null);
     const [showAddForm, setShowAddForm] = useState(false);
     const [showCronogramaForm, setShowCronogramaForm] = useState(!cronograma);
@@ -327,7 +339,7 @@ export default function DirectFinancingView({ expediente, cronograma, pagos, res
                                 <div key={item.label} className="bg-slate-50 dark:bg-white/5 rounded-xl px-4 py-3">
                                     <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">{item.label}</p>
                                     <p className={`text-base font-bold ${item.color}`}>
-                                        {item.value === null || typeof item.value === "undefined" ? item.extra : `S/ ${item.value.toLocaleString("es-PE", { minimumFractionDigits: 2 })}`}
+                                        {item.value === null || item.value === undefined ? item.extra : `S/ ${item.value.toLocaleString("es-PE", { minimumFractionDigits: 2 })}`}
                                     </p>
                                 </div>
                             ))}
@@ -363,18 +375,22 @@ export default function DirectFinancingView({ expediente, cronograma, pagos, res
                                 { key: "pagoSeparacion", label: "Pago Separación (S/)", placeholder: "1000" },
                                 { key: "pagoInicial", label: "Pago Inicial (S/)", placeholder: "50000" },
                                 { key: "numeroCuotas", label: "N° de Cuotas", placeholder: "12" },
-                            ].map(({ key, label, placeholder }) => (
-                                <div key={key}>
-                                    <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-white/60 mb-1.5">{label}</label>
-                                    <input
-                                        type="number"
-                                        value={cronogramaForm[key as keyof CronogramaFormData]}
-                                        onChange={(e) => setCronogramaForm((p) => ({ ...p, [key]: e.target.value }))}
-                                        placeholder={placeholder}
-                                        className="w-full rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 px-3 py-2.5 text-sm text-build-main dark:text-white outline-none focus:border-build-accent focus:ring-2 focus:ring-build-accent/20"
-                                    />
-                                </div>
-                            ))}
+                            ].map(({ key, label, placeholder }) => {
+                                const inputId = cronogramaIds[key as keyof typeof cronogramaIds];
+                                return (
+                                    <div key={key}>
+                                        <label htmlFor={inputId} className="block text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-white/60 mb-1.5">{label}</label>
+                                        <input
+                                            id={inputId}
+                                            type="number"
+                                            value={cronogramaForm[key as keyof CronogramaFormData]}
+                                            onChange={(e) => setCronogramaForm((p) => ({ ...p, [key]: e.target.value }))}
+                                            placeholder={placeholder}
+                                            className="w-full rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 px-3 py-2.5 text-sm text-build-main dark:text-white outline-none focus:border-build-accent focus:ring-2 focus:ring-build-accent/20"
+                                        />
+                                    </div>
+                                );
+                            })}
                         </div>
                         <div className="flex gap-3 mt-5">
                             <button
@@ -436,8 +452,8 @@ export default function DirectFinancingView({ expediente, cronograma, pagos, res
                             <div className="px-6 py-4 bg-build-accent/5 border-b border-build-accent/20">
                                 <div className="grid gap-3 md:grid-cols-5 items-end">
                                     <div>
-                                        <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">N° Cuota</label>
-                                        <input type="number" value={addForm.nroCuota} onChange={(e) => setAddForm((p) => ({ ...p, nroCuota: e.target.value }))}
+                                        <label htmlFor={nroCuotaId} className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">N° Cuota</label>
+                                        <input id={nroCuotaId} type="number" value={addForm.nroCuota} onChange={(e) => setAddForm((p) => ({ ...p, nroCuota: e.target.value }))}
                                             className="w-full rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 px-3 py-2 text-sm text-build-main dark:text-white outline-none focus:border-build-accent" />
                                     </div>
                                     {(() => {
@@ -449,8 +465,8 @@ export default function DirectFinancingView({ expediente, cronograma, pagos, res
                                         ].filter(o => o.value === "CUOTA" || !existingConceptos.has(o.value));
                                         return (
                                             <div>
-                                                <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Concepto</label>
-                                                <select value={addForm.concepto} onChange={(e) => setAddForm((p) => ({ ...p, concepto: e.target.value }))}
+                                                <label htmlFor={conceptoId} className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Concepto</label>
+                                                <select id={conceptoId} value={addForm.concepto} onChange={(e) => setAddForm((p) => ({ ...p, concepto: e.target.value }))}
                                                     className="w-full rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 px-3 py-2 text-sm text-build-main dark:text-white outline-none focus:border-build-accent">
                                                     {conceptOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
                                                 </select>
@@ -458,13 +474,13 @@ export default function DirectFinancingView({ expediente, cronograma, pagos, res
                                         );
                                     })()}
                                     <div>
-                                        <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Monto (S/)</label>
-                                        <input type="number" value={addForm.montoProgramado} onChange={(e) => setAddForm((p) => ({ ...p, montoProgramado: e.target.value }))}
+                                        <label htmlFor={montoId} className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Monto (S/)</label>
+                                        <input id={montoId} type="number" value={addForm.montoProgramado} onChange={(e) => setAddForm((p) => ({ ...p, montoProgramado: e.target.value }))}
                                             className="w-full rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 px-3 py-2 text-sm text-build-main dark:text-white outline-none focus:border-build-accent" />
                                     </div>
                                     <div>
-                                        <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Vencimiento</label>
-                                        <input type="date" value={addForm.fechaVencimiento} onChange={(e) => setAddForm((p) => ({ ...p, fechaVencimiento: e.target.value }))}
+                                        <label htmlFor={vencimientoId} className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Vencimiento</label>
+                                        <input id={vencimientoId} type="date" value={addForm.fechaVencimiento} onChange={(e) => setAddForm((p) => ({ ...p, fechaVencimiento: e.target.value }))}
                                             className="w-full rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 px-3 py-2 text-sm text-build-main dark:text-white outline-none focus:border-build-accent" />
                                     </div>
                                     <div className="flex gap-2">
@@ -717,8 +733,7 @@ function PagoDropzone({
     return (
         <tr key={`${uuidPago}-dropzone`}>
             <td colSpan={6} className="bg-slate-50/50 dark:bg-white/[0.01] px-6 py-4">
-                <div
-                    role="region"
+                <section
                     aria-label="Subir comprobante"
                     className="border-2 border-dashed border-build-accent/40 rounded-xl p-4 bg-white dark:bg-white/5 transition flex flex-col gap-3"
                     onDragOver={(e) => { e.preventDefault(); }}
@@ -780,7 +795,7 @@ function PagoDropzone({
                             {isSaving ? "Subiendo…" : "Subir"}
                         </button>
                     </div>
-                </div>
+                </section>
             </td>
         </tr>
     );
