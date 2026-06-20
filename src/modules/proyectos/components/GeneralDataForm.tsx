@@ -1,39 +1,45 @@
-import { useState } from "react";
+import { useState, useId } from "react";
 import { ProjectFormData } from "@/modules/proyectos/utils/wizard-logic";
-
+ 
 interface Props {
-  initialData: ProjectFormData;
-  onSubmit: (data: ProjectFormData) => void;
-  onCancel: () => void;
+  readonly initialData: ProjectFormData;
+  readonly onSubmit: (data: ProjectFormData) => void;
+  readonly onCancel: () => void;
 }
-
-export default function GeneralDataForm({ initialData, onSubmit, onCancel }: Props) {
+ 
+export default function GeneralDataForm({ initialData, onSubmit, onCancel }: Readonly<Props>) {
   const [formData, setFormData] = useState<ProjectFormData>(initialData);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
+  const nombreId = useId();
+  const direccionId = useId();
+  const departamentoId = useId();
+  const distritoId = useId();
+  const fechaInicioId = useId();
+  const fechaFinId = useId();
+  const descripcionId = useId();
+ 
   const validateForm = (data: ProjectFormData): Record<string, string> => {
     const newErrors: Record<string, string> = {};
-
-    if (!data.nombre || !data.nombre.trim()) {
+ 
+    if (!data.nombre?.trim()) {
       newErrors.nombre = "El nombre del proyecto es obligatorio.";
     } else if (data.nombre.trim().length < 3) {
       newErrors.nombre = "El nombre debe tener al menos 3 caracteres.";
     }
-
-    if (!data.direccion || !data.direccion.trim()) {
+ 
+    if (!data.direccion?.trim()) {
       newErrors.direccion = "La dirección es obligatoria.";
     }
-
-    if (!data.departamento || !data.departamento.trim()) {
+ 
+    if (!data.departamento?.trim()) {
       newErrors.departamento = "El departamento es obligatorio.";
     }
-
-    if (!data.distrito || !data.distrito.trim()) {
+ 
+    if (!data.distrito?.trim()) {
       newErrors.distrito = "El distrito es obligatorio.";
     }
-
-
-
+ 
     if (data.fechaInicio && data.fechaFin) {
       const start = new Date(data.fechaInicio);
       const end = new Date(data.fechaFin);
@@ -41,10 +47,10 @@ export default function GeneralDataForm({ initialData, onSubmit, onCancel }: Pro
         newErrors.fechaFin = "La fecha de fin no puede ser anterior a la fecha de inicio.";
       }
     }
-
+ 
     return newErrors;
   };
-
+ 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
     
@@ -52,12 +58,12 @@ export default function GeneralDataForm({ initialData, onSubmit, onCancel }: Pro
     if (type === "checkbox") {
       parsedValue = (e.target as HTMLInputElement).checked;
     }
-
+ 
     setFormData(prev => ({
       ...prev,
       [name]: parsedValue
     }));
-
+ 
     if (errors[name]) {
       setErrors(prev => {
         const next = { ...prev };
@@ -65,7 +71,7 @@ export default function GeneralDataForm({ initialData, onSubmit, onCancel }: Pro
         return next;
       });
     }
-
+ 
     if ((name === "fechaInicio" || name === "fechaFin") && errors.fechaFin) {
       setErrors(prev => {
         const next = { ...prev };
@@ -74,8 +80,8 @@ export default function GeneralDataForm({ initialData, onSubmit, onCancel }: Pro
       });
     }
   };
-
-  const handleSubmit = (e: React.FormEvent) => {
+ 
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const validationErrors = validateForm(formData);
     if (Object.keys(validationErrors).length > 0) {
@@ -89,7 +95,7 @@ export default function GeneralDataForm({ initialData, onSubmit, onCancel }: Pro
       }
       return;
     }
-
+ 
     onSubmit({
       ...formData,
       nombre: formData.nombre.trim(),
@@ -98,13 +104,14 @@ export default function GeneralDataForm({ initialData, onSubmit, onCancel }: Pro
       distrito: formData.distrito.trim(),
     });
   };
-
+ 
   return (
     <form onSubmit={handleSubmit} className="space-y-6" noValidate>
       <div className="grid gap-6 md:grid-cols-2">
         <div className="space-y-2">
-          <label className="text-sm font-semibold text-slate-700 dark:text-white/80">Nombre del Proyecto <span className="text-red-500">*</span></label>
+          <label htmlFor={nombreId} className="text-sm font-semibold text-slate-700 dark:text-white/80">Nombre del Proyecto <span className="text-red-500">*</span></label>
           <input 
+            id={nombreId}
             type="text" 
             name="nombre"
             value={formData.nombre}
@@ -120,10 +127,11 @@ export default function GeneralDataForm({ initialData, onSubmit, onCancel }: Pro
             <p className="text-xs font-semibold text-red-500 dark:text-red-400">{errors.nombre}</p>
           )}
         </div>
-
+ 
         <div className="space-y-2">
-          <label className="text-sm font-semibold text-slate-700 dark:text-white/80">Dirección <span className="text-red-500">*</span></label>
+          <label htmlFor={direccionId} className="text-sm font-semibold text-slate-700 dark:text-white/80">Dirección <span className="text-red-500">*</span></label>
           <input 
+            id={direccionId}
             type="text" 
             name="direccion"
             value={formData.direccion}
@@ -139,10 +147,11 @@ export default function GeneralDataForm({ initialData, onSubmit, onCancel }: Pro
             <p className="text-xs font-semibold text-red-500 dark:text-red-400">{errors.direccion}</p>
           )}
         </div>
-
+ 
         <div className="space-y-2">
-          <label className="text-sm font-semibold text-slate-700 dark:text-white/80">Departamento <span className="text-red-500">*</span></label>
+          <label htmlFor={departamentoId} className="text-sm font-semibold text-slate-700 dark:text-white/80">Departamento <span className="text-red-500">*</span></label>
           <input 
+            id={departamentoId}
             type="text" 
             name="departamento"
             value={formData.departamento}
@@ -158,10 +167,11 @@ export default function GeneralDataForm({ initialData, onSubmit, onCancel }: Pro
             <p className="text-xs font-semibold text-red-500 dark:text-red-400">{errors.departamento}</p>
           )}
         </div>
-
+ 
         <div className="space-y-2">
-          <label className="text-sm font-semibold text-slate-700 dark:text-white/80">Distrito <span className="text-red-500">*</span></label>
+          <label htmlFor={distritoId} className="text-sm font-semibold text-slate-700 dark:text-white/80">Distrito <span className="text-red-500">*</span></label>
           <input 
+            id={distritoId}
             type="text" 
             name="distrito"
             value={formData.distrito}
@@ -177,10 +187,11 @@ export default function GeneralDataForm({ initialData, onSubmit, onCancel }: Pro
             <p className="text-xs font-semibold text-red-500 dark:text-red-400">{errors.distrito}</p>
           )}
         </div>
-
+ 
         <div className="space-y-2">
-          <label className="text-sm font-semibold text-slate-700 dark:text-white/80">Fecha de Inicio Estimada</label>
+          <label htmlFor={fechaInicioId} className="text-sm font-semibold text-slate-700 dark:text-white/80">Fecha de Inicio Estimada</label>
           <input 
+            id={fechaInicioId}
             type="date" 
             name="fechaInicio"
             value={formData.fechaInicio}
@@ -188,10 +199,11 @@ export default function GeneralDataForm({ initialData, onSubmit, onCancel }: Pro
             className="w-full rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 px-4 py-2.5 text-sm outline-none focus:border-build-main focus:bg-white transition-all"
           />
         </div>
-
+ 
         <div className="space-y-2">
-          <label className="text-sm font-semibold text-slate-700 dark:text-white/80">Fecha de Fin Estimada</label>
+          <label htmlFor={fechaFinId} className="text-sm font-semibold text-slate-700 dark:text-white/80">Fecha de Fin Estimada</label>
           <input 
+            id={fechaFinId}
             type="date" 
             name="fechaFin"
             value={formData.fechaFin}
@@ -206,12 +218,11 @@ export default function GeneralDataForm({ initialData, onSubmit, onCancel }: Pro
             <p className="text-xs font-semibold text-red-500 dark:text-red-400">{errors.fechaFin}</p>
           )}
         </div>
-
-
-
+ 
         <div className="space-y-2 md:col-span-2">
-          <label className="text-sm font-semibold text-slate-700 dark:text-white/80">Descripción del Proyecto</label>
+          <label htmlFor={descripcionId} className="text-sm font-semibold text-slate-700 dark:text-white/80">Descripción del Proyecto</label>
           <textarea 
+            id={descripcionId}
             name="descripcion"
             rows={3}
             value={formData.descripcion}
@@ -220,7 +231,7 @@ export default function GeneralDataForm({ initialData, onSubmit, onCancel }: Pro
             className="w-full rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 px-4 py-2.5 text-sm outline-none focus:border-build-main focus:bg-white transition-all resize-none"
           />
         </div>
-
+ 
         <div className="md:col-span-2 flex items-center gap-3 rounded-xl border border-slate-200 dark:border-white/10 p-4">
           <input 
             type="checkbox" 
@@ -235,7 +246,7 @@ export default function GeneralDataForm({ initialData, onSubmit, onCancel }: Pro
           </label>
         </div>
       </div>
-
+ 
       <div className="mt-8 flex items-center justify-end gap-3 pt-6 border-t border-slate-100 dark:border-white/5">
         <button 
           type="button" 
@@ -248,11 +259,10 @@ export default function GeneralDataForm({ initialData, onSubmit, onCancel }: Pro
           type="submit" 
           className="flex items-center gap-2 rounded-xl bg-build-main px-6 py-2.5 text-sm font-bold text-white shadow-sm hover:bg-arch-gold transition-colors"
         >
-          Siguiente paso
+          <span>Siguiente paso</span>
           <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
         </button>
       </div>
     </form>
   );
 }
-
