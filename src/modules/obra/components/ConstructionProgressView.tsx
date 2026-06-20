@@ -18,8 +18,8 @@ import ObraTabDocumentacion from "./ObraTabDocumentacion";
 type Tab = "hitos" | "reportes" | "documentacion";
 
 type ConstructionProgressViewProps = {
-  projectId: string;
-  context?: "project" | "obra";
+  readonly projectId: string;
+  readonly context?: "project" | "obra";
 };
 
 const TABS: { id: Tab; label: string; icon: string }[] = [
@@ -30,10 +30,20 @@ const TABS: { id: Tab; label: string; icon: string }[] = [
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
+function getFloorStatesForMilestone(
+  allFloorAvances: any[][],
+  milestoneOrden: number
+): string[] {
+  return allFloorAvances.map((floorAvances) => {
+    const matchingAvance = floorAvances.find((fa: any) => fa.hitoOrden === milestoneOrden);
+    return matchingAvance?.estado || "PENDIENTE";
+  });
+}
+
 export default function ConstructionProgressView({
   projectId,
   context = "project",
-}: ConstructionProgressViewProps) {
+}: Readonly<ConstructionProgressViewProps>) {
   const [project,   setProject]   = useState<Proyecto | null>(null);
   const [etapas,    setEtapas]    = useState<EtapaResponseDTO[]>([]);
   const [avance,    setAvance]    = useState(0);
@@ -54,26 +64,23 @@ export default function ConstructionProgressView({
           uniqueFloorsMap.set(a.pisoId, a.id);
         }
       });
-
+ 
       const proxyAssetIds = Array.from(uniqueFloorsMap.values());
       if (proxyAssetIds.length === 0) {
         return rawEtapas;
       }
-
+ 
       const allFloorAvances = await Promise.all(
         proxyAssetIds.map((id) => getAvancesActivo(id).catch(() => []))
       );
-
+ 
       return rawEtapas.map((etapa) => {
-        const floorStates = allFloorAvances.map((floorAvances) => {
-          const matchingAvance = floorAvances.find((fa) => fa.hitoOrden === etapa.orden);
-          return matchingAvance?.estado || "PENDIENTE";
-        });
-
+        const floorStates = getFloorStatesForMilestone(allFloorAvances, etapa.orden);
+ 
         let computedEstado = etapa.estado;
         if (floorStates.length > 0) {
           const allCompleted = floorStates.every((st) => st === "COMPLETADO");
-          const anyCompleted = floorStates.some((st) => st === "COMPLETADO");
+          const anyCompleted = floorStates.includes("COMPLETADO");
           if (allCompleted) {
             computedEstado = "COMPLETADO";
           } else if (anyCompleted) {
@@ -82,7 +89,7 @@ export default function ConstructionProgressView({
             computedEstado = "PENDIENTE";
           }
         }
-
+ 
         return {
           ...etapa,
           estado: computedEstado,
