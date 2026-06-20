@@ -125,7 +125,7 @@ function ResumenSaldosCard({ resumen }: Readonly<ResumenSaldosCardProps>) {
                     <div key={item.label} className="bg-slate-50 dark:bg-white/5 rounded-xl px-4 py-3">
                         <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">{item.label}</p>
                         <p className={`text-base font-bold ${item.color}`}>
-                            {item.value === null || typeof item.value === "undefined" ? item.extra : `S/ ${item.value.toLocaleString("es-PE", { minimumFractionDigits: 2 })}`}
+                            {item.value === null || item.value === undefined ? item.extra : `S/ ${item.value.toLocaleString("es-PE", { minimumFractionDigits: 2 })}`}
                         </p>
                     </div>
                 ))}
@@ -572,8 +572,7 @@ function MortgagePagoRow({
             {showDropzone && (
                 <tr>
                     <td colSpan={6} className="bg-slate-50/50 dark:bg-white/[0.01] px-6 py-4">
-                        <div 
-                            role="region"
+                        <section
                             aria-label="Subir comprobante"
                             className="border-2 border-dashed border-build-accent/40 rounded-xl p-4 bg-white dark:bg-white/5 transition flex flex-col gap-3"
                             onDragOver={(e) => { e.preventDefault(); }}
@@ -635,7 +634,7 @@ function MortgagePagoRow({
                                     {isBusy ? "Subiendo…" : "Subir"}
                                 </button>
                             </div>
-                        </div>
+                        </section>
                     </td>
                 </tr>
             )}
@@ -707,7 +706,7 @@ function CuotasSeccion({ cronograma, pagos, expediente, onUpdate, setDialog }: R
                     className="flex items-center gap-1.5 text-xs font-bold text-build-accent hover:underline"
                 >
                     <span className="material-symbols-outlined text-[16px]">add_circle</span>
-                    Agregar Cuota
+                    <span>Agregar Cuota</span>
                 </button>
             </div>
 
@@ -965,6 +964,7 @@ function HitosDesembolsoSection({ creditoHipotecario, expediente, onUpdate }: Re
     const [hitoFormData, setHitoFormData] = useState({ nombre: "" });
 
     const paymentHitos = creditoHipotecario?.items ?? [];
+    const saveButtonText = isSaving ? "…" : (editingHito ? "Actualizar" : "Agregar");
 
     const handleHitoToggle = async (uuidHito: string, currentEstado: string) => {
         let newEstado: "PENDIENTE" | "EN_PROGRESO" | "COMPLETADO";
@@ -1056,7 +1056,7 @@ function HitosDesembolsoSection({ creditoHipotecario, expediente, onUpdate }: Re
                     className="flex items-center gap-1.5 text-xs font-bold text-build-accent hover:underline"
                 >
                     <span className="material-symbols-outlined text-[16px]">add_circle</span>
-                    {" "}Agregar Hito
+                    <span>Agregar Hito</span>
                 </button>
             </div>
 
@@ -1076,7 +1076,7 @@ function HitosDesembolsoSection({ creditoHipotecario, expediente, onUpdate }: Re
                             onClick={handleAddHito}
                             className="bg-build-main text-white px-4 py-2 rounded-lg text-xs font-bold disabled:opacity-50"
                         >
-                            {isSaving ? "…" : (editingHito ? "Actualizar" : "Agregar")}
+                            {saveButtonText}
                         </button>
                         <button
                             onClick={() => { setShowHitoForm(false); setEditingHito(null); }}
