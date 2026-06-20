@@ -1,14 +1,14 @@
 "use client";
-
-import { useState } from "react";
+ 
+import { useState, useId } from "react";
 import { registerCliente } from "@/lib/api/users";
-
+ 
 type CreateClienteModalProps = {
-  open: boolean;
-  onClose: () => void;
-  onCreated: () => void;
+  readonly open: boolean;
+  readonly onClose: () => void;
+  readonly onCreated: () => void;
 };
-
+ 
 const EMPTY_FORM = {
   nombre: "",
   apellidos: "",
@@ -16,18 +16,24 @@ const EMPTY_FORM = {
   telefono: "",
   documentoIdentidad: "",
 };
-
+ 
 export default function CreateClienteModal({
   open,
   onClose,
   onCreated,
-}: CreateClienteModalProps) {
+}: Readonly<CreateClienteModalProps>) {
   const [form, setForm] = useState(EMPTY_FORM);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
+  const nombreId = useId();
+  const apellidosId = useId();
+  const emailId = useId();
+  const docId = useId();
+  const telefonoId = useId();
+ 
   function handleClose() {
     if (loading) return;
     setForm(EMPTY_FORM);
@@ -36,42 +42,42 @@ export default function CreateClienteModal({
     setSuccess(null);
     onClose();
   }
-
+ 
   const validateForm = (data: typeof form): Record<string, string> => {
     const newErrors: Record<string, string> = {};
-
-    if (!data.nombre || !data.nombre.trim()) {
+ 
+    if (!data.nombre?.trim()) {
       newErrors.nombre = "El nombre es obligatorio.";
     }
-
-    if (!data.apellidos || !data.apellidos.trim()) {
+ 
+    if (!data.apellidos?.trim()) {
       newErrors.apellidos = "Los apellidos son obligatorios.";
     }
-
-    if (!data.email || !data.email.trim()) {
+ 
+    if (!data.email?.trim()) {
       newErrors.email = "El correo electrónico es obligatorio.";
     }
-
+ 
     if (data.telefono && data.telefono.trim() !== "") {
-      const phoneClean = data.telefono.replace(/\s+/g, "");
+      const phoneClean = data.telefono.replaceAll(/\s+/g, "");
       const phoneRegex = /^\+519\d{8}$/;
       if (!phoneRegex.test(phoneClean)) {
         newErrors.telefono = "El teléfono debe iniciar con '+51' y tener 9 números (ej. +51 999 888 777).";
       }
     }
-
+ 
     if (data.documentoIdentidad && data.documentoIdentidad.trim() !== "") {
       const docTrimmed = data.documentoIdentidad.trim();
-      if (!/^[0-9]+$/.test(docTrimmed)) {
+      if (!/^\d+$/.test(docTrimmed)) {
         newErrors.documentoIdentidad = "El documento debe contener solo números.";
       } else if (docTrimmed.length !== 8 && docTrimmed.length !== 11) {
         newErrors.documentoIdentidad = "Debe ser un DNI (8 dígitos) o RUC (11 dígitos).";
       }
     }
-
+ 
     return newErrors;
   };
-
+ 
   const handleFieldChange = (field: keyof typeof form, value: string) => {
     setForm((prev) => ({ ...prev, [field]: value }));
     if (errors[field]) {
@@ -82,33 +88,33 @@ export default function CreateClienteModal({
       });
     }
   };
-
-  async function handleSubmit(e: React.FormEvent) {
+ 
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError(null);
     setSuccess(null);
-
+ 
     const validationErrors = validateForm(form);
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors);
       return;
     }
-
+ 
     setLoading(true);
-
+ 
     try {
       await registerCliente({
         nombre: form.nombre.trim(),
         apellidos: form.apellidos.trim(),
         email: form.email.trim(),
-        telefono: form.telefono.trim() ? form.telefono.replace(/\s+/g, "") : undefined,
+        telefono: form.telefono.trim() ? form.telefono.replaceAll(/\s+/g, "") : undefined,
         documentoIdentidad: form.documentoIdentidad.trim() || undefined,
         tipoUsuario: "CLIENTE",
       });
-
+ 
       setSuccess("Cliente creado correctamente.");
       onCreated();
-
+ 
       setTimeout(() => {
         handleClose();
       }, 1200);
@@ -118,9 +124,9 @@ export default function CreateClienteModal({
       setLoading(false);
     }
   }
-
+ 
   if (!open) return null;
-
+ 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#050a0e]/50 backdrop-blur-sm p-4 animate-fade-in">
       <div className="bg-white dark:bg-[#111827] rounded-xl shadow-2xl w-full max-w-lg overflow-hidden animate-slide-up">
@@ -142,7 +148,7 @@ export default function CreateClienteModal({
             <span className="material-symbols-outlined">close</span>
           </button>
         </div>
-
+ 
         <form onSubmit={handleSubmit} className="px-8 py-6 space-y-4">
           {error && (
             <div className="rounded-lg border border-red-200 dark:border-red-900/50 bg-red-50 dark:bg-red-900/20 px-4 py-3 text-[13px] text-red-800 dark:text-red-400">
@@ -154,13 +160,14 @@ export default function CreateClienteModal({
               {success}
             </div>
           )}
-
+ 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <label className="block text-[11px] font-bold text-slate-500 dark:text-white/60 uppercase tracking-wider">
+              <label htmlFor={nombreId} className="block text-[11px] font-bold text-slate-500 dark:text-white/60 uppercase tracking-wider">
                 Nombres *
               </label>
               <input
+                id={nombreId}
                 required
                 value={form.nombre}
                 onChange={(e) => handleFieldChange("nombre", e.target.value)}
@@ -176,10 +183,11 @@ export default function CreateClienteModal({
               )}
             </div>
             <div className="space-y-1.5">
-              <label className="block text-[11px] font-bold text-slate-500 dark:text-white/60 uppercase tracking-wider">
+              <label htmlFor={apellidosId} className="block text-[11px] font-bold text-slate-500 dark:text-white/60 uppercase tracking-wider">
                 Apellidos *
               </label>
               <input
+                id={apellidosId}
                 required
                 value={form.apellidos}
                 onChange={(e) => handleFieldChange("apellidos", e.target.value)}
@@ -195,12 +203,13 @@ export default function CreateClienteModal({
               )}
             </div>
           </div>
-
+ 
           <div className="space-y-1.5">
-            <label className="block text-[11px] font-bold text-slate-500 dark:text-white/60 uppercase tracking-wider">
+            <label htmlFor={emailId} className="block text-[11px] font-bold text-slate-500 dark:text-white/60 uppercase tracking-wider">
               Correo electrónico *
             </label>
             <input
+              id={emailId}
               type="email"
               required
               value={form.email}
@@ -216,13 +225,14 @@ export default function CreateClienteModal({
               <p className="text-xs font-semibold text-red-500 dark:text-red-400 mt-1">{errors.email}</p>
             )}
           </div>
-
+ 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <label className="block text-[11px] font-bold text-slate-500 dark:text-white/60 uppercase tracking-wider">
+              <label htmlFor={docId} className="block text-[11px] font-bold text-slate-500 dark:text-white/60 uppercase tracking-wider">
                 DNI / CE
               </label>
               <input
+                id={docId}
                 value={form.documentoIdentidad}
                 onChange={(e) => handleFieldChange("documentoIdentidad", e.target.value)}
                 className={`w-full px-4 py-2.5 border rounded-lg text-sm text-build-main dark:text-white focus:outline-none transition-all ${
@@ -237,10 +247,11 @@ export default function CreateClienteModal({
               )}
             </div>
             <div className="space-y-1.5">
-              <label className="block text-[11px] font-bold text-slate-500 dark:text-white/60 uppercase tracking-wider">
+              <label htmlFor={telefonoId} className="block text-[11px] font-bold text-slate-500 dark:text-white/60 uppercase tracking-wider">
                 Teléfono
               </label>
               <input
+                id={telefonoId}
                 value={form.telefono}
                 onChange={(e) => handleFieldChange("telefono", e.target.value)}
                 className={`w-full px-4 py-2.5 border rounded-lg text-sm text-build-main dark:text-white focus:outline-none transition-all ${
@@ -255,7 +266,7 @@ export default function CreateClienteModal({
               )}
             </div>
           </div>
-
+ 
           <div className="flex justify-end gap-3 pt-4 mt-2">
             <button
               type="button"
