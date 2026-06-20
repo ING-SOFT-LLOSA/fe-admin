@@ -8,6 +8,10 @@ vi.mock("next/navigation", () => ({
   usePathname: vi.fn(),
 }));
 
+vi.mock("@/components/ThemeToggle", () => ({
+  default: () => <button data-testid="theme-toggle">Toggle</button>,
+}));
+
 describe("TopNav", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -67,9 +71,10 @@ describe("TopNav", () => {
     expect(screen.getByText("Proyectos e Inventario")).toBeDefined();
   });
 
-  it("muestra Backoffice como título", () => {
+  it("muestra Backoffice y el ThemeToggle", () => {
     vi.mocked(usePathname).mockReturnValue("/proyectos");
     render(<TopNav />);
     expect(screen.getByText("Backoffice")).toBeDefined();
+    expect(screen.getByTestId("theme-toggle")).toBeDefined();
   });
 });
