@@ -12,7 +12,8 @@
     "test:ui": "node --experimental-require-module node_modules/vitest/vitest.mjs --ui",
     "dev:e2e": "NEXT_PUBLIC_USE_FIREBASE_EMULATOR=true NEXT_PUBLIC_FIREBASE_API_KEY_LLOSA=demo-api-key NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN_LLOSA=demo-llosa.firebaseapp.com NEXT_PUBLIC_FIREBASE_PROJECT_ID_LLOSA=demo-llosa NEXT_PUBLIC_API_URL_LLOSA=http://localhost:8080 next dev",
     "emulator": "firebase emulators:start --only auth --project demo-llosa",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "test:performance": "playwright test --config playwright.performance.config.ts"
   },
   "dependencies": {
     "firebase": "^12.13.0",
