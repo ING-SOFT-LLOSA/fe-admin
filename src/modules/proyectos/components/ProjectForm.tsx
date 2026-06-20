@@ -15,7 +15,7 @@ type ProjectFormProps = {
 const textFields: Array<{
   key: keyof ProyectoCreateDTO;
   label: string;
-  type: "text" | "date";
+  type: "text" | "date" | "url";
   placeholder?: string;
 }> = [
   { key: "nombre", label: "Nombre del proyecto", type: "text", placeholder: "Nombre del proyecto" },
@@ -24,6 +24,7 @@ const textFields: Array<{
   { key: "direccion", label: "Dirección", type: "text", placeholder: "Dirección completa" },
   { key: "fechaInicio", label: "Fecha de inicio", type: "date" },
   { key: "fechaFin", label: "Fecha de fin estimada", type: "date" },
+  { key: "linkRecorridoVirtual", label: "Link de recorrido virtual", type: "url", placeholder: "https://tour-ejemplo.com/proyecto" },
 ];
 
 export default function ProjectForm({

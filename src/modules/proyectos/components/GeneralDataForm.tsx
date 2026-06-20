@@ -19,6 +19,7 @@ export default function GeneralDataForm({ initialData, onSubmit, onCancel }: Rea
   const fechaInicioId = useId();
   const fechaFinId = useId();
   const descripcionId = useId();
+  const linkRecorridoVirtualId = useId();
  
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
@@ -198,6 +199,19 @@ export default function GeneralDataForm({ initialData, onSubmit, onCancel }: Rea
             onChange={handleChange}
             placeholder="Breve descripción comercial del proyecto..."
             className="w-full rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 px-4 py-2.5 text-sm outline-none focus:border-build-main focus:bg-white transition-all resize-none"
+          />
+        </div>
+
+        <div className="space-y-2 md:col-span-2">
+          <label htmlFor={linkRecorridoVirtualId} className="text-sm font-semibold text-slate-700 dark:text-white/80">Link de Recorrido Virtual</label>
+          <input 
+            id={linkRecorridoVirtualId}
+            type="url"
+            name="linkRecorridoVirtual"
+            value={formData.linkRecorridoVirtual}
+            onChange={handleChange}
+            placeholder="https://tour-ejemplo.com/proyecto"
+            className="w-full rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 px-4 py-2.5 text-sm outline-none focus:border-build-main focus:bg-white transition-all"
           />
         </div>
  

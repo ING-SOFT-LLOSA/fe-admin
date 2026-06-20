@@ -31,6 +31,7 @@ export default function NewProjectWizard() {
     nombre: "",
     descripcion: "",
     precertificacionEdgeLeed: false,
+    linkRecorridoVirtual: "",
     departamento: "",
     distrito: "",
     direccion: "",

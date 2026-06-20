@@ -21,6 +21,7 @@ export default function UnitDetailView({ projectId, unitId }: Readonly<UnitDetai
     estadoComercial: "DISPONIBLE",
     precio: 0,
     descripcion: "",
+    tieneRecorridoVirtual: false,
   });
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -47,6 +48,7 @@ export default function UnitDetailView({ projectId, unitId }: Readonly<UnitDetai
             estadoComercial: selectedUnit.estadoComercial,
             precio: selectedUnit.precio,
             descripcion: selectedUnit.descripcion ?? "",
+            tieneRecorridoVirtual: selectedUnit.tieneRecorridoVirtual ?? false,
           });
         }
       } catch (loadError) {
@@ -162,6 +164,26 @@ export default function UnitDetailView({ projectId, unitId }: Readonly<UnitDetai
               <label htmlFor="unit-descripcion" className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-white/60">Características técnicas</label>
               <textarea id="unit-descripcion" rows={4} value={form.descripcion} onChange={(event) => setForm({ ...form, descripcion: event.target.value })} className="w-full rounded-xl border border-slate-200 dark:border-white/10 px-3 py-2 text-sm outline-none focus:border-arch-gold focus:ring-1 focus:ring-arch-gold/20" />
             </div>
+            <div className="md:col-span-2 flex items-center gap-3 rounded-xl border border-slate-200 dark:border-white/10 p-4">
+              <button
+                type="button"
+                role="switch"
+                aria-checked={form.tieneRecorridoVirtual}
+                onClick={() => setForm({ ...form, tieneRecorridoVirtual: !form.tieneRecorridoVirtual })}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                  form.tieneRecorridoVirtual ? "bg-build-main" : "bg-slate-300 dark:bg-white/20"
+                }`}
+              >
+                <span
+                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                    form.tieneRecorridoVirtual ? "translate-x-6" : "translate-x-1"
+                  }`}
+                />
+              </button>
+              <label className="text-sm font-semibold text-slate-700 dark:text-white/80 cursor-pointer" onClick={() => setForm({ ...form, tieneRecorridoVirtual: !form.tieneRecorridoVirtual })}>
+                Tiene recorrido virtual
+              </label>
+            </div>
           </div>
 
           <div className="mt-6 flex justify-end">
@@ -172,6 +194,16 @@ export default function UnitDetailView({ projectId, unitId }: Readonly<UnitDetai
         </section>
 
         <div className="space-y-6">
+          {unit.linkRecorridoVirtual ? (
+            <section className="rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 p-6 shadow-sm">
+              <h2 className="text-[20px] font-bold text-build-main dark:text-white">Recorrido Virtual</h2>
+              <p className="mt-2 text-sm text-slate-500 dark:text-white/60">
+                <a href={unit.linkRecorridoVirtual} target="_blank" rel="noopener noreferrer" className="text-arch-gold underline break-all">
+                  {unit.linkRecorridoVirtual}
+                </a>
+              </p>
+            </section>
+          ) : null}
           <section className="rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 p-6 shadow-sm">
             <h2 className="text-[20px] font-bold text-build-main dark:text-white">Asignaciones</h2>
             <p className="mt-2 text-sm text-slate-500 dark:text-white/60">

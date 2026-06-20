@@ -1,6 +1,6 @@
 "use client";
  
-import { useState, useEffect, useId } from "react";
+import { useState, useEffect, useId, useRef } from "react";
 import { updateCliente } from "@/lib/api/users";
 import type { ClienteRow } from "@/types/user";
 import { validateClienteForm } from "@/modules/clientes/utils/validation";
@@ -29,6 +29,13 @@ export default function EditClienteModal({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const closeTimerRef = useRef<ReturnType<typeof setTimeout>>();
+
+  useEffect(() => {
+    return () => {
+      if (closeTimerRef.current) clearTimeout(closeTimerRef.current);
+    };
+  }, []);
 
   const nombreId = useId();
   const apellidosId = useId();
@@ -107,8 +114,8 @@ export default function EditClienteModal({
  
       setSuccess("Información del cliente actualizada correctamente.");
       onUpdated();
- 
-      setTimeout(() => {
+
+      closeTimerRef.current = setTimeout(() => {
         handleClose();
       }, 1500);
     } catch (err) {

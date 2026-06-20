@@ -159,7 +159,7 @@ describe("AgendaView", () => {
     await screen.findByDisplayValue("-- Seleccionar Cliente --");
 
     const inputs = document.querySelectorAll("input");
-    fireEvent.change(inputs[0], { target: { value: "2026-06-20" } });
+    fireEvent.change(inputs[0], { target: { value: "2026-12-31" } });
     if (inputs.length > 1) fireEvent.change(inputs[1], { target: { value: "10:00" } });
     if (inputs.length > 2) fireEvent.change(inputs[2], { target: { value: "11:00" } });
 
@@ -184,7 +184,7 @@ describe("AgendaView", () => {
     await screen.findByDisplayValue("-- Seleccionar Cliente --");
 
     const inputs = document.querySelectorAll("input");
-    fireEvent.change(inputs[0], { target: { value: "2026-06-20" } });
+    fireEvent.change(inputs[0], { target: { value: "2026-12-31" } });
     if (inputs.length > 1) fireEvent.change(inputs[1], { target: { value: "10:00" } });
     if (inputs.length > 2) fireEvent.change(inputs[2], { target: { value: "11:00" } });
 
