@@ -198,6 +198,7 @@ describe("AssignPropertyWizard", () => {
     fireEvent.click(screen.getByText("Siguiente"));
     await screen.findByText("Resumen de asignación");
     fireEvent.click(screen.getByText("Crédito Directo"));
+    expect(screen.getByText("Crédito Directo")).toBeDefined();
   });
 
   it("creates contract and assigns on confirm", async () => {

@@ -30,7 +30,6 @@ import {
   STAGE_META,
   ESTADO_BADGE,
   BACKEND_A_ESTADO,
-  type EstadoHito,
   type StageId,
 } from "./constants";
 
@@ -825,7 +824,7 @@ function ProcesoLegalAccordion({
 
                         // State Badge
                         const mappedEstado = BACKEND_A_ESTADO[hito.estado] || hito.estado.toLowerCase();
-                        const badgeInfo = ESTADO_BADGE[mappedEstado as EstadoHito] || { label: hito.estado, cls: "" };
+                        const badgeInfo = ESTADO_BADGE[mappedEstado] || { label: hito.estado, cls: "" };
 
                         let checkboxContent = null;
                         if (isCompleted) {
@@ -1157,7 +1156,7 @@ function DocumentosTab({
     setEditIcon(doc.icon || "");
   };
 
-  const handleSaveEdit = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSaveEdit = async (e: React.SubmitEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!editingDoc) return;
     setEditingDocLoading(true);

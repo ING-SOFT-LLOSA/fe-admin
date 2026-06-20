@@ -21,6 +21,6 @@ export const config = {
      * - Archivos públicos (favicon, logos)
      * - Ruta de login (/login)
      */
-    String.raw`/((?!api|_next/static|_next/image|favicon.ico|.*\.png|.*\.jpg|.*\.svg|login).*)`,
+    '/((?!api|_next/static|_next/image|favicon.ico|.*\\.png|.*\\.jpg|.*\\.svg|login).*)',
   ],
 };

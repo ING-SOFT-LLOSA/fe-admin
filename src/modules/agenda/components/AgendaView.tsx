@@ -98,6 +98,9 @@ function generateCalendarGrid(currentDate: Date) {
 function getStartAndEndDateStr(gridCells: CalDay[], currentDate: Date) {
   const firstCell = gridCells[0];
   const lastCell = gridCells.at(-1);
+  if (!firstCell || !lastCell) {
+    return { startDateStr: "", endDateStr: "" };
+  }
   
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
@@ -621,7 +624,7 @@ export default function SchedulePage() {
 
   const { isConnectingGoogle, justConnected, isSyncing, handleConnectGoogle, handleDisconnectGoogle, handleSyncManual } = useGoogleCalendar(fetchAppointments);
 
-  function saveEvent(e: React.FormEvent<HTMLFormElement>) {
+  function saveEvent(e: React.SubmitEvent<HTMLFormElement>) {
     e.preventDefault();
     setErrorMsg("");
     setSuccessMsg("");

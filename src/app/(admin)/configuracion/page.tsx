@@ -87,7 +87,7 @@ export default function EmployeeManagementPage() {
     setModalOpen(true);
   }
 
-  async function handleCreate(e: React.FormEvent<HTMLFormElement>) {
+  async function handleCreate(e: React.SubmitEvent<HTMLFormElement>) {
     e.preventDefault();
     setSaving(true);
     setError(null);

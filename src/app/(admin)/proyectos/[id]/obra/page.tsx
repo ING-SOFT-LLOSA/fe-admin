@@ -11,9 +11,5 @@ type ProjectObraPageProps = {
 export default async function ProjectObraPage({ params }: Readonly<ProjectObraPageProps>) {
   const { id } = await params;
 
-  return (
-    <>
-      <ConstructionProgressView projectId={id} context="project" />
-    </>
-  );
+  return <ConstructionProgressView projectId={id} context="project" />;
 }
