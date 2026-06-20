@@ -1,10 +1,10 @@
 import { ClienteAssignment } from "@/types/user";
 
 type ClientKpisProps = {
-  assignments: ClienteAssignment[];
+  readonly assignments: readonly ClienteAssignment[];
 };
 
-export default function ClientKpis({ assignments }: ClientKpisProps) {
+export default function ClientKpis({ assignments }: Readonly<ClientKpisProps>) {
   const activeCount = assignments.filter((a) => a.status === "Vigente").length;
   const projectNames = new Set(assignments.filter((a) => a.status === "Vigente").map((a) => a.projectName));
 
