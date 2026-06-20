@@ -260,6 +260,7 @@ describe("ObraTabHitos", () => {
 
     render(<ObraTabHitos projectId="p-1" etapas={sampleEtapas} onRefresh={onRefresh} />);
     fireEvent.click(screen.getByText("Por piso"));
+    await waitFor(() => { expect(mockPisos).toHaveBeenCalled(); });
 
     const torreSelect = (await screen.findAllByRole("combobox"))[0] as HTMLSelectElement;
     fireEvent.change(torreSelect, { target: { value: "1" } });
@@ -427,6 +428,7 @@ describe("ObraTabHitos", () => {
 
     render(<ObraTabHitos projectId="p-1" etapas={sampleEtapas} onRefresh={vi.fn()} />);
     fireEvent.click(screen.getByText("Por piso"));
+    await waitFor(() => { expect(mockPisos).toHaveBeenCalled(); });
 
     const torreSelect = (await screen.findAllByRole("combobox"))[0] as HTMLSelectElement;
     fireEvent.change(torreSelect, { target: { value: "1" } });
@@ -460,6 +462,7 @@ describe("ObraTabHitos", () => {
 
     render(<ObraTabHitos projectId="p-1" etapas={sampleEtapas} onRefresh={vi.fn()} />);
     fireEvent.click(screen.getByText("Por piso"));
+    await waitFor(() => { expect(mockPisos).toHaveBeenCalled(); });
 
     const torreSelect = (await screen.findAllByRole("combobox"))[0] as HTMLSelectElement;
     fireEvent.change(torreSelect, { target: { value: "1" } });
@@ -491,6 +494,7 @@ describe("ObraTabHitos", () => {
 
     render(<ObraTabHitos projectId="p-1" etapas={sampleEtapas} onRefresh={vi.fn()} />);
     fireEvent.click(screen.getByText("Por piso"));
+    await waitFor(() => { expect(mockPisos).toHaveBeenCalled(); });
 
     const torreSelect = (await screen.findAllByRole("combobox"))[0] as HTMLSelectElement;
     fireEvent.change(torreSelect, { target: { value: "1" } });
@@ -528,6 +532,7 @@ describe("ObraTabHitos", () => {
 
     render(<ObraTabHitos projectId="p-1" etapas={sampleEtapas} onRefresh={vi.fn()} />);
     fireEvent.click(screen.getByText("Por piso"));
+    await waitFor(() => { expect(mockPisos).toHaveBeenCalled(); });
 
     const torreSelect = (await screen.findAllByRole("combobox"))[0] as HTMLSelectElement;
     fireEvent.change(torreSelect, { target: { value: "1" } });
@@ -556,6 +561,7 @@ describe("ObraTabHitos", () => {
 
     render(<ObraTabHitos projectId="p-1" etapas={[]} onRefresh={vi.fn()} />);
     fireEvent.click(screen.getByText("Por piso"));
+    await waitFor(() => { expect(mockPisos).toHaveBeenCalled(); });
 
     const torreSelect = (await screen.findAllByRole("combobox"))[0] as HTMLSelectElement;
     fireEvent.change(torreSelect, { target: { value: "1" } });

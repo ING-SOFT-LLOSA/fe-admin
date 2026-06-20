@@ -346,6 +346,8 @@ describe("EditClienteModal", () => {
       <EditClienteModal open={true} cliente={sampleCliente} onClose={vi.fn()} onUpdated={vi.fn()} />,
     );
     await screen.findByText("Editar cliente");
+    // Esperar a que el form se inicialice (Promise.resolve().then(() => setForm(...)))
+    await screen.findByDisplayValue("Ana");
 
     // No debe haber problema al hacer submit
     const submitBtn = screen.getByRole("button", { name: /Guardar cambios/i });
