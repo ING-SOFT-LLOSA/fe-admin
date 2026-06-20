@@ -294,25 +294,18 @@ function ReportRow({ report, onView }: Readonly<{ report: ReporteResponse; onVie
   const hasMedia = (report.multimedia?.length ?? 0) > 0;
  
   return (
-    <div
-      role="button"
-      tabIndex={0}
-      className="flex items-center gap-4 px-6 py-4 hover:bg-slate-50 dark:hover:bg-white/[0.03] transition-colors group cursor-pointer"
+    <button
+      type="button"
+      className="w-full text-left flex items-center gap-4 px-6 py-4 hover:bg-slate-50 dark:hover:bg-white/[0.03] transition-colors group cursor-pointer border-0 bg-transparent outline-none focus:ring-1 focus:ring-arch-gold/20"
       onClick={onView}
-      onKeyDown={(e) => {
-        if (e.key === "Enter" || e.key === " ") {
-          e.preventDefault();
-          onView();
-        }
-      }}
     >
-      <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-white/10 flex items-center justify-center shrink-0">
+      <span className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-white/10 flex items-center justify-center shrink-0">
         <span className="material-symbols-outlined text-build-main dark:text-white text-[20px]">article</span>
-      </div>
+      </span>
  
-      <div className="min-w-0 flex-1">
-        <p className="text-sm font-bold text-build-main dark:text-white truncate">{report.tituloPeriodo}</p>
-        <div className="flex items-center gap-3 mt-0.5 flex-wrap">
+      <span className="min-w-0 flex-1 block">
+        <span className="block text-sm font-bold text-build-main dark:text-white truncate">{report.tituloPeriodo}</span>
+        <span className="flex items-center gap-3 mt-0.5 flex-wrap">
           <span className="text-xs text-slate-400 dark:text-white/40 flex items-center gap-1">
             <span className="material-symbols-outlined text-[13px]">calendar_today</span>
             <span>{new Date(report.createdAt).toLocaleDateString("es-PE", { day: "2-digit", month: "short", year: "numeric" })}</span>
@@ -337,24 +330,19 @@ function ReportRow({ report, onView }: Readonly<{ report: ReporteResponse; onVie
               <span>Multimedia</span>
             </span>
           )}
-        </div>
-      </div>
+        </span>
+      </span>
  
       <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full whitespace-nowrap ${badge.cls}`}>
         {badge.label}
       </span>
  
-      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-        <button
-          type="button"
-          title="Ver detalle"
-          onClick={(e) => { e.stopPropagation(); onView(); }}
-          className="p-1.5 rounded-lg text-slate-400 hover:text-build-main dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/10 transition-colors"
-        >
+      <span className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+        <span className="p-1.5 rounded-lg text-slate-400 hover:text-build-main dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/10 transition-colors inline-block">
           <span className="material-symbols-outlined text-[18px]">visibility</span>
-        </button>
-      </div>
-    </div>
+        </span>
+      </span>
+    </button>
   );
 }
  
@@ -475,20 +463,11 @@ function ReporteDetail({
               const isImage = media.tipoMime?.startsWith("image/");
               const iconName = isImage ? "image" : "video_library";
               return (
-                <div
+                <button
                   key={media.id}
-                  role="button"
-                  tabIndex={0}
+                  type="button"
                   onClick={() => media.urlAcceso && window.open(media.urlAcceso, "_blank", "noopener,noreferrer")}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" || e.key === " ") {
-                      e.preventDefault();
-                      if (media.urlAcceso) {
-                        window.open(media.urlAcceso, "_blank", "noopener,noreferrer");
-                      }
-                    }
-                  }}
-                  className="aspect-video rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 flex flex-col items-center justify-center gap-2 text-center hover:border-build-accent hover:bg-slate-100 dark:hover:bg-white/10 transition-colors cursor-pointer overflow-hidden relative group"
+                  className="aspect-video w-full rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 flex flex-col items-center justify-center gap-2 text-center hover:border-build-accent hover:bg-slate-100 dark:hover:bg-white/10 transition-colors cursor-pointer overflow-hidden relative group"
                 >
                   {isImage && media.urlAcceso ? (
                     <img src={media.urlAcceso} alt={media.nombreOriginal} className="object-cover w-full h-full" />
@@ -502,10 +481,10 @@ function ReporteDetail({
                       </span>
                     </>
                   )}
-                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                  <span className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                     <span className="material-symbols-outlined text-white text-[24px]">download</span>
-                  </div>
-                </div>
+                  </span>
+                </button>
               );
             })}
           </div>
@@ -558,6 +537,12 @@ function NuevoReporteForm({ projectId, onClose, onSubmit }: NuevoReporteFormProp
   const [availableHitos, setAvailableHitos] = useState<HitoResponseDTO[]>([]);
   const [selectedHitos, setSelectedHitos] = useState<string[]>([]);
   const [loadingHitos, setLoadingHitos] = useState(false);
+ 
+  const handleHitoToggle = (titulo: string) => {
+    setSelectedHitos((prev) =>
+      prev.includes(titulo) ? prev.filter((x) => x !== titulo) : [...prev, titulo]
+    );
+  };
  
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -646,13 +631,7 @@ function NuevoReporteForm({ projectId, onClose, onSubmit }: NuevoReporteFormProp
               <input
                 type="checkbox"
                 checked={isChecked}
-                onChange={() => {
-                  if (isChecked) {
-                    setSelectedHitos(selectedHitos.filter((x) => x !== h.titulo));
-                  } else {
-                    setSelectedHitos([...selectedHitos, h.titulo]);
-                  }
-                }}
+                onChange={() => handleHitoToggle(h.titulo)}
                 className="rounded text-build-accent border-slate-300 dark:border-white/10 focus:ring-arch-gold/20 focus:ring-1 bg-white dark:bg-transparent"
               />
               <span className="font-semibold">{h.titulo}</span>
