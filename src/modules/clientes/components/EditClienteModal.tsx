@@ -3,6 +3,7 @@
 import { useState, useEffect, useId } from "react";
 import { updateCliente } from "@/lib/api/users";
 import type { ClienteRow } from "@/types/user";
+import { validateClienteForm } from "@/modules/clientes/utils/validation";
  
 type EditClienteModalProps = {
   readonly open: boolean;
@@ -61,37 +62,6 @@ export default function EditClienteModal({
     onClose();
   }
  
-  const validateForm = (data: typeof form): Record<string, string> => {
-    const newErrors: Record<string, string> = {};
- 
-    if (!data.nombre?.trim()) {
-      newErrors.nombre = "El nombre es obligatorio.";
-    }
- 
-    if (!data.apellidos?.trim()) {
-      newErrors.apellidos = "Los apellidos son obligatorios.";
-    }
- 
-    if (data.telefono && data.telefono.trim() !== "") {
-      const phoneClean = data.telefono.replaceAll(/\s+/g, "");
-      const phoneRegex = /^\+519\d{8}$/;
-      if (!phoneRegex.test(phoneClean)) {
-        newErrors.telefono = "El teléfono debe iniciar con '+51' y tener 9 números (ej. +51 999 888 777).";
-      }
-    }
- 
-    if (data.documentoIdentidad && data.documentoIdentidad.trim() !== "") {
-      const docTrimmed = data.documentoIdentidad.trim();
-      if (!/^\d+$/.test(docTrimmed)) {
-        newErrors.documentoIdentidad = "El documento debe contener solo números.";
-      } else if (docTrimmed.length !== 8 && docTrimmed.length !== 11) {
-        newErrors.documentoIdentidad = "Debe ser un DNI (8 dígitos) o RUC (11 dígitos).";
-      }
-    }
- 
-    return newErrors;
-  };
- 
   const handleFieldChange = (field: keyof typeof form, value: string) => {
     setForm((prev) => ({ ...prev, [field]: value }));
     if (errors[field]) {
@@ -110,7 +80,7 @@ export default function EditClienteModal({
     setError(null);
     setSuccess(null);
  
-    const validationErrors = validateForm(form);
+    const validationErrors = validateClienteForm(form, false);
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors);
       

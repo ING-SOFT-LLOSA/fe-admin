@@ -1,5 +1,6 @@
 import { useState, useId } from "react";
 import { ProjectFormData } from "@/modules/proyectos/utils/wizard-logic";
+import { validateProjectForm } from "@/modules/proyectos/utils/validation";
  
 interface Props {
   readonly initialData: ProjectFormData;
@@ -18,38 +19,6 @@ export default function GeneralDataForm({ initialData, onSubmit, onCancel }: Rea
   const fechaInicioId = useId();
   const fechaFinId = useId();
   const descripcionId = useId();
- 
-  const validateForm = (data: ProjectFormData): Record<string, string> => {
-    const newErrors: Record<string, string> = {};
- 
-    if (!data.nombre?.trim()) {
-      newErrors.nombre = "El nombre del proyecto es obligatorio.";
-    } else if (data.nombre.trim().length < 3) {
-      newErrors.nombre = "El nombre debe tener al menos 3 caracteres.";
-    }
- 
-    if (!data.direccion?.trim()) {
-      newErrors.direccion = "La dirección es obligatoria.";
-    }
- 
-    if (!data.departamento?.trim()) {
-      newErrors.departamento = "El departamento es obligatorio.";
-    }
- 
-    if (!data.distrito?.trim()) {
-      newErrors.distrito = "El distrito es obligatorio.";
-    }
- 
-    if (data.fechaInicio && data.fechaFin) {
-      const start = new Date(data.fechaInicio);
-      const end = new Date(data.fechaFin);
-      if (end < start) {
-        newErrors.fechaFin = "La fecha de fin no puede ser anterior a la fecha de inicio.";
-      }
-    }
- 
-    return newErrors;
-  };
  
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
@@ -83,7 +52,7 @@ export default function GeneralDataForm({ initialData, onSubmit, onCancel }: Rea
  
   const handleSubmit = (e: React.SubmitEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const validationErrors = validateForm(formData);
+    const validationErrors = validateProjectForm(formData);
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors);
       

@@ -8,6 +8,8 @@ import { updateCommercialHitoEstado, createCommercialHito, deleteCommercialHito,
 import type { UsuarioActivoResponseDTO, HitoComercialResponseDTO } from "@/lib/api/expedientes";
 import { linkComprobanteToLegal } from "@/modules/finanzas/utils/linkComprobanteToLegal";
 import DialogModal from "@/components/ui/DialogModal";
+import { getPagoStatusInfo, getConceptoLabel, isSpecialConcepto } from "@/modules/finanzas/utils/paymentHelpers";
+import ResumenSaldosCard from "@/modules/finanzas/components/details/ResumenSaldosCard";
 
 interface DialogState {
     isOpen: boolean;
@@ -34,110 +36,7 @@ interface CronogramaFormData {
     pagoInicial: string;
 }
 
-const estadoGlobalStyles: Record<string, { bg: string; text: string; label: string }> = {
-    AL_DIA: { bg: "bg-green-50 dark:bg-green-900/20", text: "text-green-700 dark:text-green-400", label: "Al día" },
-    EN_RIESGO: { bg: "bg-yellow-50 dark:bg-yellow-900/20", text: "text-yellow-700 dark:text-yellow-400", label: "En riesgo" },
-    EN_MORA: { bg: "bg-red-50 dark:bg-red-900/20", text: "text-red-700 dark:text-red-400", label: "En mora" },
-    LIQUIDADO: { bg: "bg-blue-50 dark:bg-blue-900/20", text: "text-blue-700 dark:text-blue-400", label: "Liquidado" },
-};
 
-function isSpecialConcepto(pago: PagoResponse): boolean {
-    return pago.concepto === "SEPARACION" || pago.concepto === "INICIAL" || pago.concepto === "COMPLETO";
-}
-
-function getConceptoLabel(pago: PagoResponse): string {
-    if (pago.concepto) {
-        return pago.concepto;
-    }
-    if (pago.nroCuota === -1) {
-        return "SEPARACION";
-    }
-    if (pago.nroCuota === 0) {
-        return "INICIAL";
-    }
-    return "COMPLETO";
-}
-
-function getPagoStatusInfo(pago: PagoResponse) {
-    if (pago.estado === "PAGADO") {
-        return {
-            bg: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 border border-green-200 dark:border-green-800/20",
-            label: "Pagado",
-            moraDays: 0,
-        };
-    }
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const [y, m, d] = pago.fechaVencimiento.split("-").map(Number);
-    const dueDate = new Date(y, m - 1, d);
-    const diffTime = today.getTime() - dueDate.getTime();
-    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-    if (diffDays > 0) {
-        return {
-            bg: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 border border-red-200 dark:border-red-900/30",
-            label: "Vencido",
-            moraDays: diffDays,
-            moraText: `${diffDays} ${diffDays === 1 ? "día" : "días"} de mora`,
-        };
-    } else if (diffDays >= -3 && diffDays <= 0) {
-        const daysToDue = Math.abs(diffDays);
-        return {
-            bg: "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400 border border-yellow-200 dark:border-yellow-900/30",
-            label: daysToDue === 0 ? "Vence hoy" : `Vence en ${daysToDue} d`,
-            moraDays: 0,
-        };
-    } else {
-        return {
-            bg: "bg-slate-100 text-slate-600 dark:bg-white/10 dark:text-white/40",
-            label: "Pendiente",
-            moraDays: 0,
-        };
-    }
-}
-
-// ─── Componentes Auxiliares ──────────────────────────────────────────────────
-
-interface ResumenSaldosCardProps {
-    readonly resumen: CronogramaResumenResponse | null;
-}
-
-function ResumenSaldosCard({ resumen }: Readonly<ResumenSaldosCardProps>) {
-    if (!resumen) return null;
-    const estadoStyle = resumen.estadoGlobal ? estadoGlobalStyles[resumen.estadoGlobal] : null;
-
-    return (
-        <div className="rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 p-5 shadow-sm">
-            <div className="flex items-center justify-between mb-4">
-                <h3 className="text-sm font-bold text-build-main dark:text-white uppercase tracking-wide">Resumen de Saldos</h3>
-                {estadoStyle && (
-                    <span className={`px-3 py-1 rounded-full text-xs font-bold ${estadoStyle.bg} ${estadoStyle.text}`}>
-                        {estadoStyle.label}
-                    </span>
-                )}
-            </div>
-            <div className="grid grid-cols-2 xl:grid-cols-4 gap-3">
-                {[
-                    { label: "Total Pactado", value: resumen.totalPactado, color: "text-build-main dark:text-white" },
-                    { label: "Total Pagado", value: resumen.totalPagado, color: "text-green-600 dark:text-green-400" },
-                    { label: "Saldo Pendiente", value: resumen.totalPendiente, color: "text-red-600 dark:text-red-400" },
-                    { label: "Próx. Vencimiento", value: null, extra: resumen.proximoVencimiento ? new Date(resumen.proximoVencimiento).toLocaleDateString("es-PE") : "—", color: "text-build-accent" },
-                ].map((item) => (
-                    <div key={item.label} className="bg-slate-50 dark:bg-white/5 rounded-xl px-4 py-3">
-                        <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">{item.label}</p>
-                        <p className={`text-base font-bold ${item.color}`}>
-                            {item.value === null || item.value === undefined ? item.extra : `S/ ${item.value.toLocaleString("es-PE", { minimumFractionDigits: 2 })}`}
-                        </p>
-                    </div>
-                ))}
-            </div>
-            <div className="mt-3 grid grid-cols-3 gap-2 text-center text-xs text-slate-400 dark:text-white/40">
-                <span>{resumen.cuotasPagadas} cuota{resumen.cuotasPagadas === 1 ? "" : "s"} pagada{resumen.cuotasPagadas === 1 ? "" : "s"}</span>
-                <span>{resumen.cuotasPendientes} pendiente{resumen.cuotasPendientes === 1 ? "" : "s"}</span>
-                <span>{resumen.cuotasVencidas} vencida{resumen.cuotasVencidas === 1 ? "" : "s"}</span>
-            </div>
-        </div>
-    );
-}
 
 interface CronogramaSeccionProps {
     readonly cronograma: CronogramaPagoResponse | null;

@@ -3,6 +3,7 @@
 import { useState, useId } from "react";
 import type { ChangeEvent } from "react";
 import type { ProyectoCreateDTO } from "@/modules/proyectos/types";
+import { validateProjectForm } from "@/modules/proyectos/utils/validation";
 
 type ProjectFormProps = {
   readonly values: ProyectoCreateDTO;
@@ -34,38 +35,6 @@ export default function ProjectForm({
   const [errors, setErrors] = useState<Record<string, string>>({});
   const precertificacionEdgeLeedId = useId();
 
-  const validateForm = (data: ProyectoCreateDTO): Record<string, string> => {
-    const newErrors: Record<string, string> = {};
-
-    if (!data.nombre?.trim()) {
-      newErrors.nombre = "El nombre del proyecto es obligatorio.";
-    } else if ((data.nombre?.trim()?.length ?? 0) < 3) {
-      newErrors.nombre = "El nombre debe tener al menos 3 caracteres.";
-    }
-
-    if (!data.direccion?.trim()) {
-      newErrors.direccion = "La dirección es obligatoria.";
-    }
-
-    if (!data.departamento?.trim()) {
-      newErrors.departamento = "El departamento es obligatorio.";
-    }
-
-    if (!data.distrito?.trim()) {
-      newErrors.distrito = "El distrito es obligatorio.";
-    }
-
-    if (data.fechaInicio && data.fechaFin) {
-      const start = new Date(data.fechaInicio);
-      const end = new Date(data.fechaFin);
-      if (end < start) {
-        newErrors.fechaFin = "La fecha de fin no puede ser anterior a la fecha de inicio.";
-      }
-    }
-
-    return newErrors;
-  };
-
   const handleInputChange =
     (field: keyof ProyectoCreateDTO) =>
     (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -95,7 +64,7 @@ export default function ProjectForm({
     };
 
   const handleSubmit = () => {
-    const validationErrors = validateForm(values);
+    const validationErrors = validateProjectForm(values);
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors);
       
