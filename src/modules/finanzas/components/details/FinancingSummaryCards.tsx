@@ -2,12 +2,12 @@
 import type { CronogramaResumenResponse } from "@/modules/finanzas/types";
 
 interface FinancingSummaryCardsProps {
-    resumen: CronogramaResumenResponse | null;
-    commercialValue: number;
-    unitCount: number;
+    readonly resumen: CronogramaResumenResponse | null;
+    readonly commercialValue: number;
+    readonly unitCount: number;
 }
 
-export default function FinancingSummaryCards({ resumen, commercialValue, unitCount }: FinancingSummaryCardsProps) {
+export default function FinancingSummaryCards({ resumen, commercialValue, unitCount }: Readonly<FinancingSummaryCardsProps>) {
     return (
         <section className="grid gap-4 xl:grid-cols-4 md:grid-cols-2 grid-cols-1">
             <div className="rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 px-4 py-3">

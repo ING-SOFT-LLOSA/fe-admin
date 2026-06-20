@@ -2,7 +2,7 @@ import EmployeeSideNav from "@/components/EmployeeSideNav";
 import TopNav from "@/components/TopNav";
 import Footer from "@/components/Footer";
 
-export default function EmployeeRouteLayout({ children }: { children: React.ReactNode }) {
+export default function EmployeeRouteLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <div className="flex min-h-screen bg-[#f9f9fb]">
       <EmployeeSideNav />

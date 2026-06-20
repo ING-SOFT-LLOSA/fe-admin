@@ -7,7 +7,7 @@ import { useAuth } from "@/contexts/AuthContext";
 
 const LOGIN_PATHS = new Set(["/login"]);
 
-export default function AuthGuard({ children }: { children: React.ReactNode }) {
+export default function AuthGuard({ children }: Readonly<{ children: React.ReactNode }>) {
   const { isAuthenticated, isLoading } = useAuth();
   const router = useRouter();
   const pathname = usePathname();

@@ -13,13 +13,13 @@ import { Spinner, ErrorBanner } from "./ui";
 import DialogModal from "@/components/ui/DialogModal";
 
 type Props = {
-  contrato:      UsuarioActivoResponseDTO | null;
-  sections:      StageSection[];
-  loading:       boolean;
-  loadError:     string | null;
-  canUploadDocs: boolean;
-  canEditNotes:  boolean;
-  onRefresh:     () => Promise<void>;
+  readonly contrato:      UsuarioActivoResponseDTO | null;
+  readonly sections:      StageSection[];
+  readonly loading:       boolean;
+  readonly loadError:     string | null;
+  readonly canUploadDocs: boolean;
+  readonly canEditNotes:  boolean;
+  readonly onRefresh:     () => Promise<void>;
 };
 
 export function TabDocumentos({
@@ -30,7 +30,7 @@ export function TabDocumentos({
   canUploadDocs,
   canEditNotes,
   onRefresh,
-}: Props) {
+}: Readonly<Props>) {
   const [uploadingDoc, setUploadingDoc]   = useState<string | null>(null);
   const [actionError,  setActionError]    = useState<string | null>(null);
   const [editingNota,  setEditingNota]    = useState<{ id: string; text: string } | null>(null);
@@ -203,20 +203,20 @@ export function TabDocumentos({
 // ─── DocRow ───────────────────────────────────────────────────────────────────
 
 type DocRowProps = {
-  doc:               DocumentoItem;
-  isUploading:       boolean;
-  isEditingNota:     boolean;
-  editingNotaText:   string;
-  isSavingNota:      boolean;
-  canUploadDocs:     boolean;
-  canEditNotes:      boolean;
-  onUploadClick:     () => void;
-  onDelete:          () => void;
-  onDownload:        () => void;
-  onEditNotaStart:   () => void;
-  onEditNotaChange:  (text: string) => void;
-  onSaveNota:        () => void;
-  onCancelNota:      () => void;
+  readonly doc:               DocumentoItem;
+  readonly isUploading:       boolean;
+  readonly isEditingNota:     boolean;
+  readonly editingNotaText:   string;
+  readonly isSavingNota:      boolean;
+  readonly canUploadDocs:     boolean;
+  readonly canEditNotes:      boolean;
+  readonly onUploadClick:     () => void;
+  readonly onDelete:          () => void;
+  readonly onDownload:        () => void;
+  readonly onEditNotaStart:   () => void;
+  readonly onEditNotaChange:  (text: string) => void;
+  readonly onSaveNota:        () => void;
+  readonly onCancelNota:      () => void;
 };
 
 function DocRow({
@@ -224,7 +224,7 @@ function DocRow({
   canUploadDocs, canEditNotes,
   onUploadClick, onDelete, onDownload, onEditNotaStart,
   onEditNotaChange, onSaveNota, onCancelNota,
-}: DocRowProps) {
+}: Readonly<DocRowProps>) {
   const isCompleted = doc.status?.toLowerCase() === "completada";
 
   return (

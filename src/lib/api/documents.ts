@@ -3,10 +3,12 @@ import { apiFetch } from "@/lib/api/http";
 
 const API_URL = (process.env.NEXT_PUBLIC_API_URL_LLOSA ?? "http://localhost:8080").replace(/\/$/, "");
 
+export type TipoDocumento = "PDF_LEGAL" | "COMPROBANTE" | "FOTO_OBRA" | "VIDEO_OBRA";
+
 export interface DocumentoResponse {
   id: string;
   nombreOriginal: string;
-  tipoDocumento: "PDF_LEGAL" | "COMPROBANTE" | "FOTO_OBRA" | "VIDEO_OBRA";
+  tipoDocumento: TipoDocumento;
   tipoMime: string;
   idReferencia: string;
   entidadReferencia: string;

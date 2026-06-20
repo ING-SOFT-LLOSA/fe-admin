@@ -29,19 +29,19 @@ import { getFirebaseAuth } from "@/lib/firebase";
 import type { PerfilConPermisos } from "@/types/auth";
 
 interface AuthContextValue {
-  perfil: PerfilConPermisos | null;
-  token: string | null;
-  isLoading: boolean;
-  isAuthenticated: boolean;
-  loginEmail: (email: string, password: string) => Promise<PerfilConPermisos>;
-  loginGoogle: () => Promise<PerfilConPermisos>;
-  logout: () => Promise<void>;
-  resetPassword: (email: string) => Promise<void>;
+  readonly perfil: PerfilConPermisos | null;
+  readonly token: string | null;
+  readonly isLoading: boolean;
+  readonly isAuthenticated: boolean;
+  readonly loginEmail: (email: string, password: string) => Promise<PerfilConPermisos>;
+  readonly loginGoogle: () => Promise<PerfilConPermisos>;
+  readonly logout: () => Promise<void>;
+  readonly resetPassword: (email: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
-export function AuthProvider({ children }: { children: ReactNode }) {
+export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
   const [perfil, setPerfil] = useState<PerfilConPermisos | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -92,9 +92,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setPerfil(null);
       setToken(null);
     }
-    window.addEventListener("llosa:unauthorized", handleUnauthorized);
+    globalThis.addEventListener("llosa:unauthorized", handleUnauthorized);
     return () =>
-      window.removeEventListener("llosa:unauthorized", handleUnauthorized);
+      globalThis.removeEventListener("llosa:unauthorized", handleUnauthorized);
   }, []);
 
   const loginEmail = useCallback(async (email: string, password: string) => {

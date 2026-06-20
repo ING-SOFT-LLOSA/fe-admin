@@ -3,11 +3,11 @@
 import FinancePaymentScheduleView from "@/modules/finanzas/components/FinancePaymentScheduleView";
 
 type ProjectPaymentScheduleViewProps = {
-  projectId: string;
+  readonly projectId: string;
 };
 
 export default function ProjectPaymentScheduleView({
   projectId,
-}: ProjectPaymentScheduleViewProps) {
+}: Readonly<ProjectPaymentScheduleViewProps>) {
   return <FinancePaymentScheduleView initialProjectId={projectId} />;
 }

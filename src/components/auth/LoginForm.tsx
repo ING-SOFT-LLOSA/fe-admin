@@ -78,7 +78,7 @@ function useLoginFormLogic(redirectTo: string) {
     }
   }, [authLoading, isAuthenticated, perfil, redirectTo, router, logout]);
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError(null);
     setLoading(true);
@@ -91,7 +91,7 @@ function useLoginFormLogic(redirectTo: string) {
     }
   }
 
-  async function handleResetPassword(e: React.FormEvent) {
+  async function handleResetPassword(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError(null);
     setResetSuccess(false);

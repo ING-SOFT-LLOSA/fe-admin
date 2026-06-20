@@ -1,4 +1,4 @@
-export default function LoadingOverlay({ message }: { message: string }) {
+export default function LoadingOverlay({ message }: Readonly<{ message: string }>) {
   return (
     <div className="absolute inset-0 z-50 flex flex-col items-center justify-center rounded-2xl bg-white dark:bg-white/5/80 backdrop-blur-sm">
       <div className="flex h-16 w-16 items-center justify-center rounded-full bg-build-main/10">

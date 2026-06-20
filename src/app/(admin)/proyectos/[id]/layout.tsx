@@ -1,16 +1,16 @@
 import ProjectWorkspaceShell from "@/modules/proyectos/components/ProjectWorkspaceShell";
 
 type ProjectWorkspaceLayoutProps = {
-  children: React.ReactNode;
-  params: Promise<{
-    id: string;
+  readonly children: React.ReactNode;
+  readonly params: Promise<{
+    readonly id: string;
   }>;
 };
 
 export default async function ProjectWorkspaceLayout({
   children,
   params,
-}: ProjectWorkspaceLayoutProps) {
+}: Readonly<ProjectWorkspaceLayoutProps>) {
   const { id } = await params;
 
   return <ProjectWorkspaceShell projectId={id}>{children}</ProjectWorkspaceShell>;

@@ -9,10 +9,10 @@ const sections = [
 ];
 
 type ProjectSectionNavProps = {
-  projectId: string;
+  readonly projectId: string;
 };
 
-export default function ProjectSectionNav({ projectId }: ProjectSectionNavProps) {
+export default function ProjectSectionNav({ projectId }: Readonly<ProjectSectionNavProps>) {
   const pathname = usePathname();
 
   return (

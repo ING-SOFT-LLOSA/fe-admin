@@ -7,7 +7,7 @@ import { fetchActivosPorProyecto } from "@/modules/inventario/services";
 import type { ActivoResponseDTO } from "@/modules/inventario/types";
 
 type UnitsOverviewViewProps = {
-  projectId: string;
+  readonly projectId: string;
 };
 
 function getStatusClass(status: string) {
@@ -21,7 +21,7 @@ function getStatusClass(status: string) {
 
 const TYPE_ORDER: Record<string, number> = { DEPARTAMENTO: 1, COCHERA: 2, DEPOSITO: 3 };
 
-export default function UnitsOverviewView({ projectId }: UnitsOverviewViewProps) {
+export default function UnitsOverviewView({ projectId }: Readonly<UnitsOverviewViewProps>) {
   const [units, setUnits] = useState<ActivoResponseDTO[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");

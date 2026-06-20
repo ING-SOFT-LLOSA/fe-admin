@@ -10,10 +10,10 @@ import type { UsuarioActivoResponseDTO } from "@/lib/api/expedientes";
 type Step = "search" | "contracts" | "management";
 
 type FinancePaymentScheduleViewProps = {
-  initialProjectId?: string | null;
+  readonly initialProjectId?: string | null;
 };
 
-export default function FinancePaymentScheduleView({}: FinancePaymentScheduleViewProps) {
+export default function FinancePaymentScheduleView({ initialProjectId: _initialProjectId }: Readonly<FinancePaymentScheduleViewProps>) {
   const [step, setStep] = useState<Step>("search");
   const [selectedClient, setSelectedClient] = useState<Usuario | null>(null);
   const [selectedExpediente, setSelectedExpediente] = useState<UsuarioActivoResponseDTO | null>(null);

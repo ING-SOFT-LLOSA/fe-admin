@@ -6,16 +6,16 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 
 interface PermissionGuardProps {
-  children: React.ReactNode;
-  requiredFuncs?: string[];
-  fallbackUrl?: string;
+  readonly children: React.ReactNode;
+  readonly requiredFuncs?: string[];
+  readonly fallbackUrl?: string;
 }
 
 export default function PermissionGuard({
   children,
   requiredFuncs = [],
   fallbackUrl = "/employee/dashboard",
-}: PermissionGuardProps) {
+}: Readonly<PermissionGuardProps>) {
   const { perfil, isLoading, isAuthenticated } = useAuth();
   const router = useRouter();
 

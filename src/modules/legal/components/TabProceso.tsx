@@ -2,10 +2,10 @@ import type { ProcesoEtapa, StageId } from "./constants";
 import { ESTADO_BADGE, ESTADO_A_BACKEND, OPCIONES_ESTADO, STAGE_ORDER, STAGE_META } from "./constants";
 
 type Props = {
-  etapas:         ProcesoEtapa[];
-  loadingStepper: boolean;
-  canEdit:        boolean;
-  onUpdateHito:   (uuidHito: string, nuevoEstado: string) => Promise<void>;
+  readonly etapas:         ProcesoEtapa[];
+  readonly loadingStepper: boolean;
+  readonly canEdit:        boolean;
+  readonly onUpdateHito:   (uuidHito: string, nuevoEstado: string) => Promise<void>;
 };
 
 // Agrupa la lista plana de hitos por etapaProceso manteniendo el orden canónico
@@ -27,7 +27,7 @@ function stageEstado(hitos: ProcesoEtapa[]): "completado" | "en_proceso" | "pend
   return "pendiente";
 }
 
-export function TabProceso({ etapas, loadingStepper, canEdit, onUpdateHito }: Props) {
+export function TabProceso({ etapas, loadingStepper, canEdit, onUpdateHito }: Readonly<Props>) {
   const grupos = groupByStage(etapas);
 
   const getGlobalBadgeClass = (estado: string) => {
