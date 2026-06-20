@@ -4,6 +4,7 @@ pipeline {
 
     options {
         buildDiscarder(logRotator(numToKeepStr: '5'))
+        disableConcurrentBuilds()
     }
 
     stages {
@@ -70,7 +71,7 @@ pipeline {
                         rm -f .env.test
                         cp "$SECRET_FILE" .env.test
                         docker compose -f docker-compose.test.yml --env-file .env.test down
-                        docker rm -f llosa-frontend-test || true
+                        docker rm -f llosa-fe-admin-test || true
                         docker compose -f docker-compose.test.yml --env-file .env.test up -d --build
                     '''
 
@@ -88,7 +89,7 @@ pipeline {
                         rm -f .env.dev
                         cp "$SECRET_FILE" .env.dev
                         docker compose -f docker-compose.dev.yml --env-file .env.dev down --remove-orphans
-                        docker rm -f llosa-frontend-dev || true
+                        docker rm -f llosa-fe-admin-dev || true
                         docker compose -f docker-compose.dev.yml --env-file .env.dev up -d --build
                     '''
                 }

@@ -48,7 +48,5 @@ docker-compose.override.yml
 
 # docs
 *.md
-AGENTS.md
-#xd
-
-docs
+!README.md
+.claude/

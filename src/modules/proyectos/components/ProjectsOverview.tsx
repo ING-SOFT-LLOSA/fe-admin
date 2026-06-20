@@ -6,6 +6,27 @@ import ProjectCard from "./ProjectCard";
 import { apiFetch } from "@/lib/api/http";
 import { Proyecto } from "../types/proyecto";
 
+async function fetchProjectDetails(projectId: string) {
+  try {
+    const [assetsPage, progressData] = await Promise.all([
+      apiFetch<{ content?: { tipo: string }[] }>(`/api/activos/proyecto/${projectId}?size=9999`),
+      apiFetch<{ porcentajeAvance?: number }>(`/api/proyectos/${projectId}/avance-general`).catch(() => null),
+    ]);
+    const content = assetsPage?.content || [];
+    const dptosCount = content.filter((a) => a.tipo === "DEPARTAMENTO").length;
+    return {
+      dptosCount,
+      porcentajeAvance: progressData?.porcentajeAvance ?? 0,
+    };
+  } catch (err) {
+    console.error(`Error loading details for project ${projectId}:`, err);
+    return {
+      dptosCount: 0,
+      porcentajeAvance: 0,
+    };
+  }
+}
+
 // ─── Skeleton card shown during loading ───────────────────────────────────────
 function SkeletonCard() {
   return (
@@ -13,8 +34,8 @@ function SkeletonCard() {
       <div className="mb-3 h-3 w-20 animate-pulse rounded bg-slate-100 dark:bg-white/10" />
       <div className="mb-4 h-5 w-48 animate-pulse rounded bg-slate-100 dark:bg-white/10" />
       <div className="grid gap-3 md:grid-cols-3">
-        {[1, 2, 3].map((i) => (
-          <div key={i} className="h-14 animate-pulse rounded-xl bg-slate-100 dark:bg-white/10" />
+        {["s1", "s2", "s3"].map((key) => (
+          <div key={key} className="h-14 animate-pulse rounded-xl bg-slate-100 dark:bg-white/10" />
         ))}
       </div>
     </div>
@@ -58,24 +79,14 @@ export default function ProjectsOverview() {
         const assetsMap: Record<string, number> = {};
         const progressMap: Record<string, number> = {};
         if (projData && projData.length > 0) {
-          await Promise.all(
-            projData.map(async (p) => {
-              try {
-                const [assetsPage, progressData] = await Promise.all([
-                  apiFetch<{ content?: { tipo: string }[] }>(`/api/activos/proyecto/${p.id}?size=9999`),
-                  apiFetch<{ porcentajeAvance?: number }>(`/api/proyectos/${p.id}/avance-general`).catch(() => null),
-                ]);
-                const content = assetsPage?.content || [];
-                const dptosCount = content.filter((a) => a.tipo === "DEPARTAMENTO").length;
-                assetsMap[p.id] = dptosCount;
-                progressMap[p.id] = progressData?.porcentajeAvance ?? 0;
-              } catch (err) {
-                console.error(`Error loading details for project ${p.id}:`, err);
-                assetsMap[p.id] = 0;
-                progressMap[p.id] = 0;
-              }
-            })
+          const details = await Promise.all(
+            projData.map((p) => fetchProjectDetails(p.id))
           );
+          projData.forEach((p, index) => {
+            const { dptosCount, porcentajeAvance } = details[index];
+            assetsMap[p.id] = dptosCount;
+            progressMap[p.id] = porcentajeAvance;
+          });
         }
         if (mounted) {
           setDptosCountMap(assetsMap);
@@ -110,6 +121,70 @@ const filtered = useMemo(() => {
 }, [projects, search]);
   const hasFilters = !!search;
 
+  const mainContent = useMemo(() => {
+    if (isLoading) {
+      return (
+        <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+          {["s1", "s2", "s3"].map((key) => <SkeletonCard key={key} />)}
+        </div>
+      );
+    }
+
+    if (filtered.length === 0) {
+      return (
+        <div className="rounded-2xl border border-dashed border-slate-300 dark:border-white/20 bg-white dark:bg-white/5 px-6 py-14 text-center">
+          <span className="material-symbols-outlined text-[32px] text-slate-400 dark:text-white/40">
+            {hasFilters ? "search_off" : "folder_open"}
+          </span>
+          <h2 className="mt-3 text-base font-semibold text-build-main dark:text-white">
+            {hasFilters ? "Sin resultados" : "No hay proyectos"}
+          </h2>
+          <p className="mt-1 text-sm text-slate-500 dark:text-white/50">
+            {hasFilters
+              ? "Ningún proyecto coincide con los filtros aplicados."
+              : "Cuando se registren proyectos aparecerán aquí."}
+          </p>
+          {hasFilters && (
+            <button
+              onClick={() => { setSearch(""); }}
+              className="mt-4 text-xs font-semibold text-arch-gold hover:underline"
+            >
+              Limpiar filtros
+            </button>
+          )}
+        </div>
+      );
+    }
+
+    return (
+      <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+        {filtered.map((project) => {
+          const dptosCount = dptosCountMap[project.id] ?? 0;
+          const projectClients = new Set<number>();
+          contracts.forEach((c) => {
+            const hasAssetInProject = c.activos?.some((a) => a.proyectoNombre === project.nombre);
+            if (hasAssetInProject) {
+              c.clientes?.forEach((client) => {
+                projectClients.add(client.id);
+              });
+            }
+          });
+          const clientesCount = projectClients.size;
+
+          return (
+            <ProjectCard
+              key={project.id}
+              project={project}
+              clientesCount={clientesCount}
+              dptosCount={dptosCount}
+              avance={avanceMap[project.id] ?? 0}
+            />
+          );
+        })}
+      </div>
+    );
+  }, [isLoading, filtered, hasFilters, dptosCountMap, contracts, avanceMap]);
+
   return (
     <section className="space-y-5">
 
@@ -128,7 +203,7 @@ const filtered = useMemo(() => {
           className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-build-main px-4 py-2.5 text-sm font-semibold text-white hover:bg-build-main/90 transition-colors shadow-sm"
         >
           <span className="material-symbols-outlined text-[18px]">add</span>
-          Nuevo proyecto
+          <span>Nuevo proyecto</span>
         </Link>
       </div>
 
@@ -181,71 +256,19 @@ const filtered = useMemo(() => {
             className="flex items-center gap-1 rounded-lg border border-slate-200 dark:border-white/10 px-3 py-2 text-xs text-slate-500 dark:text-white/50 hover:bg-slate-50 dark:hover:bg-white/5 transition"
           >
             <span className="material-symbols-outlined text-[14px]">close</span>
-            Limpiar
+            <span>Limpiar</span>
           </button>
         )}
 
         {!isLoading && (
           <span className="ml-auto text-xs text-slate-400 dark:text-white/30 tabular-nums">
-            {filtered.length} proyecto{filtered.length !== 1 ? "s" : ""}
+            {filtered.length} proyecto{filtered.length === 1 ? "" : "s"}
           </span>
         )}
       </div>
 
-      {/* ── Grid ── */}
-      {isLoading ? (
-        <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-          {Array.from({ length: 3 }).map((_, i) => <SkeletonCard key={i} />)}
-        </div>
-      ) : filtered.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-slate-300 dark:border-white/20 bg-white dark:bg-white/5 px-6 py-14 text-center">
-          <span className="material-symbols-outlined text-[32px] text-slate-400 dark:text-white/40">
-            {hasFilters ? "search_off" : "folder_open"}
-          </span>
-          <h2 className="mt-3 text-base font-semibold text-build-main dark:text-white">
-            {hasFilters ? "Sin resultados" : "No hay proyectos"}
-          </h2>
-          <p className="mt-1 text-sm text-slate-500 dark:text-white/50">
-            {hasFilters
-              ? "Ningún proyecto coincide con los filtros aplicados."
-              : "Cuando se registren proyectos aparecerán aquí."}
-          </p>
-          {hasFilters && (
-            <button
-              onClick={() => { setSearch(""); }}
-              className="mt-4 text-xs font-semibold text-arch-gold hover:underline"
-            >
-              Limpiar filtros
-            </button>
-          )}
-        </div>
-      ) : (
-        <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-          {filtered.map((project) => {
-            const dptosCount = dptosCountMap[project.id] ?? 0;
-            const projectClients = new Set<number>();
-            contracts.forEach((c) => {
-              const hasAssetInProject = c.activos?.some((a) => a.proyectoNombre === project.nombre);
-              if (hasAssetInProject) {
-                c.clientes?.forEach((client) => {
-                  projectClients.add(client.id);
-                });
-              }
-            });
-            const clientesCount = projectClients.size;
-
-            return (
-              <ProjectCard
-                key={project.id}
-                project={project}
-                clientesCount={clientesCount}
-                dptosCount={dptosCount}
-                avance={avanceMap[project.id] ?? 0}
-              />
-            );
-          })}
-        </div>
-      )}
+      {/* ── Grid/Content ── */}
+      {mainContent}
     </section>
   );
 }

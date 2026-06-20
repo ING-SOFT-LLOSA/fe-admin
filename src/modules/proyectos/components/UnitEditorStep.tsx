@@ -1,12 +1,12 @@
 "use client";
 
-import { useState } from "react";
-import type { TorreData, ActivoData } from "@/modules/proyectos/utils/wizard-logic";
+import { useState, useId } from "react";
+import type { TorreData, ActivoData, PisoData } from "@/modules/proyectos/utils/wizard-logic";
 
 type UnitEditorStepProps = {
-  torres: TorreData[];
-  onBack: () => void;
-  onSubmit: (torres: TorreData[]) => void;
+  readonly torres: TorreData[];
+  readonly onBack: () => void;
+  readonly onSubmit: (torres: TorreData[]) => void;
 };
 
 type TabType = "DEPARTAMENTO" | "COCHERA" | "DEPOSITO";
@@ -21,12 +21,15 @@ function UnitCard({
   activo,
   onEdit,
   onDelete,
-}: {
-  activo: ActivoData;
-  onEdit: (field: keyof ActivoData, value: string | number) => void;
-  onDelete: () => void;
-}) {
+}: Readonly<{
+  readonly activo: ActivoData;
+  readonly onEdit: (field: keyof ActivoData, value: string | number) => void;
+  readonly onDelete: () => void;
+}>) {
   const [editing, setEditing] = useState(false);
+  const areaId = useId();
+  const areaTechadaId = useId();
+  const precioId = useId();
 
   return (
     <div className="rounded-lg border border-slate-100 dark:border-white/10 bg-white dark:bg-white/5 p-3">
@@ -44,8 +47,9 @@ function UnitCard({
           </div>
           <div className="grid grid-cols-3 gap-2">
             <div>
-              <label className="text-[10px] font-semibold text-slate-400">Área (m²)</label>
+              <label htmlFor={areaId} className="text-[10px] font-semibold text-slate-400">Área (m²)</label>
               <input
+                id={areaId}
                 type="number"
                 value={activo.areaM2}
                 onChange={(e) => onEdit("areaM2", Number(e.target.value))}
@@ -53,8 +57,9 @@ function UnitCard({
               />
             </div>
             <div>
-              <label className="text-[10px] font-semibold text-slate-400">Tech. (m²)</label>
+              <label htmlFor={areaTechadaId} className="text-[10px] font-semibold text-slate-400">Tech. (m²)</label>
               <input
+                id={areaTechadaId}
                 type="number"
                 value={activo.areaTechada}
                 onChange={(e) => onEdit("areaTechada", Number(e.target.value))}
@@ -62,8 +67,9 @@ function UnitCard({
               />
             </div>
             <div>
-              <label className="text-[10px] font-semibold text-slate-400">Precio S/</label>
+              <label htmlFor={precioId} className="text-[10px] font-semibold text-slate-400">Precio S/</label>
               <input
+                id={precioId}
                 type="number"
                 value={activo.precio}
                 onChange={(e) => onEdit("precio", Number(e.target.value))}
@@ -104,7 +110,77 @@ function UnitCard({
   );
 }
 
-export default function UnitEditorStep({ torres: initialTorres, onBack, onSubmit }: UnitEditorStepProps) {
+function PisoSection({
+  piso,
+  pIdx,
+  tIdx,
+  onEdit,
+  onDeleteClick,
+  onAdd,
+}: Readonly<{
+  piso: PisoData;
+  pIdx: number;
+  tIdx: number;
+  onEdit: (tIdx: number, pIdx: number, aIdx: number, field: keyof ActivoData, value: string | number) => void;
+  onDeleteClick: (tIdx: number, pIdx: number, aIdx: number) => void;
+  onAdd: (tIdx: number, pIdx: number, tipo: TabType) => void;
+}>) {
+  const grouped = piso.activos.reduce((acc, a) => {
+    if (!acc[a.tipo]) acc[a.tipo] = [];
+    acc[a.tipo].push(a);
+    return acc;
+  }, {} as Record<string, ActivoData[]>);
+
+  return (
+    <details className="group">
+      <summary className="flex cursor-pointer items-center gap-1.5 bg-slate-50/50 dark:bg-white/[0.02] px-6 py-2 text-xs font-semibold text-slate-600 dark:text-white/70">
+        <span className="material-symbols-outlined text-[15px] text-slate-400">layers</span>
+        Piso {piso.nroPiso}
+        <span className="ml-auto text-[10px] text-slate-400">{piso.activos.length} uds.</span>
+        <span className="material-symbols-outlined text-[15px] text-slate-400 transition-transform group-open:rotate-180">expand_more</span>
+      </summary>
+      <div className="px-6 py-3 space-y-3">
+        {(Object.keys(TAB_INFO) as TabType[]).map((tipo) => {
+          const units = grouped[tipo] || [];
+          const info = TAB_INFO[tipo];
+          return (
+            <div key={tipo}>
+              <p className="mb-2 flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                <span className="material-symbols-outlined text-[14px]">{info.icon}</span>
+                {info.label} ({units.length})
+              </p>
+              {units.length > 0 && (
+                <div className="mb-2 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                  {units.map((activo) => {
+                    const actualIdx = piso.activos.indexOf(activo);
+                    return (
+                      <UnitCard
+                        key={`${tIdx}-${pIdx}-${actualIdx}`}
+                        activo={activo}
+                        onEdit={(field, value) => onEdit(tIdx, pIdx, actualIdx, field, value)}
+                        onDelete={() => onDeleteClick(tIdx, pIdx, actualIdx)}
+                      />
+                    );
+                  })}
+                </div>
+              )}
+              <button
+                type="button"
+                onClick={() => onAdd(tIdx, pIdx, tipo)}
+                className="flex items-center gap-1 rounded-lg border border-dashed border-slate-300 dark:border-white/20 px-3 py-1.5 text-[11px] font-semibold text-slate-500 dark:text-white/50 transition-colors hover:border-build-accent hover:text-build-accent"
+              >
+                <span className="material-symbols-outlined text-[14px]">add</span>
+                Agregar {info.label.toLowerCase()}
+              </button>
+            </div>
+          );
+        })}
+      </div>
+    </details>
+  );
+}
+
+export default function UnitEditorStep({ torres: initialTorres, onBack, onSubmit }: Readonly<UnitEditorStepProps>) {
   const [torres, setTorres] = useState<TorreData[]>(() => structuredClone(initialTorres));
   const [confirmDelete, setConfirmDelete] = useState<{ tIdx: number; pIdx: number; aIdx: number } | null>(null);
 
@@ -132,8 +208,8 @@ export default function UnitEditorStep({ torres: initialTorres, onBack, onSubmit
       const piso = next[tIdx].pisos[pIdx];
       const existing = piso.activos.filter((a) => a.tipo === tipo);
       const maxSeq = existing.reduce((max, a) => {
-        const s = parseInt(a.nro.slice(-2), 10);
-        return Math.max(max, isNaN(s) ? 0 : s);
+        const s = Number.parseInt(a.nro.slice(-2), 10);
+        return Math.max(max, Number.isNaN(s) ? 0 : s);
       }, 0);
       const nextSeq = maxSeq + 1;
       const seqStr = nextSeq.toString().padStart(2, "0");
@@ -145,11 +221,14 @@ export default function UnitEditorStep({ torres: initialTorres, onBack, onSubmit
         DEPOSITO: { areaM2: 5, areaTechada: 0, precio: 5000, estadoComercial: "DISPONIBLE", descripcion: `Depósito en ${next[tIdx].nombre}, Piso ${pisoNro}` },
       };
 
-      const nro = tipo === "DEPARTAMENTO"
-        ? `${pisoNro}${seqStr}`
-        : tipo === "COCHERA"
-          ? `E-${pisoNro}${seqStr}`
-          : `D-${pisoNro}${seqStr}`;
+      let nro = "";
+      if (tipo === "DEPARTAMENTO") {
+        nro = `${pisoNro}${seqStr}`;
+      } else if (tipo === "COCHERA") {
+        nro = `E-${pisoNro}${seqStr}`;
+      } else {
+        nro = `D-${pisoNro}${seqStr}`;
+      }
 
       piso.activos.push({ nro, tipo, ...defaults[tipo] });
       return next;
@@ -176,61 +255,17 @@ export default function UnitEditorStep({ torres: initialTorres, onBack, onSubmit
               <span className="material-symbols-outlined text-[18px] text-slate-400 transition-transform group-open:rotate-180">expand_more</span>
             </summary>
             <div className="divide-y divide-slate-100 dark:divide-white/5">
-              {torre.pisos.map((piso, pIdx) => {
-                const grouped = piso.activos.reduce((acc, a) => {
-                  if (!acc[a.tipo]) acc[a.tipo] = [];
-                  acc[a.tipo].push(a);
-                  return acc;
-                }, {} as Record<string, ActivoData[]>);
-
-                return (
-                  <details key={`${tIdx}-${pIdx}`} className="group">
-                    <summary className="flex cursor-pointer items-center gap-1.5 bg-slate-50/50 dark:bg-white/[0.02] px-6 py-2 text-xs font-semibold text-slate-600 dark:text-white/70">
-                      <span className="material-symbols-outlined text-[15px] text-slate-400">layers</span>
-                      Piso {piso.nroPiso}
-                      <span className="ml-auto text-[10px] text-slate-400">{piso.activos.length} uds.</span>
-                      <span className="material-symbols-outlined text-[15px] text-slate-400 transition-transform group-open:rotate-180">expand_more</span>
-                    </summary>
-                    <div className="px-6 py-3 space-y-3">
-                      {(Object.keys(TAB_INFO) as TabType[]).map((tipo) => {
-                        const units = grouped[tipo] || [];
-                        const info = TAB_INFO[tipo];
-                        return (
-                          <div key={tipo}>
-                            <p className="mb-2 flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                              <span className="material-symbols-outlined text-[14px]">{info.icon}</span>
-                              {info.label} ({units.length})
-                            </p>
-                            {units.length > 0 && (
-                              <div className="mb-2 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                                {units.map((activo) => {
-                                  const actualIdx = piso.activos.indexOf(activo);
-                                  return (
-                                    <UnitCard
-                                      key={`${tIdx}-${pIdx}-${actualIdx}`}
-                                      activo={activo}
-                                      onEdit={(field, value) => handleEdit(tIdx, pIdx, actualIdx, field, value)}
-                                      onDelete={() => setConfirmDelete({ tIdx, pIdx, aIdx: actualIdx })}
-                                    />
-                                  );
-                                })}
-                              </div>
-                            )}
-                            <button
-                              type="button"
-                              onClick={() => handleAdd(tIdx, pIdx, tipo)}
-                              className="flex items-center gap-1 rounded-lg border border-dashed border-slate-300 dark:border-white/20 px-3 py-1.5 text-[11px] font-semibold text-slate-500 dark:text-white/50 transition-colors hover:border-build-accent hover:text-build-accent"
-                            >
-                              <span className="material-symbols-outlined text-[14px]">add</span>
-                              Agregar {info.label.toLowerCase()}
-                            </button>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </details>
-                );
-              })}
+              {torre.pisos.map((piso, pIdx) => (
+                <PisoSection
+                  key={`${tIdx}-${pIdx}`}
+                  piso={piso}
+                  pIdx={pIdx}
+                  tIdx={tIdx}
+                  onEdit={handleEdit}
+                  onDeleteClick={(t, p, a) => setConfirmDelete({ tIdx: t, pIdx: p, aIdx: a })}
+                  onAdd={handleAdd}
+                />
+              ))}
             </div>
           </details>
         ))}
@@ -243,7 +278,7 @@ export default function UnitEditorStep({ torres: initialTorres, onBack, onSubmit
           className="flex items-center gap-2 rounded-xl px-6 py-2.5 text-sm font-bold text-slate-600 dark:text-white/70 transition-colors hover:bg-slate-100 dark:bg-white/10"
         >
           <span className="material-symbols-outlined text-[18px]">arrow_back</span>
-          Volver
+          <span>Volver</span>
         </button>
         <button
           type="button"
@@ -251,7 +286,7 @@ export default function UnitEditorStep({ torres: initialTorres, onBack, onSubmit
           className="flex items-center gap-2 rounded-xl bg-build-main px-6 py-2.5 text-sm font-bold text-white shadow-sm transition-colors hover:bg-arch-gold"
         >
           <span className="material-symbols-outlined text-[18px]">check</span>
-          Crear proyecto
+          <span>Crear proyecto</span>
         </button>
       </div>
 

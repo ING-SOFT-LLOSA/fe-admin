@@ -476,10 +476,16 @@ export default function LegalOverview() {
 
   // y en el fetch:
   useEffect(() => {
+    let mounted = true;
     fetchProyectos().then((list) => {
-      setProyectosList(list);
-      setProyectosOptions(list.map((p) => p.nombre).sort((a, b) => a.localeCompare(b)));
+      if (mounted) {
+        setProyectosList(list);
+        setProyectosOptions(list.map((p) => p.nombre).sort((a, b) => a.localeCompare(b)));
+      }
     });
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   // Reset page to 0 when filters change
@@ -529,9 +535,17 @@ export default function LegalOverview() {
 
   // Load asesores
   useEffect(() => {
+    let mounted = true;
     fetchUsuarios()
-      .then((users) => setAsesores(users.filter((u) => u.rol === "ASESOR")))
+      .then((users) => {
+        if (mounted) {
+          setAsesores(users.filter((u) => u.rol === "ASESOR"));
+        }
+      })
       .catch(() => {});
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   // ── Filtered list ──────────────────────────────────────────────────────────
