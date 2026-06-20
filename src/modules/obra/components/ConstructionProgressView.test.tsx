@@ -843,6 +843,7 @@ describe("ConstructionProgressView", () => {
     await act(async () => {
       resolveActivos!({ content: [] });
     });
+    expect(mockFetchActivos).toHaveBeenCalled();
   });
 
   // ------------------------------------------------------------------

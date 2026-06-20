@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent, within } from "@testing-library/react";
+import { render, screen, fireEvent } from "@testing-library/react";
 import ClientExpedienteView from "./ClientExpedienteView";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCommercialStepper, useStageDocuments } from "./hooks";
@@ -649,6 +649,7 @@ describe("ClientExpedienteView", () => {
     resolve([[makeUser()], [makeExpediente()]]);
     // mounted flag prevents state updates, no warning expected
     await vi.waitFor(() => {}, { timeout: 100 });
+    expect(mockFetchUsuarios).toHaveBeenCalled();
   });
 
   it("no actualiza estado si se desmonta antes de que la promesa rechace", async () => {
@@ -660,6 +661,7 @@ describe("ClientExpedienteView", () => {
     unmount();
     reject(new Error("post-unmount error"));
     await vi.waitFor(() => {}, { timeout: 100 });
+    expect(mockFetchUsuarios).toHaveBeenCalled();
   });
 
   // ── Edge: stepperError is empty string (no banner) ────────────────────────
