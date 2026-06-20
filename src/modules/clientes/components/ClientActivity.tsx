@@ -1,8 +1,8 @@
 import { ClienteAssignment } from "@/types/user";
 
 type ClientActivityProps = {
-  assignments: ClienteAssignment[];
-  clientCreatedAt?: string;
+  readonly assignments: readonly ClienteAssignment[];
+  readonly clientCreatedAt?: string;
 };
 
 interface ActivityEvent {
@@ -12,7 +12,7 @@ interface ActivityEvent {
   color: string; // dot color
 }
 
-function buildTimeline(assignments: ClienteAssignment[], clientCreatedAt?: string): ActivityEvent[] {
+function buildTimeline(assignments: readonly ClienteAssignment[], clientCreatedAt?: string): ActivityEvent[] {
   const events: ActivityEvent[] = [];
 
   // Assignment events
@@ -67,14 +67,14 @@ function formatRelativeDate(dateStr: string): string {
   return `Hace ${years} ${years === 1 ? "año" : "años"}`;
 }
 
-export default function ClientActivity({ assignments, clientCreatedAt }: ClientActivityProps) {
+export default function ClientActivity({ assignments, clientCreatedAt }: Readonly<ClientActivityProps>) {
   const timeline = buildTimeline(assignments, clientCreatedAt);
 
   return (
     <section className="rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 p-6 shadow-sm">
       <h3 className="text-base font-bold text-build-main dark:text-white flex items-center gap-2 mb-5">
         <span className="material-symbols-outlined text-arch-gold">history</span>
-        Actividad Reciente
+        <span>Actividad Reciente</span>
       </h3>
 
       {timeline.length === 0 ? (

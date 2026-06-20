@@ -1,89 +1,98 @@
 "use client";
-
+ 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-
+ 
 import { fetchUsuarioPorId, mapUsuarioToClienteRow } from "@/lib/api/users";
 import { fetchActivosPorUsuario, type ActivoUsuarioDTO } from "@/lib/api/expedientes";
 import type { ClienteRow, ClienteAssignment } from "@/types/user";
-
+ 
 import AssignPropertyWizard from "@/modules/asignaciones/components/AssignPropertyWizard";
 import EditClienteModal from "@/modules/clientes/components/EditClienteModal";
 import DeleteUsuarioModal from "@/modules/clientes/components/DeleteUsuarioModal";
 import ClientHeader from "./ClientHeader";
 import ClientActivos from "./ClientActivos";
 import ClientActivity from "./ClientActivity";
-
+ 
 type Modal = "edit" | "delete" | "assign" | null;
-
+ 
 type ClienteProfileViewProps = {
-  clientId: string;
+  readonly clientId: string;
 };
 
-export default function ClienteProfileView({ clientId }: ClienteProfileViewProps) {
+const getUnitTypeLabel = (tipo: string): string => {
+  if (tipo === "ESTACIONAMIENTO") return "Cochera";
+  if (tipo === "DEPOSITO") return "Depósito";
+  return "Dpto";
+};
+ 
+export default function ClienteProfileView({ clientId }: Readonly<ClienteProfileViewProps>) {
   const router = useRouter();
-
+ 
   const [client, setClient] = useState<ClienteRow | null>(null);
   const [assignments, setAssignments] = useState<ClienteAssignment[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeModal, setActiveModal] = useState<Modal>(null);
-  const [, setSelectedAssignment] = useState<ClienteAssignment | null>(null);
   const [refreshCount, setRefreshCount] = useState(0);
-
+ 
   useEffect(() => {
     let mounted = true;
-    Promise.resolve().then(() => {
+    
+    const loadProfile = async () => {
       setLoading(true);
-
-      Promise.all([
-        fetchUsuarioPorId(Number(clientId)),
-        fetchActivosPorUsuario(Number(clientId)),
-      ])
-        .then(([user, activosData]) => {
-          if (!mounted) return;
-          setClient(user ? mapUsuarioToClienteRow(user) : null);
+      try {
+        const [user, activosData] = await Promise.all([
+          fetchUsuarioPorId(Number(clientId)),
+          fetchActivosPorUsuario(Number(clientId)),
+        ]);
+        if (!mounted) return;
+        setClient(user ? mapUsuarioToClienteRow(user) : null);
+        
+        const mappedAssignments = (activosData || []).map((act: ActivoUsuarioDTO) => {
+          const label = `${getUnitTypeLabel(act.tipo)} ${act.nro}`;
           
-          const mappedAssignments = (activosData || []).map((act: ActivoUsuarioDTO) => {
-            const label = `${act.tipo === "ESTACIONAMIENTO" ? "Cochera" : act.tipo === "DEPOSITO" ? "Depósito" : "Dpto"} ${act.nro}`;
-            
-            return {
-              clientId: Number(clientId),
-              unitId: act.id,
-              unitLabel: label,
-              projectName: act.proyectoNombre || "Proyecto",
-              financing: "Contrato",
-              assignedAt: new Date().toISOString().split("T")[0],
-              status: "Vigente",
-              estadoTramiteLegal: act.estadoComercial,
-              uuidUsuarioActivo: act.id,
-            };
-          });
-          setAssignments(mappedAssignments);
-        })
-        .catch((err) => {
-          if (mounted) setError(err instanceof Error ? err.message : "No se pudo cargar el cliente.");
-        })
-        .finally(() => {
-          if (mounted) setLoading(false);
+          return {
+            clientId: Number(clientId),
+            unitId: act.id,
+            unitLabel: label,
+            projectName: act.proyectoNombre || "Proyecto",
+            financing: "Contrato",
+            assignedAt: new Date().toISOString().split("T")[0],
+            status: "Vigente",
+            estadoTramiteLegal: act.estadoComercial,
+            uuidUsuarioActivo: act.id,
+          };
         });
-    });
-
-    return () => { mounted = false; };
+        setAssignments(mappedAssignments);
+      } catch (err) {
+        if (mounted) {
+          setError(err instanceof Error ? err.message : "No se pudo cargar el cliente.");
+        }
+      } finally {
+        if (mounted) {
+          setLoading(false);
+        }
+      }
+    };
+ 
+    loadProfile();
+    return () => {
+      mounted = false;
+    };
   }, [clientId, refreshCount]);
-
+ 
   const activeAssignments = assignments.filter((a) => a.status === "Vigente");
-
+ 
   function closeModal() {
     setActiveModal(null);
-    setSelectedAssignment(null);
   }
-
+ 
   function refresh() {
     setRefreshCount((c) => c + 1);
   }
-
+ 
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
@@ -97,7 +106,7 @@ export default function ClienteProfileView({ clientId }: ClienteProfileViewProps
       </div>
     );
   }
-
+ 
   if (error || !client) {
     return (
       <div className="rounded-xl border border-red-200 dark:border-red-900/50 bg-red-50 dark:bg-red-900/20 p-8 text-sm text-red-800 dark:text-red-400">
@@ -105,7 +114,7 @@ export default function ClienteProfileView({ clientId }: ClienteProfileViewProps
       </div>
     );
   }
-
+ 
   return (
     <div className="space-y-6">
       {/* Page Header */}
@@ -115,7 +124,7 @@ export default function ClienteProfileView({ clientId }: ClienteProfileViewProps
           className="inline-flex items-center gap-1 text-sm font-semibold text-arch-gold hover:text-build-main dark:hover:text-white mb-4 transition-colors"
         >
           <span className="material-symbols-outlined text-[18px]">arrow_back</span>
-          Volver a Clientes
+          <span>Volver a Clientes</span>
         </Link>
         <h2 className="text-2xl md:text-3xl font-bold text-build-main dark:text-white">
           Perfil del Cliente
@@ -124,7 +133,7 @@ export default function ClienteProfileView({ clientId }: ClienteProfileViewProps
           Visión general de {client.name}
         </p>
       </div>
-
+ 
       {/* Layout */}
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         <div className="lg:col-span-1">
@@ -135,13 +144,13 @@ export default function ClienteProfileView({ clientId }: ClienteProfileViewProps
             onDelete={() => setActiveModal("delete")}
           />
         </div>
-
+ 
         <div className="lg:col-span-3 space-y-6">
           <ClientActivos clientId={Number(clientId)} refreshKey={refreshCount} />
           <ClientActivity assignments={assignments} clientCreatedAt={client?.createdAt} />
         </div>
       </div>
-
+ 
       {/* Modals */}
       <EditClienteModal
         open={activeModal === "edit"}
@@ -149,14 +158,14 @@ export default function ClienteProfileView({ clientId }: ClienteProfileViewProps
         onClose={closeModal}
         onUpdated={() => { closeModal(); refresh(); }}
       />
-
+ 
       <DeleteUsuarioModal
         open={activeModal === "delete"}
         usuario={client}
         onClose={closeModal}
         onDeleted={() => router.push("/clientes")}
       />
-
+ 
       {activeModal === "assign" && (
         <AssignPropertyWizard
           client={client}

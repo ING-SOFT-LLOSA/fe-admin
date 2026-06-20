@@ -3,19 +3,17 @@
 import type { ClienteRow } from "@/types/user";
  
 type ClientHeaderProps = {
-  client: ClienteRow;
-  hasActiveProperties: boolean;
-  onEdit: () => void;
-  onDelete: () => void;
+  readonly client: ClienteRow;
+  readonly hasActiveProperties: boolean;
+  readonly onEdit: () => void;
+  readonly onDelete: () => void;
 };
  
 export default function ClientHeader({
   client,
-  hasActiveProperties: _hasActiveProperties,
   onEdit,
   onDelete,
-}: ClientHeaderProps) {
-  void _hasActiveProperties;
+}: Readonly<ClientHeaderProps>) {
   const initials = client.name
     .split(" ")
     .slice(0, 2)
@@ -64,7 +62,7 @@ export default function ClientHeader({
           className="w-full flex items-center justify-center gap-2 px-4 py-2.5 border border-slate-200 dark:border-white/10 text-build-main dark:text-white rounded-xl text-sm font-semibold hover:bg-slate-50 dark:hover:bg-white/5 transition-colors"
         >
           <span className="material-symbols-outlined text-[18px]">edit</span>
-          Editar información
+          <span>Editar información</span>
         </button>
  
         {/* Delete — destructive, subtle */}
@@ -74,7 +72,7 @@ export default function ClientHeader({
           className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-red-600 dark:text-red-400 rounded-xl text-sm font-semibold hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
         >
           <span className="material-symbols-outlined text-[18px]">delete</span>
-          Eliminar cliente
+          <span>Eliminar cliente</span>
         </button>
       </div>
     </div>
@@ -88,17 +86,17 @@ function InfoRow({
   label,
   value,
   valueClassName,
-}: {
+}: Readonly<{
   icon: string;
   label: string;
   value: string;
   valueClassName?: string;
-}) {
+}>) {
   return (
     <div className="flex items-center justify-between gap-2">
       <div className="flex items-center gap-1.5 text-xs text-slate-400 dark:text-white/40 shrink-0">
         <span className="material-symbols-outlined text-[14px]">{icon}</span>
-        {label}
+        <span>{label}</span>
       </div>
       <span className={`text-xs font-semibold text-slate-700 dark:text-white/80 truncate ${valueClassName ?? ""}`}>
         {value ?? "—"}
@@ -106,4 +104,3 @@ function InfoRow({
     </div>
   );
 }
- 

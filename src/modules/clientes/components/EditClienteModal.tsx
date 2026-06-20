@@ -1,22 +1,22 @@
 "use client";
-
-import { useState, useEffect } from "react";
+ 
+import { useState, useEffect, useId } from "react";
 import { updateCliente } from "@/lib/api/users";
 import type { ClienteRow } from "@/types/user";
-
+ 
 type EditClienteModalProps = {
-  open: boolean;
-  cliente: ClienteRow | null;
-  onClose: () => void;
-  onUpdated: () => void;
+  readonly open: boolean;
+  readonly cliente: ClienteRow | null;
+  readonly onClose: () => void;
+  readonly onUpdated: () => void;
 };
-
+ 
 export default function EditClienteModal({
   open,
   cliente,
   onClose,
   onUpdated,
-}: EditClienteModalProps) {
+}: Readonly<EditClienteModalProps>) {
   const [form, setForm] = useState({
     nombre: "",
     apellidos: "",
@@ -29,10 +29,16 @@ export default function EditClienteModal({
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
+  const nombreId = useId();
+  const apellidosId = useId();
+  const emailId = useId();
+  const docId = useId();
+  const telefonoId = useId();
+ 
   useEffect(() => {
     if (cliente && open) {
       // Intentar extraer el primer y segundo nombre si vienen pegados, 
-      // pero por simplicidad usaremos todo como "nombre" ya que la tabla los concatena.
+      // pero por simplicidad usaremos la cadena completa como "nombre" ya que la tabla los concatena.
       // Lo ideal es tener el original, pero como ClienteRow tiene `name` combinado:
       const parts = cliente.name.split(" ");
       Promise.resolve().then(() => {
@@ -40,52 +46,52 @@ export default function EditClienteModal({
           nombre: parts[0] || "",
           apellidos: parts.slice(1).join(" ") || "",
           email: cliente.email,
-          telefono: cliente.phone !== "—" ? cliente.phone : "",
-          documentoIdentidad: cliente.dni !== "—" ? cliente.dni : "",
+          telefono: cliente.phone === "—" ? "" : cliente.phone,
+          documentoIdentidad: cliente.dni === "—" ? "" : cliente.dni,
         });
         setErrors({});
       });
     }
   }, [cliente, open]);
-
+ 
   function handleClose() {
     if (loading) return;
     setError(null);
     setSuccess(null);
     onClose();
   }
-
+ 
   const validateForm = (data: typeof form): Record<string, string> => {
     const newErrors: Record<string, string> = {};
-
-    if (!data.nombre || !data.nombre.trim()) {
+ 
+    if (!data.nombre?.trim()) {
       newErrors.nombre = "El nombre es obligatorio.";
     }
-
-    if (!data.apellidos || !data.apellidos.trim()) {
+ 
+    if (!data.apellidos?.trim()) {
       newErrors.apellidos = "Los apellidos son obligatorios.";
     }
-
+ 
     if (data.telefono && data.telefono.trim() !== "") {
-      const phoneClean = data.telefono.replace(/\s+/g, "");
+      const phoneClean = data.telefono.replaceAll(/\s+/g, "");
       const phoneRegex = /^\+519\d{8}$/;
       if (!phoneRegex.test(phoneClean)) {
         newErrors.telefono = "El teléfono debe iniciar con '+51' y tener 9 números (ej. +51 999 888 777).";
       }
     }
-
+ 
     if (data.documentoIdentidad && data.documentoIdentidad.trim() !== "") {
       const docTrimmed = data.documentoIdentidad.trim();
-      if (!/^[0-9]+$/.test(docTrimmed)) {
+      if (!/^\d+$/.test(docTrimmed)) {
         newErrors.documentoIdentidad = "El documento debe contener solo números.";
       } else if (docTrimmed.length !== 8 && docTrimmed.length !== 11) {
         newErrors.documentoIdentidad = "Debe ser un DNI (8 dígitos) o RUC (11 dígitos).";
       }
     }
-
+ 
     return newErrors;
   };
-
+ 
   const handleFieldChange = (field: keyof typeof form, value: string) => {
     setForm((prev) => ({ ...prev, [field]: value }));
     if (errors[field]) {
@@ -96,14 +102,14 @@ export default function EditClienteModal({
       });
     }
   };
-
-  async function handleSubmit(e: React.FormEvent) {
+ 
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (!cliente) return;
     
     setError(null);
     setSuccess(null);
-
+ 
     const validationErrors = validateForm(form);
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors);
@@ -116,22 +122,22 @@ export default function EditClienteModal({
       }
       return;
     }
-
+ 
     setLoading(true);
-
+ 
     try {
       await updateCliente(cliente.id, {
         nombre: form.nombre.trim(),
         apellidos: form.apellidos.trim(),
         email: form.email.trim(),
-        telefono: form.telefono.trim() ? form.telefono.replace(/\s+/g, "") : undefined,
+        telefono: form.telefono.trim() ? form.telefono.replaceAll(/\s+/g, "") : undefined,
         documentoIdentidad: form.documentoIdentidad.trim() || undefined,
         tipoUsuario: "CLIENTE",
       });
-
+ 
       setSuccess("Información del cliente actualizada correctamente.");
       onUpdated();
-
+ 
       setTimeout(() => {
         handleClose();
       }, 1500);
@@ -141,9 +147,9 @@ export default function EditClienteModal({
       setLoading(false);
     }
   }
-
+ 
   if (!open || !cliente) return null;
-
+ 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#050a0e]/50 backdrop-blur-sm p-4 animate-fade-in">
       <div className="bg-white dark:bg-white/5 rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden animate-slide-up">
@@ -168,7 +174,7 @@ export default function EditClienteModal({
             <span className="material-symbols-outlined">close</span>
           </button>
         </div>
-
+ 
         <form onSubmit={handleSubmit} className="px-8 py-6 space-y-4" noValidate>
           {error && (
             <div className="rounded-xl border border-red-200 dark:border-red-900/50 bg-red-50 dark:bg-red-900/20 px-4 py-3 text-[13px] text-red-800 dark:text-red-400">
@@ -180,13 +186,14 @@ export default function EditClienteModal({
               {success}
             </div>
           )}
-
+ 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <label className="block text-[11px] font-bold text-slate-500 dark:text-white/60 uppercase tracking-wider">
+              <label htmlFor={nombreId} className="block text-[11px] font-bold text-slate-500 dark:text-white/60 uppercase tracking-wider">
                 Nombre *
               </label>
               <input
+                id={nombreId}
                 name="nombre"
                 value={form.nombre}
                 onChange={(e) => handleFieldChange("nombre", e.target.value)}
@@ -202,10 +209,11 @@ export default function EditClienteModal({
               )}
             </div>
             <div className="space-y-1.5">
-              <label className="block text-[11px] font-bold text-slate-500 dark:text-white/60 uppercase tracking-wider">
+              <label htmlFor={apellidosId} className="block text-[11px] font-bold text-slate-500 dark:text-white/60 uppercase tracking-wider">
                 Apellidos *
               </label>
               <input
+                id={apellidosId}
                 name="apellidos"
                 value={form.apellidos}
                 onChange={(e) => handleFieldChange("apellidos", e.target.value)}
@@ -221,12 +229,13 @@ export default function EditClienteModal({
               )}
             </div>
           </div>
-
+ 
           <div className="space-y-1.5">
-            <label className="block text-[11px] font-bold text-slate-500 dark:text-white/60 uppercase tracking-wider">
+            <label htmlFor={emailId} className="block text-[11px] font-bold text-slate-500 dark:text-white/60 uppercase tracking-wider">
               Correo electrónico *
             </label>
             <input
+              id={emailId}
               type="email"
               disabled
               value={form.email}
@@ -234,13 +243,14 @@ export default function EditClienteModal({
               placeholder="cliente@ejemplo.com"
             />
           </div>
-
+ 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <label className="block text-[11px] font-bold text-slate-500 dark:text-white/60 uppercase tracking-wider">
+              <label htmlFor={docId} className="block text-[11px] font-bold text-slate-500 dark:text-white/60 uppercase tracking-wider">
                 DNI / CE
               </label>
               <input
+                id={docId}
                 name="documentoIdentidad"
                 value={form.documentoIdentidad}
                 onChange={(e) => handleFieldChange("documentoIdentidad", e.target.value)}
@@ -256,10 +266,11 @@ export default function EditClienteModal({
               )}
             </div>
             <div className="space-y-1.5">
-              <label className="block text-[11px] font-bold text-slate-500 dark:text-white/60 uppercase tracking-wider">
+              <label htmlFor={telefonoId} className="block text-[11px] font-bold text-slate-500 dark:text-white/60 uppercase tracking-wider">
                 Teléfono
               </label>
               <input
+                id={telefonoId}
                 name="telefono"
                 value={form.telefono}
                 onChange={(e) => handleFieldChange("telefono", e.target.value)}
@@ -275,17 +286,17 @@ export default function EditClienteModal({
               )}
             </div>
           </div>
-
+ 
           <p className="text-[11px] text-slate-500 dark:text-white/60 leading-relaxed">
             Los cambios se reflejarán inmediatamente en la base de datos de Llosa.
           </p>
-
+ 
           <div className="flex justify-end gap-3 pt-4 mt-2">
             <button
               type="button"
               disabled={loading}
               onClick={handleClose}
-              className="px-5 py-2.5 text-sm font-bold text-slate-500 dark:text-white/60 hover:bg-slate-50 dark:bg-white/5 hover:text-build-main dark:text-white rounded-xl transition-colors"
+              className="px-5 py-2.5 text-sm font-bold text-slate-500 dark:text-white/60 hover:bg-slate-50 dark:bg-white/5 hover:text-build-main dark:hover:text-white rounded-xl transition-colors"
             >
               Cancelar
             </button>
@@ -311,11 +322,11 @@ export default function EditClienteModal({
                       d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
                     />
                   </svg>
-                  Guardando…
+                  <span>Guardando…</span>
                 </>
               ) : (
                 <>
-                  Guardar cambios
+                  <span>Guardar cambios</span>
                   <span className="material-symbols-outlined text-[18px]">save</span>
                 </>
               )}

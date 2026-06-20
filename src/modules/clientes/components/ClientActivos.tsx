@@ -12,8 +12,8 @@ import { fetchProyectos, type Proyecto } from "@/lib/api/proyectos";
 import { ApiError } from "@/lib/api/http";
 
 type ClientActivosProps = {
-  clientId: number;
-  refreshKey?: number;
+  readonly clientId: number;
+  readonly refreshKey?: number;
 };
 
 function getUnitIcon(tipo: string): string {
@@ -59,7 +59,7 @@ function formatPrice(precio: number): string {
   return `S/ ${precio.toLocaleString("es-PE", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
 }
 
-export default function ClientActivos({ clientId, refreshKey = 0 }: ClientActivosProps) {
+export default function ClientActivos({ clientId, refreshKey = 0 }: Readonly<ClientActivosProps>) {
   const router = useRouter();
   const [activos, setActivos] = useState<ActivoUsuarioDTO[]>([]);
   const [proyectos, setProyectos] = useState<Proyecto[]>([]);
@@ -130,7 +130,7 @@ export default function ClientActivos({ clientId, refreshKey = 0 }: ClientActivo
       <div className="flex items-center justify-between mb-5">
         <h3 className="text-base font-bold text-build-main dark:text-white flex items-center gap-2">
           <span className="material-symbols-outlined text-arch-gold">domain</span>
-          Propiedades del Cliente
+          <span>Propiedades del Cliente</span>
         </h3>
         {!loading && (
           <span className="text-xs font-bold text-slate-400 dark:text-white/40 bg-slate-100 dark:bg-white/10 px-2.5 py-1 rounded-full">
@@ -217,15 +217,15 @@ export default function ClientActivos({ clientId, refreshKey = 0 }: ClientActivo
                       <div className="flex items-center gap-4 text-[11px] text-slate-500 dark:text-white/50 mb-3 pl-[52px]">
                         <span className="flex items-center gap-1">
                           <span className="material-symbols-outlined text-[13px]">payments</span>
-                          {formatPrice(activo.precio)}
+                          <span>{formatPrice(activo.precio)}</span>
                         </span>
                         <span className="flex items-center gap-1">
                           <span className="material-symbols-outlined text-[13px]">straighten</span>
-                          {activo.areaM2} m²
+                          <span>{activo.areaM2} m²</span>
                         </span>
                         <span className="flex items-center gap-1">
                           <span className="material-symbols-outlined text-[13px]">roofing</span>
-                          Tech. {activo.areaTechada} m²
+                          <span>Tech. {activo.areaTechada} m²</span>
                         </span>
                       </div>
 
@@ -238,14 +238,14 @@ export default function ClientActivos({ clientId, refreshKey = 0 }: ClientActivo
                           className="inline-flex items-center gap-1.5 text-xs font-semibold text-arch-gold hover:text-build-main dark:hover:text-white transition-colors px-3 py-1.5 rounded-lg hover:bg-build-bg dark:hover:bg-white/10 disabled:opacity-50"
                         >
                           <span className="material-symbols-outlined text-[15px]">gavel</span>
-                          {loadingLegal[activo.id] ? "Cargando..." : "Ver expediente legal"}
+                          <span>{loadingLegal[activo.id] ? "Cargando..." : "Ver expediente legal"}</span>
                         </button>
                         <Link
                           href={proyectoId ? `/proyectos/${proyectoId}/unidades/${activo.id}` : `/proyectos`}
                           className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 dark:text-white/50 hover:text-build-main dark:hover:text-white transition-colors px-3 py-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-white/10"
                         >
                           <span className="material-symbols-outlined text-[15px]">visibility</span>
-                          Ver detalle de unidad
+                          <span>Ver detalle de unidad</span>
                         </Link>
                       </div>
                     </div>

@@ -1,17 +1,13 @@
 import ClientExpedienteView from "@/modules/legal/components/ClientExpedienteView";
 
 type ClientExpedientePageProps = {
-  params: Promise<{
-    id: string;
+  readonly params: Promise<{
+    readonly id: string;
   }>;
 };
 
-export default async function ClientExpedientePage({ params }: ClientExpedientePageProps) {
+export default async function ClientExpedientePage({ params }: Readonly<ClientExpedientePageProps>) {
   const { id } = await params;
 
-  return (
-    <>
-      <ClientExpedienteView clientId={Number(id)} />
-    </>
-  );
+  return <ClientExpedienteView clientId={Number(id)} />;
 }

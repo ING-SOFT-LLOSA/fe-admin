@@ -1,5 +1,5 @@
 // Removed mock import
-
+ 
 interface Assignment {
   status: string;
   projectName: string;
@@ -7,20 +7,20 @@ interface Assignment {
   financing: string;
   estadoTramiteLegal: string;
 }
-
+ 
 type ClientGeneralStatusProps = {
-  assignments: Assignment[];
+  readonly assignments: readonly Assignment[];
 };
-
-export default function ClientGeneralStatus({ assignments }: ClientGeneralStatusProps) {
+ 
+export default function ClientGeneralStatus({ assignments }: Readonly<ClientGeneralStatusProps>) {
   const active = assignments.filter((a) => a.status === "Vigente");
-
+ 
   if (active.length === 0) {
     return (
       <section className="rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 p-6 shadow-sm">
         <h3 className="text-base font-bold text-build-main dark:text-white flex items-center gap-2 mb-4">
           <span className="material-symbols-outlined text-arch-gold">info</span>
-          Estado General
+          <span>Estado General</span>
         </h3>
         <div className="text-center py-6 text-slate-500 dark:text-white/50 bg-slate-50 dark:bg-white/5 rounded-xl border border-dashed border-slate-300 dark:border-white/10">
           <span className="material-symbols-outlined text-3xl mb-2 opacity-50">info</span>
@@ -29,10 +29,10 @@ export default function ClientGeneralStatus({ assignments }: ClientGeneralStatus
       </section>
     );
   }
-
+ 
   // Show a summary of the first (or "principal") assignment
   const principal = active[0];
-
+ 
   const statusItems = [
     { label: "Proyecto", value: principal.projectName, icon: "location_city" },
     { label: "Unidad Principal", value: principal.unitLabel, icon: "apartment" },
@@ -40,14 +40,14 @@ export default function ClientGeneralStatus({ assignments }: ClientGeneralStatus
     { label: "Fase Comercial", value: "Contrato Firmado", icon: "description" },
     { label: "Estado Legal", value: "Minuta en revisión", icon: "gavel" },
   ];
-
+ 
   return (
     <section className="rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 p-6 shadow-sm">
       <h3 className="text-base font-bold text-build-main dark:text-white flex items-center gap-2 mb-5">
         <span className="material-symbols-outlined text-arch-gold">info</span>
-        Estado General
+        <span>Estado General</span>
       </h3>
-
+ 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {statusItems.map((item) => (
           <div
@@ -70,7 +70,7 @@ export default function ClientGeneralStatus({ assignments }: ClientGeneralStatus
           </div>
         ))}
       </div>
-
+ 
       {active.length > 1 && (
         <p className="text-xs text-slate-400 dark:text-white/40 mt-4">
           Mostrando resumen de la unidad principal. El cliente tiene {active.length} propiedades activas.

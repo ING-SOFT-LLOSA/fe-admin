@@ -6,10 +6,10 @@ import { desactivarUsuario } from "@/lib/api/users";
 import type { ClienteRow } from "@/types/user";
 
 type DeleteUsuarioModalProps = {
-  open: boolean;
-  usuario: ClienteRow | null;
-  onClose: () => void;
-  onDeleted: () => void;
+  readonly open: boolean;
+  readonly usuario: ClienteRow | null;
+  readonly onClose: () => void;
+  readonly onDeleted: () => void;
 };
 
 export default function DeleteUsuarioModal({
@@ -17,7 +17,7 @@ export default function DeleteUsuarioModal({
   usuario,
   onClose,
   onDeleted,
-}: DeleteUsuarioModalProps) {
+}: Readonly<DeleteUsuarioModalProps>) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
