@@ -1,14 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useId } from "react";
 import type { ChangeEvent } from "react";
 import type { ProyectoCreateDTO } from "@/modules/proyectos/types";
 
 type ProjectFormProps = {
-  values: ProyectoCreateDTO;
-  onChange: (field: keyof ProyectoCreateDTO, value: string | boolean) => void;
-  onSubmit: () => void;
-  isSaving: boolean;
+  readonly values: ProyectoCreateDTO;
+  readonly onChange: (field: keyof ProyectoCreateDTO, value: string | boolean) => void;
+  readonly onSubmit: () => void;
+  readonly isSaving: boolean;
 };
 
 const textFields: Array<{
@@ -30,31 +30,30 @@ export default function ProjectForm({
   onChange,
   onSubmit,
   isSaving,
-}: ProjectFormProps) {
+}: Readonly<ProjectFormProps>) {
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const precertificacionEdgeLeedId = useId();
 
   const validateForm = (data: ProyectoCreateDTO): Record<string, string> => {
     const newErrors: Record<string, string> = {};
 
-    if (!data.nombre || !data.nombre.trim()) {
+    if (!data.nombre?.trim()) {
       newErrors.nombre = "El nombre del proyecto es obligatorio.";
-    } else if (data.nombre.trim().length < 3) {
+    } else if ((data.nombre?.trim()?.length ?? 0) < 3) {
       newErrors.nombre = "El nombre debe tener al menos 3 caracteres.";
     }
 
-    if (!data.direccion || !data.direccion.trim()) {
+    if (!data.direccion?.trim()) {
       newErrors.direccion = "La dirección es obligatoria.";
     }
 
-    if (!data.departamento || !data.departamento.trim()) {
+    if (!data.departamento?.trim()) {
       newErrors.departamento = "El departamento es obligatorio.";
     }
 
-    if (!data.distrito || !data.distrito.trim()) {
+    if (!data.distrito?.trim()) {
       newErrors.distrito = "El distrito es obligatorio.";
     }
-
-
 
     if (data.fechaInicio && data.fechaFin) {
       const start = new Date(data.fechaInicio);
@@ -122,14 +121,15 @@ export default function ProjectForm({
         {textFields.map((field) => {
           const hasError = !!errors[field.key];
           return (
-            <label key={field.key} className={field.key === "direccion" ? "md:col-span-2" : ""}>
-              <span className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-white/60">
+            <div key={field.key} className={field.key === "direccion" ? "md:col-span-2" : ""}>
+              <label htmlFor={field.key} className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-white/60">
                 {field.label}
                 {["nombre", "direccion", "departamento", "distrito"].includes(field.key) && (
                   <span className="text-red-500 ml-1">*</span>
                 )}
-              </span>
+              </label>
               <input
+                id={field.key}
                 type={field.type}
                 name={field.key}
                 value={String(values[field.key])}
@@ -138,21 +138,22 @@ export default function ProjectForm({
                 className={`w-full rounded-xl border bg-white dark:bg-white/5 px-3 py-2.5 text-sm text-build-main dark:text-white outline-none transition-all focus:ring-1 ${
                   hasError 
                     ? "border-red-500 focus:border-red-600 focus:ring-red-500/20" 
-                    : "border-slate-200 dark:border-white/10 focus:border-build-accent focus:ring-build-accent"
+                     : "border-slate-200 dark:border-white/10 focus:border-build-accent focus:ring-build-accent"
                 }`}
               />
               {hasError && (
                 <p className="mt-1 text-xs font-semibold text-red-500 dark:text-red-400">{errors[field.key]}</p>
               )}
-            </label>
+            </div>
           );
         })}
         
-        <label className="md:col-span-2">
-          <span className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-white/60">
+        <div className="md:col-span-2">
+          <label htmlFor="descripcion" className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-white/60">
             Descripción
-          </span>
+          </label>
           <textarea
+            id="descripcion"
             name="descripcion"
             value={values.descripcion}
             onChange={handleInputChange("descripcion")}
@@ -160,22 +161,23 @@ export default function ProjectForm({
             rows={3}
             className="w-full rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 px-3 py-2.5 text-sm text-build-main dark:text-white outline-none transition-all focus:border-build-accent focus:ring-1 focus:ring-build-accent"
           />
-        </label>
+        </div>
 
-        <label className="md:col-span-2 flex items-center gap-3 rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 px-4 py-3 cursor-pointer">
+        <div className="md:col-span-2 flex items-center gap-3 rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 px-4 py-3">
           <input
+            id={precertificacionEdgeLeedId}
             type="checkbox"
             checked={values.precertificacionEdgeLeed}
             onChange={handleCheckboxChange("precertificacionEdgeLeed")}
             className="h-4 w-4 accent-[#023143]"
           />
-          <div>
-            <p className="text-sm font-semibold text-build-main dark:text-white">Precertificación EDGE / LEED</p>
-            <p className="text-[12px] text-slate-500 dark:text-white/60">
+          <label htmlFor={precertificacionEdgeLeedId} className="cursor-pointer">
+            <span className="text-sm font-semibold text-build-main dark:text-white block">Precertificación EDGE / LEED</span>
+            <span className="text-[12px] text-slate-500 dark:text-white/60 block">
               Marca esta opción si el proyecto cuenta con certificación sostenible.
-            </p>
-          </div>
-        </label>
+            </span>
+          </label>
+        </div>
       </div>
 
       <div className="mt-6 flex justify-end">
@@ -196,7 +198,7 @@ export default function ProjectForm({
           ) : (
             <>
               <span className="material-symbols-outlined text-[18px]">save</span>
-              Guardar cambios
+              <span>Guardar cambios</span>
             </>
           )}
         </button>
