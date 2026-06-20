@@ -1,28 +1,34 @@
-import { useState } from "react";
+import { useState, useId } from "react";
 import type { InventoryConfig } from "@/modules/proyectos/utils/wizard-logic";
 
 type InventoryConfiguratorProps = {
-  initialData: InventoryConfig;
-  onBack: () => void;
-  onSubmit: (data: InventoryConfig) => void;
+  readonly initialData: InventoryConfig;
+  readonly onBack: () => void;
+  readonly onSubmit: (data: InventoryConfig) => void;
 };
 
 export default function InventoryConfigurator({
   initialData,
   onBack,
   onSubmit,
-}: InventoryConfiguratorProps) {
+}: Readonly<InventoryConfiguratorProps>) {
   const [config, setConfig] = useState<InventoryConfig>(initialData);
+
+  const numTorresId = useId();
+  const pisosPorTorreId = useId();
+  const depasPorPisoId = useId();
+  const cocherasPorPisoId = useId();
+  const depositosPorPisoId = useId();
 
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = event.target;
     setConfig((current) => ({
       ...current,
-      [name]: Math.max(0, parseInt(value, 10) || 0),
+      [name]: Math.max(0, Number.parseInt(value, 10) || 0),
     }));
   };
 
-  const handleSubmit = (event: React.FormEvent) => {
+  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     onSubmit(config);
   };
@@ -43,8 +49,9 @@ export default function InventoryConfigurator({
           </h3>
 
           <div className="flex items-center justify-between gap-4">
-            <label className="text-sm font-semibold text-slate-700 dark:text-white/80">Número de torres</label>
+            <label htmlFor={numTorresId} className="text-sm font-semibold text-slate-700 dark:text-white/80">Número de torres</label>
             <input
+              id={numTorresId}
               type="number"
               name="numTorres"
               min="1"
@@ -55,8 +62,9 @@ export default function InventoryConfigurator({
           </div>
 
           <div className="flex items-center justify-between gap-4">
-            <label className="text-sm font-semibold text-slate-700 dark:text-white/80">Pisos por torre</label>
+            <label htmlFor={pisosPorTorreId} className="text-sm font-semibold text-slate-700 dark:text-white/80">Pisos por torre</label>
             <input
+              id={pisosPorTorreId}
               type="number"
               name="pisosPorTorre"
               min="1"
@@ -73,11 +81,12 @@ export default function InventoryConfigurator({
           </h3>
 
           <div className="flex items-center justify-between gap-4">
-            <label className="flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-white/80">
+            <label htmlFor={depasPorPisoId} className="flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-white/80">
               <span className="material-symbols-outlined text-[18px] text-slate-400 dark:text-white/50">apartment</span>
-              Dptos. por piso
+              <span>Dptos. por piso</span>
             </label>
             <input
+              id={depasPorPisoId}
               type="number"
               name="depasPorPiso"
               min="0"
@@ -88,11 +97,12 @@ export default function InventoryConfigurator({
           </div>
 
           <div className="flex items-center justify-between gap-4">
-            <label className="flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-white/80">
+            <label htmlFor={cocherasPorPisoId} className="flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-white/80">
               <span className="material-symbols-outlined text-[18px] text-slate-400 dark:text-white/50">directions_car</span>
-              Cocheras por piso
+              <span>Cocheras por piso</span>
             </label>
             <input
+              id={cocherasPorPisoId}
               type="number"
               name="cocherasPorPiso"
               min="0"
@@ -103,11 +113,12 @@ export default function InventoryConfigurator({
           </div>
 
           <div className="flex items-center justify-between gap-4">
-            <label className="flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-white/80">
+            <label htmlFor={depositosPorPisoId} className="flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-white/80">
               <span className="material-symbols-outlined text-[18px] text-slate-400 dark:text-white/50">inventory_2</span>
-              Depósitos por piso
+              <span>Depósitos por piso</span>
             </label>
             <input
+              id={depositosPorPisoId}
               type="number"
               name="depositosPorPiso"
               min="0"
@@ -151,14 +162,14 @@ export default function InventoryConfigurator({
           className="flex items-center gap-2 rounded-xl px-6 py-2.5 text-sm font-bold text-slate-600 dark:text-white/70 transition-colors hover:bg-slate-100 dark:bg-white/10"
         >
           <span className="material-symbols-outlined text-[18px]">arrow_back</span>
-          Volver
+          <span>Volver</span>
         </button>
         <button
           type="submit"
           className="flex items-center gap-2 rounded-xl bg-build-main px-6 py-2.5 text-sm font-bold text-white shadow-sm transition-colors hover:bg-arch-gold"
         >
           <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
-          Siguiente paso
+          <span>Siguiente paso</span>
         </button>
       </div>
     </form>
