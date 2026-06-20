@@ -1,29 +1,28 @@
 import Link from "next/link";
 import { ClienteAssignment } from "@/types/user";
-
+ 
 type ClientPropertiesProps = {
-  assignments: ClienteAssignment[];
-  onUnlink: (assignment: ClienteAssignment) => void;
+  readonly assignments: readonly ClienteAssignment[];
+  readonly onUnlink: (assignment: ClienteAssignment) => void;
 };
-
-
+ 
 function getUnitIcon(label: string): string {
   const lower = label.toLowerCase();
   if (lower.includes("cochera") || lower.includes("estacionamiento") || lower.includes("e-")) return "directions_car";
   if (lower.includes("depósito") || lower.includes("deposito") || lower.includes("d-")) return "inventory_2";
   return "apartment";
 }
-
-export default function ClientProperties({ assignments, onUnlink }: ClientPropertiesProps) {
+ 
+export default function ClientProperties({ assignments, onUnlink }: Readonly<ClientPropertiesProps>) {
   const active = assignments.filter((a) => a.status === "Vigente");
-
+ 
   return (
     <section className="rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 p-6 shadow-sm">
       <h3 className="text-base font-bold text-build-main dark:text-white flex items-center gap-2 mb-5">
         <span className="material-symbols-outlined text-arch-gold">domain</span>
-        Propiedades
+        <span>Propiedades</span>
       </h3>
-
+ 
       {active.length === 0 ? (
         <div className="text-center py-8 text-slate-500 dark:text-white/50 bg-slate-50 dark:bg-white/5 rounded-xl border border-dashed border-slate-300 dark:border-white/10">
           <span className="material-symbols-outlined text-4xl mb-2 opacity-50">home_work</span>
@@ -40,7 +39,7 @@ export default function ClientProperties({ assignments, onUnlink }: ClientProper
                   <span className="material-symbols-outlined text-arch-gold text-[18px]">location_city</span>
                   <h4 className="text-xs font-bold text-build-main dark:text-white uppercase tracking-wide">{project}</h4>
                 </div>
-
+ 
                 <div className="space-y-2">
                   {units.map((unit) => (
                     <div
@@ -56,7 +55,7 @@ export default function ClientProperties({ assignments, onUnlink }: ClientProper
                           <p className="text-[11px] text-slate-500 dark:text-white/50">{unit.financing}</p>
                         </div>
                       </div>
-
+ 
                       <div className="flex items-center gap-2">
                         <button
                           type="button"
