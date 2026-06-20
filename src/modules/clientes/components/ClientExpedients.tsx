@@ -1,20 +1,20 @@
 import Link from "next/link";
 import { ClienteAssignment } from "@/types/user";
-
+ 
 type ClientExpedientsProps = {
-  assignments: ClienteAssignment[];
+  readonly assignments: readonly ClienteAssignment[];
 };
-
-export default function ClientExpedients({ assignments }: ClientExpedientsProps) {
+ 
+export default function ClientExpedients({ assignments }: Readonly<ClientExpedientsProps>) {
   const active = assignments.filter((a) => a.status === "Vigente");
-
+ 
   return (
     <section className="rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 p-6 shadow-sm">
       <h3 className="text-base font-bold text-build-main dark:text-white flex items-center gap-2 mb-5">
         <span className="material-symbols-outlined text-arch-gold">folder_open</span>
-        Expedientes
+        <span>Expedientes</span>
       </h3>
-
+ 
       {active.length === 0 ? (
         <div className="text-center py-6 text-slate-500 dark:text-white/50 bg-slate-50 dark:bg-white/5 rounded-xl border border-dashed border-slate-300 dark:border-white/10">
           <p className="text-sm">Sin expedientes activos.</p>
@@ -39,7 +39,7 @@ export default function ClientExpedients({ assignments }: ClientExpedientsProps)
                   </p>
                 </div>
               </div>
-
+ 
               <div className="flex items-center gap-3">
                 <span className="bg-[#E8F5E9] text-[#2E7D32] px-2 py-1 rounded text-[10px] font-bold uppercase hidden sm:inline-flex">
                   Contrato firmado
@@ -48,7 +48,7 @@ export default function ClientExpedients({ assignments }: ClientExpedientsProps)
                   href={`/clientes/${item.clientId}/expediente`}
                   className="text-xs font-semibold text-build-main dark:text-white hover:bg-build-bg dark:hover:bg-white/10 transition-colors px-3 py-1.5 rounded-lg flex items-center gap-1"
                 >
-                  Abrir
+                  <span>Abrir</span>
                   <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
                 </Link>
               </div>
