@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState, useId } from "react";
 
 import PermissionGuard from "@/components/auth/PermissionGuard";
 import DialogModal from "@/components/ui/DialogModal";
@@ -31,6 +31,11 @@ function permissionLabels(roles: Rol[]) {
 
 export default function EmployeeManagementPage() {
   const { perfil } = useAuth();
+  const nombresId = useId();
+  const apellidosId = useId();
+  const emailId = useId();
+  const telefonoId = useId();
+  const rolId = useId();
   const [users, setUsers] = useState<Usuario[]>([]);
   const [roles, setRoles] = useState<Rol[]>([]);
   const [activeTab, setActiveTab] = useState<TabKey>("usuarios");
@@ -60,10 +65,10 @@ export default function EmployeeManagementPage() {
       setLoading(true);
     }
     const [loadedUsers, loadedRoles] = await Promise.all([fetchUsuarios(), fetchRoles()]);
-    const internalUsers = loadedUsers.filter((user) => user.tipoUsuario === "EMPLEADO");
+    const firstInternalUser = loadedUsers.find((user) => user.tipoUsuario === "EMPLEADO");
     setUsers(loadedUsers);
     setRoles(loadedRoles);
-    setSelectedUserId((current) => current ?? internalUsers[0]?.id ?? null);
+    setSelectedUserId((current) => current ?? firstInternalUser?.id ?? null);
     setLoading(false);
   }
 
@@ -111,7 +116,7 @@ export default function EmployeeManagementPage() {
   }
 
   async function changeRole(user: Usuario, roleName: string) {
-    if (perfil && perfil.id === user.id) {
+    if (perfil?.id === user.id) {
       setError("No puedes cambiar tu propio rol ni degradar tu cuenta administrativa.");
       return;
     }
@@ -132,7 +137,7 @@ export default function EmployeeManagementPage() {
 
   async function deactivate(user: Usuario) {
     if (!user.activo) return;
-    if (perfil && perfil.id === user.id) {
+    if (perfil?.id === user.id) {
       setError("No puedes desactivar tu propia cuenta.");
       return;
     }
@@ -163,7 +168,7 @@ export default function EmployeeManagementPage() {
             className="inline-flex items-center gap-2 rounded-lg bg-build-main px-4 py-2 text-sm font-bold text-white shadow-sm hover:bg-build-main/90 disabled:opacity-50"
           >
             <span className="material-symbols-outlined text-[18px]">person_add</span>
-            Crear usuario
+            <span>Crear usuario</span>
           </button>
         </div>
 
@@ -250,7 +255,7 @@ export default function EmployeeManagementPage() {
                                 }}
                                 disabled={!user.activo || saving || perfil?.id === user.id}
                                 className="rounded-md p-1.5 text-[#ba1a1a] hover:bg-[#ffdad6] disabled:opacity-40"
-                                title={perfil && perfil.id === user.id ? "No puedes desactivar tu propio usuario" : "Desactivar usuario"}
+                                title={perfil?.id === user.id ? "No puedes desactivar tu propio usuario" : "Desactivar usuario"}
                               >
                                 <span className="material-symbols-outlined text-[18px]">person_off</span>
                               </button>
@@ -379,28 +384,28 @@ export default function EmployeeManagementPage() {
 
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                   <div>
-                    <label className="mb-1.5 block text-xs font-bold uppercase text-slate-500">Nombres</label>
-                    <input required value={form.nombres} onChange={(event) => setForm({ ...form, nombres: event.target.value })} className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm focus:outline-none focus:border-build-accent dark:bg-white/5 dark:border-white/10 dark:text-white" />
+                    <label htmlFor={nombresId} className="mb-1.5 block text-xs font-bold uppercase text-slate-500">Nombres</label>
+                    <input id={nombresId} required value={form.nombres} onChange={(event) => setForm({ ...form, nombres: event.target.value })} className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm focus:outline-none focus:border-build-accent dark:bg-white/5 dark:border-white/10 dark:text-white" />
                   </div>
                   <div>
-                    <label className="mb-1.5 block text-xs font-bold uppercase text-slate-500">Apellidos</label>
-                    <input required value={form.apellidos} onChange={(event) => setForm({ ...form, apellidos: event.target.value })} className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm focus:outline-none focus:border-build-accent dark:bg-white/5 dark:border-white/10 dark:text-white" />
+                    <label htmlFor={apellidosId} className="mb-1.5 block text-xs font-bold uppercase text-slate-500">Apellidos</label>
+                    <input id={apellidosId} required value={form.apellidos} onChange={(event) => setForm({ ...form, apellidos: event.target.value })} className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm focus:outline-none focus:border-build-accent dark:bg-white/5 dark:border-white/10 dark:text-white" />
                   </div>
                 </div>
 
                 <div>
-                  <label className="mb-1.5 block text-xs font-bold uppercase text-slate-500">Correo corporativo</label>
-                  <input type="email" required value={form.email} onChange={(event) => setForm({ ...form, email: event.target.value })} className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm focus:outline-none focus:border-build-accent dark:bg-white/5 dark:border-white/10 dark:text-white" />
+                  <label htmlFor={emailId} className="mb-1.5 block text-xs font-bold uppercase text-slate-500">Correo corporativo</label>
+                  <input id={emailId} type="email" required value={form.email} onChange={(event) => setForm({ ...form, email: event.target.value })} className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm focus:outline-none focus:border-build-accent dark:bg-white/5 dark:border-white/10 dark:text-white" />
                 </div>
 
                 <div>
-                  <label className="mb-1.5 block text-xs font-bold uppercase text-slate-500">Teléfono</label>
-                  <input type="tel" value={form.telefono} onChange={(event) => setForm({ ...form, telefono: event.target.value })} placeholder="+51 999 888 777" className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm focus:outline-none focus:border-build-accent dark:bg-white/5 dark:border-white/10 dark:text-white" />
+                  <label htmlFor={telefonoId} className="mb-1.5 block text-xs font-bold uppercase text-slate-500">Teléfono</label>
+                  <input id={telefonoId} type="tel" value={form.telefono} onChange={(event) => setForm({ ...form, telefono: event.target.value })} placeholder="+51 999 888 777" className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm focus:outline-none focus:border-build-accent dark:bg-white/5 dark:border-white/10 dark:text-white" />
                 </div>
 
                 <div>
-                  <label className="mb-1.5 block text-xs font-bold uppercase text-slate-500">Rol base</label>
-                  <select value={form.rol} onChange={(event) => setForm({ ...form, rol: event.target.value })} className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm font-semibold focus:outline-none focus:border-build-accent dark:bg-white/5 dark:border-white/10 dark:text-white">
+                  <label htmlFor={rolId} className="mb-1.5 block text-xs font-bold uppercase text-slate-500">Rol base</label>
+                  <select id={rolId} value={form.rol} onChange={(event) => setForm({ ...form, rol: event.target.value })} className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm font-semibold focus:outline-none focus:border-build-accent dark:bg-white/5 dark:border-white/10 dark:text-white">
                     {employeeRoles.map((role) => (
                       <option key={role.idRol} value={role.nombre}>{ROLE_LABELS[role.nombre] ?? role.nombre}</option>
                     ))}

@@ -118,7 +118,9 @@ export async function fetchDocumentosByReferencia(
   if (tipoDocumento) params.set("tipoDocumento", tipoDocumento);
   if (entidadReferencia) params.set("entidadReferencia", entidadReferencia);
   const qs = params.toString();
-  return apiFetch<DocumentoResponse[]>(`/api/documentos/${idReferencia}${qs ? `?${qs}` : ""}`);
+  const prefix = `/api/documentos/${idReferencia}`;
+  const url = qs ? `${prefix}?${qs}` : prefix;
+  return apiFetch<DocumentoResponse[]>(url);
 }
 
 export const fetchDocumentosByUsuarioActivo = fetchDocumentosByReferencia;

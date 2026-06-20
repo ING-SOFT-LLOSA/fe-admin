@@ -12,8 +12,8 @@ export function canEliminarUsuario(
   target: ClienteRow,
 ): boolean {
   // Alineado con el endpoint DELETE /api/users/:id/hard del backend.
-  if (!perfil || perfil.rol !== "ADMIN") return false;
-  if (perfil!.id === target.id) return false;
+  if (perfil?.rol !== "ADMIN") return false;
+  if (perfil.id === target.id) return false;
   if (target.rol === "ADMIN") return false;
   return true;
 }

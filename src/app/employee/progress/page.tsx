@@ -1,4 +1,5 @@
 "use client";
+import { useId } from "react";
 const advances = [
   { id: 1, title: "Vaciado de losa 4to piso", project: "Torre A", stage: "Estructura", date: "Hoy", state: "Borrador" },
   { id: 2, title: "Instalación de drywall interiores", project: "Torre A", stage: "Acabados", date: "Ayer", state: "Listo para enviar" },
@@ -14,6 +15,11 @@ const stateColors: Record<string, { bg: string; text: string }> = {
 };
 
 export default function EmployeeProgressPage() {
+  const tituloId = useId();
+  const proyectoId = useId();
+  const etapaId = useId();
+  const descripcionId = useId();
+  const multimediaId = useId();
   return (
     <>
       <div className="flex justify-between items-start animate-slide-up">
@@ -29,35 +35,36 @@ export default function EmployeeProgressPage() {
           <h3 className="text-[16px] font-bold text-[#1a1c1d] mb-4">Nuevo Avance</h3>
           <div className="space-y-4">
             <div>
-              <label className="block text-[11px] font-bold text-[#72787c] uppercase tracking-widest mb-1.5">Título del avance</label>
-              <input type="text" placeholder="Ej. Vaciado de cimientos" className="w-full px-3 py-2 border border-[#e2e2e4] rounded-lg text-[13px] focus:outline-none focus:border-[#023143] focus:ring-1 focus:ring-[#023143]" />
+              <label htmlFor={tituloId} className="block text-[11px] font-bold text-[#72787c] uppercase tracking-widest mb-1.5">Título del avance</label>
+              <input id={tituloId} type="text" placeholder="Ej. Vaciado de cimientos" className="w-full px-3 py-2 border border-[#e2e2e4] rounded-lg text-[13px] focus:outline-none focus:border-[#023143] focus:ring-1 focus:ring-[#023143]" />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-[11px] font-bold text-[#72787c] uppercase tracking-widest mb-1.5">Proyecto</label>
-                <select className="w-full px-3 py-2 border border-[#e2e2e4] rounded-lg text-[13px] bg-white dark:bg-white/5 focus:outline-none focus:border-[#023143]">
+                <label htmlFor={proyectoId} className="block text-[11px] font-bold text-[#72787c] uppercase tracking-widest mb-1.5">Proyecto</label>
+                <select id={proyectoId} className="w-full px-3 py-2 border border-[#e2e2e4] rounded-lg text-[13px] bg-white dark:bg-white/5 focus:outline-none focus:border-[#023143]">
                   <option>Seleccionar...</option>
                   <option>Torre A</option>
                   <option>Edificio Central</option>
                 </select>
               </div>
               <div>
-                <label className="block text-[11px] font-bold text-[#72787c] uppercase tracking-widest mb-1.5">Etapa / Hito</label>
-                <select className="w-full px-3 py-2 border border-[#e2e2e4] rounded-lg text-[13px] bg-white dark:bg-white/5 focus:outline-none focus:border-[#023143]">
+                <label htmlFor={etapaId} className="block text-[11px] font-bold text-[#72787c] uppercase tracking-widest mb-1.5">Etapa / Hito</label>
+                <select id={etapaId} className="w-full px-3 py-2 border border-[#e2e2e4] rounded-lg text-[13px] bg-white dark:bg-white/5 focus:outline-none focus:border-[#023143]">
                   <option>Estructura</option>
                   <option>Acabados</option>
                 </select>
               </div>
             </div>
             <div>
-              <label className="block text-[11px] font-bold text-[#72787c] uppercase tracking-widest mb-1.5">Descripción</label>
-              <textarea rows={3} placeholder="Detalles técnicos u observaciones..." className="w-full px-3 py-2 border border-[#e2e2e4] rounded-lg text-[13px] focus:outline-none focus:border-[#023143] focus:ring-1 focus:ring-[#023143] resize-none" />
+              <label htmlFor={descripcionId} className="block text-[11px] font-bold text-[#72787c] uppercase tracking-widest mb-1.5">Descripción</label>
+              <textarea id={descripcionId} rows={3} placeholder="Detalles técnicos u observaciones..." className="w-full px-3 py-2 border border-[#e2e2e4] rounded-lg text-[13px] focus:outline-none focus:border-[#023143] focus:ring-1 focus:ring-[#023143] resize-none" />
             </div>
             
             {/* Upload Area */}
             <div>
-              <label className="block text-[11px] font-bold text-[#72787c] uppercase tracking-widest mb-1.5">Archivos multimedia</label>
+              <label htmlFor={multimediaId} className="block text-[11px] font-bold text-[#72787c] uppercase tracking-widest mb-1.5">Archivos multimedia</label>
               <div className="border-2 border-dashed border-[#c1c7cc] bg-[#f9f9fb] rounded-xl p-6 flex flex-col items-center justify-center text-center cursor-pointer hover:bg-[#f4f3f5] transition-colors group">
+                <input type="file" id={multimediaId} className="hidden" />
                 <span className="material-symbols-outlined text-[32px] text-[#72787c] group-hover:text-[#023143] transition-colors">cloud_upload</span>
                 <p className="text-[13px] font-bold text-[#1a1c1d] mt-2">Haz clic para subir</p>
                 <p className="text-[11px] text-[#72787c] mt-0.5">Fotos (JPG/PNG) o Videos (MP4)</p>

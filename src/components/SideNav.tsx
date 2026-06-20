@@ -111,7 +111,7 @@ export default function SideNav() {
           className="flex w-full items-center justify-center gap-2 rounded-xl bg-white/10 px-4 py-3 text-[13px] font-bold text-build-bg shadow-sm transition-colors hover:bg-white/20"
         >
           <span className="material-symbols-outlined text-[18px]">logout</span>
-          Cerrar Sesión
+          <span>Cerrar Sesión</span>
         </button>
       </div>
     </aside>

@@ -50,11 +50,11 @@ export default function EmployeeSchedulePage() {
             </div>
             {/* Simple Grid Placeholder */}
             <div className="grid grid-cols-7 text-center gap-1 mb-2">
-              {["D","L","M","M","J","V","S"].map(d => <span key={d} className="text-[10px] font-bold text-[#72787c]">{d}</span>)}
+              {["D","L","M","M","J","V","S"].map((d, index) => <span key={`dow-${index}`} className="text-[10px] font-bold text-[#72787c]">{d}</span>)}
             </div>
             <div className="grid grid-cols-7 gap-1 text-center">
               {Array.from({ length: 31 }).map((_, i) => (
-                <button key={i} className={`w-8 h-8 rounded-full flex items-center justify-center text-[12px] font-medium transition-colors ${i + 1 === 24 ? "bg-[#023143] text-white" : "text-[#41484c] hover:bg-[#f4f3f5]"}`}>
+                <button key={`day-${i + 1}`} className={`w-8 h-8 rounded-full flex items-center justify-center text-[12px] font-medium transition-colors ${i + 1 === 24 ? "bg-[#023143] text-white" : "text-[#41484c] hover:bg-[#f4f3f5]"}`}>
                   {i + 1}
                 </button>
               ))}

@@ -1,6 +1,6 @@
 "use client";
  
-import { useState } from "react";
+import { useState, useId } from "react";
 import { useRouter } from "next/navigation";
 import { registerCliente } from "@/lib/api/users";
 import Link from "next/link";
@@ -19,6 +19,12 @@ export default function NewClientPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+ 
+  const nombreId = useId();
+  const apellidosId = useId();
+  const emailId = useId();
+  const telefonoId = useId();
+  const documentoIdentidadId = useId();
  
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -66,7 +72,7 @@ export default function NewClientPage() {
             className="inline-flex items-center gap-2 text-build-main/50 dark:text-white/50 hover:text-build-main dark:hover:text-white transition-colors text-[13px] font-semibold"
           >
             <span className="material-symbols-outlined text-[17px]">arrow_back</span>
-            Volver a clientes
+            <span>Volver a clientes</span>
           </Link>
         </div>
  
@@ -148,10 +154,11 @@ export default function NewClientPage() {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400 dark:text-white/50 mb-1.5">
+                <label htmlFor={nombreId} className="block text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400 dark:text-white/50 mb-1.5">
                   Nombre <span className="text-build-accent">*</span>
                 </label>
                 <input
+                  id={nombreId}
                   type="text" required value={form.nombre}
                   onChange={(e) => setForm((f) => ({ ...f, nombre: e.target.value }))}
                   placeholder="André"
@@ -159,10 +166,11 @@ export default function NewClientPage() {
                 />
               </div>
               <div>
-                <label className="block text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400 dark:text-white/50 mb-1.5">
+                <label htmlFor={apellidosId} className="block text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400 dark:text-white/50 mb-1.5">
                   Apellidos <span className="text-build-accent">*</span>
                 </label>
                 <input
+                  id={apellidosId}
                   type="text" required value={form.apellidos}
                   onChange={(e) => setForm((f) => ({ ...f, apellidos: e.target.value }))}
                   placeholder="Contreras"
@@ -172,10 +180,11 @@ export default function NewClientPage() {
             </div>
  
             <div>
-              <label className="block text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400 dark:text-white/50 mb-1.5">
+              <label htmlFor={emailId} className="block text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400 dark:text-white/50 mb-1.5">
                 Correo electrónico <span className="text-build-accent">*</span>
               </label>
               <input
+                id={emailId}
                 type="email" required value={form.email}
                 onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
                 placeholder="cliente@ejemplo.com"
@@ -185,10 +194,11 @@ export default function NewClientPage() {
  
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400 dark:text-white/50 mb-1.5">
+                <label htmlFor={telefonoId} className="block text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400 dark:text-white/50 mb-1.5">
                   Teléfono
                 </label>
                 <input
+                  id={telefonoId}
                   type="tel" value={form.telefono}
                   onChange={(e) => setForm((f) => ({ ...f, telefono: e.target.value }))}
                   placeholder="+51 999 888 777"
@@ -196,10 +206,11 @@ export default function NewClientPage() {
                 />
               </div>
               <div>
-                <label className="block text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400 dark:text-white/50 mb-1.5">
+                <label htmlFor={documentoIdentidadId} className="block text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400 dark:text-white/50 mb-1.5">
                   DNI / RUC
                 </label>
                 <input
+                  id={documentoIdentidadId}
                   type="text" value={form.documentoIdentidad}
                   onChange={(e) => setForm((f) => ({ ...f, documentoIdentidad: e.target.value }))}
                   placeholder="12345678"
@@ -231,7 +242,7 @@ export default function NewClientPage() {
                   </>
                 ) : (
                   <>
-                    Crear cliente
+                    <span>Crear cliente</span>
                     <span className="material-symbols-outlined text-[17px]">arrow_forward</span>
                   </>
                 )}

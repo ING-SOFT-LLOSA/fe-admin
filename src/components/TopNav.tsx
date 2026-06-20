@@ -16,7 +16,7 @@ const crumbs: Record<string, string> = {
 
 export default function TopNav() {
   const pathname = usePathname();
-  const segment = pathname.split("/").filter(Boolean)[0] ?? "dashboard";
+  const segment = pathname.split("/").find(Boolean) ?? "dashboard";
   const label = crumbs[segment] ?? segment;
 
   return (
