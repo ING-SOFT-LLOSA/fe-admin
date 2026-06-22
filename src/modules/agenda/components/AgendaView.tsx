@@ -812,10 +812,10 @@ export default function SchedulePage() {
                   type="button"
                   key={ev.id} 
                   onClick={() => handleEventClick(ev.id)}
-                  className="mb-4 last:mb-0 pb-3 border-b border-slate-100 last:border-b-0 dark:border-white/5 cursor-pointer hover:bg-slate-50 dark:hover:bg-white/5 p-1 rounded-xl transition-all"
+                  className="w-full text-left mb-4 last:mb-0 pb-3 border-b border-slate-100 last:border-b-0 dark:border-white/5 cursor-pointer hover:bg-slate-50 dark:hover:bg-white/5 p-1 rounded-xl transition-all"
                 >
                   <div className="flex items-center justify-between gap-2">
-                    <h4 className="text-[13px] font-bold text-build-main dark:text-white truncate hover:underline">{ev.label}</h4>
+                    <h4 className="text-[13px] font-bold text-build-main dark:text-white truncate hover:underline min-w-0">{ev.label}</h4>
                       <div className="flex items-center gap-1.5 shrink-0">
                         {ev.syncIcon && (
                           <span className={`material-symbols-outlined text-[14px] ${getSyncIconColor(ev.syncDot)}`} title={ev.syncText}>
