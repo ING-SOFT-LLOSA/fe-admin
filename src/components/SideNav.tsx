@@ -50,7 +50,7 @@ export default function SideNav() {
   return (
     <aside className="hidden md:flex fixed left-0 top-0 z-50 h-full w-72 flex-col border-r border-white/10 bg-build-main px-6 py-8 shadow-sm" style={{ fontFamily: "'Outfit', sans-serif" }}>
       {/* Brand */}
-      <div className="mb-12 flex justify-center">
+      <div className="mb-12 flex justify-center flex-shrink-0">
         <img
           src="/logo_llosa.png"
           alt="Llosa Edificaciones"
@@ -59,7 +59,7 @@ export default function SideNav() {
       </div>
 
       {/* Nav */}
-      <ul className="flex-grow space-y-2">
+      <ul className="flex-grow overflow-y-auto pr-1 space-y-2">
         {groups.map(({ label, items }, i) => {
           const visibleItems = items.filter(
             (item) =>
@@ -105,7 +105,7 @@ export default function SideNav() {
       </ul>
 
       {/* Bottom CTA */}
-      <div className="mt-auto pt-8">
+      <div className="mt-auto pt-8 flex-shrink-0">
         <button
           onClick={handleLogout}
           className="flex w-full items-center justify-center gap-2 rounded-xl bg-white/10 px-4 py-3 text-[13px] font-bold text-build-bg shadow-sm transition-colors hover:bg-white/20"
