@@ -1,21 +1,17 @@
 /**
  * Pruebas de Integración — apiFetch (src/lib/api/http.ts)
- * 
+ *
  * Nota: apiFetch es invocado por todos los módulos via páginas React.
  * Probamos su comportamiento observando efectos en la UI y en las peticiones.
+ *
+ * Todos los tests usan page.route() para mockear Firebase Auth y el backend.
+ * No se requiere Firebase Emulator ni backend real (compatible con CI).
  */
 
 import { test, expect, type Page } from '@playwright/test'
-import { loginViaEmulator } from '../helpers/emulator'
+import { mockFirebaseSuccess } from '../helpers/auth-mock'
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
-
-async function injectSession(page: Page, perfil: Record<string, unknown>) {
-  // El perfil se mockea inline en cada test (page.route '**/api/auth/me')
-  // ANTES de llamar aquí; la identidad la provee el emulador de Firebase Auth.
-  void perfil
-  await loginViaEmulator(page)
-}
 
 const perfilAdmin = {
   id: 1,
@@ -27,6 +23,21 @@ const perfilAdmin = {
   funciones: [],
 }
 
+/**
+ * Inyecta sesión autenticada sin emulador. El perfil se mockea ANTES de llamar
+ * a esta función via page.route() con el patron de api/auth/me.
+ */
+async function injectSession(page: Page, email = perfilAdmin.email) {
+  await mockFirebaseSuccess(page, email)
+  await page.goto('/login')
+  await page.fill('input[type="email"]', email)
+  await page.fill('input[type="password"]', 'Test123456')
+  await page.click('button[type="submit"]')
+  await page
+    .waitForFunction(() => document.cookie.includes('llosa_id_token='), { timeout: 12_000 })
+    .catch(() => { /* caso negativo — el test verificará el comportamiento esperado */ })
+}
+
 // ─── apiFetch: autorización ───────────────────────────────────────────────────
 
 test.describe('apiFetch — Manejo de errores de autorización', () => {
@@ -34,12 +45,23 @@ test.describe('apiFetch — Manejo de errores de autorización', () => {
     /**
      * AuthContext llama a fetchPerfil → apiFetch → GET /api/auth/me al restaurar sesión.
      * Si el backend devuelve 401, AuthContext llama a clearSession y el AuthGuard redirige.
+     *
+     * Usamos addCookies en lugar de injectSession para evitar que el SDK de Firebase
+     * quede autenticado y genere un bucle infinito: clearSession no llama a signOut(),
+     * por lo que onAuthStateChanged vuelve a dispararse → 401 → loop hasta timeout.
      */
     await page.route('**/api/auth/me', async (route) => {
       await route.fulfill({ status: 401, json: { error: 'Unauthorized' } })
     })
 
-    await injectSession(page, perfilAdmin)
+    // Inyectamos una cookie falsa para que el middleware deje pasar la solicitud
+    await page.context().addCookies([{
+      name: 'llosa_id_token',
+      value: 'fake-expired-token',
+      domain: 'localhost',
+      path: '/',
+    }])
+
     await page.goto('/clientes')
 
     await expect(page).toHaveURL(/login/, { timeout: 8_000 })
@@ -60,7 +82,7 @@ test.describe('apiFetch — Manejo de errores de autorización', () => {
       })
     })
 
-    await injectSession(page, perfilAdmin)
+    await injectSession(page)
     await page.goto('/clientes')
 
     // El componente debe mostrar el error de la API
@@ -77,7 +99,7 @@ test.describe('apiFetch — Manejo de errores de autorización', () => {
       await route.fulfill({ status: 500, json: { error: 'Internal Server Error' } })
     })
 
-    await injectSession(page, perfilAdmin)
+    await injectSession(page)
     await page.goto('/clientes')
 
     await expect(
@@ -101,7 +123,7 @@ test.describe('apiFetch — Token de autenticación en cabeceras', () => {
       await route.fulfill({ status: 200, json: [] })
     })
 
-    await injectSession(page, perfilAdmin)
+    await injectSession(page)
     await page.goto('/clientes')
 
     // Esperar a que se completen las peticiones
@@ -136,7 +158,7 @@ test.describe('apiFetch — Formato de peticiones', () => {
       await route.fulfill({ status: 200, json: perfilAdmin })
     })
 
-    await injectSession(page, perfilAdmin)
+    await injectSession(page)
     await page.goto('/clientes')
 
     await page.waitForTimeout(1_500)
@@ -155,21 +177,21 @@ test.describe('apiFetch — Formato de peticiones', () => {
       await route.fulfill({ status: 200, json: [] })
     })
 
-    await injectSession(page, perfilAdmin)
+    await injectSession(page)
     await page.goto('/clientes')
     await page.waitForTimeout(1_000)
 
     // Navegar a otra ruta y volver
-    await page.goto('/proyectos')
     await page.route('**/api/proyectos', async (route) => {
       await route.fulfill({ status: 200, json: [] })
     })
+    await page.goto('/proyectos')
 
     // Volver a clientes — debe hacer una nueva petición (no usar caché)
     await page.goto('/clientes')
     await page.waitForTimeout(1_000)
 
-    // Se esperan al menos 2 peticiones a /api/users (ida y vuelta)
+    // Se esperan al menos 1 petición a /api/users
     expect(requestUrls.length).toBeGreaterThanOrEqual(1)
   })
 })
@@ -189,7 +211,7 @@ test.describe('apiFetch — Parsing de respuestas de la API', () => {
       }
     })
 
-    await injectSession(page, perfilAdmin)
+    await injectSession(page)
     await page.goto('/clientes')
 
     // No debe aparecer error de parsing en la consola
@@ -230,7 +252,7 @@ test.describe('apiFetch — Parsing de respuestas de la API', () => {
       }
     })
 
-    await injectSession(page, perfilAdmin)
+    await injectSession(page)
     await page.goto('/clientes')
 
     // El componente debe renderizar el cliente del mock
@@ -257,7 +279,7 @@ test.describe('apiFetch — Construcción de URLs', () => {
       await route.fulfill({ status: 200, json: [] })
     })
 
-    await injectSession(page, perfilAdmin)
+    await injectSession(page)
     await page.goto('/clientes')
     await page.waitForTimeout(2_000)
 

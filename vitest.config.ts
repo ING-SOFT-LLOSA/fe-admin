@@ -11,7 +11,7 @@ export default defineConfig({
     globals: true,
     environment: 'jsdom',
     setupFiles: ['./vitest.setup.ts'],
-    exclude: ['**/node_modules/**', '**/e2e/**', '**/*.e2e.*'],
+    exclude: ['**/node_modules/**', '**/e2e/**', '**/*.e2e.*', '**/.claude/**'],
     coverage: {
       provider: 'istanbul',
       reporter: ['text', 'json', 'html', 'lcov'],
@@ -24,7 +24,6 @@ export default defineConfig({
         '**/node_modules/**',
         'src/**/*.test.ts',
         'src/**/*.test.tsx',
-        'src/**/__tests__/**',
       ]
     }
   }
