@@ -3,53 +3,7 @@
  */
 
 import { test, expect, type Page } from '@playwright/test'
-
-// ─── Helpers ─────────────────────────────────────────────────────────────────
-
-/**
- * Intercepta GET /api/auth/me (llamada de AuthContext al restaurar sesión)
- */
-async function mockAuthMe(page: Page, perfil: Record<string, unknown> | null, status = 200) {
-  await page.route('**/api/auth/me', async (route) => {
-    if (perfil === null) {
-      await route.fulfill({ status: 401, json: { error: 'Unauthorized' } })
-    } else {
-      await route.fulfill({ status, json: perfil })
-    }
-  })
-}
-
-/**
- * Intercepta la autenticación de Firebase (signInWithEmailAndPassword)
- * Firebase Web SDK usa la REST API de identitytoolkit internamente
- */
-async function mockFirebaseSuccess(page: Page, email: string) {
-  await page.route('**/identitytoolkit.googleapis.com/**', async (route) => {
-    await route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify({
-        idToken: 'mock-firebase-id-token',
-        email,
-        refreshToken: 'mock-refresh-token',
-        expiresIn: '3600',
-        localId: 'mock-uid-001',
-      }),
-    })
-  })
-}
-
-async function mockFirebaseError(page: Page, errorCode: string) {
-  await page.route('**/identitytoolkit.googleapis.com/**', async (route) => {
-    await route.fulfill({
-      status: 400,
-      contentType: 'application/json',
-      body: JSON.stringify({
-        error: { code: 400, message: errorCode, errors: [{ message: errorCode }] },
-      }),
-    })
-  })
-}
+import { mockFirebaseSuccess, mockFirebaseError, mockAuthMe } from './helpers/auth-mock'
 
 // ─── CP01: Login corporativo exitoso ─────────────────────────────────────────
 
@@ -96,9 +50,10 @@ test.describe('CP01 — Login corporativo exitoso con dominio @llosaedificacione
     await page.fill('input[type="password"]', 'ValidPassword123!')
     await page.click('button[type="submit"]')
 
-    // No debe aparecer ningún alert de error
-    const alert = page.locator('[role="alert"]')
-    await expect(alert).toHaveCount(0)
+    // No debe aparecer ningún alert de ERROR (filtramos por texto no vacío;
+    // el DOM puede tener contenedores role="alert" vacíos de aria-live)
+    const errorAlert = page.locator('[role="alert"]').filter({ hasText: /\S/ })
+    await expect(errorAlert).toHaveCount(0)
   })
 })
 
