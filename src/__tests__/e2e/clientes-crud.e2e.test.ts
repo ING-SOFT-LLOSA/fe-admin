@@ -556,7 +556,12 @@ test.describe('CP19 — Desvincular única unidad hace que el cliente quede Inac
       await route.fulfill({ status: 200, json: clienteActivo })
     })
     await page.route('**/api/expedientes**', async (route) => {
-      await route.fulfill({ status: 200, json: expedienteConUnaUnidad })
+      // fetchActivosPorUsuario calls /api/expedientes/usuario/{id}/activos — must return ActivoUsuarioDTO[]
+      if (route.request().url().includes('/usuario/') && route.request().url().includes('/activos')) {
+        await route.fulfill({ status: 200, json: [] })
+      } else {
+        await route.fulfill({ status: 200, json: expedienteConUnaUnidad })
+      }
     })
     await page.route('**/api/proyectos**', async (route) => {
       await route.fulfill({ status: 200, json: [] })
@@ -650,7 +655,12 @@ test.describe('CP20 — Desvincular una unidad cuando el cliente tiene varias ma
       await route.fulfill({ status: 200, json: clienteConDosUnidades })
     })
     await page.route('**/api/expedientes**', async (route) => {
-      await route.fulfill({ status: 200, json: expedienteConDosUnidades })
+      // fetchActivosPorUsuario calls /api/expedientes/usuario/{id}/activos — must return ActivoUsuarioDTO[]
+      if (route.request().url().includes('/usuario/') && route.request().url().includes('/activos')) {
+        await route.fulfill({ status: 200, json: [] })
+      } else {
+        await route.fulfill({ status: 200, json: expedienteConDosUnidades })
+      }
     })
     await page.route('**/api/proyectos**', async (route) => {
       await route.fulfill({ status: 200, json: [] })

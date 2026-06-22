@@ -176,6 +176,12 @@ test.describe('Seguridad — Validación de tokens', () => {
     // Debe redirigir al login
     await expect(page).toHaveURL(/login/, { timeout: 8_000 })
 
+    // clearSession() is async (triggered by onAuthStateChanged); wait for it to complete
+    await page.waitForFunction(
+      () => !localStorage.getItem('llosa_id_token'),
+      { timeout: 5_000 }
+    ).catch(() => { /* clearSession may not fire if no Firebase session exists */ })
+
     // El token debe haber sido eliminado de localStorage
     const tokenDespues = await page.evaluate(() => localStorage.getItem('llosa_id_token'))
     expect(tokenDespues).toBeNull()
