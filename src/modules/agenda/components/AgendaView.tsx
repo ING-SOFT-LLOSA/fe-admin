@@ -765,11 +765,10 @@ export default function SchedulePage() {
               </div>
             ))}
             {calDays.map((cell, idx) => (
-              <button 
-                type="button"
+              <div 
                 key={`${cell.grey ? 'g' : 'm'}-${cell.day}-${idx}`} 
                 onClick={() => handleCellClick(cell)}
-                className={`min-h-[120px] border-b border-r border-slate-200 dark:border-white/10 p-2 flex flex-col gap-1 ${getCellBgClass(cell.grey)}`}
+                className={`min-h-[120px] border-b border-r border-slate-200 dark:border-white/10 p-2 flex flex-col gap-1 text-left ${getCellBgClass(cell.grey)}`}
               >
                 <span className={`text-sm pl-1 mb-1 ${getCellDayClass(cell.today, cell.grey)}`}>
                   {cell.day}
@@ -796,7 +795,7 @@ export default function SchedulePage() {
                     {ev.time && <span className="text-[9px] font-semibold opacity-75 pl-3">{ev.time}</span>}
                   </button>
                 ))}
-              </button>
+              </div>
             ))}
           </div>
         </div>
