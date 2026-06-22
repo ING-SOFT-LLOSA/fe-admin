@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { ApiError } from "@/lib/api/http";
 
 import GeneralDataForm from "./GeneralDataForm";
 import InventoryConfigurator from "./InventoryConfigurator";
@@ -78,7 +79,11 @@ export default function NewProjectWizard() {
       }, 1200);
     } catch (err: unknown) {
       console.error("Error creating project:", err);
-      setError(err instanceof Error ? err.message : "Ocurrió un error al crear el proyecto. Revisa la consola.");
+      const errMsg =
+        err instanceof Error
+          ? err.message
+          : "Ocurrió un error al crear el proyecto. Revisa la consola.";
+      setError(errMsg);
       setIsLoading(false);
     }
   };

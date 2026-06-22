@@ -205,6 +205,7 @@ export default function ClientActivos({ clientId, refreshKey = 0 }: Readonly<Cli
                             </p>
                             <p className="text-[11px] text-slate-500 dark:text-white/50">
                               {activo.torreNombre} · Piso {activo.nroPiso} · {activo.areaM2} m² · Tech. {activo.areaTechada} m²
+                              {activo.fechaCompletado ? ` · Entrega: ${new Date(activo.fechaCompletado).toLocaleDateString("es-PE", { year: "numeric", month: "long", day: "numeric" })}` : ""}
                             </p>
                           </div>
                         </div>

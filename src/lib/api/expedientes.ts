@@ -23,6 +23,7 @@ export interface UsuarioActivoResponseDTO {
   uuidUsuarioActivo:   string;           // UUID serializado como string
   tipoFinanciamiento:  string;
   fechaAdquisicion:    string | null;    // LocalDateTime → ISO string
+  fechaCompletado:     string | null;    // LocalDateTime → ISO string
   createdAt:           string | null;
   updatedAt:           string | null;
   vigente:             boolean | null;
@@ -75,6 +76,7 @@ export interface CrearContratoPayload {
   faseComercial:      string;
   estadoTramiteLegal?: string;
   fechaAdquisicion?:  string;     // ISO datetime sin millis
+  fechaCompletado?:   string;     // ISO datetime sin millis
   
   // Positional fallbacks for Jackson record deserialization when compiled without -parameters
   arg0?:              number[];
@@ -82,6 +84,7 @@ export interface CrearContratoPayload {
   arg2?:              string;
   arg3?:              string;
   arg4?:              string;
+  arg5?:              string;
 }
 
 /** Paso 2: Vincular activos a un contrato existente */
@@ -308,6 +311,7 @@ export interface ActivoUsuarioDTO {
   estadoComercial:  string;
   precio:           number;
   descripcion:      string;
+  fechaCompletado?: string | null;
 }
 
 /**
@@ -351,4 +355,32 @@ export function desasignarAsesorDelContrato(
     { method: "PUT" }
   );
 }
+
+// ─── Actualización de Contrato ──────────────────────────────────────────────────
+
+export interface UpdateContratoPayload {
+  idsUsuarios?:        number[];
+  tipoFinanciamiento?: string;
+  fechaAdquisicion?:   string | null;
+  fechaCompletado?:    string | null;
+}
+
+/**
+ * PUT /api/expedientes/{uuidExpediente}
+ * Actualiza los datos de un contrato existente (tipo de financiamiento, fechas, clientes).
+ */
+export function actualizarContrato(
+  uuidExpediente: string,
+  payload: UpdateContratoPayload
+): Promise<UsuarioActivoResponseDTO> {
+  return apiFetch<UsuarioActivoResponseDTO>(`/api/expedientes/${uuidExpediente}`, {
+    method:  "PUT",
+    headers: { "Content-Type": "application/json" },
+    body:    JSON.stringify(payload),
+  }).then((item) => ({
+    ...item,
+    activo: item.activo ?? item.activos?.[0],
+  }));
+}
+
 

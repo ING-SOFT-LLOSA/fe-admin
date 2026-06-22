@@ -767,6 +767,8 @@ function StepConfirm({
         </div>
       </div>
 
+
+
       {/* Summary card */}
       <div className="bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl p-5 grid grid-cols-2 gap-6 relative overflow-hidden">
         <div className="relative z-10">

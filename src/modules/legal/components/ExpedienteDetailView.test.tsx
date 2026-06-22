@@ -12,6 +12,7 @@ vi.mock("@/lib/api/expedientes", () => ({
   updateCommercialHitoEstado: vi.fn(),
   asignarAsesorAContrato: vi.fn(),
   desasignarAsesorDelContrato: vi.fn(),
+  actualizarContrato: vi.fn(),
 }));
 
 vi.mock("@/lib/api/requisitos", () => ({
@@ -47,6 +48,7 @@ import {
   updateCommercialHitoEstado,
   asignarAsesorAContrato,
   desasignarAsesorDelContrato,
+  actualizarContrato,
 } from "@/lib/api/expedientes";
 import {
   fetchStageDocuments,
@@ -55,16 +57,17 @@ import {
   updateRequisito,
 } from "@/lib/api/requisitos";
 import { fetchUsuarios } from "@/lib/api/users";
-
+ 
 const mockFetchStepper = vi.mocked(fetchCommercialStepper);
 const mockUpdateHitoEstado = vi.mocked(updateCommercialHitoEstado);
 const mockFetchStageDocs = vi.mocked(fetchStageDocuments);
 const mockFetchUsuarios = vi.mocked(fetchUsuarios);
 const mockAsignarAsesor = vi.mocked(asignarAsesorAContrato);
 const mockDesasignarAsesor = vi.mocked(desasignarAsesorDelContrato);
+const mockActualizarContrato = vi.mocked(actualizarContrato);
 const mockDeleteArchivo = vi.mocked(deleteRequisitoArchivo);
 const mockUpdateRequisito = vi.mocked(updateRequisito);
-
+ 
 const mockUseExpediente = vi.mocked(useExpediente);
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -327,7 +330,7 @@ describe("ExpedienteDetailView", () => {
   it("financiamiento null muestra guion", async () => {
     mockLoaded({ expediente: makeBaseExpediente({ tipoFinanciamiento: null }) });
     render(<ExpedienteDetailView uuidUsuarioActivo="ua-1" />);
-    expect(await screen.findByText("—")).toBeDefined();
+    expect((await screen.findAllByText("—")).length).toBeGreaterThan(0);
   });
 
   it("fecha de creacion formateada", async () => {
@@ -1055,6 +1058,37 @@ describe("ExpedienteDetailView", () => {
     render(<ExpedienteDetailView uuidUsuarioActivo="ua-1" />);
     await screen.findByText("Resumen");
     expect(screen.getByText("Resumen")).toBeDefined();
+  });
+
+  it("abre modal de edicion de contrato, guarda cambios y actualiza estado", async () => {
+    mockLoaded();
+    mockActualizarContrato.mockResolvedValue(makeBaseExpediente({
+      tipoFinanciamiento: "CREDITO_DIRECTO",
+      fechaCompletado: "2026-07-01T00:00:00",
+    }));
+
+    render(<ExpedienteDetailView uuidUsuarioActivo="ua-1" />);
+
+    // Click Editar Contrato
+    const editBtn = await screen.findByText("Editar Contrato");
+    fireEvent.click(editBtn);
+
+    // Verify modal is open
+    expect(screen.getByRole("heading", { name: "Editar Contrato" })).toBeDefined();
+
+    // Change financing type select
+    const select = screen.getByRole("combobox");
+    fireEvent.change(select, { target: { value: "CREDITO_DIRECTO" } });
+
+    // Submit form
+    const saveBtn = screen.getByText("Guardar");
+    fireEvent.click(saveBtn);
+
+    await waitFor(() => {
+      expect(mockActualizarContrato).toHaveBeenCalledWith("ua-1", expect.objectContaining({
+        tipoFinanciamiento: "CREDITO_DIRECTO",
+      }));
+    });
   });
 
 });

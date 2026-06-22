@@ -28,7 +28,7 @@ export function generateEstructura(config: InventoryConfig): TorreData[] {
           nro: `${p}${d.toString().padStart(2, '0')}`,
           tipo: "DEPARTAMENTO" as const,
           areaM2: 70,
-          areaTechada: 0,
+          areaTechada: 70,
           estadoComercial: "DISPONIBLE",
           precio: 200000,
           descripcion: `Dpto en Torre ${t}, Piso ${p}`
@@ -39,7 +39,7 @@ export function generateEstructura(config: InventoryConfig): TorreData[] {
           nro: `E-${p}${c.toString().padStart(2, '0')}`,
           tipo: "COCHERA" as const,
           areaM2: 12,
-          areaTechada: 0,
+          areaTechada: 12,
           estadoComercial: "DISPONIBLE",
           precio: 15000,
           descripcion: `Estacionamiento en Torre ${t}, Piso ${p}`
@@ -50,7 +50,7 @@ export function generateEstructura(config: InventoryConfig): TorreData[] {
           nro: `D-${p}${dep.toString().padStart(2, '0')}`,
           tipo: "DEPOSITO" as const,
           areaM2: 5,
-          areaTechada: 0,
+          areaTechada: 5,
           estadoComercial: "DISPONIBLE",
           precio: 5000,
           descripcion: `Depósito en Torre ${t}, Piso ${p}`

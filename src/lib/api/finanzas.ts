@@ -1,5 +1,6 @@
 import { apiFetch } from "@/lib/api/http";
 import { getFreshToken } from "@/lib/auth/session";
+import { formatMimeMessage } from "./requisitos";
 import type {
     CronogramaPagoResponse,
     PagoResponse,
@@ -121,7 +122,7 @@ export async function uploadPagoComprobante(uuidPago: string, file: File, coment
         const errorText = await res.text();
         let message = errorText;
         try { const j = JSON.parse(errorText); message = j.error ?? j.message ?? errorText; } catch { /* */ }
-        throw new Error(message || "Error al subir el comprobante");
+        throw new Error(formatMimeMessage(message || "Error al subir el comprobante"));
     }
     return res.json();
 }

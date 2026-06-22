@@ -102,6 +102,20 @@ describe("requisitos API", () => {
       const file = new File(["content"], "doc.pdf");
       await expect(uploadRequisitoArchivo("req-1", file)).rejects.toThrow("Archivo inválido");
     });
+
+    it("transforma el mensaje de error de tipo MIME a extensión de archivo y limpia tipo interno", async () => {
+      mockGetFreshToken.mockResolvedValue("token-ok");
+      const mockRes = {
+        ok: false,
+        text: vi.fn().mockResolvedValue("Tipo de archivo no permitido para PDF_LEGAL. Permitidos: application/pdf"),
+      };
+      (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValue(mockRes);
+
+      const file = new File(["content"], "doc.pdf");
+      await expect(uploadRequisitoArchivo("req-1", file)).rejects.toThrow(
+        "Tipo de archivo no permitido. Permitidos: .pdf"
+      );
+    });
   });
 
   describe("deleteRequisitoArchivo", () => {

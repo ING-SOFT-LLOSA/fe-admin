@@ -144,7 +144,7 @@ export default function UnitsOverviewView({ projectId }: Readonly<UnitsOverviewV
           <table className="w-full border-collapse text-left">
             <thead>
               <tr className="bg-slate-50 dark:bg-white/5">
-                {["Unidad", "Piso", "Tipo", "Área", "Techada", "Precio base", "Estado", "Acciones"].map((header) => (
+                {["Unidad", "Piso", "Tipo", "Ocupada (m²)", "Techada", "Precio base", "Estado", "Acciones"].map((header) => (
                   <th key={header} className="px-6 py-3 text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-white/60">
                     {header}
                   </th>

@@ -70,10 +70,9 @@ describe("TopNav", () => {
     expect(screen.getByText("unknown")).toBeDefined();
   });
 
-  it("renders ThemeToggle and user avatar", () => {
+  it("renders user avatar", () => {
     mockUsePathname.mockReturnValue("/proyectos");
     render(<TopNav />);
-    expect(screen.getByTestId("theme-toggle")).toBeDefined();
     expect(screen.getByText("Admin")).toBeDefined();
     expect(screen.getByText("Admin Global")).toBeDefined();
   });

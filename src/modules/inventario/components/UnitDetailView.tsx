@@ -44,7 +44,7 @@ export default function UnitDetailView({ projectId, unitId }: Readonly<UnitDetai
             nro: selectedUnit.nro,
             tipo: selectedUnit.tipo,
             areaM2: selectedUnit.areaM2,
-            areaTechada: selectedUnit.areaTechada ?? 0,
+            areaTechada: selectedUnit.areaTechada || selectedUnit.areaM2,
             estadoComercial: selectedUnit.estadoComercial,
             precio: selectedUnit.precio,
             descripcion: selectedUnit.descripcion ?? "",
@@ -71,6 +71,13 @@ export default function UnitDetailView({ projectId, unitId }: Readonly<UnitDetai
     setIsSaving(true);
     setMessage("");
     setError("");
+
+    if (form.areaTechada > form.areaM2) {
+      setError("El área techada no puede ser superior al área ocupada.");
+      setIsSaving(false);
+      return;
+    }
+
     try {
       const updated = await updateActivo(unit.id, form);
       setUnit(updated);
@@ -136,8 +143,8 @@ export default function UnitDetailView({ projectId, unitId }: Readonly<UnitDetai
               <input id="unit-tipo" value={form.tipo} onChange={(event) => setForm({ ...form, tipo: event.target.value })} className="w-full rounded-xl border border-slate-200 dark:border-white/10 px-3 py-2 text-sm outline-none focus:border-arch-gold focus:ring-1 focus:ring-arch-gold/20" />
             </div>
             <div>
-              <label htmlFor="unit-area" className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-white/60">Área m2</label>
-              <input id="unit-area" type="number" value={form.areaM2} onChange={(event) => setForm({ ...form, areaM2: Number(event.target.value) })} className="w-full rounded-xl border border-slate-200 dark:border-white/10 px-3 py-2 text-sm outline-none focus:border-arch-gold focus:ring-1 focus:ring-arch-gold/20" />
+              <label htmlFor="unit-area" className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-white/60">Ocupada (m²)</label>
+              <input id="unit-area" type="number" value={form.areaM2} onChange={(event) => { const val = Number(event.target.value); setForm({ ...form, areaM2: val, areaTechada: val }); }} className="w-full rounded-xl border border-slate-200 dark:border-white/10 px-3 py-2 text-sm outline-none focus:border-arch-gold focus:ring-1 focus:ring-arch-gold/20" />
             </div>
             <div>
               <label htmlFor="unit-area-techada" className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-white/60">Área techada</label>

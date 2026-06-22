@@ -228,7 +228,13 @@ function DocRow({
   const isCompleted = doc.status?.toLowerCase() === "completada";
 
   return (
-    <div className="flex flex-col px-5 py-4 hover:bg-slate-50 dark:hover:bg-white/[0.03] transition-colors gap-3 group">
+    <div className="relative flex flex-col px-5 py-4 hover:bg-slate-50 dark:hover:bg-white/[0.03] transition-colors gap-3 group">
+      {isUploading && (
+        <div className="absolute inset-0 bg-white/75 dark:bg-[#111]/75 flex items-center justify-center gap-3 z-10">
+          <Spinner className="w-5 h-5 text-arch-gold animate-spin" />
+          <span className="text-xs font-bold text-build-main dark:text-white">Subiendo documento...</span>
+        </div>
+      )}
       {/* Title + actions */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
         <div className="flex items-start gap-3 min-w-0">

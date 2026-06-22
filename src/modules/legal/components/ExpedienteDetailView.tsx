@@ -8,6 +8,7 @@ import {
   updateCommercialHitoEstado,
   asignarAsesorAContrato,
   desasignarAsesorDelContrato,
+  actualizarContrato,
   type StepperResponseDTO,
   type UsuarioActivoResponseDTO,
   type EtapaExpedienteResponseDTO,
@@ -38,6 +39,21 @@ import { LoadingSpinner, Spinner, ErrorBanner } from "./ui";
 import { useExpediente } from "./hooks";
 import DialogModal from "@/components/ui/DialogModal";
 
+// Date Formatting Helper
+const formatFecha = (isoString: string | null | undefined): string => {
+  if (!isoString) return "—";
+  try {
+    const date = new Date(isoString);
+    return date.toLocaleDateString("es-PE", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    });
+  } catch {
+    return isoString;
+  }
+};
+
 type Props = {
   readonly uuidUsuarioActivo: string;
 };
@@ -54,6 +70,7 @@ export default function ExpedienteDetailView({ uuidUsuarioActivo }: Readonly<Pro
   const [isStepperLoading, setIsStepperLoading] = useState(false);
   const [stepperLoaded, setStepperLoaded] = useState(false);
   const [toggleError, setToggleError] = useState("");
+  const [showEditModal, setShowEditModal] = useState(false);
 
   // Accordion Expand/Collapse State
   const [expandedStages, setExpandedStages] = useState<Record<string, boolean>>({
@@ -207,21 +224,6 @@ export default function ExpedienteDetailView({ uuidUsuarioActivo }: Readonly<Pro
     }));
   };
 
-  // Date Formatting Helper
-  const formatFecha = (isoString: string | null | undefined): string => {
-    if (!isoString) return "—";
-    try {
-      const date = new Date(isoString);
-      return date.toLocaleDateString("es-PE", {
-        day: "2-digit",
-        month: "2-digit",
-        year: "numeric",
-      });
-    } catch {
-      return isoString;
-    }
-  };
-
   // Label Formatter for Financing
   const formatFinancing = (type: string | null | undefined): string => {
     if (!type) return "—";
@@ -293,6 +295,16 @@ export default function ExpedienteDetailView({ uuidUsuarioActivo }: Readonly<Pro
             Creado el {formatFecha(expediente.fechaAdquisicion)} · Proceso jurídico de compraventa
           </p>
         </div>
+
+        <div>
+          <button
+            onClick={() => setShowEditModal(true)}
+            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-xl bg-slate-50 hover:bg-slate-100 dark:bg-white/5 dark:hover:bg-white/10 border border-slate-200 dark:border-white/10 text-slate-700 dark:text-white/80 transition-colors shadow-sm"
+          >
+            <span className="material-symbols-outlined text-[18px]">edit</span>
+            Editar Contrato
+          </button>
+        </div>
       </div>
 
       {/* 3. Banda de contexto */}
@@ -302,6 +314,7 @@ export default function ExpedienteDetailView({ uuidUsuarioActivo }: Readonly<Pro
         activos={expediente.activos}
         asesor={expediente.asesor}
         setAsesor={(a) => setExpediente((prev) => prev ? { ...prev, asesor: a } : prev)}
+        fechaCompletado={expediente.fechaCompletado}
       />
 
       {/* 4. Tabs */}
@@ -370,7 +383,144 @@ export default function ExpedienteDetailView({ uuidUsuarioActivo }: Readonly<Pro
           />
         )}
       </div>
+
+      {showEditModal && (
+        <EditContratoModal
+          expediente={expediente}
+          onClose={() => setShowEditModal(false)}
+          onSuccess={(updated) => {
+            setExpediente(updated);
+            setShowEditModal(false);
+          }}
+        />
+      )}
     </section>
+  );
+}
+
+// ─── Subcomponent: EditContratoModal ─────────────────────────────────────────
+interface EditContratoModalProps {
+  readonly expediente: UsuarioActivoResponseDTO;
+  readonly onClose: () => void;
+  readonly onSuccess: (updated: UsuarioActivoResponseDTO) => void;
+}
+
+function EditContratoModal({
+  expediente,
+  onClose,
+  onSuccess,
+}: EditContratoModalProps) {
+  const [tipoFinanciamiento, setTipoFinanciamiento] = useState(expediente.tipoFinanciamiento || "");
+  const [fechaAdquisicion, setFechaAdquisicion] = useState(() => {
+    if (!expediente.fechaAdquisicion) return "";
+    return expediente.fechaAdquisicion.split("T")[0];
+  });
+  const [fechaCompletado, setFechaCompletado] = useState(() => {
+    if (!expediente.fechaCompletado) return "";
+    return expediente.fechaCompletado.split("T")[0];
+  });
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+
+  const handleSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSaving(true);
+    setError("");
+    try {
+      const payload = {
+        tipoFinanciamiento,
+        fechaAdquisicion: fechaAdquisicion ? `${fechaAdquisicion}T00:00:00` : null,
+        fechaCompletado: fechaCompletado ? `${fechaCompletado}T00:00:00` : null,
+      };
+      const updated = await actualizarContrato(expediente.uuidUsuarioActivo, payload);
+      onSuccess(updated);
+    } catch (err) {
+      console.error(err);
+      setError("Error al actualizar el contrato. Por favor verifique los datos.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
+      <button
+        type="button"
+        className="fixed inset-0 bg-transparent cursor-default border-0 outline-none w-full h-full"
+        onClick={onClose}
+        aria-label="Cerrar modal"
+      />
+      <div className="relative w-full max-w-md rounded-2xl bg-white dark:bg-[#1e293b] p-6 shadow-xl border border-slate-200 dark:border-white/10 z-10 animate-fade-in text-slate-800 dark:text-white">
+        <h3 className="text-lg font-bold text-build-main dark:text-white mb-4">
+          Editar Contrato
+        </h3>
+
+        {error && (
+          <div className="mb-4 p-3 rounded-lg bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900/40 text-xs text-red-600 dark:text-red-400 font-semibold font-sans">
+            {error}
+          </div>
+        )}
+
+        <form onSubmit={handleSave} className="space-y-4">
+          <div>
+            <label className="block text-xs font-bold text-slate-500 dark:text-white/60 uppercase tracking-wider mb-2">
+              Tipo de Financiamiento
+            </label>
+            <select
+              value={tipoFinanciamiento}
+              onChange={(e) => setTipoFinanciamiento(e.target.value)}
+              className="w-full px-4 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-xl text-sm font-semibold focus:outline-none focus:border-arch-gold text-slate-800 dark:text-white"
+            >
+              <option value="CREDITO_HIPOTECARIO">Crédito Hipotecario</option>
+              <option value="CREDITO_DIRECTO">Crédito Directo</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-slate-500 dark:text-white/60 uppercase tracking-wider mb-2">
+              Fecha de Adquisición / Creación
+            </label>
+            <input
+              type="date"
+              value={fechaAdquisicion}
+              onChange={(e) => setFechaAdquisicion(e.target.value)}
+              className="w-full px-4 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-xl text-sm font-semibold focus:outline-none focus:border-arch-gold text-slate-800 dark:text-white"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-slate-500 dark:text-white/60 uppercase tracking-wider mb-2">
+              Fecha de Completado / Entrega
+            </label>
+            <input
+              type="date"
+              value={fechaCompletado}
+              onChange={(e) => setFechaCompletado(e.target.value)}
+              className="w-full px-4 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-xl text-sm font-semibold focus:outline-none focus:border-arch-gold text-slate-800 dark:text-white"
+            />
+          </div>
+
+          <div className="flex justify-end gap-3 pt-4 border-t border-slate-100 dark:border-white/5">
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={saving}
+              className="px-4 py-2 text-sm font-bold text-slate-500 dark:text-white/60 hover:bg-slate-50 dark:hover:bg-white/5 rounded-lg transition-colors"
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              disabled={saving}
+              className="inline-flex items-center gap-2 px-5 py-2 rounded-lg text-sm font-bold bg-arch-gold hover:bg-arch-gold/90 text-white shadow-sm disabled:opacity-50 transition-all"
+            >
+              {saving && <Spinner />}
+              {saving ? "Guardando..." : "Guardar"}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
   );
 }
 
@@ -381,12 +531,14 @@ function ExpedienteContextBand({
   activos,
   asesor,
   setAsesor,
+  fechaCompletado,
 }: Readonly<{
   uuid: string;
   clientes: UsuarioActivoResponseDTO["clientes"];
   activos: UsuarioActivoResponseDTO["activos"];
   asesor: UsuarioActivoResponseDTO["asesor"];
   setAsesor: (a: UsuarioActivoResponseDTO["asesor"]) => void;
+  fechaCompletado: string | null | undefined;
 }>) {
   const [asesores, setAsesores] = useState<Usuario[]>([]);
   const [showModal, setShowModal] = useState(false);
@@ -415,7 +567,7 @@ function ExpedienteContextBand({
   }
 
   return (
-    <div className="grid gap-4 md:grid-cols-3 bg-white dark:bg-white/5 p-6 rounded-2xl border border-slate-200 dark:border-white/10 shadow-sm">
+    <div className="grid gap-4 md:grid-cols-4 bg-white dark:bg-white/5 p-6 rounded-2xl border border-slate-200 dark:border-white/10 shadow-sm">
       {/* Titulares */}
       <div className="space-y-3">
         <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-white/35">
@@ -517,6 +669,17 @@ function ExpedienteContextBand({
             {" "}Asignar asesor
           </button>
         )}
+      </div>
+
+      {/* Fecha de Completado */}
+      <div className="space-y-3">
+        <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-white/35">
+          Fecha de Completado
+        </h3>
+        <div className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full bg-slate-50 dark:bg-white/5 border border-slate-200/60 dark:border-white/10 text-slate-700 dark:text-white/80 w-fit">
+          <span className="material-symbols-outlined text-[15px] text-slate-400 dark:text-white/40">calendar_today</span>
+          {formatFecha(fechaCompletado)}
+        </div>
       </div>
 
       {/* Assign modal */}
@@ -1009,8 +1172,14 @@ function DocumentosTab({
           return (
             <div
               key={doc.id}
-              className="p-5 bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl shadow-sm hover:shadow-md transition space-y-4"
+              className="relative p-5 bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl shadow-sm hover:shadow-md transition space-y-4"
             >
+              {uploadingDocId === doc.id && (
+                <div className="absolute inset-0 bg-white/75 dark:bg-[#111]/75 rounded-2xl flex items-center justify-center gap-3 z-10">
+                  <Spinner className="w-5 h-5 text-arch-gold animate-spin" />
+                  <span className="text-xs font-bold text-build-main dark:text-white">Subiendo documento...</span>
+                </div>
+              )}
               <div className="flex items-start justify-between gap-4">
                 <div className="flex items-start gap-3 min-w-0">
                   {/* Dynamic Icon */}
@@ -1306,31 +1475,16 @@ function DocumentosTab({
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                {/* Emission Date Input */}
-                <div className="space-y-1">
-                  <label htmlFor="edit-emission-date" className="text-xs font-bold text-slate-500 dark:text-white/40 uppercase tracking-wider">Fecha de Emisión</label>
-                  <input
-                    id="edit-emission-date"
-                    type="date"
-                    value={editFecha}
-                    onChange={(e) => setEditFecha(e.target.value)}
-                    className="w-full rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-[#111] px-4 py-2 text-sm focus:outline-none focus:border-arch-gold dark:text-white transition"
-                  />
-                </div>
-
-                {/* Icon Input */}
-                <div className="space-y-1">
-                  <label htmlFor="edit-icon" className="text-xs font-bold text-slate-500 dark:text-white/40 uppercase tracking-wider">Icono (Material)</label>
-                  <input
-                    id="edit-icon"
-                    type="text"
-                    value={editIcon}
-                    onChange={(e) => setEditIcon(e.target.value)}
-                    placeholder="e.g. description"
-                    className="w-full rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-[#111] px-4 py-2 text-sm focus:outline-none focus:border-arch-gold dark:text-white transition"
-                  />
-                </div>
+              {/* Emission Date Input */}
+              <div className="space-y-1">
+                <label htmlFor="edit-emission-date" className="text-xs font-bold text-slate-500 dark:text-white/40 uppercase tracking-wider">Fecha de Emisión</label>
+                <input
+                  id="edit-emission-date"
+                  type="date"
+                  value={editFecha}
+                  onChange={(e) => setEditFecha(e.target.value)}
+                  className="w-full rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-[#111] px-4 py-2 text-sm focus:outline-none focus:border-arch-gold dark:text-white transition"
+                />
               </div>
 
               <div className="pt-4 flex items-center justify-end gap-3 border-t border-slate-100 dark:border-white/5">

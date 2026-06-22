@@ -1,5 +1,6 @@
 import { getFreshToken } from "@/lib/auth/session";
 import { apiFetch } from "@/lib/api/http";
+import { formatMimeMessage } from "./requisitos";
 
 const API_URL = (process.env.NEXT_PUBLIC_API_URL_LLOSA ?? "http://localhost:8080").replace(/\/$/, "");
 
@@ -57,7 +58,7 @@ export async function uploadDocument(
     } catch {
       // not JSON
     }
-    throw new Error(message || "Error al subir el documento");
+    throw new Error(formatMimeMessage(message || "Error al subir el documento"));
   }
 
   return res.json();
@@ -105,7 +106,7 @@ export async function uploadDocumentExplicito(
     } catch {
       // not JSON
     }
-    throw new Error(message || "Error al subir el documento");
+    throw new Error(formatMimeMessage(message || "Error al subir el documento"));
   }
 
   return res.json();

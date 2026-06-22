@@ -68,6 +68,32 @@ export function fetchStageDocuments(
  * Upload a file to satisfy a specific documental requirement.
  * POST /api/requisitos-documentales/{requisitoId}/upload
  */
+export function formatMimeMessage(message: string): string {
+  let formatted = message;
+  
+  const mimeMap: Record<string, string> = {
+    "application/pdf": ".pdf",
+    "image/jpeg": ".jpeg",
+    "image/jpg": ".jpg",
+    "image/png": ".png",
+    "application/msword": ".doc",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document": ".docx",
+    "application/vnd.ms-excel": ".xls",
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": ".xlsx",
+    "text/plain": ".txt",
+  };
+
+  Object.keys(mimeMap).forEach((mime) => {
+    const regex = new RegExp(mime, "gi");
+    formatted = formatted.replace(regex, mimeMap[mime]);
+  });
+
+  // Remueve " para PDF_LEGAL" u otros tipos de documentos en mayúscula
+  formatted = formatted.replace(/ para [A-Z_]+/g, "");
+
+  return formatted;
+}
+
 export async function uploadRequisitoArchivo(requisitoId: string, file: File): Promise<void> {
   const token = await getFreshToken();
   if (!token) {
@@ -94,7 +120,7 @@ export async function uploadRequisitoArchivo(requisitoId: string, file: File): P
     } catch {
       // not JSON
     }
-    throw new Error(message || "Error al subir el archivo del requisito");
+    throw new Error(formatMimeMessage(message || "Error al subir el archivo del requisito"));
   }
 }
 

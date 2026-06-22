@@ -17,28 +17,18 @@ const nextConfig: NextConfig = {
         permanent: false,
       },
       {
-        source: "/projects",
-        destination: "/proyectos",
+        source: "/projects/:id/cronograma-pagos",
+        destination: "/finanzas?project=:id",
         permanent: false,
       },
       {
-        source: "/projects/:id/cronograma-pagos",
-        destination: "/finanzas?project=:id",
+        source: "/projects/:path*",
+        destination: "/proyectos/:path*",
         permanent: false,
       }
     ];
   },
   async headers() {
-    const isProd = process.env.NODE_ENV === "production";
-
-    const scriptSrc = isProd
-      ? "script-src 'self' 'unsafe-inline' https://apis.google.com https://www.gstatic.com;"
-      : "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://apis.google.com https://www.gstatic.com;";
-
-    const connectSrc = isProd
-      ? "connect-src 'self' https://*.ingsoftware.lat https://*.googleapis.com https://*.firebaseapp.com wss://*.firebaseio.com https://*.firebaseio.com;"
-      : "connect-src 'self' http://localhost:* ws://localhost:* wss://localhost:* https://*.ingsoftware.lat https://*.googleapis.com https://*.firebaseapp.com wss://*.firebaseio.com https://*.firebaseio.com;";
-
     return [
       {
         source: "/(.*)",
@@ -54,23 +44,6 @@ const nextConfig: NextConfig = {
           {
             key: "Referrer-Policy",
             value: "strict-origin-when-cross-origin",
-          },
-          {
-            key: "Content-Security-Policy",
-            value: [
-              "default-src 'self';",
-              scriptSrc,
-              "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;",
-              "img-src 'self' blob: data: https://lh3.googleusercontent.com https://*.googleapis.com https://*.firebaseapp.com;",
-              "font-src 'self' data: https://fonts.gstatic.com;",
-              connectSrc,
-              "frame-src 'self' https://*.firebaseapp.com;",
-              "object-src 'none';",
-              "base-uri 'self';",
-              "form-action 'self';",
-              "frame-ancestors 'none';",
-              "upgrade-insecure-requests;",
-            ].join(" "),
           },
         ],
       },

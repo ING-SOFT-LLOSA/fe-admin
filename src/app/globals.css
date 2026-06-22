@@ -6,7 +6,7 @@
   --color-build-bg: #FFFFFF;
   --color-build-main: #4B4B4B;
   --color-build-accent: #9D9990;
-  --color-arch-gold: #CEBD93;
+  --color-arch-gold: #A3802B;
   --color-arch-navy: #001629;
 
   --color-primary: #001629;
@@ -81,7 +81,7 @@
     --color-build-bg: #0d0b0c;
     --color-build-main: #e0e0e0;
     --color-build-accent: #a09c94;
-    --color-arch-gold: #d4b572;
+    --color-arch-gold: #D5C085;
   }
 
   html { font-family: 'Plus Jakarta Sans', sans-serif; background-color: var(--color-build-bg); color: var(--color-build-main); transition: background-color 0.3s ease, color 0.3s ease; }

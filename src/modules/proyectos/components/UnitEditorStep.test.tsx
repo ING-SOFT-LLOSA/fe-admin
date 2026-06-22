@@ -170,9 +170,42 @@ describe("UnitEditorStep", () => {
     expect(onSubmit.mock.calls[0][0]).toBeDefined();
   });
 
+  it("does not call onSubmit and shows error if areaTechada > areaM2", () => {
+    const onSubmit = vi.fn();
+    const invalidTorres: TorreData[] = [
+      makeTorre("Torre A", [
+        makePiso(1, [
+          makeUnit("101", "DEPARTAMENTO", { areaM2: 70, areaTechada: 80, precio: 350000 }),
+        ]),
+      ]),
+    ];
+    render(<UnitEditorStep torres={invalidTorres} onBack={vi.fn()} onSubmit={onSubmit} />);
+    fireEvent.click(screen.getByText("Crear proyecto"));
+    expect(onSubmit).not.toHaveBeenCalled();
+    expect(screen.getByText(/El área techada no puede ser superior al área ocupada/)).toBeDefined();
+  });
+
   it("shows price and area info for each unit", () => {
     render(<UnitEditorStep torres={sampleTorres} onBack={vi.fn()} onSubmit={vi.fn()} />);
     expect(screen.getByText(/80 m²/)).toBeDefined();
     expect(screen.getByText(/350,000/)).toBeDefined();
+  });
+
+  it("defaults areaTechada to areaM2 when areaM2 is edited", async () => {
+    const onSubmit = vi.fn();
+    render(<UnitEditorStep torres={sampleTorres} onBack={vi.fn()} onSubmit={onSubmit} />);
+    
+    const editBtns = screen.getAllByTitle("Editar");
+    fireEvent.click(editBtns[0]);
+    await waitFor(() => {
+      expect(screen.getByText("Listo")).toBeDefined();
+    });
+
+    const areaOcupadaInput = screen.getByLabelText("Ocupada (m²)") as HTMLInputElement;
+    const areaTechadaInput = screen.getByLabelText("Tech. (m²)") as HTMLInputElement;
+
+    fireEvent.change(areaOcupadaInput, { target: { value: "90" } });
+    expect(areaOcupadaInput.value).toBe("90");
+    expect(areaTechadaInput.value).toBe("90");
   });
 });

@@ -149,7 +149,7 @@ describe("UnitDetailView", () => {
     fireEvent.change(tipoInput, { target: { value: "COCHERA" } });
     expect(tipoInput.value).toBe("COCHERA");
 
-    const areaInput = screen.getByLabelText("Área m2") as HTMLInputElement;
+    const areaInput = screen.getByLabelText("Ocupada (m²)") as HTMLInputElement;
     fireEvent.change(areaInput, { target: { value: "100" } });
     expect(areaInput.value).toBe("100");
   });
@@ -169,5 +169,19 @@ describe("UnitDetailView", () => {
       expect(screen.getByText("Unidad 502")).toBeDefined();
     });
     expect(screen.getByText("Ir a asignaciones")).toBeDefined();
+  });
+
+  it("defaults areaTechada to areaM2 when areaM2 input is changed", async () => {
+    render(<UnitDetailView projectId="proj-1" unitId="unit-1" />);
+    await waitFor(() => {
+      expect(screen.getByText("Unidad 502")).toBeDefined();
+    });
+
+    const areaInput = screen.getByLabelText("Ocupada (m²)") as HTMLInputElement;
+    const areaTechadaInput = screen.getByLabelText("Área techada") as HTMLInputElement;
+
+    fireEvent.change(areaInput, { target: { value: "120" } });
+    expect(areaInput.value).toBe("120");
+    expect(areaTechadaInput.value).toBe("120");
   });
 });

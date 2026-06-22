@@ -31,6 +31,8 @@ function UnitCard({
   const areaTechadaId = useId();
   const precioId = useId();
 
+  const isAreaInvalid = activo.areaTechada > activo.areaM2;
+
   return (
     <div className="rounded-lg border border-slate-100 dark:border-white/10 bg-white dark:bg-white/5 p-3">
       {editing ? (
@@ -40,14 +42,15 @@ function UnitCard({
             <button
               type="button"
               onClick={() => setEditing(false)}
-              className="rounded bg-build-main px-3 py-1 text-xs font-bold text-white"
+              disabled={isAreaInvalid}
+              className="rounded bg-build-main px-3 py-1 text-xs font-bold text-white disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Listo
             </button>
           </div>
           <div className="grid grid-cols-3 gap-2">
             <div>
-              <label htmlFor={areaId} className="text-[10px] font-semibold text-slate-400">Área (m²)</label>
+              <label htmlFor={areaId} className="text-[10px] font-semibold text-slate-400">Ocupada (m²)</label>
               <input
                 id={areaId}
                 type="number"
@@ -77,6 +80,11 @@ function UnitCard({
               />
             </div>
           </div>
+          {isAreaInvalid && (
+            <p className="text-[10px] font-semibold text-red-500 mt-1 leading-tight">
+              El área techada no puede ser superior al área ocupada.
+            </p>
+          )}
         </div>
       ) : (
         <div className="flex items-center justify-between gap-2">
@@ -89,7 +97,12 @@ function UnitCard({
           <div className="flex items-center gap-1 shrink-0">
             <button
               type="button"
-              onClick={() => setEditing(true)}
+              onClick={() => {
+                if (activo.areaTechada === 0) {
+                  onEdit("areaTechada", activo.areaM2);
+                }
+                setEditing(true);
+              }}
               className="rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-slate-100 hover:text-build-accent"
               title="Editar"
             >
@@ -183,12 +196,16 @@ function PisoSection({
 export default function UnitEditorStep({ torres: initialTorres, onBack, onSubmit }: Readonly<UnitEditorStepProps>) {
   const [torres, setTorres] = useState<TorreData[]>(() => structuredClone(initialTorres));
   const [confirmDelete, setConfirmDelete] = useState<{ tIdx: number; pIdx: number; aIdx: number } | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const handleEdit = (tIdx: number, pIdx: number, aIdx: number, field: keyof ActivoData, value: string | number) => {
     setTorres((prev) => {
       const next = structuredClone(prev);
       const activo = next[tIdx].pisos[pIdx].activos[aIdx] as unknown as Record<string, string | number>;
       activo[field as string] = value;
+      if (field === "areaM2") {
+        activo.areaTechada = value;
+      }
       return next;
     });
   };
@@ -216,9 +233,9 @@ export default function UnitEditorStep({ torres: initialTorres, onBack, onSubmit
       const pisoNro = piso.nroPiso;
 
       const defaults: Record<TabType, Omit<ActivoData, "nro" | "tipo">> = {
-        DEPARTAMENTO: { areaM2: 70, areaTechada: 0, precio: 200000, estadoComercial: "DISPONIBLE", descripcion: `Dpto en ${next[tIdx].nombre}, Piso ${pisoNro}` },
-        COCHERA: { areaM2: 12, areaTechada: 0, precio: 15000, estadoComercial: "DISPONIBLE", descripcion: `Estacionamiento en ${next[tIdx].nombre}, Piso ${pisoNro}` },
-        DEPOSITO: { areaM2: 5, areaTechada: 0, precio: 5000, estadoComercial: "DISPONIBLE", descripcion: `Depósito en ${next[tIdx].nombre}, Piso ${pisoNro}` },
+        DEPARTAMENTO: { areaM2: 70, areaTechada: 70, precio: 200000, estadoComercial: "DISPONIBLE", descripcion: `Dpto en ${next[tIdx].nombre}, Piso ${pisoNro}` },
+        COCHERA: { areaM2: 12, areaTechada: 12, precio: 15000, estadoComercial: "DISPONIBLE", descripcion: `Estacionamiento en ${next[tIdx].nombre}, Piso ${pisoNro}` },
+        DEPOSITO: { areaM2: 5, areaTechada: 5, precio: 5000, estadoComercial: "DISPONIBLE", descripcion: `Depósito en ${next[tIdx].nombre}, Piso ${pisoNro}` },
       };
 
       let nro = "";
@@ -237,8 +254,29 @@ export default function UnitEditorStep({ torres: initialTorres, onBack, onSubmit
 
   const totalActivos = torres.reduce((sum, t) => sum + t.pisos.reduce((s, p) => s + p.activos.length, 0), 0);
 
+  const handleCreateProject = () => {
+    setError(null);
+    for (const torre of torres) {
+      for (const piso of torre.pisos) {
+        for (const activo of piso.activos) {
+          if (activo.areaTechada > activo.areaM2) {
+            setError(`Error en ${torre.nombre}, Piso ${piso.nroPiso}, Unidad ${activo.nro}: El área techada no puede ser superior al área ocupada.`);
+            return;
+          }
+        }
+      }
+    }
+    onSubmit(torres);
+  };
+
   return (
     <div className="space-y-6">
+      {error && (
+        <div className="rounded-xl border border-red-200 dark:border-red-900/50 bg-red-50 dark:bg-red-900/20 px-4 py-3 text-sm text-red-800 dark:text-red-400">
+          {error}
+        </div>
+      )}
+
       <div className="rounded-2xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 p-4 text-center">
         <p className="text-sm text-slate-600 dark:text-white/70">
           Total de unidades: <span className="font-bold text-build-main dark:text-white">{totalActivos}</span>
@@ -282,7 +320,7 @@ export default function UnitEditorStep({ torres: initialTorres, onBack, onSubmit
         </button>
         <button
           type="button"
-          onClick={() => onSubmit(torres)}
+          onClick={handleCreateProject}
           className="flex items-center gap-2 rounded-xl bg-build-main px-6 py-2.5 text-sm font-bold text-white shadow-sm transition-colors hover:bg-arch-gold"
         >
           <span className="material-symbols-outlined text-[18px]">check</span>

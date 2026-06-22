@@ -211,25 +211,7 @@ const filtered = useMemo(() => {
         </Link>
       </div>
 
-      {/* ── Metric cards ── */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        {[
-          { label: "Total",      value: stats.total,      color: "text-build-main dark:text-white" },
-          { label: "Activos",    value: stats.activos,    color: "text-emerald-600 dark:text-emerald-400" },
-          { label: "En obra",    value: stats.enObra,     color: "text-amber-600 dark:text-amber-400" },
-          { label: "Entregados", value: stats.entregados, color: "text-slate-500 dark:text-white/50" },
-        ].map(({ label, value, color }) => (
-          <div key={label} className="rounded-xl bg-slate-50 dark:bg-white/[0.04] px-4 py-3">
-            <p className="text-xs text-slate-500 dark:text-white/50 mb-1">{label}</p>
-            <p className={`text-2xl font-semibold ${color}`}>
-              {isLoading
-                ? <span className="inline-block h-7 w-8 animate-pulse rounded bg-slate-200 dark:bg-white/10" />
-                : value
-              }
-            </p>
-          </div>
-        ))}
-      </div>
+
 
       {/* ── Error ── */}
       {error && (
