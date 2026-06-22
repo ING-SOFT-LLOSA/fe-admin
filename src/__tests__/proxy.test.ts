@@ -13,11 +13,7 @@ vi.mock("next/server", () => {
   };
 });
 
-<<<<<<<< HEAD:src/proxy.test.ts
-import { proxy } from "./proxy";
-========
-import { middleware } from '@/middleware';
->>>>>>>> fa69b7e50744f336afd25921617bbf65aaaeb36f:src/__tests__/middleware.test.ts
+import { proxy } from "../proxy";
 
 function makeRequest(cookie?: string): NextRequest {
   const url = "https://backoffice.llosaedificaciones.com/proyectos";
@@ -59,11 +55,7 @@ describe("proxy", () => {
 
 describe("config matcher", () => {
   it("exporta un matcher configurado", async () => {
-<<<<<<<< HEAD:src/proxy.test.ts
-    const mod = await import("./proxy");
-========
-    const mod = await import("@/middleware");
->>>>>>>> fa69b7e50744f336afd25921617bbf65aaaeb36f:src/__tests__/middleware.test.ts
+    const mod = await import("../proxy");
     expect(mod.config).toBeDefined();
     expect(mod.config.matcher).toBeDefined();
     expect(Array.isArray(mod.config.matcher)).toBe(true);
