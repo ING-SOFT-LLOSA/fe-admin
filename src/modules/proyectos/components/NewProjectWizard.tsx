@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { ApiError } from "@/lib/api/http";
 
 import GeneralDataForm from "./GeneralDataForm";
 import InventoryConfigurator from "./InventoryConfigurator";
