@@ -146,7 +146,7 @@ export default function ClienteProfileView({ clientId }: Readonly<ClienteProfile
         </div>
  
         <div className="lg:col-span-3 space-y-6">
-          <ClientActivos clientId={Number(clientId)} refreshKey={refreshCount} />
+          <ClientActivos clientId={Number(clientId)} refreshKey={refreshCount} onUnlinked={refresh} />
           <ClientActivity assignments={assignments} clientCreatedAt={client?.createdAt} />
         </div>
       </div>
