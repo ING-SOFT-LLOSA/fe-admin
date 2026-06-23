@@ -50,6 +50,11 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const lastActivityRef = useRef<number>(0);
+  // Flag para evitar que onAuthStateChanged interfiera durante el proceso de
+  // login activo. Firebase dispara el listener en cuanto autentica al usuario,
+  // antes de que saveSession haya escrito la cookie, lo que causaba un signOut
+  // automático por "cookie vacía".
+  const isLoggingInRef = useRef(false);
 
   // -- Sync with Firebase auth state ----------------------------------------
   // onAuthStateChanged fires once immediately with the current user (or
@@ -58,6 +63,10 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
   useEffect(() => {
     const auth = getFirebaseAuth();
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      // Si hay un login en curso, ignorar este disparo del listener.
+      // La cookie todavía no existe porque saveSession aún no corrió.
+      if (isLoggingInRef.current) return;
+
       const storedToken = getStoredToken();
 
       if (!storedToken || !firebaseUser) {
@@ -116,19 +125,51 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
   }, []);
 
   const loginEmail = useCallback(async (email: string, password: string) => {
-    const p = await loginWithEmail(email, password);
-    const t = getStoredToken();
-    setPerfil(p);
-    setToken(t);
-    return p;
+    isLoggingInRef.current = true;
+    let success = false;
+    try {
+      const p = await loginWithEmail(email, password);
+      const t = getStoredToken();
+      setPerfil(p);
+      setToken(t);
+      success = true;
+      return p;
+    } finally {
+      isLoggingInRef.current = false;
+      // Si el login falló (éxito = false), Firebase puede haber quedado
+      // autenticado internamente. Hacemos signOut para dejarlo limpio.
+      if (!success) {
+        try {
+          await signOut(getFirebaseAuth());
+        } catch {
+          // ignore — puede que no haya sesión Firebase activa
+        }
+      }
+    }
   }, []);
 
   const loginGoogle = useCallback(async () => {
-    const p = await loginWithGoogle();
-    const t = getStoredToken();
-    setPerfil(p);
-    setToken(t);
-    return p;
+    isLoggingInRef.current = true;
+    let success = false;
+    try {
+      const p = await loginWithGoogle();
+      const t = getStoredToken();
+      setPerfil(p);
+      setToken(t);
+      success = true;
+      return p;
+    } finally {
+      isLoggingInRef.current = false;
+      // Igual que loginEmail: si falló después de que Firebase autenticó,
+      // limpiamos la sesión Firebase para no dejar un estado inconsistente.
+      if (!success) {
+        try {
+          await signOut(getFirebaseAuth());
+        } catch {
+          // ignore
+        }
+      }
+    }
   }, []);
 
   const logout = useCallback(async () => {
