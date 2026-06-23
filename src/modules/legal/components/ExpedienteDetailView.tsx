@@ -1283,15 +1283,15 @@ function DocumentosTab({
                       {doc.notaCorporativa}
                     </div>
                   ) : (
-                    <div className="rounded-xl border border-amber-200 dark:border-amber-900/50 bg-amber-50 dark:bg-amber-950/20 p-3.5 text-xs text-amber-800 dark:text-amber-400 border-l-4 border-amber-500 leading-relaxed shadow-sm flex items-start gap-2.5">
-                      <span className="material-symbols-outlined text-amber-600 dark:text-amber-500 text-[18px] shrink-0 mt-0.5 select-none">
+                    <div className="rounded-xl border border-amber-200 dark:border-amber-900/50 bg-amber-50 dark:bg-amber-950/20 p-3 border-l-4 border-l-amber-500 leading-relaxed shadow-sm flex items-start gap-2">
+                      <span className="material-symbols-outlined text-amber-500 dark:text-amber-500 text-[15px] shrink-0 mt-0.5 select-none">
                         warning
                       </span>
-                      <div className="space-y-1">
-                        <span className="font-extrabold text-amber-900 dark:text-amber-300 block text-[10px] uppercase tracking-wider">
+                      <div className="space-y-0.5">
+                        <span className="font-extrabold text-amber-800 dark:text-amber-300 block text-[9px] uppercase tracking-wider">
                           Nota del Abogado (Observación):
                         </span>
-                        <p className="font-medium">{doc.notaCorporativa}</p>
+                        <p className="text-[11px] font-medium text-amber-800 dark:text-amber-400">{doc.notaCorporativa}</p>
                       </div>
                     </div>
                   )}
