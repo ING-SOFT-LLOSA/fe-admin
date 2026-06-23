@@ -301,7 +301,7 @@ export default function ExpedienteDetailView({ uuidUsuarioActivo }: Readonly<Pro
             onClick={() => setShowEditModal(true)}
             className="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-xl bg-slate-50 hover:bg-slate-100 dark:bg-white/5 dark:hover:bg-white/10 border border-slate-200 dark:border-white/10 text-slate-700 dark:text-white/80 transition-colors shadow-sm"
           >
-            <span className="material-symbols-outlined text-[18px]">edit</span>
+            <span className="material-symbols-outlined text-[18px]">edit</span>{" "}
             Editar Contrato
           </button>
         </div>
@@ -463,10 +463,11 @@ function EditContratoModal({
 
         <form onSubmit={handleSave} className="space-y-4">
           <div>
-            <label className="block text-xs font-bold text-slate-500 dark:text-white/60 uppercase tracking-wider mb-2">
+            <label htmlFor="edit-tipo-financiamiento" className="block text-xs font-bold text-slate-500 dark:text-white/60 uppercase tracking-wider mb-2">
               Tipo de Financiamiento
             </label>
             <select
+              id="edit-tipo-financiamiento"
               value={tipoFinanciamiento}
               onChange={(e) => setTipoFinanciamiento(e.target.value)}
               className="w-full px-4 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-xl text-sm font-semibold focus:outline-none focus:border-arch-gold text-slate-800 dark:text-white"
@@ -477,10 +478,11 @@ function EditContratoModal({
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-slate-500 dark:text-white/60 uppercase tracking-wider mb-2">
+            <label htmlFor="edit-fecha-adquisicion" className="block text-xs font-bold text-slate-500 dark:text-white/60 uppercase tracking-wider mb-2">
               Fecha de Adquisición / Creación
             </label>
             <input
+              id="edit-fecha-adquisicion"
               type="date"
               value={fechaAdquisicion}
               onChange={(e) => setFechaAdquisicion(e.target.value)}
@@ -489,10 +491,11 @@ function EditContratoModal({
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-slate-500 dark:text-white/60 uppercase tracking-wider mb-2">
+            <label htmlFor="edit-fecha-completado" className="block text-xs font-bold text-slate-500 dark:text-white/60 uppercase tracking-wider mb-2">
               Fecha de Completado / Entrega
             </label>
             <input
+              id="edit-fecha-completado"
               type="date"
               value={fechaCompletado}
               onChange={(e) => setFechaCompletado(e.target.value)}

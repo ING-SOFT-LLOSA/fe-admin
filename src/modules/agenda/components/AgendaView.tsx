@@ -767,7 +767,16 @@ export default function SchedulePage() {
             {calDays.map((cell, idx) => (
               <div 
                 key={`${cell.grey ? 'g' : 'm'}-${cell.day}-${idx}`} 
+                role="button"
+                tabIndex={cell.grey ? -1 : 0}
                 onClick={() => handleCellClick(cell)}
+                onKeyDown={(e) => {
+                  if (cell.grey) return;
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    handleCellClick(cell);
+                  }
+                }}
                 className={`min-h-[120px] border-b border-r border-slate-200 dark:border-white/10 p-2 flex flex-col gap-1 text-left ${getCellBgClass(cell.grey)}`}
               >
                 <span className={`text-sm pl-1 mb-1 ${getCellDayClass(cell.today, cell.grey)}`}>
