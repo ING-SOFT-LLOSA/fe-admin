@@ -198,7 +198,8 @@ test.describe('CP46 — Tiempos de respuesta del Dashboard y consultas al backen
     ).toBeVisible({ timeout: 8_000 })
 
     // Filter dev-environment noise: network failures, Firebase SDK background calls,
-    // Google Fonts (blocked in test env), and browser extension injections.
+    // Google Fonts (blocked in test env), browser extension injections, and
+    // CSP violations from dev tools (Console Ninja connects via ws://127.0.0.1:*).
     const criticalErrors = consoleErrors.filter(e =>
       !e.includes('favicon') &&
       !e.includes('net::ERR_FAILED') &&
@@ -209,6 +210,7 @@ test.describe('CP46 — Tiempos de respuesta del Dashboard y consultas al backen
       !e.includes('firebaseinstallations') &&
       !e.includes('@firebase/') &&
       !e.includes('Console Ninja') &&
+      !e.includes('ws://127.0.0.1') &&
       !e.includes('fonts.googleapis.com') &&
       !e.includes('fonts.gstatic.com') &&
       !e.startsWith('Warning:')
