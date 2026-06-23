@@ -14,6 +14,7 @@ export function clearSession(): void {
   try {
     localStorage?.removeItem(TOKEN_KEY);
     localStorage?.removeItem(PERFIL_KEY);
+    localStorage?.removeItem("llosa_last_activity");
   } catch {
     // localStorage may not be available (e.g., jsdom without full Web API)
   }

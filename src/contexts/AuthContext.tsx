@@ -6,6 +6,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
@@ -28,6 +29,9 @@ import { getFirebaseAuth } from "@/lib/firebase";
 // Removed mock imports
 import type { PerfilConPermisos } from "@/types/auth";
 
+const SESSION_TIMEOUT = 3600000; // 1 hour in ms
+const LAST_ACTIVITY_KEY = "llosa_last_activity";
+
 interface AuthContextValue {
   readonly perfil: PerfilConPermisos | null;
   readonly token: string | null;
@@ -45,6 +49,7 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
   const [perfil, setPerfil] = useState<PerfilConPermisos | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const lastActivityRef = useRef<number>(0);
 
   // -- Sync with Firebase auth state ----------------------------------------
   // onAuthStateChanged fires once immediately with the current user (or
@@ -135,6 +140,83 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
   const resetPassword = useCallback(async (email: string) => {
     await authResetPassword(email);
   }, []);
+
+  // -- Inactivity timeout (1 hour) ------------------------------------------
+  const isAuthenticated = !!perfil && !!token;
+  useEffect(() => {
+    if (!isAuthenticated) return;
+
+    const now = Date.now();
+    const storedActivity = typeof window !== "undefined" ? Number(localStorage.getItem(LAST_ACTIVITY_KEY)) : 0;
+    lastActivityRef.current = Number.isFinite(storedActivity) && storedActivity > 0 ? storedActivity : now;
+
+    const isInactive = () => {
+      return Date.now() - lastActivityRef.current > SESSION_TIMEOUT;
+    };
+
+    const checkAndLogoutIfInactive = (): boolean => {
+      if (isInactive()) {
+        void logout();
+        return true;
+      }
+      return false;
+    };
+
+    const updateActivity = () => {
+      const timestamp = Date.now();
+      if (timestamp - lastActivityRef.current < 1000) return;
+      lastActivityRef.current = timestamp;
+      try {
+        localStorage.setItem(LAST_ACTIVITY_KEY, String(timestamp));
+      } catch {
+        // ignore
+      }
+    };
+
+    if (checkAndLogoutIfInactive()) return;
+    updateActivity();
+
+    const handleActivity = () => {
+      if (checkAndLogoutIfInactive()) return;
+      updateActivity();
+    };
+
+    const activityEvents = ["keydown", "mousemove", "mousedown", "scroll", "touchstart"];
+    activityEvents.forEach((eventName) =>
+      globalThis.addEventListener(eventName, handleActivity, { passive: true })
+    );
+
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible") {
+        if (checkAndLogoutIfInactive()) return;
+        updateActivity();
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibility);
+
+    const intervalId = globalThis.setInterval(() => {
+      checkAndLogoutIfInactive();
+    }, 30000); // Check every 30 seconds
+
+    const handleStorage = (event: StorageEvent) => {
+      if (event.key === LAST_ACTIVITY_KEY && event.newValue) {
+        const parsed = Number(event.newValue);
+        if (Number.isFinite(parsed) && parsed > lastActivityRef.current) {
+          lastActivityRef.current = parsed;
+        }
+      }
+    };
+    globalThis.addEventListener("storage", handleStorage);
+
+    return () => {
+      activityEvents.forEach((eventName) =>
+        globalThis.removeEventListener(eventName, handleActivity)
+      );
+      document.removeEventListener("visibilitychange", handleVisibility);
+      globalThis.clearInterval(intervalId);
+      globalThis.removeEventListener("storage", handleStorage);
+    };
+  }, [isAuthenticated, logout]);
 
   const value = useMemo<AuthContextValue>(
     () => ({

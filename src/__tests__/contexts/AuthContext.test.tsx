@@ -196,7 +196,77 @@ describe("AuthContext", () => {
       window.dispatchEvent(new Event("llosa:unauthorized"));
     });
     await waitFor(() =>
-      expect(screen.getByTestId("auth").textContent).toBe("unauthenticated"),
+      expect(screen.getByTestId("auth").textContent).toBe("unauthenticated")
     );
+  });
+
+  it("logs out after 1 hour of inactivity", async () => {
+    const mockPerfil = {
+      id: 1, nombre: "Active User", email: "active@test.com",
+      tipoUsuario: "EMPLEADO", rol: "ADMIN", activo: true, funciones: [],
+    };
+    vi.mocked(api.fetchPerfil).mockResolvedValue(mockPerfil);
+
+    vi.useFakeTimers();
+    const systemTime = 1000000000000;
+    vi.setSystemTime(systemTime);
+
+    await act(async () => {
+      render(<AuthProvider><TestConsumer /></AuthProvider>);
+    });
+    await act(async () => {
+      await capturedAuthCb!(makeFirebaseUser());
+    });
+
+    expect(screen.getByTestId("auth").textContent).toBe("authenticated");
+
+    await act(async () => {
+      vi.advanceTimersByTime(3600000 + 60000);
+    });
+
+    expect(login.logout).toHaveBeenCalled();
+    vi.useRealTimers();
+  });
+
+  it("keeps user logged in if there is activity", async () => {
+    const mockPerfil = {
+      id: 1, nombre: "Active User", email: "active@test.com",
+      tipoUsuario: "EMPLEADO", rol: "ADMIN", activo: true, funciones: [],
+    };
+    vi.mocked(api.fetchPerfil).mockResolvedValue(mockPerfil);
+
+    vi.useFakeTimers();
+    const systemTime = 1000000000000;
+    vi.setSystemTime(systemTime);
+
+    await act(async () => {
+      render(<AuthProvider><TestConsumer /></AuthProvider>);
+    });
+    await act(async () => {
+      await capturedAuthCb!(makeFirebaseUser());
+    });
+
+    expect(screen.getByTestId("auth").textContent).toBe("authenticated");
+
+    await act(async () => {
+      vi.advanceTimersByTime(45 * 60 * 1000);
+    });
+
+    await act(async () => {
+      window.dispatchEvent(new Event("mousemove"));
+    });
+
+    await act(async () => {
+      vi.advanceTimersByTime(45 * 60 * 1000);
+    });
+
+    expect(login.logout).not.toHaveBeenCalled();
+
+    await act(async () => {
+      vi.advanceTimersByTime(65 * 60 * 1000);
+    });
+
+    expect(login.logout).toHaveBeenCalled();
+    vi.useRealTimers();
   });
 });
