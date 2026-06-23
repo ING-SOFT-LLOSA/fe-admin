@@ -3,11 +3,17 @@
 import { useState } from "react";
  
 import { unlinkAssignment } from "@/lib/api/users";
-import { ClienteAssignment } from "@/types/user";
+
+export type UnlinkAssignmentInfo = {
+  uuidUsuarioActivo: string | number;
+  projectName?: string;
+  unitId: string | number;
+  unitLabel?: string;
+};
  
 type UnlinkPropertyModalProps = {
   readonly open: boolean;
-  readonly assignment: ClienteAssignment | null;
+  readonly assignment: UnlinkAssignmentInfo | null;
   readonly onClose: () => void;
   readonly onUnlinked: () => void;
 };

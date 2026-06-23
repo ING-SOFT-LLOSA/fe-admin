@@ -10,8 +10,7 @@ import {
 } from "@/lib/api/expedientes";
 import { fetchProyectos, type Proyecto } from "@/lib/api/proyectos";
 import { ApiError } from "@/lib/api/http";
-import { type ClienteAssignment } from "@/types/user";
-import UnlinkPropertyModal from "./UnlinkPropertyModal";
+import UnlinkPropertyModal, { type UnlinkAssignmentInfo } from "./UnlinkPropertyModal";
 
 type ClientActivosProps = {
   readonly clientId: number;
@@ -70,7 +69,7 @@ export default function ClientActivos({ clientId, refreshKey = 0, onUnlinked }: 
   const [error, setError] = useState<string | null>(null);
   const [loadingLegal, setLoadingLegal] = useState<Record<string, boolean>>({});
 
-  const [selectedAssignment, setSelectedAssignment] = useState<ClienteAssignment | null>(null);
+  const [selectedAssignment, setSelectedAssignment] = useState<UnlinkAssignmentInfo | null>(null);
   const [unlinkModalOpen, setUnlinkModalOpen] = useState(false);
   const [loadingUnlink, setLoadingUnlink] = useState<Record<string, boolean>>({});
 
