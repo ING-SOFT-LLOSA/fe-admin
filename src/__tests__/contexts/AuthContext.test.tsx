@@ -72,6 +72,7 @@ describe("AuthContext", () => {
   beforeEach(() => {
     capturedAuthCb = null;
     vi.clearAllMocks();
+    vi.mocked(session.getStoredToken).mockReturnValue("mocked-stored-token-123");
   });
 
   it("restores session when Firebase provides a valid user", async () => {

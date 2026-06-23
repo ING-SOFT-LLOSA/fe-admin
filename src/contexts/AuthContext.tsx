@@ -10,7 +10,7 @@ import {
   type ReactNode,
 } from "react";
 
-import { onAuthStateChanged } from "firebase/auth";
+import { onAuthStateChanged, signOut } from "firebase/auth";
 
 import { fetchPerfil } from "@/lib/auth/api";
 import {
@@ -53,11 +53,19 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
   useEffect(() => {
     const auth = getFirebaseAuth();
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-      if (!firebaseUser) {
-        // Firebase session ended (logout, token revoked, or never existed).
+      const storedToken = getStoredToken();
+
+      if (!storedToken || !firebaseUser) {
         clearSession();
         setPerfil(null);
         setToken(null);
+        if (firebaseUser) {
+          try {
+            await signOut(auth);
+          } catch {
+            // ignore
+          }
+        }
         setIsLoading(false);
         return;
       }
@@ -75,6 +83,11 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
         clearSession();
         setPerfil(null);
         setToken(null);
+        try {
+          await signOut(auth);
+        } catch {
+          // ignore
+        }
       } finally {
         setIsLoading(false);
       }
