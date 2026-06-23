@@ -80,11 +80,19 @@ test.describe('Proyectos — Listado', () => {
 
   test('el KPI de Total proyectos muestra el conteo correcto', async ({ page }) => {
     await mockProyectosEndpoint(page)
+    // Mock sub-endpoints called by fetchProjectDetails to avoid unhandled network errors
+    await page.route('**/api/activos/proyecto/**', async (route) => {
+      await route.fulfill({ status: 200, json: { content: [], totalPages: 1, number: 0 } })
+    })
+    await page.route('**/api/proyectos/**/avance-general', async (route) => {
+      await route.fulfill({ status: 200, json: { porcentajeAvance: 0 } })
+    })
     await injectSession(page, perfilAdmin)
     await page.goto('/proyectos')
 
     await expect(page.locator('text=Proyectos').first()).toBeVisible({ timeout: 8_000 })
-    await expect(page.locator('text=Total').first()).toBeVisible({ timeout: 5_000 })
+    // The component renders the count as "N proyectos" in the filter bar once loading finishes
+    await expect(page.locator('text=/2\\s*proyectos/').first()).toBeVisible({ timeout: 5_000 })
   })
 
   test('estado vacío cuando la API devuelve lista vacía', async ({ page }) => {

@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import { isSpecialConcepto, getConceptoLabel, getPagoStatusInfo } from '@/modules/finanzas/utils/paymentHelpers';
 import type { PagoResponse } from "@/modules/finanzas/types";
 
+
 describe("paymentHelpers", () => {
   describe("isSpecialConcepto", () => {
     it("retorna true para conceptos especiales", () => {
