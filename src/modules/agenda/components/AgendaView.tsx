@@ -758,7 +758,7 @@ export default function SchedulePage() {
             )}
           </div>
 
-          <div className="flex-1 grid grid-cols-7 border-l border-slate-200 dark:border-white/10">
+          <div role="grid" className="flex-1 grid grid-cols-7 border-l border-slate-200 dark:border-white/10">
             {["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"].map(d => (
               <div key={d} className="py-3 text-center border-r border-b border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5">
                 <span className="text-[11px] font-bold text-slate-500 dark:text-white/60 uppercase tracking-wider">{d}</span>
@@ -767,7 +767,7 @@ export default function SchedulePage() {
             {calDays.map((cell, idx) => (
               <div 
                 key={`${cell.grey ? 'g' : 'm'}-${cell.day}-${idx}`} 
-                role="button"
+                role="gridcell"
                 tabIndex={cell.grey ? -1 : 0}
                 onClick={() => handleCellClick(cell)}
                 onKeyDown={(e) => {

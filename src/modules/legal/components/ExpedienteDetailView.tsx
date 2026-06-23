@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback, type FormEvent } from "react";
+import { useEffect, useState, useCallback, type SyntheticEvent } from "react";
 import Link from "next/link";
 
 import {
@@ -422,7 +422,7 @@ function EditContratoModal({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
-  const handleSave = async (e: FormEvent<HTMLFormElement>) => {
+  const handleSave = async (e: SyntheticEvent<HTMLFormElement>) => {
     e.preventDefault();
     setSaving(true);
     setError("");
