@@ -5,6 +5,7 @@ import type { UsuarioActivoResponseDTO } from "@/lib/api/expedientes";
 import { fetchSignedUrl } from "@/lib/api/documents";
 import { linkComprobanteToLegal } from "@/modules/finanzas/utils/linkComprobanteToLegal";
 import DialogModal from "@/components/ui/DialogModal";
+import DatePickerInput, { validateFutureDate } from "@/components/ui/DatePickerInput";
 import { getPagoStatusInfo, getConceptoLabel, isSpecialConcepto } from "@/modules/finanzas/utils/paymentHelpers";
 import ResumenSaldosCard from "@/modules/finanzas/components/details/ResumenSaldosCard";
 
@@ -27,7 +28,6 @@ export default function DirectFinancingView({ expediente, cronograma, pagos, res
     const nroCuotaId = useId();
     const conceptoId = useId();
     const montoId = useId();
-    const vencimientoId = useId();
 
     const cronogramaIds = {
         totalPactado: useId(),
@@ -88,6 +88,8 @@ export default function DirectFinancingView({ expediente, cronograma, pagos, res
         const [dropzoneFile, setDropzoneFile] = useState<File | null>(null);
         const [editingId, setEditingId] = useState<string | null>(null);
         const [editForm, setEditForm] = useState({ montoProgramado: "", fechaVencimiento: "" });
+        const [addDateError, setAddDateError] = useState<string | null>(null);
+        const [editDateError, setEditDateError] = useState<string | null>(null);
 
         const handleSelectFile = (uuidPago: string, file: File) => {
             setDropzoneFile(file);
@@ -250,9 +252,17 @@ export default function DirectFinancingView({ expediente, cronograma, pagos, res
     const cancelEditing = () => {
         setEditingId(null);
         setEditForm({ montoProgramado: "", fechaVencimiento: "" });
+        setEditDateError(null);
     };
 
     const handleSaveEdit = async (uuidPago: string) => {
+        // Validar fecha antes de llamar al backend
+        const dateErr = validateFutureDate(editForm.fechaVencimiento);
+        if (dateErr) {
+            setEditDateError(dateErr);
+            return;
+        }
+        setEditDateError(null);
         setIsSaving(true);
         try {
             await updatePago(uuidPago, {
@@ -277,6 +287,13 @@ export default function DirectFinancingView({ expediente, cronograma, pagos, res
 
         const handleAddPago = async () => {
             if (!cronograma) return;
+            // Validar fecha antes de llamar al backend
+            const dateErr = validateFutureDate(addForm.fechaVencimiento);
+            if (dateErr) {
+                setAddDateError(dateErr);
+                return;
+            }
+            setAddDateError(null);
             setIsSaving(true);
             const concepto = addForm.concepto as "CUOTA" | "SEPARACION" | "INICIAL";
             const rawNro = addForm.nroCuota.trim();
@@ -440,11 +457,13 @@ export default function DirectFinancingView({ expediente, cronograma, pagos, res
                                         <input id={montoId} type="number" value={addForm.montoProgramado} onChange={(e) => setAddForm((p) => ({ ...p, montoProgramado: e.target.value }))}
                                             className="w-full rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 px-3 py-2 text-sm text-build-main dark:text-white outline-none focus:border-build-accent" />
                                     </div>
-                                    <div>
-                                        <label htmlFor={vencimientoId} className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Vencimiento</label>
-                                        <input id={vencimientoId} type="date" value={addForm.fechaVencimiento} onChange={(e) => setAddForm((p) => ({ ...p, fechaVencimiento: e.target.value }))}
-                                            className="w-full rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 px-3 py-2 text-sm text-build-main dark:text-white outline-none focus:border-build-accent" />
-                                    </div>
+                                    <DatePickerInput
+                                        label="Vencimiento"
+                                        value={addForm.fechaVencimiento}
+                                        onChange={(v) => { setAddForm((p) => ({ ...p, fechaVencimiento: v })); setAddDateError(null); }}
+                                        error={addDateError ?? undefined}
+                                        size="sm"
+                                    />
                                     <div className="flex gap-2">
                                         <button onClick={handleAddPago} disabled={isSaving}
                                             className="flex-1 bg-build-main text-white rounded-lg px-3 py-2 text-xs font-bold disabled:opacity-50">
@@ -477,6 +496,7 @@ export default function DirectFinancingView({ expediente, cronograma, pagos, res
                                             showDropzone={activeDropzoneId === pago.uuidPago}
                                             isEditing={editingId === pago.uuidPago}
                                             editForm={editForm}
+                                            editDateError={editingId === pago.uuidPago ? editDateError : null}
                                             setEditForm={setEditForm}
                                             handleSaveEdit={handleSaveEdit}
                                             cancelEditing={cancelEditing}
@@ -718,6 +738,7 @@ interface PagoRowProps {
     readonly showDropzone: boolean;
     readonly isEditing: boolean;
     readonly editForm: { readonly fechaVencimiento: string; readonly montoProgramado: string };
+    readonly editDateError: string | null;
     readonly setEditForm: React.Dispatch<React.SetStateAction<{ fechaVencimiento: string; montoProgramado: string }>>;
     readonly handleSaveEdit: (uuidPago: string) => Promise<void>;
     readonly cancelEditing: () => void;
@@ -737,7 +758,7 @@ interface PagoRowProps {
 }
 
 function PagoRow({
-    pago, busy, showDropzone, isEditing, editForm, setEditForm,
+    pago, busy, showDropzone, isEditing, editForm, editDateError, setEditForm,
     handleSaveEdit, cancelEditing, startEditingPago,
     handleStatusChange, openDropzone, handleDownloadVoucher, handleDeletePago,
     isSaving, dropzoneComentario, setDropzoneComentario,
@@ -755,8 +776,12 @@ function PagoRow({
                 </td>
                 <td className="px-4 py-3 text-slate-600 dark:text-white/60">
                     {isEditing ? (
-                        <input type="date" value={editForm.fechaVencimiento} onChange={(e) => setEditForm(p => ({ ...p, fechaVencimiento: e.target.value }))}
-                            className="w-full rounded-lg border border-build-accent bg-white dark:bg-white/5 px-2 py-1 text-xs text-build-main dark:text-white outline-none" />
+                        <DatePickerInput
+                            value={editForm.fechaVencimiento}
+                            onChange={(v) => setEditForm(p => ({ ...p, fechaVencimiento: v }))}
+                            error={editDateError ?? undefined}
+                            size="sm"
+                        />
                     ) : (
                         new Date(pago.fechaVencimiento).toLocaleDateString("es-PE")
                     )}
