@@ -114,17 +114,6 @@ export default function ProjectsOverview() {
     return () => { mounted = false; };
   }, []);
 
-  // ── Derived stats ────────────────────────────────────────────────────────────
-  const stats = useMemo(() => ({
-    total:     projects.length,
-    activos:   projects.filter((p) => {
-      const proj = p as Proyecto & { estado?: string; activo?: boolean };
-      return proj.estado === "ACTIVO" || proj.activo !== false;
-    }).length,
-    enObra:    projects.filter((p) => (p as Proyecto & { estado?: string }).estado === "EN_CONSTRUCCION").length,
-    entregados:projects.filter((p) => (p as Proyecto & { estado?: string }).estado === "ENTREGADO").length,
-  }), [projects]);
-
   // ── Filtered list ─────────────────────────────────────────────────────────────
 const filtered = useMemo(() => {
   return projects.filter((p) =>

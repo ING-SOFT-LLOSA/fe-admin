@@ -85,11 +85,11 @@ export function formatMimeMessage(message: string): string {
 
   Object.keys(mimeMap).forEach((mime) => {
     const regex = new RegExp(mime, "gi");
-    formatted = formatted.replace(regex, mimeMap[mime]);
+    formatted = formatted.replaceAll(regex, mimeMap[mime]);
   });
 
   // Remueve " para PDF_LEGAL" u otros tipos de documentos en mayúscula
-  formatted = formatted.replace(/ para [A-Z_]+/g, "");
+  formatted = formatted.replaceAll(/ para [A-Z_]+/g, "");
 
   return formatted;
 }

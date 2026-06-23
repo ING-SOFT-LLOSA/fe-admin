@@ -8,6 +8,18 @@ vi.mock("@/lib/api/expedientes", () => ({
   fetchContratoActivo: vi.fn(),
 }));
 
+vi.mock("@/modules/clientes/components/UnlinkPropertyModal", () => ({
+  default: ({ open, onClose, onUnlinked }: any) => {
+    if (!open) return null;
+    return (
+      <div data-testid="mock-unlink-modal">
+        <button onClick={onUnlinked}>Mock Confirm</button>
+        <button onClick={onClose}>Mock Close</button>
+      </div>
+    );
+  }
+}));
+
 vi.mock("@/lib/api/proyectos", () => ({
   fetchProyectos: vi.fn(),
 }));
@@ -389,5 +401,27 @@ describe("ClientActivos", () => {
     await waitFor(() => {
       expect(screen.getByText(/Torre A · Piso 1 · 80 m² · Tech\. 75 m²/)).toBeDefined();
     });
+  });
+
+  it("abre el modal de desvincular y propaga el callback onUnlinked", async () => {
+    const onUnlinked = vi.fn();
+    mockFetchActivos.mockResolvedValue([sampleActivos[0]] as any);
+    mockFetchContrato.mockResolvedValue({
+      uuidUsuarioActivo: "ua-123",
+    } as any);
+
+    render(<ClientActivos clientId={1} onUnlinked={onUnlinked} />);
+    const btn = await screen.findByText("Desvincular");
+    fireEvent.click(btn);
+
+    await waitFor(() => {
+      expect(mockFetchContrato).toHaveBeenCalledWith("act-1");
+      expect(screen.getByTestId("mock-unlink-modal")).toBeDefined();
+    });
+
+    const confirmBtn = screen.getByText("Mock Confirm");
+    fireEvent.click(confirmBtn);
+
+    expect(onUnlinked).toHaveBeenCalled();
   });
 });

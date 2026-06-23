@@ -6,7 +6,7 @@ export function proxy(request: NextRequest) {
   const token = request.cookies.get("llosa_id_token")?.value;
 
   // 1. Generar nonce criptográfico único
-  const nonce = crypto.randomUUID().replace(/-/g, "");
+  const nonce = crypto.randomUUID().replaceAll("-", "");
   const isProd = process.env.NODE_ENV === "production";
 
   // CSP con nonce y strict-dynamic para evitar XSS

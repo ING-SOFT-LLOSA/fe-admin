@@ -174,6 +174,7 @@ export default function UnitDetailView({ projectId, unitId }: Readonly<UnitDetai
             <div className="md:col-span-2 flex items-center gap-3 rounded-xl border border-slate-200 dark:border-white/10 p-4">
               <button
                 type="button"
+                id="switch-tiene-recorrido-virtual"
                 role="switch"
                 aria-checked={form.tieneRecorridoVirtual}
                 onClick={() => setForm({ ...form, tieneRecorridoVirtual: !form.tieneRecorridoVirtual })}
@@ -187,7 +188,7 @@ export default function UnitDetailView({ projectId, unitId }: Readonly<UnitDetai
                   }`}
                 />
               </button>
-              <label className="text-sm font-semibold text-slate-700 dark:text-white/80 cursor-pointer" onClick={() => setForm({ ...form, tieneRecorridoVirtual: !form.tieneRecorridoVirtual })}>
+              <label htmlFor="switch-tiene-recorrido-virtual" className="text-sm font-semibold text-slate-700 dark:text-white/80 cursor-pointer">
                 Tiene recorrido virtual
               </label>
             </div>

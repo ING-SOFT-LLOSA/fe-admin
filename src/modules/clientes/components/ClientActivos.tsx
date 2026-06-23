@@ -10,10 +10,12 @@ import {
 } from "@/lib/api/expedientes";
 import { fetchProyectos, type Proyecto } from "@/lib/api/proyectos";
 import { ApiError } from "@/lib/api/http";
+import UnlinkPropertyModal, { type UnlinkAssignmentInfo } from "./UnlinkPropertyModal";
 
 type ClientActivosProps = {
   readonly clientId: number;
   readonly refreshKey?: number;
+  readonly onUnlinked?: () => void;
 };
 
 function getUnitIcon(tipo: string): string {
@@ -59,13 +61,40 @@ function formatPrice(precio: number): string {
   return `S/ ${precio.toLocaleString("es-PE", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
 }
 
-export default function ClientActivos({ clientId, refreshKey = 0 }: Readonly<ClientActivosProps>) {
+export default function ClientActivos({ clientId, refreshKey = 0, onUnlinked }: Readonly<ClientActivosProps>) {
   const router = useRouter();
   const [activos, setActivos] = useState<ActivoUsuarioDTO[]>([]);
   const [proyectos, setProyectos] = useState<Proyecto[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [loadingLegal, setLoadingLegal] = useState<Record<string, boolean>>({});
+
+  const [selectedAssignment, setSelectedAssignment] = useState<UnlinkAssignmentInfo | null>(null);
+  const [unlinkModalOpen, setUnlinkModalOpen] = useState(false);
+  const [loadingUnlink, setLoadingUnlink] = useState<Record<string, boolean>>({});
+
+  const handleUnlinkClick = async (activo: ActivoUsuarioDTO) => {
+    setLoadingUnlink((prev) => ({ ...prev, [activo.id]: true }));
+    try {
+      const contrato = await fetchContratoActivo(activo.id);
+      if (contrato?.uuidUsuarioActivo) {
+        setSelectedAssignment({
+          uuidUsuarioActivo: contrato.uuidUsuarioActivo,
+          projectName: activo.proyectoNombre || "Proyecto",
+          unitId: activo.id,
+          unitLabel: `${getUnitLabel(activo.tipo)} ${activo.nro}`,
+        });
+        setUnlinkModalOpen(true);
+      } else {
+        alert("No se encontró un expediente legal asociado para esta propiedad.");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Error al cargar la información para desvincular.");
+    } finally {
+      setLoadingUnlink((prev) => ({ ...prev, [activo.id]: false }));
+    }
+  };
 
   const handleVerExpediente = async (activoId: string) => {
     setLoadingLegal((prev) => ({ ...prev, [activoId]: true }));
@@ -248,6 +277,15 @@ export default function ClientActivos({ clientId, refreshKey = 0 }: Readonly<Cli
                           <span className="material-symbols-outlined text-[15px]">visibility</span>
                           <span>Ver detalle de unidad</span>
                         </Link>
+                        <button
+                          type="button"
+                          onClick={() => handleUnlinkClick(activo)}
+                          disabled={loadingUnlink[activo.id]}
+                          className="inline-flex items-center gap-1.5 text-xs font-semibold text-red-600 dark:text-red-400 hover:text-red-750 dark:hover:text-red-300 transition-colors px-3 py-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-950/20 disabled:opacity-50"
+                        >
+                          <span className="material-symbols-outlined text-[15px]">link_off</span>
+                          <span>{loadingUnlink[activo.id] ? "Cargando..." : "Desvincular"}</span>
+                        </button>
                       </div>
                     </div>
                   );
@@ -256,6 +294,22 @@ export default function ClientActivos({ clientId, refreshKey = 0 }: Readonly<Cli
             </div>
           ))}
         </div>
+      )}
+
+      {unlinkModalOpen && selectedAssignment && (
+        <UnlinkPropertyModal
+          open={unlinkModalOpen}
+          assignment={selectedAssignment}
+          onClose={() => {
+            setUnlinkModalOpen(false);
+            setSelectedAssignment(null);
+          }}
+          onUnlinked={() => {
+            setUnlinkModalOpen(false);
+            setSelectedAssignment(null);
+            if (onUnlinked) onUnlinked();
+          }}
+        />
       )}
     </section>
   );

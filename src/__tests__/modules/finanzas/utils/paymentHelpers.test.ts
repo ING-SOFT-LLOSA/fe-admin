@@ -39,6 +39,13 @@ describe("paymentHelpers", () => {
   });
 
   describe("getPagoStatusInfo", () => {
+    const formatLocalDate = (date: Date) => {
+      const y = date.getFullYear();
+      const m = String(date.getMonth() + 1).padStart(2, '0');
+      const d = String(date.getDate()).padStart(2, '0');
+      return `${y}-${m}-${d}`;
+    };
+
     it("retorna info para PAGADO", () => {
       const info = getPagoStatusInfo({ estado: "PAGADO" } as PagoResponse);
       expect(info.label).toBe("Pagado");
@@ -48,7 +55,7 @@ describe("paymentHelpers", () => {
     it("retorna info para Vencido con días de mora", () => {
       const pastDate = new Date();
       pastDate.setDate(pastDate.getDate() - 5);
-      const yyyymmdd = pastDate.toISOString().split("T")[0];
+      const yyyymmdd = formatLocalDate(pastDate);
 
       const info = getPagoStatusInfo({ estado: "PENDIENTE", fechaVencimiento: yyyymmdd } as PagoResponse);
       expect(info.label).toBe("Vencido");
@@ -59,7 +66,7 @@ describe("paymentHelpers", () => {
     it("retorna info para Vencido con exactamente 1 día de mora", () => {
       const pastDate = new Date();
       pastDate.setDate(pastDate.getDate() - 1);
-      const yyyymmdd = toLocalDateStr(pastDate);
+      const yyyymmdd = formatLocalDate(pastDate);
 
       const info = getPagoStatusInfo({ estado: "PENDIENTE", fechaVencimiento: yyyymmdd } as PagoResponse);
       expect(info.label).toBe("Vencido");
@@ -69,7 +76,7 @@ describe("paymentHelpers", () => {
 
     it("retorna info para Vence hoy/pronto", () => {
       const today = new Date();
-      const yyyymmdd = toLocalDateStr(today);
+      const yyyymmdd = formatLocalDate(today);
 
       const info = getPagoStatusInfo({ estado: "PENDIENTE", fechaVencimiento: yyyymmdd } as PagoResponse);
       expect(info.label).toBe("Vence hoy");
@@ -79,7 +86,7 @@ describe("paymentHelpers", () => {
     it("retorna info para Vence en N días", () => {
       const futureDate = new Date();
       futureDate.setDate(futureDate.getDate() + 2);
-      const yyyymmdd = toLocalDateStr(futureDate);
+      const yyyymmdd = formatLocalDate(futureDate);
 
       const info = getPagoStatusInfo({ estado: "PENDIENTE", fechaVencimiento: yyyymmdd } as PagoResponse);
       expect(info.label).toBe("Vence en 2 d");
@@ -89,7 +96,7 @@ describe("paymentHelpers", () => {
     it("retorna info para Pendiente lejano", () => {
       const futureDate = new Date();
       futureDate.setDate(futureDate.getDate() + 10);
-      const yyyymmdd = futureDate.toISOString().split("T")[0];
+      const yyyymmdd = formatLocalDate(futureDate);
 
       const info = getPagoStatusInfo({ estado: "PENDIENTE", fechaVencimiento: yyyymmdd } as PagoResponse);
       expect(info.label).toBe("Pendiente");
