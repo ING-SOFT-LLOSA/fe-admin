@@ -2,6 +2,13 @@ import { describe, it, expect } from "vitest";
 import { isSpecialConcepto, getConceptoLabel, getPagoStatusInfo } from '@/modules/finanzas/utils/paymentHelpers';
 import type { PagoResponse } from "@/modules/finanzas/types";
 
+function toLocalDateStr(date: Date): string {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
 describe("paymentHelpers", () => {
   describe("isSpecialConcepto", () => {
     it("retorna true para conceptos especiales", () => {
@@ -52,7 +59,7 @@ describe("paymentHelpers", () => {
     it("retorna info para Vencido con exactamente 1 día de mora", () => {
       const pastDate = new Date();
       pastDate.setDate(pastDate.getDate() - 1);
-      const yyyymmdd = pastDate.toISOString().split("T")[0];
+      const yyyymmdd = toLocalDateStr(pastDate);
 
       const info = getPagoStatusInfo({ estado: "PENDIENTE", fechaVencimiento: yyyymmdd } as PagoResponse);
       expect(info.label).toBe("Vencido");
@@ -62,7 +69,7 @@ describe("paymentHelpers", () => {
 
     it("retorna info para Vence hoy/pronto", () => {
       const today = new Date();
-      const yyyymmdd = today.toISOString().split("T")[0];
+      const yyyymmdd = toLocalDateStr(today);
 
       const info = getPagoStatusInfo({ estado: "PENDIENTE", fechaVencimiento: yyyymmdd } as PagoResponse);
       expect(info.label).toBe("Vence hoy");
@@ -72,7 +79,7 @@ describe("paymentHelpers", () => {
     it("retorna info para Vence en N días", () => {
       const futureDate = new Date();
       futureDate.setDate(futureDate.getDate() + 2);
-      const yyyymmdd = futureDate.toISOString().split("T")[0];
+      const yyyymmdd = toLocalDateStr(futureDate);
 
       const info = getPagoStatusInfo({ estado: "PENDIENTE", fechaVencimiento: yyyymmdd } as PagoResponse);
       expect(info.label).toBe("Vence en 2 d");
