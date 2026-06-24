@@ -2,10 +2,18 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import EmployeeDashboardPage from '@/app/employee/dashboard/page';
 
+vi.mock("@/contexts/AuthContext", () => ({ useAuth: vi.fn() }));
+import { useAuth } from "@/contexts/AuthContext";
+const mockUseAuth = vi.mocked(useAuth);
+
 describe("EmployeeDashboardPage", () => {
   beforeEach(() => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-06-19T12:00:00"));
+    mockUseAuth.mockReturnValue({
+      perfil: { nombre: "Juan Empleado", rol: "EMPLEADO", tipoUsuario: "EMPLEADO" },
+      logout: vi.fn(),
+    } as unknown as ReturnType<typeof useAuth>);
   });
 
   afterEach(() => {
@@ -14,7 +22,7 @@ describe("EmployeeDashboardPage", () => {
 
   it("renders title and description with formatted date", () => {
     render(<EmployeeDashboardPage />);
-    expect(screen.getByText("Mi Dashboard")).toBeDefined();
+    expect(screen.getByText("Hola, Juan")).toBeDefined();
     expect(screen.getByText(/Resumen de tus tareas/)).toBeDefined();
     expect(screen.getByText(/viernes, 19 de junio/)).toBeDefined();
   });

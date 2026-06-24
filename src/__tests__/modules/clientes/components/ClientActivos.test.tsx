@@ -1,18 +1,19 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent, waitFor, act } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import ClientActivos from '@/modules/clientes/components/ClientActivos';
 
 vi.mock("@/lib/api/expedientes", () => ({
-  fetchActivosPorUsuario: vi.fn(),
-  fetchContratoActivo: vi.fn(),
+  fetchExpedientesPorUsuario: vi.fn(),
 }));
 
 vi.mock("@/modules/clientes/components/UnlinkPropertyModal", () => ({
-  default: ({ open, onClose, onUnlinked }: any) => {
+  default: ({ open, assignment, onClose, onUnlinked }: any) => {
     if (!open) return null;
     return (
       <div data-testid="mock-unlink-modal">
+        <span data-testid="mock-unlink-project">{assignment?.projectName}</span>
+        <span data-testid="mock-unlink-units">{assignment?.unitLabel}</span>
         <button onClick={onUnlinked}>Mock Confirm</button>
         <button onClick={onClose}>Mock Close</button>
       </div>
@@ -36,90 +37,105 @@ vi.mock("next/link", () => ({
   ),
 }));
 
-import {
-  fetchActivosPorUsuario,
-  fetchContratoActivo,
-} from "@/lib/api/expedientes";
+import { fetchExpedientesPorUsuario } from "@/lib/api/expedientes";
 import { fetchProyectos } from "@/lib/api/proyectos";
 import { useRouter } from "next/navigation";
 
-const mockFetchActivos = vi.mocked(fetchActivosPorUsuario);
-const mockFetchContrato = vi.mocked(fetchContratoActivo);
+const mockFetchExpedientes = vi.mocked(fetchExpedientesPorUsuario);
 const mockFetchProyectos = vi.mocked(fetchProyectos);
 const mockUseRouter = vi.mocked(useRouter);
 
-const sampleActivos = [
-  {
-    id: "act-1",
-    pisoId: 10,
-    nro: "101",
-    torreNombre: "Torre A",
-    proyectoNombre: "Aurora",
-    nroPiso: 1,
-    tipo: "DEPARTAMENTO",
-    areaM2: 80,
-    areaTechada: 75,
-    estadoComercial: "VENDIDO",
-    precio: 250000,
-    descripcion: "",
-  },
-  {
-    id: "act-2",
-    pisoId: 11,
-    nro: "P-A1",
-    torreNombre: "Torre A",
-    proyectoNombre: "Aurora",
-    nroPiso: 1,
-    tipo: "ESTACIONAMIENTO",
-    areaM2: 12,
-    areaTechada: 12,
-    estadoComercial: "SEPARADO",
-    precio: 18000,
-    descripcion: "",
-  },
-  {
-    id: "act-3",
-    pisoId: 12,
-    nro: "D-1",
-    torreNombre: "Torre A",
-    proyectoNombre: "Aurora",
-    nroPiso: 1,
-    tipo: "DEPOSITO",
-    areaM2: 5,
-    areaTechada: 5,
-    estadoComercial: "DISPONIBLE",
-    precio: 5000,
-    descripcion: "",
-  },
-  {
-    id: "act-4",
-    pisoId: 20,
-    nro: "201",
-    torreNombre: "Torre B",
-    proyectoNombre: "Beta",
-    nroPiso: 2,
-    tipo: "DEPARTAMENTO",
-    areaM2: 90,
-    areaTechada: 85,
-    estadoComercial: "RESERVADO",
-    precio: 300000,
-    descripcion: "",
-  },
-  {
-    id: "act-5",
-    pisoId: 30,
-    nro: "301",
-    torreNombre: null,
-    proyectoNombre: null,
-    nroPiso: 3,
-    tipo: "OFICINA",
-    areaM2: 100,
-    areaTechada: 100,
-    estadoComercial: "DESCONOCIDO",
-    precio: 500000,
-    descripcion: "",
-  },
-];
+// ─── Fixtures ──────────────────────────────────────────────────────────────────
+// El componente trabaja sobre contratos (UsuarioActivoResponseDTO) que ya traen
+// la lista de activos[] embebida.
+
+const activoDepto = {
+  id: "act-1",
+  pisoId: 10,
+  nro: "101",
+  torreNombre: "Torre A",
+  proyectoNombre: "Aurora",
+  nroPiso: 1,
+  tipo: "DEPARTAMENTO",
+  areaM2: 80,
+  areaTechada: 75,
+  estadoComercial: "VENDIDO",
+  precio: 250000,
+  descripcion: "",
+};
+
+const activoCochera = {
+  id: "act-2",
+  pisoId: 11,
+  nro: "P-A1",
+  torreNombre: "Torre A",
+  proyectoNombre: "Aurora",
+  nroPiso: 1,
+  tipo: "ESTACIONAMIENTO",
+  areaM2: 12,
+  areaTechada: 0,
+  estadoComercial: "SEPARADO",
+  precio: 18000,
+  descripcion: "",
+};
+
+const activoDeposito = {
+  id: "act-3",
+  pisoId: 12,
+  nro: "D-1",
+  torreNombre: "Torre A",
+  proyectoNombre: "Aurora",
+  nroPiso: 1,
+  tipo: "DEPOSITO",
+  areaM2: 5,
+  areaTechada: 5,
+  estadoComercial: "DISPONIBLE",
+  precio: 5000,
+  descripcion: "",
+};
+
+const activoOficina = {
+  id: "act-5",
+  pisoId: 30,
+  nro: "301",
+  torreNombre: "Torre B",
+  proyectoNombre: "Beta",
+  nroPiso: 3,
+  tipo: "OFICINA",
+  areaM2: 100,
+  areaTechada: 100,
+  estadoComercial: "DESCONOCIDO",
+  precio: 500000,
+  descripcion: "",
+};
+
+// Contrato activo (vigente, con 1 activo)
+const contratoActivo = {
+  uuidUsuarioActivo: "ua-1",
+  tipoFinanciamiento: "CREDITO_HIPOTECARIO",
+  fechaAdquisicion: null,
+  fechaCompletado: null,
+  createdAt: null,
+  updatedAt: null,
+  vigente: true,
+  clientes: [],
+  activos: [activoDepto],
+  estadoTramiteLegal: "CONTRATO",
+};
+
+// Contrato activo con varias unidades, distintos tipos/estados
+const contratoMultiunidad = {
+  uuidUsuarioActivo: "ua-multi",
+  tipoFinanciamiento: "AL_CONTADO",
+  fechaAdquisicion: null,
+  fechaCompletado: null,
+  createdAt: null,
+  updatedAt: null,
+  vigente: true,
+  clientes: [],
+  activos: [activoDepto, activoCochera, activoDeposito, activoOficina],
+  estadoTramiteLegal: "PAGO",
+};
 
 const sampleProyectos = [
   { id: "p-1", nombre: "Aurora" },
@@ -130,77 +146,85 @@ describe("ClientActivos", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     window.alert = vi.fn();
-    mockFetchActivos.mockResolvedValue([]);
+    mockFetchExpedientes.mockResolvedValue([]);
     mockFetchProyectos.mockResolvedValue(sampleProyectos as any);
     mockUseRouter.mockReturnValue({ push: vi.fn() } as any);
   });
 
   it("muestra el estado de carga inicialmente", () => {
-    mockFetchActivos.mockReturnValue(new Promise(() => {}));
+    mockFetchExpedientes.mockReturnValue(new Promise(() => {}));
     render(<ClientActivos clientId={1} />);
-    expect(screen.getByText("Cargando activos...")).toBeDefined();
+    expect(screen.getByText("Cargando contratos...")).toBeDefined();
   });
 
-  it("muestra el título de la sección y el contador", async () => {
-    mockFetchActivos.mockResolvedValue(sampleActivos as any);
+  it("muestra el título de la sección y los contadores", async () => {
+    mockFetchExpedientes.mockResolvedValue([contratoMultiunidad] as any);
     render(<ClientActivos clientId={1} />);
-    expect(screen.getByText("Propiedades del Cliente")).toBeDefined();
+    expect(screen.getByText("Propiedades del cliente")).toBeDefined();
     await waitFor(() => {
-      expect(screen.getByText(/5 activos/)).toBeDefined();
+      expect(screen.getByText("1 contrato activo")).toBeDefined();
+      expect(screen.getByText("4 unidades")).toBeDefined();
     });
   });
 
-  it("muestra el estado vacío si el cliente no tiene propiedades", async () => {
-    mockFetchActivos.mockResolvedValue([]);
+  it("muestra el estado vacío si el cliente no tiene contratos", async () => {
+    mockFetchExpedientes.mockResolvedValue([]);
     render(<ClientActivos clientId={1} />);
-    expect(await screen.findByText("No tiene propiedades vinculadas.")).toBeDefined();
-    expect(screen.getByText("0 activos")).toBeDefined();
+    expect(await screen.findByText("Sin contratos vinculados")).toBeDefined();
   });
 
   it("muestra mensaje de error si falla la carga", async () => {
-    mockFetchActivos.mockRejectedValue(new Error("boom"));
+    mockFetchExpedientes.mockRejectedValue(new Error("boom"));
     render(<ClientActivos clientId={1} />);
     expect(await screen.findByText("boom")).toBeDefined();
   });
 
   it("muestra mensaje de error genérico si la falla no es un Error", async () => {
-    mockFetchActivos.mockRejectedValue("fallo crudo");
+    mockFetchExpedientes.mockRejectedValue("fallo crudo");
     render(<ClientActivos clientId={1} />);
-    expect(await screen.findByText("No se pudieron cargar los activos.")).toBeDefined();
+    expect(await screen.findByText("No se pudieron cargar los contratos.")).toBeDefined();
   });
 
-  it("muestra mensaje singular cuando hay 1 activo", async () => {
-    mockFetchActivos.mockResolvedValue([sampleActivos[0]] as any);
+  it("muestra contador singular cuando hay 1 contrato y 1 unidad", async () => {
+    mockFetchExpedientes.mockResolvedValue([contratoActivo] as any);
     render(<ClientActivos clientId={1} />);
     await waitFor(() => {
-      expect(screen.getByText("1 activo")).toBeDefined();
+      expect(screen.getByText("1 contrato activo")).toBeDefined();
+      expect(screen.getByText("1 unidad")).toBeDefined();
     });
   });
 
-  it("agrupa los activos por proyecto", async () => {
-    mockFetchActivos.mockResolvedValue(sampleActivos as any);
+  it("muestra contador plural cuando hay varios contratos activos", async () => {
+    mockFetchExpedientes.mockResolvedValue([
+      contratoActivo,
+      { ...contratoMultiunidad, uuidUsuarioActivo: "ua-2" },
+    ] as any);
     render(<ClientActivos clientId={1} />);
-
     await waitFor(() => {
-      expect(screen.getByText("Aurora")).toBeDefined();
-      expect(screen.getByText("Beta")).toBeDefined();
+      expect(screen.getByText("2 contratos activos")).toBeDefined();
     });
-    expect(screen.getByText("Sin proyecto")).toBeDefined();
   });
 
-  it("muestra el contador de unidades por proyecto", async () => {
-    mockFetchActivos.mockResolvedValue(sampleActivos as any);
+  it("muestra el número de contrato y la etapa del trámite legal", async () => {
+    mockFetchExpedientes.mockResolvedValue([contratoActivo] as any);
     render(<ClientActivos clientId={1} />);
-
     await waitFor(() => {
-      // Aurora: 3 unidades (act-1, act-2, act-3), Beta: 1 unidad, Sin proyecto: 1
-      expect(screen.getByText("3 unidades")).toBeDefined();
-      expect(screen.getAllByText("1 unidad").length).toBeGreaterThanOrEqual(2);
+      expect(screen.getByText("Contrato 01")).toBeDefined();
+      // estadoTramiteLegal CONTRATO → label "Contrato"
+      expect(screen.getAllByText("Contrato").length).toBeGreaterThanOrEqual(1);
+    });
+  });
+
+  it("muestra el label de financiamiento", async () => {
+    mockFetchExpedientes.mockResolvedValue([contratoActivo] as any);
+    render(<ClientActivos clientId={1} />);
+    await waitFor(() => {
+      expect(screen.getByText("Crédito hipotecario")).toBeDefined();
     });
   });
 
   it("muestra el label de unidad según el tipo (DEPARTAMENTO, ESTACIONAMIENTO, DEPOSITO, OFICINA)", async () => {
-    mockFetchActivos.mockResolvedValue(sampleActivos as any);
+    mockFetchExpedientes.mockResolvedValue([contratoMultiunidad] as any);
     render(<ClientActivos clientId={1} />);
 
     await waitFor(() => {
@@ -213,7 +237,7 @@ describe("ClientActivos", () => {
   });
 
   it("muestra los iconos correctos según el tipo", async () => {
-    mockFetchActivos.mockResolvedValue(sampleActivos as any);
+    mockFetchExpedientes.mockResolvedValue([contratoMultiunidad] as any);
     const { container } = render(<ClientActivos clientId={1} />);
     await waitFor(() => {
       expect(screen.getByText(/Departamento 101/)).toBeDefined();
@@ -227,26 +251,25 @@ describe("ClientActivos", () => {
   });
 
   it("muestra el badge de estado correcto para cada activo", async () => {
-    mockFetchActivos.mockResolvedValue(sampleActivos as any);
+    mockFetchExpedientes.mockResolvedValue([contratoMultiunidad] as any);
     render(<ClientActivos clientId={1} />);
     await waitFor(() => {
       expect(screen.getByText("Vendido")).toBeDefined();
       expect(screen.getByText("Separado")).toBeDefined();
       expect(screen.getByText("Disponible")).toBeDefined();
-      expect(screen.getByText("Reservado")).toBeDefined();
       // estado desconocido → usa el valor crudo
       expect(screen.getByText("DESCONOCIDO")).toBeDefined();
     });
   });
 
   it("formatea el precio en soles peruanos", async () => {
-    mockFetchActivos.mockResolvedValue([sampleActivos[0]] as any);
+    mockFetchExpedientes.mockResolvedValue([contratoActivo] as any);
     render(<ClientActivos clientId={1} />);
     expect(await screen.findByText("S/ 250,000")).toBeDefined();
   });
 
   it("genera link al detalle de unidad cuando hay proyecto coincidente", async () => {
-    mockFetchActivos.mockResolvedValue([sampleActivos[0]] as any);
+    mockFetchExpedientes.mockResolvedValue([contratoActivo] as any);
     render(<ClientActivos clientId={1} />);
     await waitFor(() => {
       const link = screen.getByText("Ver detalle de unidad").closest("a");
@@ -255,7 +278,7 @@ describe("ClientActivos", () => {
   });
 
   it("genera link genérico cuando no encuentra proyecto coincidente", async () => {
-    mockFetchActivos.mockResolvedValue([sampleActivos[0]] as any);
+    mockFetchExpedientes.mockResolvedValue([contratoActivo] as any);
     mockFetchProyectos.mockResolvedValue([] as any);
     render(<ClientActivos clientId={1} />);
     await waitFor(() => {
@@ -264,111 +287,47 @@ describe("ClientActivos", () => {
     });
   });
 
-  it("navega al expediente legal al hacer click en Ver expediente", async () => {
+  it("navega al expediente legal al hacer click en Expediente legal", async () => {
     const push = vi.fn();
     mockUseRouter.mockReturnValue({ push } as any);
-    mockFetchActivos.mockResolvedValue([sampleActivos[0]] as any);
-    mockFetchContrato.mockResolvedValue({
-      uuidUsuarioActivo: "ua-xyz",
-    } as any);
+    mockFetchExpedientes.mockResolvedValue([contratoActivo] as any);
 
     render(<ClientActivos clientId={1} />);
-    const btn = await screen.findByText("Ver expediente legal");
+    const btn = await screen.findByText("Expediente legal");
     fireEvent.click(btn);
 
     await waitFor(() => {
-      expect(mockFetchContrato).toHaveBeenCalledWith("act-1");
-      expect(push).toHaveBeenCalledWith("/legal/ua-xyz");
-    });
-  });
-
-  it("muestra alert si fetchContrato no devuelve uuidUsuarioActivo", async () => {
-    mockFetchActivos.mockResolvedValue([sampleActivos[0]] as any);
-    mockFetchContrato.mockResolvedValue({} as any);
-
-    render(<ClientActivos clientId={1} />);
-    const btn = await screen.findByText("Ver expediente legal");
-    fireEvent.click(btn);
-
-    await waitFor(() => {
-      expect(window.alert).toHaveBeenCalledWith(
-        "No se encontró un expediente legal asociado para esta propiedad.",
-      );
-    });
-  });
-
-  it("muestra alert de error 404 cuando el expediente no existe", async () => {
-    const { ApiError } = await import("@/lib/api/http");
-    mockFetchActivos.mockResolvedValue([sampleActivos[0]] as any);
-    mockFetchContrato.mockRejectedValue(new ApiError("Not found", 404, "/api/contrato"));
-
-    render(<ClientActivos clientId={1} />);
-    const btn = await screen.findByText("Ver expediente legal");
-    fireEvent.click(btn);
-
-    await waitFor(() => {
-      expect(window.alert).toHaveBeenCalledWith(
-        "No se encontró un expediente legal asociado para esta propiedad.",
-      );
-    });
-  });
-
-  it("muestra alert de error genérico cuando fetchContrato falla con otro error", async () => {
-    const { ApiError } = await import("@/lib/api/http");
-    mockFetchActivos.mockResolvedValue([sampleActivos[0]] as any);
-    mockFetchContrato.mockRejectedValue(new ApiError("Server error", 500, "/api/contrato"));
-
-    render(<ClientActivos clientId={1} />);
-    const btn = await screen.findByText("Ver expediente legal");
-    fireEvent.click(btn);
-
-    await waitFor(() => {
-      expect(window.alert).toHaveBeenCalledWith(
-        "Error al cargar el expediente legal.",
-      );
-    });
-  });
-
-  it("muestra 'Cargando...' en el botón mientras se carga el expediente", async () => {
-    mockFetchActivos.mockResolvedValue([sampleActivos[0]] as any);
-    mockFetchContrato.mockReturnValue(new Promise(() => {}));
-
-    render(<ClientActivos clientId={1} />);
-    const btn = await screen.findByText("Ver expediente legal");
-    fireEvent.click(btn);
-
-    await waitFor(() => {
-      expect(screen.getByText("Cargando...")).toBeDefined();
+      expect(push).toHaveBeenCalledWith("/legal/ua-1");
     });
   });
 
   it("re-carga los datos cuando refreshKey cambia", async () => {
-    mockFetchActivos.mockResolvedValue([sampleActivos[0]] as any);
+    mockFetchExpedientes.mockResolvedValue([contratoActivo] as any);
     const { rerender } = render(<ClientActivos clientId={1} refreshKey={0} />);
     await screen.findByText(/Departamento 101/);
-    expect(mockFetchActivos).toHaveBeenCalledTimes(1);
+    expect(mockFetchExpedientes).toHaveBeenCalledTimes(1);
 
-    mockFetchActivos.mockClear();
+    mockFetchExpedientes.mockClear();
     rerender(<ClientActivos clientId={1} refreshKey={1} />);
     await waitFor(() => {
-      expect(mockFetchActivos).toHaveBeenCalled();
+      expect(mockFetchExpedientes).toHaveBeenCalled();
     });
   });
 
   it("re-carga los datos cuando clientId cambia", async () => {
-    mockFetchActivos.mockResolvedValue([sampleActivos[0]] as any);
+    mockFetchExpedientes.mockResolvedValue([contratoActivo] as any);
     const { rerender } = render(<ClientActivos clientId={1} />);
     await screen.findByText(/Departamento 101/);
 
-    mockFetchActivos.mockClear();
+    mockFetchExpedientes.mockClear();
     rerender(<ClientActivos clientId={2} />);
     await waitFor(() => {
-      expect(mockFetchActivos).toHaveBeenCalledWith(2);
+      expect(mockFetchExpedientes).toHaveBeenCalledWith(2);
     });
   });
 
   it("tolera que fetchProyectos falle con fallback a []", async () => {
-    mockFetchActivos.mockResolvedValue([sampleActivos[0]] as any);
+    mockFetchExpedientes.mockResolvedValue([contratoActivo] as any);
     mockFetchProyectos.mockRejectedValue(new Error("boom"));
 
     render(<ClientActivos clientId={1} />);
@@ -377,51 +336,86 @@ describe("ClientActivos", () => {
     });
   });
 
-  it("tolera que fetchProyectos retorne datos no-array (fallback a [])", async () => {
-    mockFetchActivos.mockResolvedValue([sampleActivos[0]] as any);
-    mockFetchProyectos.mockResolvedValue(null as any);
-
+  it("tolera que fetchExpedientes retorne null (fallback a [])", async () => {
+    mockFetchExpedientes.mockResolvedValue(null as any);
     render(<ClientActivos clientId={1} />);
     await waitFor(() => {
-      expect(screen.getByText(/Departamento 101/)).toBeDefined();
+      expect(screen.getByText("Sin contratos vinculados")).toBeDefined();
     });
   });
 
-  it("tolera que fetchActivos retorne null (fallback a [])", async () => {
-    mockFetchActivos.mockResolvedValue(null as any);
+  it("muestra la torre y piso de la unidad", async () => {
+    mockFetchExpedientes.mockResolvedValue([contratoActivo] as any);
     render(<ClientActivos clientId={1} />);
     await waitFor(() => {
-      expect(screen.getByText("No tiene propiedades vinculadas.")).toBeDefined();
+      expect(screen.getByText(/Torre A · Piso 1/)).toBeDefined();
     });
   });
 
-  it("muestra la torre, piso y áreas", async () => {
-    mockFetchActivos.mockResolvedValue([sampleActivos[0]] as any);
+  it("muestra el historial de contratos cancelados", async () => {
+    const contratoCancelado = {
+      ...contratoActivo,
+      uuidUsuarioActivo: "ua-cancelado",
+      vigente: false,
+    };
+    mockFetchExpedientes.mockResolvedValue([contratoActivo, contratoCancelado] as any);
     render(<ClientActivos clientId={1} />);
     await waitFor(() => {
-      expect(screen.getByText(/Torre A · Piso 1 · 80 m² · Tech\. 75 m²/)).toBeDefined();
+      expect(screen.getByText(/Contratos cancelados \(1\)/)).toBeDefined();
     });
   });
 
-  it("abre el modal de desvincular y propaga el callback onUnlinked", async () => {
+  it("trata un contrato sin unidades como cancelado", async () => {
+    const contratoSinUnidades = {
+      ...contratoActivo,
+      uuidUsuarioActivo: "ua-sin-unidades",
+      activos: [],
+    };
+    mockFetchExpedientes.mockResolvedValue([contratoSinUnidades] as any);
+    render(<ClientActivos clientId={1} />);
+    await waitFor(() => {
+      expect(screen.getByText("Sin contratos activos")).toBeDefined();
+      expect(screen.getByText(/Contratos cancelados \(1\)/)).toBeDefined();
+    });
+  });
+
+  it("abre el modal de cancelar contrato con el nombre de proyecto del DTO y propaga onUnlinked", async () => {
     const onUnlinked = vi.fn();
-    mockFetchActivos.mockResolvedValue([sampleActivos[0]] as any);
-    mockFetchContrato.mockResolvedValue({
-      uuidUsuarioActivo: "ua-123",
-    } as any);
+    mockFetchExpedientes.mockResolvedValue([contratoActivo] as any);
 
     render(<ClientActivos clientId={1} onUnlinked={onUnlinked} />);
-    const btn = await screen.findByText("Desvincular");
+    const btn = await screen.findByText("Cancelar contrato");
     fireEvent.click(btn);
 
     await waitFor(() => {
-      expect(mockFetchContrato).toHaveBeenCalledWith("act-1");
       expect(screen.getByTestId("mock-unlink-modal")).toBeDefined();
     });
+    // projectName proviene de activos[0].proyectoNombre del DTO
+    expect(screen.getByTestId("mock-unlink-project").textContent).toBe("Aurora");
+    // unitLabel es el resumen de las unidades del contrato
+    expect(screen.getByTestId("mock-unlink-units").textContent).toBe("Departamento 101");
 
     const confirmBtn = screen.getByText("Mock Confirm");
     fireEvent.click(confirmBtn);
 
     expect(onUnlinked).toHaveBeenCalled();
+  });
+
+  it("usa 'Proyecto' como fallback cuando el activo no tiene proyectoNombre", async () => {
+    const contratoSinProyecto = {
+      ...contratoActivo,
+      uuidUsuarioActivo: "ua-sin-proyecto",
+      activos: [{ ...activoDepto, proyectoNombre: undefined }],
+    };
+    mockFetchExpedientes.mockResolvedValue([contratoSinProyecto] as any);
+
+    render(<ClientActivos clientId={1} />);
+    const btn = await screen.findByText("Cancelar contrato");
+    fireEvent.click(btn);
+
+    await waitFor(() => {
+      expect(screen.getByTestId("mock-unlink-modal")).toBeDefined();
+    });
+    expect(screen.getByTestId("mock-unlink-project").textContent).toBe("Proyecto");
   });
 });

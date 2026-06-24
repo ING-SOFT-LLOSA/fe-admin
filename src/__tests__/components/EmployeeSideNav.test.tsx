@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import EmployeeSideNav from '@/components/EmployeeSideNav';
 import { useAuth } from "@/contexts/AuthContext";
 import { usePathname, useRouter } from "next/navigation";
@@ -31,6 +31,7 @@ describe("EmployeeSideNav", () => {
     vi.mocked(usePathname).mockReturnValue("/employee/dashboard");
     vi.mocked(useAuth).mockReturnValue({
       perfil: { funciones: ["CONTRATO_VER", "OBRA_VER"] },
+      logout: vi.fn(),
     } as any);
   });
 
@@ -79,11 +80,19 @@ describe("EmployeeSideNav", () => {
     expect(link?.className).toContain("bg-white");
   });
 
-  it("redirige a /login al hacer clic en Cerrar Sesión", () => {
+  it("redirige a /login al hacer clic en Cerrar Sesión", async () => {
+    const mockLogout = vi.fn();
+    vi.mocked(useAuth).mockReturnValue({
+      perfil: { funciones: ["CONTRATO_VER", "OBRA_VER"] },
+      logout: mockLogout,
+    } as any);
+
     render(<EmployeeSideNav />);
 
     fireEvent.click(screen.getByText("Cerrar Sesión"));
-    expect(mockPush).toHaveBeenCalledWith("/login");
+
+    await waitFor(() => expect(mockLogout).toHaveBeenCalled());
+    await waitFor(() => expect(mockPush).toHaveBeenCalledWith("/login"));
   });
 
   it("muestra el título Portal Empleado", () => {

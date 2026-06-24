@@ -48,7 +48,7 @@ describe("ClientHeader", () => {
   it("llama a onDelete al hacer clic en Eliminar cliente", () => {
     const onDelete = vi.fn();
     render(
-      <ClientHeader client={mockClient} hasActiveProperties={true} onEdit={vi.fn()} onDelete={onDelete} />
+      <ClientHeader client={mockClient} hasActiveProperties={false} onEdit={vi.fn()} onDelete={onDelete} />
     );
     fireEvent.click(screen.getByText("Eliminar cliente"));
     expect(onDelete).toHaveBeenCalledOnce();
