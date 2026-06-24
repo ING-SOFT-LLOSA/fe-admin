@@ -38,21 +38,21 @@ describe("UnlinkPropertyModal", () => {
     expect(container.firstChild).toBeNull();
   });
 
-  it("muestra el nombre del proyecto a desvincular", () => {
+  it("muestra el título de cancelación y la unidad afectada", () => {
     render(
       <UnlinkPropertyModal open={true} assignment={mockAssignment} onClose={vi.fn()} onUnlinked={vi.fn()} />
     );
-    expect(screen.getByText("Desvincular propiedad")).toBeDefined();
-    expect(screen.getByText("Aurora")).toBeDefined();
+    expect(screen.getByText("Cancelar contrato")).toBeDefined();
+    expect(screen.getByText("Unidades que se desvincularán")).toBeDefined();
     expect(screen.getByText("Dpto 301")).toBeDefined();
   });
 
-  it("usa 'Propiedad #unitId' si no hay projectName", () => {
-    const assignmentSinProyecto = { ...mockAssignment, projectName: undefined, unitLabel: undefined };
+  it("omite el bloque de unidades si no hay unitLabel", () => {
+    const assignmentSinUnidad = { ...mockAssignment, unitLabel: undefined };
     render(
-      <UnlinkPropertyModal open={true} assignment={assignmentSinProyecto} onClose={vi.fn()} onUnlinked={vi.fn()} />
+      <UnlinkPropertyModal open={true} assignment={assignmentSinUnidad} onClose={vi.fn()} onUnlinked={vi.fn()} />
     );
-    expect(screen.getByText(/Propiedad #1/)).toBeDefined();
+    expect(screen.queryByText("Unidades que se desvincularán")).toBeNull();
   });
 
   it("muestra advertencia de acción irreversible", () => {
@@ -77,7 +77,7 @@ describe("UnlinkPropertyModal", () => {
       <UnlinkPropertyModal open={true} assignment={mockAssignment} onClose={vi.fn()} onUnlinked={onUnlinked} />
     );
 
-    fireEvent.click(screen.getByText("Desvincular"));
+    fireEvent.click(screen.getByText("Confirmar cancelación"));
 
     await waitFor(() => {
       expect(mockUnlink).toHaveBeenCalledWith("ua-1");
@@ -91,7 +91,7 @@ describe("UnlinkPropertyModal", () => {
       <UnlinkPropertyModal open={true} assignment={mockAssignment} onClose={vi.fn()} onUnlinked={vi.fn()} />
     );
 
-    fireEvent.click(screen.getByText("Desvincular"));
+    fireEvent.click(screen.getByText("Confirmar cancelación"));
 
     expect(await screen.findByText("No se pudo desvincular")).toBeDefined();
   });
@@ -102,21 +102,21 @@ describe("UnlinkPropertyModal", () => {
       <UnlinkPropertyModal open={true} assignment={mockAssignment} onClose={vi.fn()} onUnlinked={vi.fn()} />
     );
 
-    fireEvent.click(screen.getByText("Desvincular"));
+    fireEvent.click(screen.getByText("Confirmar cancelación"));
 
-    expect(await screen.findByText("No se pudo desvincular la propiedad.")).toBeDefined();
+    expect(await screen.findByText("No se pudo cancelar el contrato.")).toBeDefined();
   });
 
-  it("muestra 'Desvinculando…' mientras se procesa", async () => {
+  it("muestra 'Cancelando…' mientras se procesa", async () => {
     mockUnlink.mockReturnValue(new Promise(() => {}));
 
     render(
       <UnlinkPropertyModal open={true} assignment={mockAssignment} onClose={vi.fn()} onUnlinked={vi.fn()} />
     );
 
-    fireEvent.click(screen.getByText("Desvincular"));
+    fireEvent.click(screen.getByText("Confirmar cancelación"));
 
-    expect(await screen.findByText("Desvinculando…")).toBeDefined();
+    expect(await screen.findByText("Cancelando…")).toBeDefined();
   });
 
   it("convierte uuidUsuarioActivo a string al llamar a unlinkAssignment", async () => {
@@ -125,7 +125,7 @@ describe("UnlinkPropertyModal", () => {
       <UnlinkPropertyModal open={true} assignment={assignmentConNumero} onClose={vi.fn()} onUnlinked={vi.fn()} />
     );
 
-    fireEvent.click(screen.getByText("Desvincular"));
+    fireEvent.click(screen.getByText("Confirmar cancelación"));
 
     await waitFor(() => {
       expect(mockUnlink).toHaveBeenCalledWith("42");

@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 
 vi.mock("next/navigation", () => ({
@@ -9,12 +9,24 @@ vi.mock("@/components/ThemeToggle", () => ({
   default: () => <button data-testid="theme-toggle">Toggle</button>,
 }));
 
+vi.mock("@/contexts/AuthContext", () => ({
+  useAuth: vi.fn(),
+}));
+
 import { usePathname } from "next/navigation";
+import { useAuth } from "@/contexts/AuthContext";
 import TopNav from '@/components/TopNav';
 
 const mockUsePathname = vi.mocked(usePathname);
+const mockUseAuth = vi.mocked(useAuth);
 
 describe("TopNav", () => {
+  beforeEach(() => {
+    mockUseAuth.mockReturnValue({
+      perfil: { nombre: "Admin", rol: "ADMIN", tipoUsuario: "ADMIN" },
+    } as unknown as ReturnType<typeof useAuth>);
+  });
+
   it("renders Backoffice breadcrumb", () => {
     mockUsePathname.mockReturnValue("/dashboard");
     render(<TopNav />);

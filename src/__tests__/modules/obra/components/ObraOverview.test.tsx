@@ -35,13 +35,13 @@ describe("ObraOverview", () => {
 
   it("muestra input de búsqueda", () => {
     render(<ObraOverview />);
-    expect(screen.getByPlaceholderText("Buscar por nombre o dirección...")).toBeDefined();
+    expect(screen.getByPlaceholderText("Buscar proyecto por nombre o dirección…")).toBeDefined();
   });
 
-  it("muestra mensaje de carga mientras se cargan proyectos", () => {
+  it("muestra estado de carga (skeletons) mientras se cargan proyectos", () => {
     mockFetchProyectos.mockReturnValue(new Promise(() => {}));
-    render(<ObraOverview />);
-    expect(screen.getByText("Cargando avances...")).toBeDefined();
+    const { container } = render(<ObraOverview />);
+    expect(container.querySelectorAll(".animate-pulse").length).toBeGreaterThan(0);
   });
 
   it("muestra mensaje cuando no hay proyectos", async () => {
@@ -64,7 +64,7 @@ describe("ObraOverview", () => {
     render(<ObraOverview />);
     expect(await screen.findByText("Aurora")).toBeDefined();
     expect(screen.getByText("75%")).toBeDefined();
-    expect(screen.getByText("Abrir obra")).toBeDefined();
+    expect(screen.getByText("Ver detalles")).toBeDefined();
   });
 
   it("muestra proyecto con avance bajo en color rojo", async () => {
@@ -96,7 +96,7 @@ describe("ObraOverview", () => {
     const { container } = render(<ObraOverview />);
     await screen.findByText("Aurora");
 
-    const input = screen.getByPlaceholderText("Buscar por nombre o dirección...");
+    const input = screen.getByPlaceholderText("Buscar proyecto por nombre o dirección…");
     fireEvent.change(input, { target: { value: "Beta" } });
 
     expect(await screen.findByText("Beta")).toBeDefined();

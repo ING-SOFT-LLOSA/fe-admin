@@ -141,6 +141,26 @@ const sampleCreditoHipotecario = {
   progreso: 33.33,
 };
 
+// Una fecha siempre futura (> hoy). El componente valida con validateFutureDate
+// que la fecha de vencimiento sea posterior a hoy antes de llamar al backend,
+// por lo que los formularios de agregar/editar cuota requieren una fecha válida.
+const futureDateISO = () => {
+  const d = new Date();
+  d.setFullYear(d.getFullYear() + 1);
+  return d.toISOString().slice(0, 10);
+};
+
+// Rellena la fecha de vencimiento del formulario de "Agregar Cuota".
+const fillAddPagoDate = () => {
+  fireEvent.change(screen.getByLabelText("Vencimiento"), { target: { value: futureDateISO() } });
+};
+
+// Rellena la fecha de vencimiento de la fila en modo edición (input type=date sin label).
+const fillEditPagoDate = () => {
+  const dateInput = document.querySelector('input[type="date"]') as HTMLInputElement;
+  fireEvent.change(dateInput, { target: { value: futureDateISO() } });
+};
+
 describe("MortgageFinancingView", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -505,6 +525,7 @@ describe("MortgageFinancingView", () => {
     await waitFor(() => {
       expect(screen.getByTitle("Guardar")).toBeDefined();
     });
+    fillEditPagoDate();
     fireEvent.click(screen.getByTitle("Guardar"));
     await waitFor(() => {
       expect(mockUpdatePago).toHaveBeenCalledWith("pago-1", expect.any(Object));
@@ -519,6 +540,7 @@ describe("MortgageFinancingView", () => {
     await waitFor(() => {
       expect(screen.getByTitle("Guardar")).toBeDefined();
     });
+    fillEditPagoDate();
     fireEvent.click(screen.getByTitle("Guardar"));
     await waitFor(() => {
       expect(screen.getByTestId("dialog-message").textContent).toBe("Edit fail");
@@ -814,6 +836,7 @@ describe("MortgageFinancingView", () => {
     await waitFor(() => {
       expect(screen.getByText("Agregar")).toBeDefined();
     });
+    fillAddPagoDate();
     fireEvent.click(screen.getByText("Agregar"));
     await waitFor(() => {
       expect(mockAddPago).toHaveBeenCalled();
@@ -829,6 +852,7 @@ describe("MortgageFinancingView", () => {
       expect(screen.getByText("Agregar")).toBeDefined();
     });
     fireEvent.change(screen.getByLabelText("Concepto"), { target: { value: "SEPARACION" } });
+    fillAddPagoDate();
     fireEvent.click(screen.getByText("Agregar"));
     await waitFor(() => {
       expect(mockAddPago).toHaveBeenCalledWith("cron-1", expect.objectContaining({ nroCuota: -1, concepto: "SEPARACION" }));
@@ -844,6 +868,7 @@ describe("MortgageFinancingView", () => {
       expect(screen.getByText("Agregar")).toBeDefined();
     });
     fireEvent.change(screen.getByLabelText("Concepto"), { target: { value: "INICIAL" } });
+    fillAddPagoDate();
     fireEvent.click(screen.getByText("Agregar"));
     await waitFor(() => {
       expect(mockAddPago).toHaveBeenCalledWith("cron-1", expect.objectContaining({ nroCuota: 0, concepto: "INICIAL" }));
@@ -859,6 +884,7 @@ describe("MortgageFinancingView", () => {
       expect(screen.getByText("Agregar")).toBeDefined();
     });
     fireEvent.change(screen.getByLabelText("N° Cuota"), { target: { value: "5" } });
+    fillAddPagoDate();
     fireEvent.click(screen.getByText("Agregar"));
     await waitFor(() => {
       expect(mockAddPago).toHaveBeenCalledWith("cron-1", expect.objectContaining({ nroCuota: 5 }));
@@ -874,6 +900,7 @@ describe("MortgageFinancingView", () => {
     await waitFor(() => {
       expect(screen.getByText("Agregar")).toBeDefined();
     });
+    fillAddPagoDate();
     fireEvent.click(screen.getByText("Agregar"));
     await waitFor(() => {
       expect(alertSpy).toHaveBeenCalledWith("Add fail");
@@ -889,6 +916,7 @@ describe("MortgageFinancingView", () => {
     await waitFor(() => {
       expect(screen.getByText("Agregar")).toBeDefined();
     });
+    fillAddPagoDate();
     fireEvent.click(screen.getByText("Agregar"));
     await waitFor(() => {
       expect(alertSpy).toHaveBeenCalledWith("Error al agregar cuota");

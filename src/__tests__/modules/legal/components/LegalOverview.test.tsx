@@ -154,11 +154,10 @@ describe("LegalOverview", () => {
     expect(await screen.findByText("Sin resultados para los filtros seleccionados.")).toBeDefined();
   });
 
-  it("muestra contratos cargados con MetricCards y tabla", async () => {
+  it("muestra contratos cargados en la tabla", async () => {
     mockFetchContratos.mockResolvedValue([makeContrato("ua-1")]);
     render(<LegalOverview />);
 
-    expect(await screen.findByText("Total expedientes")).toBeDefined();
     expect(await screen.findByText("EXP-UA-1")).toBeDefined();
   });
 
@@ -349,7 +348,7 @@ describe("LegalOverview", () => {
     expect(await screen.findByText(/\d+d sin avance/)).toBeDefined();
   });
 
-  it("MetricCards muestra valores correctos", async () => {
+  it("muestra todos los expedientes cargados en la tabla", async () => {
     mockFetchContratos.mockResolvedValue([
       makeContrato("ua-1"),
       makeContrato("ua-2"),
@@ -365,7 +364,8 @@ describe("LegalOverview", () => {
 
     render(<LegalOverview />);
 
-    expect(await screen.findByText("Total expedientes")).toBeDefined();
+    expect(await screen.findByText("EXP-UA-1")).toBeDefined();
+    expect(await screen.findByText("EXP-UA-2")).toBeDefined();
   });
 
   it("paginación: muestra controles cuando hay más de 10 expedientes", async () => {

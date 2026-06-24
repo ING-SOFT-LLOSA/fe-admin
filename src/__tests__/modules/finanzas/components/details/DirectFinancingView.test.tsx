@@ -96,6 +96,26 @@ const sampleResumen = {
   estadoGlobal: "AL_DIA" as const,
 };
 
+// Una fecha siempre futura (> hoy). El componente valida con validateFutureDate
+// que la fecha de vencimiento sea posterior a hoy antes de llamar al backend,
+// por lo que los formularios de agregar/editar cuota requieren una fecha válida.
+const futureDateISO = () => {
+  const d = new Date();
+  d.setFullYear(d.getFullYear() + 1);
+  return d.toISOString().slice(0, 10);
+};
+
+// Rellena la fecha de vencimiento del formulario de "Agregar Cuota".
+const fillAddPagoDate = () => {
+  fireEvent.change(screen.getByLabelText("Vencimiento"), { target: { value: futureDateISO() } });
+};
+
+// Rellena la fecha de vencimiento de la fila en modo edición (input type=date sin label).
+const fillEditPagoDate = () => {
+  const dateInput = document.querySelector('input[type="date"]') as HTMLInputElement;
+  fireEvent.change(dateInput, { target: { value: futureDateISO() } });
+};
+
 describe("DirectFinancingView", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -251,6 +271,7 @@ describe("DirectFinancingView", () => {
     await waitFor(() => {
       expect(screen.getByText("Agregar")).toBeDefined();
     });
+    fillAddPagoDate();
     fireEvent.click(screen.getByText("Agregar"));
     await waitFor(() => {
       expect(mockAddPago).toHaveBeenCalled();
@@ -266,6 +287,7 @@ describe("DirectFinancingView", () => {
     await waitFor(() => {
       expect(screen.getByText("Agregar")).toBeDefined();
     });
+    fillAddPagoDate();
     fireEvent.click(screen.getByText("Agregar"));
     await waitFor(() => {
       expect(alertSpy).toHaveBeenCalledWith("Add fail");
@@ -326,6 +348,7 @@ describe("DirectFinancingView", () => {
     await waitFor(() => {
       expect(screen.getByTitle("Guardar")).toBeDefined();
     });
+    fillEditPagoDate();
     fireEvent.click(screen.getByTitle("Guardar"));
     await waitFor(() => {
       expect(mockUpdatePago).toHaveBeenCalled();
@@ -447,6 +470,7 @@ describe("DirectFinancingView", () => {
       expect(screen.getByText("Agregar")).toBeDefined();
     });
     fireEvent.change(screen.getByLabelText("Concepto"), { target: { value: "SEPARACION" } });
+    fillAddPagoDate();
     fireEvent.click(screen.getByText("Agregar"));
     await waitFor(() => {
       expect(onUpdate).toHaveBeenCalled();
@@ -461,6 +485,7 @@ describe("DirectFinancingView", () => {
       expect(screen.getByText("Agregar")).toBeDefined();
     });
     fireEvent.change(screen.getByLabelText("Concepto"), { target: { value: "INICIAL" } });
+    fillAddPagoDate();
     fireEvent.click(screen.getByText("Agregar"));
     await waitFor(() => {
       expect(onUpdate).toHaveBeenCalled();
@@ -508,7 +533,7 @@ describe("DirectFinancingView", () => {
     // Change the date input in edit mode
     const dateInputs = screen.getAllByDisplayValue(/2026-06-20/);
     if (dateInputs.length > 0) {
-      fireEvent.change(dateInputs[0], { target: { value: "2026-12-25" } });
+      fireEvent.change(dateInputs[0], { target: { value: futureDateISO() } });
     }
     fireEvent.click(screen.getByTitle("Guardar"));
     await waitFor(() => {
@@ -525,6 +550,7 @@ describe("DirectFinancingView", () => {
     });
     // Fill explicit nroCuota
     fireEvent.change(screen.getByLabelText("N° Cuota"), { target: { value: "5" } });
+    fillAddPagoDate();
     fireEvent.click(screen.getByText("Agregar"));
     await waitFor(() => {
       expect(mockAddPago).toHaveBeenCalledWith(expect.any(String), expect.objectContaining({ nroCuota: 5 }));

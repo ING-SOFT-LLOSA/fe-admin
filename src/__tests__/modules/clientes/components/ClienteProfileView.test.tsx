@@ -9,7 +9,7 @@ vi.mock("@/lib/api/users", () => ({
 }));
 
 vi.mock("@/lib/api/expedientes", () => ({
-  fetchActivosPorUsuario: vi.fn(),
+  fetchExpedientesPorUsuario: vi.fn(),
 }));
 
 vi.mock("@/modules/asignaciones/components/AssignPropertyWizard", () => ({
@@ -75,12 +75,12 @@ import {
   fetchUsuarioPorId,
   mapUsuarioToClienteRow,
 } from "@/lib/api/users";
-import { fetchActivosPorUsuario } from "@/lib/api/expedientes";
+import { fetchExpedientesPorUsuario } from "@/lib/api/expedientes";
 import { useRouter } from "next/navigation";
 
 const mockFetchUser = vi.mocked(fetchUsuarioPorId);
 const mockMap = vi.mocked(mapUsuarioToClienteRow);
-const mockFetchActivos = vi.mocked(fetchActivosPorUsuario);
+const mockFetchExpedientes = vi.mocked(fetchExpedientesPorUsuario);
 const mockUseRouter = vi.mocked(useRouter);
 
 const sampleUser = {
@@ -97,34 +97,49 @@ const sampleUser = {
   funciones: [],
 };
 
-const sampleActivos = [
+const sampleContratos = [
   {
-    id: "act-1",
-    pisoId: 10,
-    nro: "101",
-    tipo: "DEPARTAMENTO",
-    proyectoNombre: "Aurora",
-    nroPiso: 1,
-    torreNombre: "Torre A",
-    areaM2: 80,
-    areaTechada: 75,
-    estadoComercial: "VENDIDO",
-    precio: 250000,
-    descripcion: "",
-  },
-  {
-    id: "act-2",
-    pisoId: 11,
-    nro: "P-A1",
-    tipo: "ESTACIONAMIENTO",
-    proyectoNombre: "Aurora",
-    nroPiso: 1,
-    torreNombre: "Torre A",
-    areaM2: 12,
-    areaTechada: 12,
-    estadoComercial: "SEPARADO",
-    precio: 18000,
-    descripcion: "",
+    uuidUsuarioActivo: "contrato-1",
+    tipoFinanciamiento: "Crédito hipotecario",
+    fechaAdquisicion: "2026-01-15T00:00:00",
+    fechaCompletado: null,
+    createdAt: "2026-01-15T00:00:00",
+    updatedAt: null,
+    vigente: true,
+    clientes: [],
+    estadoTramiteLegal: "EN_PROCESO",
+    activos: [
+      {
+        id: "act-1",
+        pisoId: 10,
+        nro: "101",
+        tipo: "DEPARTAMENTO",
+        proyectoNombre: "Aurora",
+        nroPiso: 1,
+        torreNombre: "Torre A",
+        areaM2: 80,
+        areaTechada: 75,
+        estadoComercial: "VENDIDO",
+        precio: 250000,
+        descripcion: "",
+        tieneRecorridoVirtual: false,
+      },
+      {
+        id: "act-2",
+        pisoId: 11,
+        nro: "P-A1",
+        tipo: "ESTACIONAMIENTO",
+        proyectoNombre: "Aurora",
+        nroPiso: 1,
+        torreNombre: "Torre A",
+        areaM2: 12,
+        areaTechada: 12,
+        estadoComercial: "SEPARADO",
+        precio: 18000,
+        descripcion: "",
+        tieneRecorridoVirtual: false,
+      },
+    ],
   },
 ];
 
@@ -148,7 +163,7 @@ describe("ClienteProfileView", () => {
     vi.clearAllMocks();
     mockUseRouter.mockReturnValue({ push: vi.fn() } as any);
     mockFetchUser.mockResolvedValue(sampleUser as any);
-    mockFetchActivos.mockResolvedValue(sampleActivos as any);
+    mockFetchExpedientes.mockResolvedValue(sampleContratos as any);
     mockMap.mockReturnValue(mappedRow);
   });
 
@@ -178,16 +193,16 @@ describe("ClienteProfileView", () => {
 
   it("carga el perfil del cliente correctamente", async () => {
     render(<ClienteProfileView clientId="1" />);
-    expect(await screen.findByText("Perfil del Cliente")).toBeDefined();
-    expect(screen.getByText(/Visión general de Ana García/)).toBeDefined();
+    expect(await screen.findByText("Perfil del cliente")).toBeDefined();
+    expect(screen.getAllByText("Ana García").length).toBeGreaterThan(0);
     expect(screen.getByTestId("header-name").textContent).toBe("Ana García");
     expect(mockFetchUser).toHaveBeenCalledWith(1);
-    expect(mockFetchActivos).toHaveBeenCalledWith(1);
+    expect(mockFetchExpedientes).toHaveBeenCalledWith(1);
   });
 
   it("muestra el link Volver a Clientes", async () => {
     render(<ClienteProfileView clientId="1" />);
-    await screen.findByText("Perfil del Cliente");
+    await screen.findByText("Perfil del cliente");
     const link = screen.getByText("Volver a Clientes").closest("a");
     expect(link?.getAttribute("href")).toBe("/clientes");
   });
@@ -211,7 +226,7 @@ describe("ClienteProfileView", () => {
 
   it("refresca el perfil al actualizar el cliente", async () => {
     mockFetchUser.mockClear();
-    mockFetchActivos.mockClear();
+    mockFetchExpedientes.mockClear();
     render(<ClienteProfileView clientId="1" />);
     await screen.findByTestId("client-header");
 
@@ -242,10 +257,10 @@ describe("ClienteProfileView", () => {
     expect(push).toHaveBeenCalledWith("/clientes");
   });
 
-  it("mapea los activos como assignments con tipo Cochera, Depósito y Dpto", async () => {
+  it("deriva assignments de los contratos y los pasa a ClientActivity", async () => {
     render(<ClienteProfileView clientId="1" />);
     await screen.findByTestId("client-activos");
-    // ClientActivos is mocked but assignments are passed to ClientActivity
+    // Las assignments se derivan de contratos.flatMap(activos) y se pasan a ClientActivity
     expect(screen.getByTestId("client-activity")).toBeDefined();
   });
 
@@ -262,28 +277,41 @@ describe("ClienteProfileView", () => {
     });
   });
 
-  it("tolera que fetchActivos retorne null (fallback a [])", async () => {
-    mockFetchActivos.mockResolvedValue(null as any);
+  it("tolera que fetchExpedientes falle (fallback a [])", async () => {
+    mockFetchExpedientes.mockRejectedValue(new Error("expedientes down"));
     render(<ClienteProfileView clientId="1" />);
     await screen.findByTestId("client-header");
     expect(screen.getByTestId("client-header")).toBeDefined();
   });
 
-  it("maneja activos con tipo desconocido y sin proyecto", async () => {
-    mockFetchActivos.mockResolvedValue([
+  it("maneja contratos cuyos activos no tienen proyecto", async () => {
+    mockFetchExpedientes.mockResolvedValue([
       {
-        id: "act-x",
-        pisoId: 99,
-        nro: "X-1",
-        tipo: "BODEGA",
-        proyectoNombre: undefined as any,
-        nroPiso: 1,
-        torreNombre: undefined as any,
-        areaM2: 0,
-        areaTechada: 0,
-        estadoComercial: "DESCONOCIDO",
-        precio: 0,
-        descripcion: "",
+        uuidUsuarioActivo: "contrato-x",
+        tipoFinanciamiento: undefined as any,
+        fechaAdquisicion: null,
+        fechaCompletado: null,
+        createdAt: null,
+        updatedAt: null,
+        vigente: false,
+        clientes: [],
+        activos: [
+          {
+            id: "act-x",
+            pisoId: 99,
+            nro: "X-1",
+            tipo: "BODEGA",
+            proyectoNombre: undefined as any,
+            nroPiso: 1,
+            torreNombre: undefined as any,
+            areaM2: 0,
+            areaTechada: 0,
+            estadoComercial: "DESCONOCIDO",
+            precio: 0,
+            descripcion: "",
+            tieneRecorridoVirtual: false,
+          },
+        ],
       },
     ] as any);
     render(<ClienteProfileView clientId="1" />);

@@ -60,6 +60,19 @@ const sampleCita = {
   disponibilidades: [],
 };
 
+// Fills the create-appointment form: sets the date via the hidden native date
+// input and picks a start-time slot button (end time auto-fills). The client
+// must already be selected so the unit auto-selects.
+async function fillCreateForm(dateStr: string, startSlot = "13:00") {
+  const dateInput = document.getElementById("agenda-date-new") as HTMLInputElement;
+  fireEvent.change(dateInput, { target: { value: dateStr } });
+  // Pick the start-time slot button (rendered as a button labelled e.g. "13:00")
+  const slotBtn = (await screen.findAllByText(startSlot)).find(
+    (el) => el.tagName === "BUTTON",
+  );
+  if (slotBtn) fireEvent.click(slotBtn);
+}
+
 describe("AgendaView", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -78,7 +91,7 @@ describe("AgendaView", () => {
     render(<AgendaView />);
     expect(await screen.findByText("Agenda y Citas")).toBeDefined();
     expect(
-      screen.getByText(/Programa reuniones, firmas, entregas y eventos importantes/i),
+      screen.getByText(/Programa reuniones, firmas, entregas y eventos/i),
     ).toBeDefined();
   });
 
@@ -110,26 +123,28 @@ describe("AgendaView", () => {
 
   it("shows loading indicator when fetching events", async () => {
     mockFetchCitas.mockReturnValue(new Promise(() => {}));
-    render(<AgendaView />);
-    expect(await screen.findByText("Actualizando...")).toBeDefined();
+    const { container } = render(<AgendaView />);
+    await screen.findByText("Agenda y Citas");
+    await waitFor(() => {
+      expect(container.querySelector("svg.animate-spin")).not.toBeNull();
+    });
   });
 
   it("opens create appointment modal on Nueva cita click", async () => {
     render(<AgendaView />);
     await screen.findByText("Agenda y Citas");
     fireEvent.click(screen.getByText("Nueva cita"));
-    expect(screen.getByText("Agendar cita")).toBeDefined();
-    expect(screen.getByDisplayValue("-- Seleccionar Cliente --")).toBeDefined();
+    expect(await screen.findByDisplayValue("Seleccionar cliente…")).toBeDefined();
   });
 
   it("closes create appointment modal on close button", async () => {
     render(<AgendaView />);
     await screen.findByText("Agenda y Citas");
     fireEvent.click(screen.getByText("Nueva cita"));
-    expect(screen.getByText("Agendar cita")).toBeDefined();
+    expect(await screen.findByDisplayValue("Seleccionar cliente…")).toBeDefined();
     fireEvent.click(screen.getByText("close"));
     await waitFor(() => {
-      expect(screen.queryByText("Agendar cita")).toBeNull();
+      expect(screen.queryByDisplayValue("Seleccionar cliente…")).toBeNull();
     });
   });
 
@@ -145,7 +160,7 @@ describe("AgendaView", () => {
     render(<AgendaView />);
     await screen.findByText("Agenda y Citas");
     fireEvent.click(screen.getByText("Nueva cita"));
-    const clientSelect = await screen.findByDisplayValue("-- Seleccionar Cliente --");
+    const clientSelect = await screen.findByDisplayValue("Seleccionar cliente…");
     fireEvent.change(clientSelect, { target: { value: "1" } });
     expect(await screen.findByText("Unidad vinculada *")).toBeDefined();
   });
@@ -156,19 +171,16 @@ describe("AgendaView", () => {
     await screen.findByText("Agenda y Citas");
     fireEvent.click(screen.getByText("Nueva cita"));
 
-    await screen.findByDisplayValue("-- Seleccionar Cliente --");
+    await screen.findByDisplayValue("Seleccionar cliente…");
 
-    const inputs = document.querySelectorAll("input");
-    fireEvent.change(inputs[0], { target: { value: "2026-12-31" } });
-    if (inputs.length > 1) fireEvent.change(inputs[1], { target: { value: "10:00" } });
-    if (inputs.length > 2) fireEvent.change(inputs[2], { target: { value: "11:00" } });
-
-    const clientSelect = screen.getByDisplayValue("-- Seleccionar Cliente --");
+    const clientSelect = screen.getByDisplayValue("Seleccionar cliente…");
     fireEvent.change(clientSelect, { target: { value: "1" } });
 
     await screen.findByText("Dpto 402");
 
-    fireEvent.click(screen.getByText("Guardar y sincronizar calendario"));
+    await fillCreateForm("2026-12-31");
+
+    fireEvent.click(screen.getByText("Guardar cita"));
 
     await waitFor(() => {
       expect(mockCrearCita).toHaveBeenCalled();
@@ -181,19 +193,16 @@ describe("AgendaView", () => {
     await screen.findByText("Agenda y Citas");
     fireEvent.click(screen.getByText("Nueva cita"));
 
-    await screen.findByDisplayValue("-- Seleccionar Cliente --");
+    await screen.findByDisplayValue("Seleccionar cliente…");
 
-    const inputs = document.querySelectorAll("input");
-    fireEvent.change(inputs[0], { target: { value: "2026-12-31" } });
-    if (inputs.length > 1) fireEvent.change(inputs[1], { target: { value: "10:00" } });
-    if (inputs.length > 2) fireEvent.change(inputs[2], { target: { value: "11:00" } });
-
-    const clientSelect = screen.getByDisplayValue("-- Seleccionar Cliente --");
+    const clientSelect = screen.getByDisplayValue("Seleccionar cliente…");
     fireEvent.change(clientSelect, { target: { value: "1" } });
 
     await screen.findByText("Dpto 402");
 
-    fireEvent.click(screen.getByText("Guardar y sincronizar calendario"));
+    await fillCreateForm("2026-12-31");
+
+    fireEvent.click(screen.getByText("Guardar cita"));
 
     expect(await screen.findByText("Campo requerido faltante")).toBeDefined();
   });
@@ -202,7 +211,7 @@ describe("AgendaView", () => {
     mockFetchCitas.mockResolvedValue([]);
     render(<AgendaView />);
     await screen.findByText("Agenda y Citas");
-    expect(await screen.findByText("No hay eventos próximos en este período.")).toBeDefined();
+    expect(await screen.findByText("Sin citas próximas")).toBeDefined();
   });
 
   it("opens detail modal when clicking an event", async () => {
@@ -215,7 +224,7 @@ describe("AgendaView", () => {
     expect(events.length).toBeGreaterThan(0);
     fireEvent.click(events[0]);
     await waitFor(() => {
-      expect(screen.getByText("Detalle de la Cita")).toBeDefined();
+      expect(screen.getByText("Detalle de la cita")).toBeDefined();
     });
   });
 
@@ -249,7 +258,7 @@ describe("AgendaView", () => {
     fireEvent.click(editBtn);
     const titleInput = await screen.findByDisplayValue("Firma de minuta");
     fireEvent.change(titleInput, { target: { value: "Firma actualizada" } });
-    fireEvent.click(screen.getByText("Guardar Cambios"));
+    fireEvent.click(screen.getByText("Guardar cambios"));
     await waitFor(() => {
       expect(mockActualizarCita).toHaveBeenCalled();
     });
@@ -265,11 +274,11 @@ describe("AgendaView", () => {
     const events = screen.getAllByText("Firma de minuta");
     expect(events.length).toBeGreaterThan(0);
     fireEvent.click(events[0]);
-    const cancelBtn = await screen.findByText("Cancelar Cita");
+    const cancelBtn = await screen.findByText("Cancelar cita");
     fireEvent.click(cancelBtn);
     const motivoInput = await screen.findByPlaceholderText("Ej. Cambio de horario solicitado");
     fireEvent.change(motivoInput, { target: { value: "Cambio de fecha" } });
-    fireEvent.click(screen.getByText("Confirmar"));
+    fireEvent.click(screen.getByText("OK"));
     await waitFor(() => {
       expect(mockCancelarCita).toHaveBeenCalled();
     });
@@ -283,10 +292,10 @@ describe("AgendaView", () => {
       expect(mockFetchCitas).toHaveBeenCalled();
     });
     fireEvent.click(screen.getAllByText("Firma de minuta")[0]);
-    const cancelBtn = await screen.findByText("Cancelar Cita");
+    const cancelBtn = await screen.findByText("Cancelar cita");
     fireEvent.click(cancelBtn);
     fireEvent.change(await screen.findByPlaceholderText("Ej. Cambio de horario solicitado"), { target: { value: "Motivo" } });
-    fireEvent.click(screen.getByText("Confirmar"));
+    fireEvent.click(screen.getByText("OK"));
     expect(await screen.findByText("Error al cancelar")).toBeDefined();
   });
 
@@ -301,14 +310,16 @@ describe("AgendaView", () => {
     });
     expect(screen.getAllByText("Reunion cancelada").length).toBeGreaterThan(0);
     fireEvent.click(screen.getAllByText("Reunion cancelada")[0]);
-    expect(await screen.findByText("CANCELADA")).toBeDefined();
+    await screen.findByText("Detalle de la cita");
+    expect(screen.getAllByText("Cancelada").length).toBeGreaterThan(0);
     // Also verify CONFIRMADA badge gets its style applied
     fireEvent.click(screen.getByText("Cerrar"));
     await waitFor(() => {
-      expect(screen.queryByText("Detalle de la Cita")).toBeNull();
+      expect(screen.queryByText("Detalle de la cita")).toBeNull();
     });
     fireEvent.click(screen.getAllByText("Cita confirmada")[0]);
-    expect(await screen.findByText("CONFIRMADA")).toBeDefined();
+    await screen.findByText("Detalle de la cita");
+    expect(screen.getAllByText("Confirmada").length).toBeGreaterThan(0);
   });
 
   it("shows COMPLETADA and REPROGRAMACION_PENDIENTE status badges", async () => {
@@ -321,13 +332,15 @@ describe("AgendaView", () => {
       expect(mockFetchCitas).toHaveBeenCalled();
     });
     fireEvent.click(screen.getAllByText("Cita completada")[0]);
-    expect(await screen.findByText("COMPLETADA")).toBeDefined();
+    await screen.findByText("Detalle de la cita");
+    expect(screen.getAllByText("Completada").length).toBeGreaterThan(0);
     fireEvent.click(screen.getByText("Cerrar"));
     await waitFor(() => {
-      expect(screen.queryByText("Detalle de la Cita")).toBeNull();
+      expect(screen.queryByText("Detalle de la cita")).toBeNull();
     });
     fireEvent.click(screen.getAllByText("Cita reprogramada")[0]);
-    expect(await screen.findByText("REPROGRAMACION_PENDIENTE")).toBeDefined();
+    await screen.findByText("Detalle de la cita");
+    expect(screen.getAllByText("Reprog. pend.").length).toBeGreaterThan(0);
   });
 
   it("shows client confirmation badges", async () => {
@@ -340,21 +353,21 @@ describe("AgendaView", () => {
       expect(mockFetchCitas).toHaveBeenCalled();
     });
     fireEvent.click(screen.getAllByText("Cita confirmada")[0]);
-    expect(await screen.findByText("Confirmado ✓")).toBeDefined();
+    expect(await screen.findByText("✓ Confirmado")).toBeDefined();
     fireEvent.click(screen.getByText("Cerrar"));
     await waitFor(() => {
-      expect(screen.queryByText("Detalle de la Cita")).toBeNull();
+      expect(screen.queryByText("Detalle de la cita")).toBeNull();
     });
     fireEvent.click(screen.getAllByText("Cita declinada")[0]);
-    expect(await screen.findByText("Declinado ✕")).toBeDefined();
+    expect(await screen.findByText("✕ Declinado")).toBeDefined();
   });
 
   it("shows validation error for missing required fields in create form", async () => {
     render(<AgendaView />);
     await screen.findByText("Agenda y Citas");
     fireEvent.click(screen.getByText("Nueva cita"));
-    await screen.findByDisplayValue("-- Seleccionar Cliente --");
-    fireEvent.click(screen.getByText("Guardar y sincronizar calendario"));
+    await screen.findByDisplayValue("Seleccionar cliente…");
+    fireEvent.click(screen.getByText("Guardar cita"));
     expect(await screen.findByText("Por favor completa todos los campos requeridos.")).toBeDefined();
   });
 
@@ -370,8 +383,8 @@ describe("AgendaView", () => {
     fireEvent.click(editBtn);
     const titleInput = await screen.findByDisplayValue("Firma de minuta");
     fireEvent.change(titleInput, { target: { value: "" } });
-    fireEvent.click(screen.getByText("Guardar Cambios"));
-    expect(await screen.findByText("Por favor completa los campos requeridos.")).toBeDefined();
+    fireEvent.click(screen.getByText("Guardar cambios"));
+    expect(await screen.findByText("Completa los campos requeridos.")).toBeDefined();
   });
 
   it("opens create modal when clicking a calendar cell", async () => {
@@ -387,8 +400,7 @@ describe("AgendaView", () => {
     });
     expect(dayCells.length).toBeGreaterThan(0);
     fireEvent.click(dayCells[0]);
-    expect(await screen.findByText("Agendar cita")).toBeDefined();
-    expect(screen.getByDisplayValue("-- Seleccionar Cliente --")).toBeDefined();
+    expect(await screen.findByDisplayValue("Seleccionar cliente…")).toBeDefined();
   });
 
   it("shows parking unit type label in create modal", async () => {
@@ -399,8 +411,8 @@ describe("AgendaView", () => {
     render(<AgendaView />);
     await screen.findByText("Agenda y Citas");
     fireEvent.click(screen.getByText("Nueva cita"));
-    await screen.findByDisplayValue("-- Seleccionar Cliente --");
-    fireEvent.change(screen.getByDisplayValue("-- Seleccionar Cliente --"), { target: { value: "1" } });
+    await screen.findByDisplayValue("Seleccionar cliente…");
+    fireEvent.change(screen.getByDisplayValue("Seleccionar cliente…"), { target: { value: "1" } });
     expect(await screen.findByText("Cochera 5")).toBeDefined();
   });
 
@@ -412,8 +424,8 @@ describe("AgendaView", () => {
     render(<AgendaView />);
     await screen.findByText("Agenda y Citas");
     fireEvent.click(screen.getByText("Nueva cita"));
-    await screen.findByDisplayValue("-- Seleccionar Cliente --");
-    fireEvent.change(screen.getByDisplayValue("-- Seleccionar Cliente --"), { target: { value: "1" } });
+    await screen.findByDisplayValue("Seleccionar cliente…");
+    fireEvent.change(screen.getByDisplayValue("Seleccionar cliente…"), { target: { value: "1" } });
     expect(await screen.findByText("Depósito 3")).toBeDefined();
   });
 
@@ -477,18 +489,15 @@ describe("AgendaView", () => {
     render(<AgendaView />);
     await screen.findByText("Agenda y Citas");
     fireEvent.click(screen.getByText("Nueva cita"));
-    await screen.findByDisplayValue("-- Seleccionar Cliente --");
+    await screen.findByDisplayValue("Seleccionar cliente…");
 
-    const inputs = document.querySelectorAll("input");
-    fireEvent.change(inputs[0], { target: { value: "2020-01-01" } });
-    if (inputs.length > 1) fireEvent.change(inputs[1], { target: { value: "10:00" } });
-    if (inputs.length > 2) fireEvent.change(inputs[2], { target: { value: "11:00" } });
-
-    const clientSelect = screen.getByDisplayValue("-- Seleccionar Cliente --");
+    const clientSelect = screen.getByDisplayValue("Seleccionar cliente…");
     fireEvent.change(clientSelect, { target: { value: "1" } });
     await screen.findByText("Dpto 402");
 
-    fireEvent.click(screen.getByText("Guardar y sincronizar calendario"));
+    await fillCreateForm("2020-01-01");
+
+    fireEvent.click(screen.getByText("Guardar cita"));
     expect(await screen.findByText(/No puedes agendar citas en fechas/)).toBeDefined();
   });
 });
