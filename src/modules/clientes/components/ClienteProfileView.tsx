@@ -42,7 +42,7 @@ export default function ClienteProfileView({ clientId }: Readonly<ClienteProfile
       try {
         const [user, contratos] = await Promise.all([
           fetchUsuarioPorId(Number(clientId)),
-          fetchExpedientesPorUsuario(Number(clientId)).catch(() => []),
+          fetchExpedientesPorUsuario(Number(clientId)).then((c) => c ?? []).catch(() => []),
         ]);
         if (!mounted) return;
 
