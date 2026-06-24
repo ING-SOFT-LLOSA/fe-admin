@@ -43,7 +43,7 @@ export default function FinancePaymentScheduleView({ initialProjectId: _initialP
     <div className="space-y-6 pb-12">
       {/* Título y Descripción */}
       <div>
-        <h2 className="text-2xl md:text-3xl font-bold tracking-[-0.01em] text-build-main dark:text-white">
+        <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-build-main dark:text-white">
           Pagos y Financiamiento
         </h2>
         <p className="mt-2 text-base text-slate-600 dark:text-white/70">

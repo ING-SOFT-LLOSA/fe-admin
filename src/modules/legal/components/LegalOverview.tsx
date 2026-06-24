@@ -633,12 +633,6 @@ export default function LegalOverview() {
         </p>
       </div>
 
-      {/* ── Metric cards ── */}
-      <MetricCards
-        contracts={contracts}
-        stages={contractsStages}
-        isLoading={isLoading}
-      />
 
       {/* ── Error ── */}
       {error && (

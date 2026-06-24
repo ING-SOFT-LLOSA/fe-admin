@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useEffect, useMemo } from "react";
-import { fetchUsuarios } from "@/lib/api/users";
+import { fetchUsuarios, fetchExpedientesPorUsuario } from "@/lib/api/users";
 import type { Usuario } from "@/types/user";
 import type { UsuarioActivoResponseDTO } from "@/lib/api/expedientes";
 import type { ActivoResponseDTO } from "@/lib/api/proyectos";
@@ -10,28 +10,22 @@ import {
   cancelarCita,
   actualizarCita,
   seleccionarBloqueDisponibilidad,
-  forzarSincronizacionManual,
-  getGoogleAuthUrl,
-  disconnectGoogleCalendar,
   type CitaResponse,
 } from "@/lib/api/agenda";
+
+// ─── Types ────────────────────────────────────────────────────────────────────
 
 type CalEvent = {
   id: string;
   label: string;
   bg: string;
-  text: string;
-  dot?: string;
-  icon?: string;
+  dot: string;
+  rsvpDot: string;
+  rsvpText: string;
   time?: string;
   client?: string;
   type?: string;
-  unit?: string;
-  rsvpDot?: string;
-  rsvpText?: string;
-  syncDot?: string;
-  syncIcon?: string;
-  syncText?: string;
+  estadoCita: string;
 };
 
 type CalDay = {
@@ -41,349 +35,312 @@ type CalDay = {
   events: CalEvent[];
 };
 
+// ─── Constants ────────────────────────────────────────────────────────────────
+
 const EVENT_TYPES = [
   { value: "CONFIRMACION_FECHA_ENTREGA", label: "Confirmación de fecha de entrega" },
-  { value: "ENTREGA_LLAVES",              label: "Entrega de llaves" },
-  { value: "REVISION_OBSERVACIONES",      label: "Revisión de observaciones" },
-  { value: "FIRMA_MINUTA",                label: "Firma de Minuta" },
-  { value: "FIRMA_ESCRITURA",             label: "Firma de Escritura" },
-  { value: "INSPECCION_OBRA",             label: "Inspección de obra" },
-  { value: "JUNTA_PROPIETARIOS",          label: "Junta de propietarios" },
-  { value: "OTRO",                        label: "Otro" }
+  { value: "ENTREGA_LLAVES",             label: "Entrega de llaves" },
+  { value: "REVISION_OBSERVACIONES",     label: "Revisión de observaciones" },
+  { value: "FIRMA_MINUTA",               label: "Firma de Minuta" },
+  { value: "FIRMA_ESCRITURA",            label: "Firma de Escritura" },
+  { value: "INSPECCION_OBRA",            label: "Inspección de obra" },
+  { value: "JUNTA_PROPIETARIOS",         label: "Junta de propietarios" },
+  { value: "OTRO",                       label: "Otro" },
 ];
 
-function generateCalendarGrid(currentDate: Date) {
+const STATUS_META: Record<string, { bg: string; text: string; label: string; dot: string }> = {
+  PROGRAMADA:             { bg: "bg-blue-50 text-blue-800 dark:bg-blue-900/20 dark:text-blue-300",     text: "text-blue-800",   label: "Programada",     dot: "bg-blue-500" },
+  CONFIRMADA:             { bg: "bg-emerald-50 text-emerald-800 dark:bg-emerald-900/20 dark:text-emerald-300", text: "text-emerald-800", label: "Confirmada", dot: "bg-emerald-500" },
+  CANCELADA:              { bg: "bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400",          text: "text-red-700",    label: "Cancelada",      dot: "bg-red-500" },
+  COMPLETADA:             { bg: "bg-slate-100 text-slate-600 dark:bg-white/10 dark:text-white/50",      text: "text-slate-600",  label: "Completada",     dot: "bg-slate-400" },
+  REPROGRAMACION_PENDIENTE: { bg: "bg-amber-50 text-amber-800 dark:bg-amber-900/20 dark:text-amber-300", text: "text-amber-800", label: "Reprog. pend.", dot: "bg-amber-500" },
+};
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function generateCalendarGrid(currentDate: Date): CalDay[] {
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
-
-  const firstDayOfMonth = new Date(year, month, 1);
-  let startDayOfWeek = firstDayOfMonth.getDay() - 1;
-  if (startDayOfWeek === -1) startDayOfWeek = 6; // Sunday is 6 in 0-indexed Mon-Sun grid
-
+  let startDayOfWeek = new Date(year, month, 1).getDay() - 1;
+  if (startDayOfWeek === -1) startDayOfWeek = 6;
   const totalDays = new Date(year, month + 1, 0).getDate();
   const prevMonthTotalDays = new Date(year, month, 0).getDate();
-
-  const grid: CalDay[] = [];
-
-  for (let i = startDayOfWeek - 1; i >= 0; i--) {
-    grid.push({
-      day: prevMonthTotalDays - i,
-      grey: true,
-      events: []
-    });
-  }
-
   const today = new Date();
   const isCurrentMonth = today.getFullYear() === year && today.getMonth() === month;
-  for (let day = 1; day <= totalDays; day++) {
-    grid.push({
-      day,
-      today: isCurrentMonth && today.getDate() === day,
-      events: []
-    });
-  }
 
-  const remainingCells = (grid.length % 7 === 0) ? 0 : 7 - (grid.length % 7);
-  for (let day = 1; day <= remainingCells; day++) {
-    grid.push({
-      day,
-      grey: true,
-      events: []
-    });
-  }
-
+  const grid: CalDay[] = [];
+  for (let i = startDayOfWeek - 1; i >= 0; i--) grid.push({ day: prevMonthTotalDays - i, grey: true, events: [] });
+  for (let day = 1; day <= totalDays; day++) grid.push({ day, today: isCurrentMonth && today.getDate() === day, events: [] });
+  const remaining = grid.length % 7 === 0 ? 0 : 7 - (grid.length % 7);
+  for (let day = 1; day <= remaining; day++) grid.push({ day, grey: true, events: [] });
   return grid;
 }
 
-function getStartAndEndDateStr(gridCells: CalDay[], currentDate: Date) {
-  const firstCell = gridCells[0];
-  const lastCell = gridCells.at(-1);
-  if (!firstCell || !lastCell) {
-    return { startDateStr: "", endDateStr: "" };
-  }
-  
+function getGridDateRange(gridCells: CalDay[], currentDate: Date): { startDateStr: string; endDateStr: string } {
+  const first = gridCells[0];
+  const last = gridCells.at(-1);
+  if (!first || !last) return { startDateStr: "", endDateStr: "" };
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
-  
-  let startYear = year;
-  let startMonth = month;
-  if (firstCell.grey && firstCell.day > 15) {
-    startMonth = month - 1;
-    if (startMonth < 0) {
-      startMonth = 11;
-      startYear = year - 1;
-    }
-  }
-  const startDateStr = `${startYear}-${String(startMonth + 1).padStart(2, "0")}-${String(firstCell.day).padStart(2, "0")}T00:00:00`;
 
-  let endYear = year;
-  let endMonth = month;
-  if (lastCell.grey && lastCell.day < 15) {
-    endMonth = month + 1;
-    if (endMonth > 11) {
-      endMonth = 0;
-      endYear = year + 1;
-    }
-  }
-  const endDateStr = `${endYear}-${String(endMonth + 1).padStart(2, "0")}-${String(lastCell.day).padStart(2, "0")}T23:59:59`;
-  
-  return { startDateStr, endDateStr };
-}
-
-function mapCitaToEvent(c: CitaResponse): CalEvent {
-  const startL = c.fechaInicio.split("T")[1]?.slice(0, 5) || "";
-  let bg = "bg-[#c2e8ff] text-[#001e2b]";
-  let dot = "bg-[#001e2b]";
-  if (c.estadoCita === "CANCELADA") {
-    bg = "bg-[#ffdad6] text-[#ba1a1a]";
-    dot = "bg-[#ba1a1a]";
-  } else if (c.estadoCita === "CONFIRMADA") {
-    bg = "bg-[#e8f5e9] text-[#2e7d32]";
-    dot = "bg-[#2e7d32]";
-  } else if (c.estadoCita === "COMPLETADA") {
-    bg = "bg-slate-100 text-slate-700 dark:bg-white/10 dark:text-white/60";
-    dot = "bg-slate-500";
-  } else if (c.estadoCita === "REPROGRAMACION_PENDIENTE") {
-    bg = "bg-[#ffe0b2] text-[#e65100]";
-    dot = "bg-[#e65100]";
-  }
-
-  let rsvpDot = "bg-slate-400 dark:bg-slate-500";
-  let rsvpText = "Pendiente";
-  if (c.confirmacionCliente === true) {
-    rsvpDot = "bg-emerald-500 dark:bg-emerald-400";
-    rsvpText = "Confirmado";
-  } else if (c.confirmacionCliente === false) {
-    rsvpDot = "bg-rose-500 dark:bg-rose-400";
-    rsvpText = "Declinado";
-  }
-
-  let syncDot = "";
-  let syncIcon = "";
-  let syncText = "";
-  if (c.clienteUsaGoogle) {
-    if (c.estadoSincronizacion === "SINCRONIZADO") {
-      syncDot = "bg-emerald-500";
-      syncIcon = "check_circle";
-      syncText = "Sincronizado con Google Calendar";
-    } else if (c.estadoSincronizacion === "PENDIENTE" || c.estadoSincronizacion === "FALLIDO") {
-      syncDot = "bg-amber-500";
-      syncIcon = "sync_problem";
-      syncText = c.estadoSincronizacion === "FALLIDO" ? "Error de sincronización" : "Pendiente de sincronizar";
-    }
-  }
+  let sy = year, sm = month;
+  if (first.grey && first.day > 15) { sm--; if (sm < 0) { sm = 11; sy--; } }
+  let ey = year, em = month;
+  if (last.grey && last.day < 15) { em++; if (em > 11) { em = 0; ey++; } }
 
   return {
-    id: c.id,
-    label: `${c.titulo || c.tipoEvento}`,
-    bg,
-    dot,
-    rsvpDot,
-    rsvpText,
-    syncDot,
-    syncIcon,
-    syncText,
-    text: bg.split(" ")[1] || "",
-    time: startL,
-    client: c.clienteNombre || "Cliente",
-    type: c.tipoEvento,
-    unit: ""
+    startDateStr: `${sy}-${String(sm + 1).padStart(2, "0")}-${String(first.day).padStart(2, "0")}T00:00:00`,
+    endDateStr:   `${ey}-${String(em + 1).padStart(2, "0")}-${String(last.day).padStart(2, "0")}T23:59:59`,
   };
 }
 
-function mapCitasToGrid(citas: CitaResponse[], gridCells: CalDay[], currentDate: Date) {
+function mapCitaToEvent(c: CitaResponse): CalEvent {
+  const time = c.fechaInicio.split("T")[1]?.slice(0, 5) || "";
+  const meta = STATUS_META[c.estadoCita] ?? STATUS_META.PROGRAMADA;
+  const rsvpDot = c.confirmacionCliente === true ? "bg-emerald-500" : c.confirmacionCliente === false ? "bg-rose-500" : "bg-slate-300";
+  const rsvpText = c.confirmacionCliente === true ? "Confirmado" : c.confirmacionCliente === false ? "Declinado" : "Sin respuesta";
+
+  return {
+    id: c.id,
+    label: c.titulo || c.tipoEvento,
+    bg: meta.bg,
+    dot: meta.dot,
+    rsvpDot,
+    rsvpText,
+    time,
+    client: c.clienteNombre || "Cliente",
+    type: c.tipoEvento,
+    estadoCita: c.estadoCita,
+  };
+}
+
+function mapCitasToGrid(citas: CitaResponse[], gridCells: CalDay[], currentDate: Date): CalDay[] {
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
-  
-  return gridCells.map(cell => {
-    let cellYear = year;
-    let cellMonth = month;
+  return gridCells.map((cell) => {
+    let cy = year, cm = month;
     if (cell.grey) {
-      if (cell.day > 15) {
-        cellMonth = month - 1;
-        if (cellMonth < 0) { cellMonth = 11; cellYear = year - 1; }
-      } else {
-        cellMonth = month + 1;
-        if (cellMonth > 11) { cellMonth = 0; cellYear = year + 1; }
-      }
+      if (cell.day > 15) { cm--; if (cm < 0) { cm = 11; cy--; } }
+      else { cm++; if (cm > 11) { cm = 0; cy++; } }
     }
-    const cellDateStr = `${cellYear}-${String(cellMonth + 1).padStart(2, "0")}-${String(cell.day).padStart(2, "0")}`;
-
-    const dayEvents = citas
-      .filter(c => c.fechaInicio.startsWith(cellDateStr))
-      .map(mapCitaToEvent);
-
-    return {
-      ...cell,
-      events: dayEvents
-    };
+    const dateStr = `${cy}-${String(cm + 1).padStart(2, "0")}-${String(cell.day).padStart(2, "0")}`;
+    return { ...cell, events: citas.filter((c) => c.fechaInicio.startsWith(dateStr)).map(mapCitaToEvent) };
   });
 }
 
-function getStatusBadgeClass(s: string) {
-  if (s === "CONFIRMADA") return "bg-green-100 text-green-800";
-  if (s === "CANCELADA") return "bg-red-100 text-red-800";
-  if (s === "COMPLETADA") return "bg-slate-200 text-slate-800";
-  if (s === "REPROGRAMACION_PENDIENTE") return "bg-orange-100 text-orange-800";
-  return "bg-blue-100 text-blue-800";
-}
-
-function getTipoLabel(tipo: string): string {
+function getTipoLabel(tipo: string) {
   if (tipo === "ESTACIONAMIENTO") return "Cochera";
   if (tipo === "DEPOSITO") return "Depósito";
   return "Dpto";
 }
 
-function mapExpedienteActivoToUnit(act: ActivoResponseDTO) {
-  return {
-    id: act.id,
-    name: `${getTipoLabel(act.tipo)} ${act.nro}`
-  };
-}
-
-function mapExpedientesToUnits(exps: UsuarioActivoResponseDTO[] | null | undefined): { id: string; name: string }[] {
-  return (exps || []).flatMap((exp) =>
-    (exp.activos || []).map(mapExpedienteActivoToUnit)
+function mapExpedientesToUnits(exps: UsuarioActivoResponseDTO[]): { id: string; name: string }[] {
+  return exps.flatMap((exp) =>
+    (exp.activos as ActivoResponseDTO[] || []).map((a) => ({ id: String(a.id), name: `${getTipoLabel(a.tipo)} ${a.nro}` }))
   );
 }
 
-function getCellBgClass(grey?: boolean): string {
-  return grey
-    ? "bg-slate-50 dark:bg-white/5/50"
-    : "cursor-pointer hover:bg-slate-50 dark:bg-white/5 transition-colors";
-}
-
-function getSyncIconAnimClass(isSyncing: boolean): string {
-  return isSyncing ? "animate-spin" : "";
-}
-
-function getSyncButtonText(isSyncing: boolean): string {
-  return isSyncing ? "Sincronizando..." : "Sincronizar Google Calendar";
-}
-
-function getSaveButtonText(isSaving: boolean, isEdit: boolean): string {
-  if (isSaving) return "Guardando...";
-  return isEdit ? "Guardar Cambios" : "Guardar y sincronizar calendario";
-}
-
-function getBannerTitle(success: boolean): string {
-  return success ? "Cita agendada" : "Aviso de sincronización";
-}
-
-function getBannerColor(success: boolean): string {
-  return success ? "text-[#1c663b]" : "text-[#e65100]";
-}
-
-function getModalTitle(isEditing: boolean): string {
-  return isEditing ? "Editar Cita" : "Detalle de la Cita";
-}
-
-function getSyncIconColor(syncDot?: string): string {
-  return syncDot === "bg-emerald-500" ? "text-emerald-500" : "text-amber-500";
-}
-
-function getCellDayClass(today?: boolean, grey?: boolean): string {
-  if (today) return "w-7 h-7 flex items-center justify-center bg-build-main text-white rounded-full font-bold shadow-sm";
-  if (grey) return "text-slate-400 dark:text-white/50";
-  return "text-build-main dark:text-white font-bold";
-}
-
-function getConnectionDisplay(isConnecting: boolean, justConnected: boolean, field: "icon" | "text"): string {
-  if (isConnecting) return field === "icon" ? "more_horiz" : "Conectando...";
-  if (justConnected) return field === "icon" ? "check_circle" : "¡Conectado!";
-  return field === "icon" ? "calendar_month" : "Conectar Google Calendar";
-}
-
-function getConnectionBorderClass(justConnected: boolean): string {
-  return justConnected
-    ? "border border-green-200 dark:border-green-900/40 bg-green-50 dark:bg-green-900/10 text-green-700 dark:text-green-400"
-    : "border border-arch-gold/30 bg-arch-gold/5 hover:bg-arch-gold/10 text-arch-gold";
-}
-
-function getConfirmationText(confirmacion: boolean | null): string {
-  if (confirmacion === true) return "Confirmado ✓";
-  if (confirmacion === false) return "Declinado ✕";
-  return "Sin respuesta";
-}
-
-
-
-function validateAppointmentForm(clientId: string | null, selectedUnitId: string, eventDate: string, startTime: string, endTime: string): string | null {
-  if (!clientId || !selectedUnitId || !eventDate || !startTime || !endTime) {
-    return "Por favor completa todos los campos requeridos.";
-  }
-  const selectedDateTime = new Date(`${eventDate}T${startTime}`);
-  if (selectedDateTime < new Date()) {
-    return "Error: No puedes agendar citas en fechas/horas pasadas.";
-  }
+function validateForm(clientId: string, unitId: string, date: string, start: string, end: string): string | null {
+  if (!clientId || !unitId || !date || !start || !end) return "Por favor completa todos los campos requeridos.";
+  if (new Date(`${date}T${start}`) < new Date()) return "No puedes agendar citas en fechas u horas pasadas.";
   return null;
 }
 
-function useGoogleCalendar(fetchAppointments: () => void) {
-  const [isConnectingGoogle, setIsConnectingGoogle] = useState(false);
-  const [justConnected, setJustConnected] = useState(false);
-  const [isSyncing, setIsSyncing] = useState(false);
+// ─── Time / Date helpers ──────────────────────────────────────────────────────
 
-  const handleConnectGoogle = async () => {
-    setIsConnectingGoogle(true);
-    try {
-      const { url } = await getGoogleAuthUrl();
-      const popup = window.open(url, "google-oauth", "width=600,height=700");
-      if (!popup) {
-        alert("El navegador bloqueó la ventana emergente. Permite popups e intenta de nuevo.");
-        setIsConnectingGoogle(false);
-        return;
-      }
-      const timer = setInterval(() => {
-        if (popup.closed) {
-          clearInterval(timer);
-          setIsConnectingGoogle(false);
-          setJustConnected(true);
-          setTimeout(() => setJustConnected(false), 6000);
-        }
-      }, 500);
-    } catch (err) {
-      setIsConnectingGoogle(false);
-      alert(err instanceof Error ? err.message : "Error al conectar Google Calendar.");
-    }
-  };
-
-  const handleDisconnectGoogle = async () => {
-    if (!confirm("¿Desconectar Google Calendar?")) return;
-    try {
-      await disconnectGoogleCalendar();
-      alert("Google Calendar desconectado.");
-    } catch (err) {
-      alert(err instanceof Error ? err.message : "Error al desconectar.");
-    }
-  };
-
-  const handleSyncManual = () => {
-    setIsSyncing(true);
-    forzarSincronizacionManual()
-      .then((res) => {
-        setIsSyncing(false);
-        alert(res.mensaje || "Sincronización forzada correctamente.");
-        fetchAppointments();
-      })
-      .catch(err => {
-        setIsSyncing(false);
-        alert(err instanceof Error ? err.message : "Error al sincronizar.");
-      });
-  };
-
-  return { isConnectingGoogle, justConnected, isSyncing, handleConnectGoogle, handleDisconnectGoogle, handleSyncManual };
+function addMinutes(hhmm: string, mins: number): string {
+  if (!hhmm) return "";
+  const [h, m] = hhmm.split(":").map(Number);
+  const total = h * 60 + m + mins;
+  const nh = Math.floor(total / 60) % 24;
+  const nm = total % 60;
+  return `${String(nh).padStart(2, "0")}:${String(nm).padStart(2, "0")}`;
 }
 
-export default function SchedulePage() {
+function fmtLocalDate(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+/** All 30-min slots from 07:00 to 20:00 */
+const TIME_SLOTS: string[] = (() => {
+  const slots: string[] = [];
+  for (let h = 7; h <= 20; h++) {
+    slots.push(`${String(h).padStart(2, "0")}:00`);
+    if (h < 20) slots.push(`${String(h).padStart(2, "0")}:30`);
+  }
+  return slots;
+})();
+
+// ─── Sub-components ───────────────────────────────────────────────────────────
+
+function FormField({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-white/40 mb-1.5">{label}</label>
+      {children}
+    </div>
+  );
+}
+
+const inputCls = "w-full px-3 py-2.5 border border-slate-200 dark:border-white/10 rounded-xl text-sm text-build-main dark:text-white bg-white dark:bg-white/5 outline-none focus:border-arch-gold focus:ring-2 focus:ring-arch-gold/20 transition-colors";
+
+/** Date picker: shortcut chips (Hoy / Mañana / Pasado) + hidden native input triggered by "Otra fecha" */
+function DateQuickPicker({ value, onChange, id = "agenda-date-native" }: { value: string; onChange: (v: string) => void; id?: string }) {
+  const today = new Date();
+  const tomorrow = new Date(today); tomorrow.setDate(today.getDate() + 1);
+  const dat2   = new Date(today); dat2.setDate(today.getDate() + 2);
+
+  const shortcuts = [
+    { label: "Hoy",    val: fmtLocalDate(today) },
+    { label: "Mañana", val: fmtLocalDate(tomorrow) },
+    {
+      label: dat2.toLocaleDateString("es-PE", { day: "numeric", month: "short" }),
+      val: fmtLocalDate(dat2),
+    },
+  ];
+
+  const isShortcut = shortcuts.some((s) => s.val === value);
+
+  function triggerNative() {
+    const inp = document.getElementById(id) as HTMLInputElement | null;
+    inp?.showPicker?.();
+    inp?.click();
+  }
+
+  return (
+    <div className="space-y-2">
+      {/* Chip row */}
+      <div className="flex flex-wrap gap-1.5 items-center">
+        {shortcuts.map((s) => (
+          <button
+            key={s.val}
+            type="button"
+            onClick={() => onChange(s.val)}
+            className={[
+              "px-3 py-1.5 rounded-lg text-xs font-bold border transition-all",
+              value === s.val
+                ? "border-arch-gold bg-arch-gold/10 text-arch-gold"
+                : "border-slate-200 dark:border-white/10 text-slate-500 dark:text-white/50 hover:border-arch-gold/50 hover:text-arch-gold",
+            ].join(" ")}
+          >
+            {s.label}
+          </button>
+        ))}
+        {/* "Otra fecha" chip opens the native date picker */}
+        <button
+          type="button"
+          onClick={triggerNative}
+          className={[
+            "px-3 py-1.5 rounded-lg text-xs font-bold border transition-all flex items-center gap-1",
+            !isShortcut && value
+              ? "border-arch-gold bg-arch-gold/10 text-arch-gold"
+              : "border-slate-200 dark:border-white/10 text-slate-500 dark:text-white/50 hover:border-arch-gold/50 hover:text-arch-gold",
+          ].join(" ")}
+        >
+          <span className="material-symbols-outlined text-[13px]">calendar_month</span>
+          {!isShortcut && value
+            ? new Date(value + "T00:00:00").toLocaleDateString("es-PE", { day: "numeric", month: "short" })
+            : "Otra fecha"}
+        </button>
+        {/* Hidden native input */}
+        <input
+          id={id}
+          type="date"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          className="sr-only"
+          tabIndex={-1}
+        />
+      </div>
+
+      {/* Human-readable confirmation */}
+      {value && (
+        <p className="text-xs text-slate-500 dark:text-white/50 flex items-center gap-1.5 pl-0.5">
+          <span className="material-symbols-outlined text-[13px] text-arch-gold">event</span>
+          {new Date(value + "T00:00:00").toLocaleDateString("es-PE", {
+            weekday: "long", year: "numeric", month: "long", day: "numeric",
+          })}
+        </p>
+      )}
+    </div>
+  );
+}
+
+/** Scrollable grid of 30-min time slots */
+function TimeSlotGrid({
+  label,
+  value,
+  onChange,
+  disabledBefore,
+  extra,
+}: {
+  label?: string;
+  value: string;
+  onChange: (v: string) => void;
+  disabledBefore?: string;
+  extra?: React.ReactNode;
+}) {
+  return (
+    <div className="space-y-1.5">
+      {(label || extra) && (
+        <div className="flex items-center justify-between">
+          {label && (
+            <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-white/40">
+              {label}
+            </p>
+          )}
+          {extra}
+        </div>
+      )}
+      <div className="flex flex-wrap gap-1.5 max-h-28 overflow-y-auto pr-0.5 py-0.5">
+        {TIME_SLOTS.map((slot) => {
+          const isDisabled = !!disabledBefore && slot <= disabledBefore;
+          const isSelected = value === slot;
+          return (
+            <button
+              key={slot}
+              type="button"
+              disabled={isDisabled}
+              onClick={() => onChange(slot)}
+              className={[
+                "px-2.5 py-1 rounded-lg text-xs font-semibold border transition-all",
+                isSelected
+                  ? "border-arch-gold bg-arch-gold text-white shadow-sm scale-105"
+                  : isDisabled
+                  ? "border-slate-100 dark:border-white/5 text-slate-200 dark:text-white/15 cursor-not-allowed"
+                  : "border-slate-200 dark:border-white/10 text-slate-600 dark:text-white/60 hover:border-arch-gold/60 hover:text-arch-gold",
+              ].join(" ")}
+            >
+              {slot}
+            </button>
+          );
+        })}
+      </div>
+      {/* Selected display */}
+      {value && (
+        <p className="text-xs font-bold text-arch-gold flex items-center gap-1 pl-0.5">
+          <span className="material-symbols-outlined text-[13px]">schedule</span>
+          {value} hs seleccionado
+        </p>
+      )}
+    </div>
+  );
+}
+
+// ─── Main Component ───────────────────────────────────────────────────────────
+
+export default function AgendaView() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [calDays, setCalDays] = useState<CalDay[]>([]);
-  const [modalOpen, setModalOpen] = useState(false);
-  const [clients, setClients] = useState<Usuario[]>([]);
-  const [clientUnits, setClientUnits] = useState<{ id: string; name: string }[]>([]);
+  const [rawCitas, setRawCitas] = useState<CitaResponse[]>([]);
   const [loadingEvents, setLoadingEvents] = useState(false);
 
-  // Form State
+  // Clients + units
+  const [clients, setClients] = useState<Usuario[]>([]);
+  const [clientUnits, setClientUnits] = useState<{ id: string; name: string }[]>([]);
+
+  // New appointment modal
+  const [modalOpen, setModalOpen] = useState(false);
   const [clientId, setClientId] = useState("");
   const [selectedUnitId, setSelectedUnitId] = useState("");
   const [eventType, setEventType] = useState(EVENT_TYPES[0].value);
@@ -391,768 +348,692 @@ export default function SchedulePage() {
   const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("");
   const [location, setLocation] = useState("Oficina Principal");
-  const [errorMsg, setErrorMsg] = useState("");
-
-  // UX State
+  const [formError, setFormError] = useState("");
   const [isSaving, setIsSaving] = useState(false);
-  const [successMsg, setSuccessMsg] = useState("");
-  const [warningMsg, setWarningMsg] = useState("");
+  const [saveSuccess, setSaveSuccess] = useState(false);
 
-  // Detailed view & edit states
-  const [rawCitas, setRawCitas] = useState<CitaResponse[]>([]);
+  // Detail / edit modal
   const [selectedCita, setSelectedCita] = useState<CitaResponse | null>(null);
-  const [detailModalOpen, setDetailModalOpen] = useState(false);
-  const [modalError, setModalError] = useState("");
+  const [detailOpen, setDetailOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [showCancelForm, setShowCancelForm] = useState(false);
   const [motivoCancelacion, setMotivoCancelacion] = useState("");
-  // Edit fields state
+  const [modalError, setModalError] = useState("");
   const [editTitle, setEditTitle] = useState("");
   const [editDesc, setEditDesc] = useState("");
   const [editLocation, setEditLocation] = useState("");
   const [editDate, setEditDate] = useState("");
   const [editStartTime, setEditStartTime] = useState("");
   const [editEndTime, setEditEndTime] = useState("");
-  const [editEstado, setEditEstado] = useState<"PROGRAMADA" | "CONFIRMADA" | "CANCELADA" | "COMPLETADA" | "REPROGRAMACION_PENDIENTE">("PROGRAMADA");
+  const [editEstado, setEditEstado] = useState<CitaResponse["estadoCita"]>("PROGRAMADA");
   const [editPermiteReprog, setEditPermiteReprog] = useState(false);
 
-  const selectedClient = clients.find(c => String(c.id) === clientId);
+  const selectedClient = clients.find((c) => String(c.id) === clientId);
 
   // Load clients
   useEffect(() => {
     fetchUsuarios()
-      .then((users) => {
-        setClients(users.filter(u => u.tipoUsuario === "CLIENTE"));
-      })
+      .then((users) => setClients(users.filter((u) => u.tipoUsuario === "CLIENTE")))
       .catch(console.error);
   }, []);
 
-  // Load client units when selected client changes
+  // Load units when client changes
   useEffect(() => {
-    Promise.resolve().then(() => {
-      if (!clientId) {
-        setClientUnits([]);
-        setSelectedUnitId("");
-        return;
-      }
-      setClientUnits([]);
-      setSelectedUnitId("");
-      
-      import("@/lib/api/users")
-        .then(m => m.fetchExpedientesPorUsuario(Number(clientId)))
-        .then(exps => {
-          const uList = mapExpedientesToUnits(exps);
-          setClientUnits(uList);
-          if (uList.length > 0) {
-            setSelectedUnitId(uList[0].id);
-          }
-        })
-        .catch(console.error);
-    });
+    if (!clientId) { setClientUnits([]); setSelectedUnitId(""); return; }
+    setClientUnits([]); setSelectedUnitId("");
+    fetchExpedientesPorUsuario(Number(clientId))
+      .then((exps) => {
+        const units = mapExpedientesToUnits(exps ?? []);
+        setClientUnits(units);
+        if (units.length > 0) setSelectedUnitId(units[0].id);
+      })
+      .catch(console.error);
   }, [clientId]);
 
-  // Generate grid cells base layout
-  const gridCells = useMemo(() => {
-    return generateCalendarGrid(currentDate);
-  }, [currentDate]);
+  // Grid cells
+  const gridCells = useMemo(() => generateCalendarGrid(currentDate), [currentDate]);
 
-  // Fetch appointments for current grid
+  // Fetch appointments
   const fetchAppointments = React.useCallback(() => {
-    if (gridCells.length === 0) return;
-    
-    const { startDateStr, endDateStr } = getStartAndEndDateStr(gridCells, currentDate);
+    if (!gridCells.length) return;
+    const { startDateStr, endDateStr } = getGridDateRange(gridCells, currentDate);
     setLoadingEvents(true);
-    
     fetchCitasCalendario(startDateStr, endDateStr)
-      .then(citas => {
+      .then((citas) => {
         setRawCitas(citas);
-        const updatedGrid = mapCitasToGrid(citas, gridCells, currentDate);
-        setCalDays(updatedGrid);
+        setCalDays(mapCitasToGrid(citas, gridCells, currentDate));
       })
-      .catch(err => {
-        console.error("Error fetching calendar appointments:", err);
-      })
-      .finally(() => {
-        setLoadingEvents(false);
-      });
+      .catch(console.error)
+      .finally(() => setLoadingEvents(false));
   }, [gridCells, currentDate]);
 
-  useEffect(() => {
-    Promise.resolve().then(() => {
-      fetchAppointments();
-    });
-  }, [fetchAppointments]);
+  useEffect(() => { fetchAppointments(); }, [fetchAppointments]);
 
-  // Next/prev month handlers
-  const handlePrevMonth = () => {
-    setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1));
-  };
+  // Month nav
+  const prevMonth = () => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1));
+  const nextMonth = () => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1));
+  const goToday   = () => setCurrentDate(new Date());
 
-  const handleNextMonth = () => {
-    setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1));
-  };
-
-  const handleGoToday = () => {
-    setCurrentDate(new Date());
-  };
-
+  // New appointment
   function resetForm() {
-    setClientId("");
-    setSelectedUnitId("");
-    setEventType(EVENT_TYPES[0].value);
-    setEventDate("");
-    setStartTime("");
-    setEndTime("");
-    setLocation("Oficina Principal");
-    setErrorMsg("");
+    setClientId(""); setSelectedUnitId(""); setEventType(EVENT_TYPES[0].value);
+    setEventDate(""); setStartTime(""); setEndTime(""); setLocation("Oficina Principal");
+    setFormError(""); setSaveSuccess(false);
   }
 
-  function handleOpenModal() {
+  function openModal(prefilledDate?: string) {
     resetForm();
-    setSuccessMsg("");
-    setWarningMsg("");
     setModalOpen(true);
+    if (prefilledDate) setEventDate(prefilledDate);
   }
 
   function handleCellClick(cell: CalDay) {
     if (cell.grey) return;
-    handleOpenModal();
-    const cellYear = currentDate.getFullYear();
-    const cellMonth = currentDate.getMonth();
-    const dateStr = `${cellYear}-${String(cellMonth + 1).padStart(2, "0")}-${String(cell.day).padStart(2, "0")}`;
-    setEventDate(dateStr);
+    const y = currentDate.getFullYear(), m = currentDate.getMonth();
+    openModal(`${y}-${String(m + 1).padStart(2, "0")}-${String(cell.day).padStart(2, "0")}`);
   }
 
-  const handleEventClick = (id: string) => {
-    const cita = rawCitas.find(c => c.id === id);
+  function handleEventClick(id: string) {
+    const cita = rawCitas.find((c) => c.id === id);
     if (cita) {
-      setSelectedCita(cita);
-      setModalError("");
-      setShowCancelForm(false);
-      setMotivoCancelacion("");
-      setDetailModalOpen(true);
+      setSelectedCita(cita); setModalError(""); setShowCancelForm(false);
+      setMotivoCancelacion(""); setIsEditing(false); setDetailOpen(true);
     }
-  };
+  }
 
-  const handleStartEdit = () => {
+  async function saveEvent(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const err = validateForm(clientId, selectedUnitId, eventDate, startTime, endTime);
+    if (err) { setFormError(err); return; }
+    setIsSaving(true); setFormError("");
+    const label = EVENT_TYPES.find((t) => t.value === eventType)?.label || eventType;
+    try {
+      await crearCita({
+        clienteId: Number(clientId),
+        activoId: selectedUnitId,
+        tipoEvento: eventType,
+        titulo: `${label} - ${selectedClient?.nombre || ""} ${selectedClient?.apellidos || ""}`.trim(),
+        descripcion: "Cita sobre unidad inmobiliaria",
+        ubicacion: location,
+        fechaInicio: `${eventDate}T${startTime}:00`,
+        fechaFin: `${eventDate}T${endTime}:00`,
+        permiteReprogramacion: true,
+        clienteUsaGoogle: false,
+      });
+      setSaveSuccess(true);
+      setTimeout(() => { setModalOpen(false); fetchAppointments(); }, 2000);
+    } catch (err) {
+      setFormError(err instanceof Error ? err.message : "Error al guardar la cita.");
+    } finally {
+      setIsSaving(false);
+    }
+  }
+
+  // Edit
+  function startEdit() {
     if (!selectedCita) return;
-    setEditTitle(selectedCita.titulo);
-    setEditDesc(selectedCita.descripcion);
-    setEditLocation(selectedCita.ubicacion);
-    
-    const startStr = selectedCita.fechaInicio;
-    const endStr = selectedCita.fechaFin;
-    
-    const [startDatePart, startTimePart] = startStr.split("T");
-    const [, endTimePart] = endStr.split("T");
-    
-    setEditDate(startDatePart || "");
-    setEditStartTime(startTimePart?.slice(0, 5) || "");
-    setEditEndTime(endTimePart?.slice(0, 5) || "");
-    setEditEstado(selectedCita.estadoCita);
-    setEditPermiteReprog(selectedCita.permiteReprogramacion);
+    const [d, t] = selectedCita.fechaInicio.split("T");
+    const [, t2] = selectedCita.fechaFin.split("T");
+    setEditTitle(selectedCita.titulo); setEditDesc(selectedCita.descripcion);
+    setEditLocation(selectedCita.ubicacion); setEditDate(d || "");
+    setEditStartTime(t?.slice(0, 5) || ""); setEditEndTime(t2?.slice(0, 5) || "");
+    setEditEstado(selectedCita.estadoCita); setEditPermiteReprog(selectedCita.permiteReprogramacion);
     setIsEditing(true);
-  };
+  }
 
-  const handleSaveEdit = () => {
+  async function saveEdit() {
     if (!selectedCita) return;
     if (!editTitle.trim() || !editDate || !editStartTime || !editEndTime) {
-      setModalError("Por favor completa los campos requeridos.");
-      return;
+      setModalError("Completa los campos requeridos."); return;
     }
-    
-    setIsSaving(true);
-    setModalError("");
-    const startStr = `${editDate}T${editStartTime}:00`;
-    const endStr = `${editDate}T${editEndTime}:00`;
-    
-    actualizarCita(selectedCita.id, {
-      titulo: editTitle,
-      descripcion: editDesc,
-      ubicacion: editLocation,
-      fechaInicio: startStr,
-      fechaFin: endStr,
-      estadoCita: editEstado,
-      permiteReprogramacion: editPermiteReprog
-    })
-      .then(() => {
-        setIsSaving(false);
-        setIsEditing(false);
-        setDetailModalOpen(false);
-        fetchAppointments();
-      })
-      .catch(err => {
-        setIsSaving(false);
-        setModalError(err instanceof Error ? err.message : "Error al actualizar la cita.");
+    setIsSaving(true); setModalError("");
+    try {
+      await actualizarCita(selectedCita.id, {
+        titulo: editTitle, descripcion: editDesc, ubicacion: editLocation,
+        fechaInicio: `${editDate}T${editStartTime}:00`,
+        fechaFin: `${editDate}T${editEndTime}:00`,
+        estadoCita: editEstado, permiteReprogramacion: editPermiteReprog,
       });
-  };
-
-  const handleConfirmCancel = () => {
-    if (!selectedCita || !motivoCancelacion.trim()) return;
-    setIsSaving(true);
-    setModalError("");
-    
-    cancelarCita(selectedCita.id, motivoCancelacion)
-      .then(() => {
-        setIsSaving(false);
-        setShowCancelForm(false);
-        setDetailModalOpen(false);
-        fetchAppointments();
-      })
-      .catch(err => {
-        setIsSaving(false);
-        setModalError(err instanceof Error ? err.message : "Error al cancelar la cita.");
-      });
-  };
-
-  const handleConfirmBlock = (bloqueId: number) => {
-    if (!selectedCita) return;
-    setIsSaving(true);
-    setModalError("");
-    
-    seleccionarBloqueDisponibilidad(selectedCita.id, bloqueId)
-      .then(() => {
-        setIsSaving(false);
-        setDetailModalOpen(false);
-        fetchAppointments();
-      })
-      .catch(err => {
-        setIsSaving(false);
-        setModalError(err instanceof Error ? err.message : "Error al confirmar la fecha propuesta.");
-      });
-  };
-
-  const { isConnectingGoogle, justConnected, isSyncing, handleConnectGoogle, handleDisconnectGoogle, handleSyncManual } = useGoogleCalendar(fetchAppointments);
-
-  function saveEvent(e: React.SubmitEvent<HTMLFormElement>) {
-    e.preventDefault();
-    setErrorMsg("");
-    setSuccessMsg("");
-    setWarningMsg("");
-
-    const validationError = validateAppointmentForm(clientId, selectedUnitId, eventDate, startTime, endTime);
-    if (validationError) {
-      setErrorMsg(validationError);
-      return;
+      setIsEditing(false); setDetailOpen(false); fetchAppointments();
+    } catch (err) {
+      setModalError(err instanceof Error ? err.message : "Error al actualizar la cita.");
+    } finally {
+      setIsSaving(false);
     }
-
-    setIsSaving(true);
-    const startDateTimeStr = `${eventDate}T${startTime}:00`;
-    const endDateTimeStr = `${eventDate}T${endTime}:00`;
-
-    const eventLabel = EVENT_TYPES.find(e => e.value === eventType)?.label || eventType;
-    crearCita({
-      clienteId: Number(clientId),
-      activoId: selectedUnitId,
-      tipoEvento: eventType,
-      titulo: `${eventLabel} - ${selectedClient?.nombre || ""} ${selectedClient?.apellidos || ""}`,
-      descripcion: `Cita sobre unidad inmobiliaria`,
-      ubicacion: location,
-      fechaInicio: startDateTimeStr,
-      fechaFin: endDateTimeStr,
-      permiteReprogramacion: true,
-      clienteUsaGoogle: true,
-    })
-      .then(() => {
-        setIsSaving(false);
-        setSuccessMsg("Cita agendada y notificada exitosamente al correo/calendario del cliente.");
-        setTimeout(() => {
-          setModalOpen(false);
-          fetchAppointments();
-        }, 3000);
-      })
-      .catch(err => {
-        setIsSaving(false);
-        setErrorMsg(err instanceof Error ? err.message : "Error al guardar la cita.");
-      });
   }
 
-  // Get next 3 upcoming events
+  async function confirmCancel() {
+    if (!selectedCita || !motivoCancelacion.trim()) return;
+    setIsSaving(true); setModalError("");
+    try {
+      await cancelarCita(selectedCita.id, motivoCancelacion);
+      setShowCancelForm(false); setDetailOpen(false); fetchAppointments();
+    } catch (err) {
+      setModalError(err instanceof Error ? err.message : "Error al cancelar la cita.");
+    } finally {
+      setIsSaving(false);
+    }
+  }
+
+  async function confirmBlock(bloqueId: number) {
+    if (!selectedCita) return;
+    setIsSaving(true); setModalError("");
+    try {
+      await seleccionarBloqueDisponibilidad(selectedCita.id, bloqueId);
+      setDetailOpen(false); fetchAppointments();
+    } catch (err) {
+      setModalError(err instanceof Error ? err.message : "Error al confirmar la fecha.");
+    } finally {
+      setIsSaving(false);
+    }
+  }
+
+  // Upcoming events (next 8, non-cancelled, sorted by time)
   const upcomingEvents = useMemo(() => {
-    return calDays
-      .filter(d => !d.grey)
-      .flatMap(d => d.events)
-      .slice(0, 3);
-  }, [calDays]);
+    const todayStr = new Date().toISOString().slice(0, 10);
+    return rawCitas
+      .filter((c) => c.fechaInicio >= todayStr && c.estadoCita !== "CANCELADA" && c.estadoCita !== "COMPLETADA")
+      .sort((a, b) => a.fechaInicio.localeCompare(b.fechaInicio))
+      .slice(0, 8);
+  }, [rawCitas]);
+
+  const monthLabel = currentDate.toLocaleString("es-ES", { month: "long", year: "numeric" });
 
   return (
     <>
-      {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+      {/* ── Header ── */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl md:text-3xl font-bold tracking-[-0.01em] text-build-main dark:text-white">Agenda y Citas</h2>
-          <p className="text-base text-slate-600 dark:text-white/70 mt-2">Programa reuniones, firmas, entregas y eventos importantes con clientes.</p>
+          <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-build-main dark:text-white">
+            Agenda y Citas
+          </h2>
+          <p className="text-sm text-slate-500 dark:text-white/50 mt-1">
+            Programa reuniones, firmas, entregas y eventos con clientes.
+          </p>
         </div>
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 self-end md:self-auto">
-          {/* Google Connect */}
-          <button
-            onClick={handleConnectGoogle}
-            disabled={isConnectingGoogle}
-            className={`inline-flex items-center justify-center gap-1.5 rounded-xl px-2 py-2.5 text-xs font-semibold shadow-sm transition-all disabled:opacity-50 ${getConnectionBorderClass(justConnected)}`}
-          >
-            <span className="material-symbols-outlined text-[16px] shrink-0">
-              {getConnectionDisplay(isConnectingGoogle, justConnected, "icon")}
-            </span>
-            <span className="truncate">{getConnectionDisplay(isConnectingGoogle, justConnected, "text")}</span>
-          </button>
-
-          {/* Disconnect */}
-          <button
-            onClick={handleDisconnectGoogle}
-            className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-red-200 px-2 py-2.5 text-xs font-semibold shadow-sm transition-all bg-red-50 text-red-600 hover:bg-red-100 dark:border-red-900/30 dark:bg-red-950/10 dark:text-red-400 dark:hover:bg-red-950/20"
-          >
-            <span className="material-symbols-outlined text-[16px] shrink-0">link_off</span>
-            <span className="truncate">Desconectar</span>
-          </button>
-
-          {/* Sync */}
-          <button
-            onClick={handleSyncManual}
-            disabled={isSyncing}
-            className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-2 py-2.5 text-xs font-semibold shadow-sm transition-all text-build-main hover:bg-slate-50 disabled:opacity-50 dark:border-white/10 dark:bg-white/5 dark:text-white dark:hover:bg-white/10"
-          >
-            <span className={`material-symbols-outlined text-[16px] shrink-0 ${getSyncIconAnimClass(isSyncing)}`}>
-              sync
-            </span>
-            <span className="truncate">{getSyncButtonText(isSyncing)}</span>
-          </button>
-
-          {/* New Appointment */}
-          <button
-            onClick={handleOpenModal}
-            className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-build-main px-2 py-2.5 text-xs font-semibold text-white shadow-sm transition-all hover:bg-build-main/90"
-          >
-            <span className="material-symbols-outlined text-[16px] shrink-0">event_available</span>
-            <span className="truncate">Nueva cita</span>
-          </button>
-        </div>
+        <button
+          onClick={() => openModal()}
+          className="inline-flex items-center gap-2 rounded-lg bg-build-main px-4 py-2.5 text-sm font-bold text-white shadow-sm hover:bg-build-main/90 transition-colors shrink-0"
+        >
+          <span className="material-symbols-outlined text-[18px]">add</span>
+          Nueva cita
+        </button>
       </div>
 
-      {/* Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        {/* Calendar Side */}
-        <div className="lg:col-span-9 bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl shadow-sm overflow-hidden flex flex-col min-h-[600px] animate-fade-in">
-          <div className="px-6 py-4 border-b border-slate-200 dark:border-white/10 flex items-center justify-between bg-white dark:bg-white/5">
-            <div className="flex items-center gap-4">
-              <h3 className="text-[20px] font-bold text-build-main dark:text-white capitalize">
-                {currentDate.toLocaleString('es-ES', { month: 'long', year: 'numeric' })}
-              </h3>
-              <div className="flex items-center gap-1 bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-lg p-0.5">
-                <button onClick={handlePrevMonth} className="p-1 rounded hover:bg-slate-50 dark:bg-white/5 text-slate-500 dark:text-white/60 transition-colors">
-                  <span className="material-symbols-outlined text-[18px]">chevron_left</span>
-                </button>
-                <button onClick={handleGoToday} className="px-3 py-1 text-[12px] font-bold text-build-main dark:text-white hover:bg-slate-50 dark:bg-white/5 rounded transition-colors">Hoy</button>
-                <button onClick={handleNextMonth} className="p-1 rounded hover:bg-slate-50 dark:bg-white/5 text-slate-500 dark:text-white/60 transition-colors">
-                  <span className="material-symbols-outlined text-[18px]">chevron_right</span>
-                </button>
+      {/* ── Main grid: sidebar izquierda + calendario derecha ── */}
+      <div className="grid grid-cols-1 xl:grid-cols-12 gap-5 items-start">
+
+        {/* ── Panel izquierdo: próximas citas ── */}
+        <div className="xl:col-span-4 space-y-3">
+
+          {/* Header del panel */}
+          <div className="rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 shadow-sm overflow-hidden">
+            <div className="px-4 py-3.5 border-b border-slate-100 dark:border-white/5 flex items-center justify-between bg-slate-50/60 dark:bg-white/2">
+              <div className="flex items-center gap-2">
+                <span className="material-symbols-outlined text-arch-gold text-[18px]">event_upcoming</span>
+                <h3 className="text-sm font-bold text-build-main dark:text-white">Próximas citas</h3>
               </div>
+              {upcomingEvents.length > 0 && (
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-build-main/10 text-build-main dark:bg-white/10 dark:text-white/70">
+                  {upcomingEvents.length}
+                </span>
+              )}
             </div>
-            {loadingEvents && (
-              <span className="text-xs text-slate-400 flex items-center gap-1">
-                <svg className="animate-spin h-3.5 w-3.5 text-slate-400" viewBox="0 0 24 24" fill="none">
+
+            {upcomingEvents.length === 0 ? (
+              <div className="px-4 py-12 flex flex-col items-center gap-2.5 text-center">
+                <span className="material-symbols-outlined text-[40px] text-slate-200 dark:text-white/10">event_available</span>
+                <p className="text-sm font-semibold text-slate-400 dark:text-white/30">Sin citas próximas</p>
+                <p className="text-xs text-slate-300 dark:text-white/20">Las nuevas citas aparecerán aquí</p>
+              </div>
+            ) : (
+              <div className="divide-y divide-slate-100 dark:divide-white/5">
+                {upcomingEvents.map((c) => {
+                  const meta   = STATUS_META[c.estadoCita] ?? STATUS_META.PROGRAMADA;
+                  const dt     = new Date(c.fechaInicio);
+                  const dtEnd  = new Date(c.fechaFin);
+                  const isToday = dt.toDateString() === new Date().toDateString();
+                  const dayNum  = dt.getDate();
+                  const mon     = dt.toLocaleDateString("es-PE", { month: "short" });
+                  const dow     = dt.toLocaleDateString("es-PE", { weekday: "short" });
+                  const tStart  = dt.toLocaleTimeString("es-PE",  { hour: "2-digit", minute: "2-digit" });
+                  const tEnd    = dtEnd.toLocaleTimeString("es-PE", { hour: "2-digit", minute: "2-digit" });
+
+                  return (
+                    <button
+                      key={c.id}
+                      type="button"
+                      onClick={() => handleEventClick(c.id)}
+                      className="w-full text-left px-4 py-3.5 hover:bg-slate-50 dark:hover:bg-white/3 transition-colors group flex gap-3.5 items-start"
+                    >
+                      {/* Date block */}
+                      <div className={[
+                        "shrink-0 w-12 h-14 rounded-xl flex flex-col items-center justify-center border",
+                        isToday
+                          ? "bg-build-main border-build-main text-white"
+                          : "bg-slate-50 dark:bg-white/5 border-slate-200 dark:border-white/10 text-build-main dark:text-white",
+                      ].join(" ")}>
+                        <span className={`text-[9px] font-bold uppercase tracking-wider ${isToday ? "text-white/70" : "text-slate-400 dark:text-white/40"}`}>
+                          {isToday ? "HOY" : dow.replace(".", "")}
+                        </span>
+                        <span className="text-xl font-black leading-none">{dayNum}</span>
+                        <span className={`text-[9px] font-semibold capitalize ${isToday ? "text-white/70" : "text-slate-400 dark:text-white/40"}`}>
+                          {mon}
+                        </span>
+                      </div>
+
+                      {/* Content */}
+                      <div className="flex-1 min-w-0 pt-0.5">
+                        <div className="flex items-start justify-between gap-2 mb-1">
+                          <p className="text-sm font-bold text-build-main dark:text-white leading-snug group-hover:text-arch-gold transition-colors line-clamp-2">
+                            {c.titulo}
+                          </p>
+                          <span className={`shrink-0 text-[9px] font-bold px-1.5 py-0.5 rounded-full ${meta.bg}`}>
+                            {meta.label}
+                          </span>
+                        </div>
+
+                        {/* Cliente */}
+                        <div className="flex items-center gap-1 text-[11px] text-slate-500 dark:text-white/50 mb-1">
+                          <span className="material-symbols-outlined text-[12px]">person</span>
+                          <span className="truncate font-medium">{c.clienteNombre}</span>
+                        </div>
+
+                        {/* Hora + ubicación */}
+                        <div className="flex items-center gap-3">
+                          <span className="flex items-center gap-1 text-[11px] font-semibold text-arch-gold">
+                            <span className="material-symbols-outlined text-[12px]">schedule</span>
+                            {tStart} – {tEnd}
+                          </span>
+                          {c.ubicacion && (
+                            <span className="flex items-center gap-1 text-[10px] text-slate-400 dark:text-white/30 truncate">
+                              <span className="material-symbols-outlined text-[11px]">location_on</span>
+                              {c.ubicacion}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* Leyenda de estados */}
+          <div className="rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 p-4 shadow-sm">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-white/40 mb-2.5">
+              Estados
+            </p>
+            <div className="grid grid-cols-2 gap-x-3 gap-y-1.5">
+              {Object.entries(STATUS_META).map(([, meta]) => (
+                <div key={meta.label} className="flex items-center gap-1.5">
+                  <span className={`w-2 h-2 rounded-full shrink-0 ${meta.dot}`} />
+                  <span className="text-[11px] text-slate-500 dark:text-white/50">{meta.label}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* ── Calendario ── */}
+        <div className="xl:col-span-8 rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 shadow-sm overflow-hidden">
+
+          {/* Month nav */}
+          <div className="px-5 py-4 border-b border-slate-100 dark:border-white/5 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <h3 className="text-base font-bold text-build-main dark:text-white capitalize">{monthLabel}</h3>
+              {loadingEvents && (
+                <svg className="animate-spin h-4 w-4 text-slate-300 dark:text-white/20" viewBox="0 0 24 24" fill="none">
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
                 </svg>
-                Actualizando...
-              </span>
-            )}
+              )}
+            </div>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={prevMonth}
+                className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-slate-100 dark:hover:bg-white/10 text-slate-500 dark:text-white/50 transition-colors"
+              >
+                <span className="material-symbols-outlined text-[18px]">chevron_left</span>
+              </button>
+              <button
+                onClick={goToday}
+                className="px-3 h-8 text-xs font-bold text-build-main dark:text-white hover:bg-slate-100 dark:hover:bg-white/10 rounded-lg transition-colors"
+              >
+                Hoy
+              </button>
+              <button
+                onClick={nextMonth}
+                className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-slate-100 dark:hover:bg-white/10 text-slate-500 dark:text-white/50 transition-colors"
+              >
+                <span className="material-symbols-outlined text-[18px]">chevron_right</span>
+              </button>
+            </div>
           </div>
 
-          <div role="grid" className="flex-1 grid grid-cols-7 border-l border-slate-200 dark:border-white/10">
-            {["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"].map(d => (
-              <div key={d} className="py-3 text-center border-r border-b border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5">
-                <span className="text-[11px] font-bold text-slate-500 dark:text-white/60 uppercase tracking-wider">{d}</span>
+          {/* Days header */}
+          <div role="grid" className="grid grid-cols-7 border-b border-slate-100 dark:border-white/5">
+            {["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"].map((d) => (
+              <div key={d} className="py-2.5 text-center">
+                <span className="text-[10px] font-bold text-slate-400 dark:text-white/30 uppercase tracking-wider">{d}</span>
               </div>
             ))}
+          </div>
+
+          {/* Cells */}
+          <div className="grid grid-cols-7 border-l border-slate-100 dark:border-white/5">
             {calDays.map((cell, idx) => (
-              <div 
-                key={`${cell.grey ? 'g' : 'm'}-${cell.day}-${idx}`} 
+              <div
+                key={`${cell.grey ? "g" : "m"}-${cell.day}-${idx}`}
                 role="gridcell"
                 tabIndex={cell.grey ? -1 : 0}
                 onClick={() => handleCellClick(cell)}
-                onKeyDown={(e) => {
-                  if (cell.grey) return;
-                  if (e.key === "Enter" || e.key === " ") {
-                    e.preventDefault();
-                    handleCellClick(cell);
-                  }
-                }}
-                className={`min-h-[120px] border-b border-r border-slate-200 dark:border-white/10 p-2 flex flex-col gap-1 text-left ${getCellBgClass(cell.grey)}`}
+                onKeyDown={(e) => { if (!cell.grey && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); handleCellClick(cell); } }}
+                className={[
+                  "min-h-27.5 border-b border-r border-slate-100 dark:border-white/5 p-1.5 flex flex-col gap-1",
+                  cell.grey
+                    ? "bg-slate-50/60 dark:bg-white/1"
+                    : "cursor-pointer hover:bg-slate-50 dark:hover:bg-white/3 transition-colors",
+                ].join(" ")}
               >
-                <span className={`text-sm pl-1 mb-1 ${getCellDayClass(cell.today, cell.grey)}`}>
+                {/* Day number */}
+                <span className={[
+                  "text-xs w-6 h-6 flex items-center justify-center rounded-full mb-0.5 font-semibold",
+                  cell.today
+                    ? "bg-build-main text-white font-bold shadow-sm"
+                    : cell.grey
+                    ? "text-slate-300 dark:text-white/20"
+                    : "text-build-main dark:text-white",
+                ].join(" ")}>
                   {cell.day}
                 </span>
-                {cell.events.map((ev) => (
+
+                {/* Events */}
+                {cell.events.slice(0, 3).map((ev) => (
                   <button
-                    type="button"
                     key={ev.id}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleEventClick(ev.id);
-                    }}
-                    className={`w-full text-left ${ev.bg} rounded px-2 py-1.5 flex flex-col gap-0.5 shadow-sm border border-build-main/5 hover:scale-[1.02] transition-transform cursor-pointer`}
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); handleEventClick(ev.id); }}
+                    className={`w-full text-left rounded-md px-1.5 py-1 flex items-center gap-1 hover:brightness-95 transition-all group/ev ${ev.bg}`}
                   >
-                    <div className="flex items-center gap-1.5">
-                      <span className={`w-1.5 h-1.5 rounded-full ${ev.rsvpDot}`} title={`Confirmación: ${ev.rsvpText}`} />
-                      <span className="text-[11px] font-bold truncate">{ev.label}</span>
-                      {ev.syncIcon && (
-                        <span className={`material-symbols-outlined text-[12px] ml-auto shrink-0 ${getSyncIconColor(ev.syncDot)}`} title={ev.syncText}>
-                          {ev.syncIcon}
-                        </span>
-                      )}
-                    </div>
-                    {ev.time && <span className="text-[9px] font-semibold opacity-75 pl-3">{ev.time}</span>}
+                    <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${ev.dot}`} />
+                    <span className="text-[10px] font-semibold truncate flex-1">{ev.label}</span>
+                    {ev.time && <span className="text-[9px] opacity-60 shrink-0">{ev.time}</span>}
                   </button>
                 ))}
+                {cell.events.length > 3 && (
+                  <span className="text-[9px] text-slate-400 dark:text-white/30 pl-1">
+                    +{cell.events.length - 3} más
+                  </span>
+                )}
               </div>
             ))}
-          </div>
-        </div>
-
-        {/* Right Info Panel */}
-        <div className="lg:col-span-3 flex flex-col gap-6">
-          <div className="bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl p-6 shadow-sm">
-            <h3 className="text-[18px] font-bold text-build-main dark:text-white mb-4">Próximos Eventos</h3>
-            {upcomingEvents.length === 0 ? (
-              <p className="text-xs text-slate-400 dark:text-white/40">No hay eventos próximos en este período.</p>
-            ) : (
-              upcomingEvents.map(ev => (
-                <button 
-                  type="button"
-                  key={ev.id} 
-                  onClick={() => handleEventClick(ev.id)}
-                  className="w-full text-left mb-4 last:mb-0 pb-3 border-b border-slate-100 last:border-b-0 dark:border-white/5 cursor-pointer hover:bg-slate-50 dark:hover:bg-white/5 p-1 rounded-xl transition-all"
-                >
-                  <div className="flex items-center justify-between gap-2">
-                    <h4 className="text-[13px] font-bold text-build-main dark:text-white truncate hover:underline min-w-0">{ev.label}</h4>
-                      <div className="flex items-center gap-1.5 shrink-0">
-                        {ev.syncIcon && (
-                          <span className={`material-symbols-outlined text-[14px] ${getSyncIconColor(ev.syncDot)}`} title={ev.syncText}>
-                            {ev.syncIcon}
-                          </span>
-                        )}
-                        <span className={`w-2 h-2 rounded-full shrink-0 ${ev.rsvpDot}`} title={`Confirmación: ${ev.rsvpText}`} />
-                      </div>
-                  </div>
-                  <p className="text-[11px] text-slate-500 dark:text-white/60 mt-0.5">Cliente: {ev.client}</p>
-                  <p className="text-[12px] text-slate-500 dark:text-white/60 flex items-center gap-1 mt-1 font-semibold">
-                    <span className="material-symbols-outlined text-[14px]">schedule</span> {ev.time || "Sin hora"} - {ev.type}
-                  </p>
-                </button>
-              ))
-            )}
           </div>
         </div>
       </div>
 
+      {/* ── New Appointment Modal ── */}
       {modalOpen && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-[#050a0e]/60 backdrop-blur-sm p-4 animate-fade-in">
-          <form onSubmit={saveEvent} className="bg-white dark:bg-[#111] rounded-2xl shadow-2xl w-full max-w-lg flex flex-col relative overflow-hidden">
+        <div className="fixed inset-0 z-60 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <form
+            onSubmit={saveEvent}
+            className="bg-white dark:bg-[#111] rounded-2xl shadow-2xl w-full max-w-md flex flex-col overflow-hidden"
+          >
+            {/* Header */}
+            <div className="px-6 py-4 border-b border-slate-100 dark:border-white/10 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="material-symbols-outlined text-arch-gold text-[20px]">edit_calendar</span>
+                <h2 className="text-base font-bold text-build-main dark:text-white">Nueva cita</h2>
+              </div>
+              <button type="button" onClick={() => setModalOpen(false)} disabled={isSaving}
+                className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-slate-100 dark:hover:bg-white/10 text-slate-400 transition-colors">
+                <span className="material-symbols-outlined text-[18px]">close</span>
+              </button>
+            </div>
 
-            {!successMsg && !warningMsg && (
+            {saveSuccess ? (
+              <div className="p-10 flex flex-col items-center text-center gap-3">
+                <span className="material-symbols-outlined text-[56px] text-emerald-500">check_circle</span>
+                <p className="text-base font-bold text-build-main dark:text-white">¡Cita agendada!</p>
+                <p className="text-sm text-slate-500 dark:text-white/50">La cita fue creada correctamente.</p>
+              </div>
+            ) : (
               <>
-                <div className="px-6 py-5 border-b border-slate-200 dark:border-white/10 bg-white dark:bg-[#111] flex justify-between items-center">
-                  <h2 className="text-[20px] font-bold text-build-main dark:text-white flex items-center gap-2">
-                    <span className="material-symbols-outlined text-arch-gold">edit_calendar</span> Agendar cita
-                  </h2>
-                  <button type="button" onClick={() => setModalOpen(false)} disabled={isSaving} className="text-slate-400 dark:text-white/50 hover:text-[#ba1a1a]">
-                    <span className="material-symbols-outlined">close</span>
-                  </button>
-                </div>
-
-                <div className="p-6 overflow-y-auto max-h-[70vh]">
-                  {errorMsg && (
-                    <div className="mb-4 p-3 bg-[#ffdad6] border border-[#ba1a1a]/20 rounded-lg flex gap-2 text-[#ba1a1a]">
-                      <span className="material-symbols-outlined text-[18px]">error</span>
-                      <p className="text-[12px] font-bold leading-tight">{errorMsg}</p>
+                <div className="p-6 space-y-4 overflow-y-auto max-h-[65vh]">
+                  {formError && (
+                    <div className="flex items-start gap-2 p-3 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-900/30 text-red-700 dark:text-red-400">
+                      <span className="material-symbols-outlined text-[16px] shrink-0 mt-0.5">error</span>
+                      <p className="text-xs font-semibold">{formError}</p>
                     </div>
                   )}
 
-                  <div className="mb-4">
-                    <label htmlFor="agenda-client-select" className="block text-[11px] font-bold text-slate-500 dark:text-white/60 uppercase mb-1">Cliente *</label>
-                    <select
-                      id="agenda-client-select"
-                      value={clientId}
-                      onChange={e => setClientId(e.target.value)}
-                      className="w-full px-3 py-2.5 border border-slate-200 dark:border-white/10 rounded-xl text-sm text-build-main dark:text-white bg-white dark:bg-white/5 focus:outline-none focus:border-arch-gold focus:ring-1 focus:ring-arch-gold/20"
-                    >
-                      <option value="">-- Seleccionar Cliente --</option>
+                  <FormField label="Cliente *">
+                    <select value={clientId} onChange={(e) => setClientId(e.target.value)} className={inputCls}>
+                      <option value="">Seleccionar cliente…</option>
                       {clients.map((c) => <option key={c.id} value={String(c.id)}>{c.nombre} {c.apellidos}</option>)}
                     </select>
-                  </div>
+                  </FormField>
 
                   {clientId && (
-                    <div className="mb-4">
-                      <label htmlFor="agenda-unit-select" className="block text-[11px] font-bold text-slate-500 dark:text-white/60 uppercase mb-1">Unidad vinculada *</label>
-                      <select
-                        id="agenda-unit-select"
-                        value={selectedUnitId}
-                        onChange={e => setSelectedUnitId(e.target.value)}
-                        className="w-full px-3 py-2.5 border border-slate-200 dark:border-white/10 rounded-xl text-sm text-build-main dark:text-white bg-white dark:bg-white/5 focus:outline-none focus:border-arch-gold focus:ring-1 focus:ring-arch-gold/20"
-                      >
-                        <option value="">-- Seleccionar Unidad --</option>
+                    <FormField label="Unidad vinculada *">
+                      <select value={selectedUnitId} onChange={(e) => setSelectedUnitId(e.target.value)} className={inputCls}>
+                        <option value="">Seleccionar unidad…</option>
                         {clientUnits.map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}
                       </select>
+                    </FormField>
+                  )}
+
+                  <FormField label="Tipo de evento *">
+                    <select value={eventType} onChange={(e) => setEventType(e.target.value)} className={inputCls}>
+                      {EVENT_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
+                    </select>
+                  </FormField>
+
+                  <FormField label="Fecha *">
+                    <DateQuickPicker id="agenda-date-new" value={eventDate} onChange={setEventDate} />
+                  </FormField>
+
+                  {/* Hora inicio */}
+                  <TimeSlotGrid
+                    label="Hora de inicio *"
+                    value={startTime}
+                    onChange={(v) => {
+                      setStartTime(v);
+                      setEndTime(addMinutes(v, 30));
+                    }}
+                  />
+
+                  {/* Hora fin — sólo visible cuando hay hora inicio */}
+                  {startTime && (
+                    <div className="rounded-xl border border-slate-100 dark:border-white/5 bg-slate-50 dark:bg-white/3 p-3 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-white/40">
+                          Hora de fin *
+                        </p>
+                        <button
+                          type="button"
+                          onClick={() => setEndTime(addMinutes(endTime, 30))}
+                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border border-arch-gold/40 text-arch-gold text-[10px] font-bold hover:bg-arch-gold/10 transition-colors"
+                        >
+                          <span className="material-symbols-outlined text-[12px]">add</span>
+                          +30 min
+                        </button>
+                      </div>
+                      <TimeSlotGrid
+                        value={endTime}
+                        onChange={setEndTime}
+                        disabledBefore={startTime}
+                      />
                     </div>
                   )}
 
-                  <div className="mb-4">
-                    <label htmlFor="agenda-event-type" className="block text-[11px] font-bold text-slate-500 dark:text-white/60 uppercase mb-1">Tipo de Evento *</label>
-                    <select
-                      id="agenda-event-type"
-                      value={eventType}
-                      onChange={e => setEventType(e.target.value)}
-                      className="w-full px-3 py-2.5 border border-slate-200 dark:border-white/10 rounded-xl text-sm text-build-main dark:text-white bg-white dark:bg-white/5 focus:outline-none focus:border-arch-gold focus:ring-1 focus:ring-arch-gold/20"
-                    >
-                      {EVENT_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
-                    </select>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4 mb-4">
-                    <div className="col-span-2">
-                      <label htmlFor="agenda-event-date" className="block text-[11px] font-bold text-slate-500 dark:text-white/60 uppercase mb-1">Día Protocolar *</label>
-                      <input id="agenda-event-date" type="date" value={eventDate} onChange={e => setEventDate(e.target.value)} className="w-full px-3 py-2.5 border border-slate-200 dark:border-white/10 rounded-xl text-sm text-build-main dark:text-white bg-white dark:bg-white/5 focus:outline-none focus:border-arch-gold focus:ring-1 focus:ring-arch-gold/20" />
-                    </div>
-                    <div>
-                      <label htmlFor="agenda-start-time" className="block text-[11px] font-bold text-slate-500 dark:text-white/60 uppercase mb-1">Hora Inicio *</label>
-                      <input id="agenda-start-time" type="time" value={startTime} onChange={e => setStartTime(e.target.value)} className="w-full px-3 py-2.5 border border-slate-200 dark:border-white/10 rounded-xl text-sm text-build-main dark:text-white bg-white dark:bg-white/5 focus:outline-none focus:border-arch-gold focus:ring-1 focus:ring-arch-gold/20" />
-                    </div>
-                    <div>
-                      <label htmlFor="agenda-end-time" className="block text-[11px] font-bold text-slate-500 dark:text-white/60 uppercase mb-1">Hora Fin *</label>
-                      <input id="agenda-end-time" type="time" value={endTime} onChange={e => setEndTime(e.target.value)} className="w-full px-3 py-2.5 border border-slate-200 dark:border-white/10 rounded-xl text-sm text-build-main dark:text-white bg-white dark:bg-white/5 focus:outline-none focus:border-arch-gold focus:ring-1 focus:ring-arch-gold/20" />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label htmlFor="agenda-location" className="block text-[11px] font-bold text-slate-500 dark:text-white/60 uppercase mb-1">Lugar / Ubicación</label>
-                    <input id="agenda-location" type="text" value={location} onChange={e => setLocation(e.target.value)} className="w-full px-3 py-2.5 border border-slate-200 dark:border-white/10 rounded-xl text-sm text-build-main dark:text-white bg-white dark:bg-white/5 focus:outline-none focus:border-arch-gold focus:ring-1 focus:ring-arch-gold/20" />
-                  </div>
+                  <FormField label="Ubicación">
+                    <input type="text" value={location} onChange={(e) => setLocation(e.target.value)} className={inputCls} />
+                  </FormField>
                 </div>
 
-                <div className="px-6 py-4 flex justify-end gap-3 bg-white dark:bg-[#111] border-t border-slate-200 dark:border-white/10">
-                  <button type="button" onClick={() => setModalOpen(false)} disabled={isSaving} className="px-5 py-2.5 text-sm font-bold text-slate-500 dark:text-white/60 hover:bg-slate-50 dark:bg-white/5 hover:text-build-main dark:text-white transition-colors rounded-xl">
+                <div className="px-6 py-4 border-t border-slate-100 dark:border-white/10 flex justify-end gap-2">
+                  <button type="button" onClick={() => setModalOpen(false)} disabled={isSaving}
+                    className="px-4 py-2 text-sm font-semibold text-slate-500 dark:text-white/60 hover:bg-slate-100 dark:hover:bg-white/10 rounded-lg transition-colors">
                     Cancelar
                   </button>
-                  <button type="submit" disabled={isSaving} className="px-6 py-2.5 bg-build-main text-white rounded-xl text-sm font-bold hover:bg-build-main/90 transition-all flex items-center gap-2 shadow-sm">
-                    {getSaveButtonText(isSaving, false)}
+                  <button type="submit" disabled={isSaving}
+                    className="px-5 py-2 bg-build-main text-white rounded-lg text-sm font-bold hover:bg-build-main/90 transition-colors disabled:opacity-50 flex items-center gap-2">
+                    {isSaving && <svg className="animate-spin h-3.5 w-3.5" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" /></svg>}
+                    {isSaving ? "Guardando…" : "Guardar cita"}
                   </button>
                 </div>
               </>
-            )}
-
-            {/* Status Covers */}
-            {(successMsg || warningMsg) && (
-              <div className="p-8 flex flex-col items-center justify-center text-center">
-                {successMsg ? (
-                  <span className="material-symbols-outlined text-[64px] text-[#27a85e] mb-4">check_circle</span>
-                ) : (
-                  <span className="material-symbols-outlined text-[64px] text-[#e65100] mb-4">sync_problem</span>
-                )}
-                <h3 className={`text-[18px] font-bold mb-2 ${getBannerColor(!!successMsg)}`}>
-                  {getBannerTitle(!!successMsg)}
-                </h3>
-                <p className="text-[14px] text-[#41484c] dark:text-white/70">{successMsg || warningMsg}</p>
-              </div>
             )}
           </form>
         </div>
       )}
 
-      {/* Cita Detail & Edit Modal */}
-      {detailModalOpen && selectedCita && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-[#050a0e]/60 backdrop-blur-sm p-4 animate-fade-in">
-          <div className="bg-white dark:bg-[#111] rounded-2xl shadow-2xl w-full max-w-lg flex flex-col relative overflow-hidden">
-            
+      {/* ── Detail / Edit Modal ── */}
+      {detailOpen && selectedCita && (
+        <div className="fixed inset-0 z-60 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <div className="bg-white dark:bg-[#111] rounded-2xl shadow-2xl w-full max-w-md flex flex-col overflow-hidden">
+
             {/* Header */}
-            <div className="px-6 py-5 border-b border-slate-200 dark:border-white/10 bg-white dark:bg-[#111] flex justify-between items-center">
-              <h2 className="text-[20px] font-bold text-build-main dark:text-white flex items-center gap-2">
-                <span className="material-symbols-outlined text-arch-gold">info</span> 
-                {getModalTitle(isEditing)}
-              </h2>
-              <button 
-                type="button" 
-                onClick={() => { setDetailModalOpen(false); setIsEditing(false); }} 
-                className="text-slate-400 dark:text-white/50 hover:text-[#ba1a1a]"
-              >
-                <span className="material-symbols-outlined">close</span>
+            <div className="px-6 py-4 border-b border-slate-100 dark:border-white/10 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="material-symbols-outlined text-arch-gold text-[20px]">
+                  {isEditing ? "edit_calendar" : "event"}
+                </span>
+                <h2 className="text-base font-bold text-build-main dark:text-white">
+                  {isEditing ? "Editar cita" : "Detalle de la cita"}
+                </h2>
+              </div>
+              <button type="button" onClick={() => { setDetailOpen(false); setIsEditing(false); }}
+                className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-slate-100 dark:hover:bg-white/10 text-slate-400 transition-colors">
+                <span className="material-symbols-outlined text-[18px]">close</span>
               </button>
             </div>
 
             {/* Body */}
-            <div className="p-6 overflow-y-auto max-h-[70vh] space-y-4">
+            <div className="p-6 overflow-y-auto max-h-[65vh] space-y-4">
               {modalError && (
-                <div className="p-3 bg-[#ffdad6] border border-[#ba1a1a]/20 rounded-lg flex gap-2 text-[#ba1a1a]">
-                  <span className="material-symbols-outlined text-[18px]">error</span>
-                  <p className="text-[12px] font-bold leading-tight">{modalError}</p>
+                <div className="flex items-start gap-2 p-3 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-900/30 text-red-700 dark:text-red-400">
+                  <span className="material-symbols-outlined text-[16px] shrink-0 mt-0.5">error</span>
+                  <p className="text-xs font-semibold">{modalError}</p>
                 </div>
               )}
 
               {isEditing ? (
                 <div className="space-y-4">
-                  <div>
-                    <label htmlFor="edit-title" className="block text-[11px] font-bold text-slate-500 dark:text-white/60 uppercase mb-1">Título</label>
-                    <input 
-                      id="edit-title"
-                      type="text" 
-                      value={editTitle} 
-                      onChange={e => setEditTitle(e.target.value)} 
-                      className="w-full px-3 py-2 border border-slate-200 dark:border-white/10 rounded-xl text-sm bg-white dark:bg-white/5 text-build-main dark:text-white focus:outline-none focus:border-arch-gold focus:ring-1 focus:ring-arch-gold/20" 
-                    />
-                  </div>
-                  
-                  <div>
-                    <label htmlFor="edit-description" className="block text-[11px] font-bold text-slate-500 dark:text-white/60 uppercase mb-1">Descripción</label>
-                    <textarea 
-                      id="edit-description" 
-                      value={editDesc} 
-                      onChange={e => setEditDesc(e.target.value)} 
-                      className="w-full px-3 py-2 border border-slate-200 dark:border-white/10 rounded-xl text-sm bg-white dark:bg-white/5 text-build-main dark:text-white focus:outline-none focus:border-arch-gold focus:ring-1 focus:ring-arch-gold/20 h-20 resize-none" 
-                    />
-                  </div>
+                  <FormField label="Título"><input type="text" value={editTitle} onChange={(e) => setEditTitle(e.target.value)} className={inputCls} /></FormField>
+                  <FormField label="Descripción"><textarea value={editDesc} onChange={(e) => setEditDesc(e.target.value)} className={`${inputCls} h-20 resize-none`} /></FormField>
+                  <FormField label="Ubicación"><input type="text" value={editLocation} onChange={(e) => setEditLocation(e.target.value)} className={inputCls} /></FormField>
+                  <FormField label="Fecha">
+                    <DateQuickPicker id="agenda-date-edit" value={editDate} onChange={setEditDate} />
+                  </FormField>
 
-                  <div>
-                    <label htmlFor="edit-location" className="block text-[11px] font-bold text-slate-500 dark:text-white/60 uppercase mb-1">Ubicación</label>
-                    <input 
-                      id="edit-location"
-                      type="text" 
-                      value={editLocation} 
-                      onChange={e => setEditLocation(e.target.value)} 
-                      className="w-full px-3 py-2 border border-slate-200 dark:border-white/10 rounded-xl text-sm bg-white dark:bg-white/5 text-build-main dark:text-white focus:outline-none focus:border-arch-gold focus:ring-1 focus:ring-arch-gold/20" 
-                    />
-                  </div>
+                  <TimeSlotGrid
+                    label="Hora de inicio"
+                    value={editStartTime}
+                    onChange={(v) => {
+                      setEditStartTime(v);
+                      setEditEndTime(addMinutes(v, 30));
+                    }}
+                  />
 
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="col-span-2">
-                      <label htmlFor="edit-date" className="block text-[11px] font-bold text-slate-500 dark:text-white/60 uppercase mb-1">Fecha</label>
-                      <input 
-                        id="edit-date"
-                        type="date" 
-                        value={editDate} 
-                        onChange={e => setEditDate(e.target.value)} 
-                        className="w-full px-3 py-2 border border-slate-200 dark:border-white/10 rounded-xl text-sm bg-white dark:bg-white/5 text-build-main dark:text-white focus:outline-none focus:border-arch-gold focus:ring-1 focus:ring-arch-gold/20" 
+                  {editStartTime && (
+                    <div className="rounded-xl border border-slate-100 dark:border-white/5 bg-slate-50 dark:bg-white/3 p-3 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-white/40">
+                          Hora de fin
+                        </p>
+                        <button
+                          type="button"
+                          onClick={() => setEditEndTime(addMinutes(editEndTime, 30))}
+                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border border-arch-gold/40 text-arch-gold text-[10px] font-bold hover:bg-arch-gold/10 transition-colors"
+                        >
+                          <span className="material-symbols-outlined text-[12px]">add</span>
+                          +30 min
+                        </button>
+                      </div>
+                      <TimeSlotGrid
+                        value={editEndTime}
+                        onChange={setEditEndTime}
+                        disabledBefore={editStartTime}
                       />
                     </div>
-                    <div>
-                      <label htmlFor="edit-start-time" className="block text-[11px] font-bold text-slate-500 dark:text-white/60 uppercase mb-1">Hora Inicio</label>
-                      <input 
-                        id="edit-start-time"
-                        type="time" 
-                        value={editStartTime} 
-                        onChange={e => setEditStartTime(e.target.value)} 
-                        className="w-full px-3 py-2 border border-slate-200 dark:border-white/10 rounded-xl text-sm bg-white dark:bg-white/5 text-build-main dark:text-white focus:outline-none focus:border-arch-gold focus:ring-1 focus:ring-arch-gold/20" 
-                      />
-                    </div>
-                    <div>
-                      <label htmlFor="edit-end-time" className="block text-[11px] font-bold text-slate-500 dark:text-white/60 uppercase mb-1">Hora Fin</label>
-                      <input 
-                        id="edit-end-time"
-                        type="time" 
-                        value={editEndTime} 
-                        onChange={e => setEditEndTime(e.target.value)} 
-                        className="w-full px-3 py-2 border border-slate-200 dark:border-white/10 rounded-xl text-sm bg-white dark:bg-white/5 text-build-main dark:text-white focus:outline-none focus:border-arch-gold focus:ring-1 focus:ring-arch-gold/20" 
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label htmlFor="edit-estado" className="block text-[11px] font-bold text-slate-500 dark:text-white/60 uppercase mb-1">Estado Cita</label>
-                      <select 
-                        id="edit-estado"
-                        value={editEstado} 
-                        onChange={e => setEditEstado(e.target.value as "PROGRAMADA" | "CONFIRMADA" | "CANCELADA" | "COMPLETADA" | "REPROGRAMACION_PENDIENTE")} 
-                        className="w-full px-3 py-2.5 border border-slate-200 dark:border-white/10 rounded-xl text-sm bg-white dark:bg-white/5 text-build-main dark:text-white focus:outline-none focus:border-arch-gold focus:ring-1 focus:ring-arch-gold/20"
-                      >
-                        <option value="PROGRAMADA">PROGRAMADA</option>
-                        <option value="CONFIRMADA">CONFIRMADA</option>
-                        <option value="CANCELADA">CANCELADA</option>
-                        <option value="COMPLETADA">COMPLETADA</option>
-                        <option value="REPROGRAMACION_PENDIENTE">REPROGRAMACION_PENDIENTE</option>
-                      </select>
-                    </div>
-                    <div className="flex items-center pt-5">
-                      <label className="flex items-center gap-2 cursor-pointer">
-                        <input 
-                          type="checkbox" 
-                          checked={editPermiteReprog} 
-                          onChange={e => setEditPermiteReprog(e.target.checked)} 
-                          className="w-4 h-4 accent-arch-gold" 
-                        />
-                        <span className="text-[12px] font-semibold text-slate-600 dark:text-white/70">Permite Reprogramación</span>
-                      </label>
-                    </div>
-                  </div>
+                  )}
+                  <FormField label="Estado">
+                    <select value={editEstado} onChange={(e) => setEditEstado(e.target.value as CitaResponse["estadoCita"])} className={inputCls}>
+                      {Object.entries(STATUS_META).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
+                    </select>
+                  </FormField>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" checked={editPermiteReprog} onChange={(e) => setEditPermiteReprog(e.target.checked)} className="w-4 h-4 accent-arch-gold rounded" />
+                    <span className="text-xs font-semibold text-slate-600 dark:text-white/70">Permite reprogramación</span>
+                  </label>
                 </div>
               ) : (
                 <div className="space-y-4">
-                  <div className="bg-slate-50 dark:bg-white/5 p-4 rounded-xl border border-slate-100 dark:border-white/5 space-y-2">
-                    <div className="flex justify-between items-start">
-                      <h3 className="text-base font-bold text-build-main dark:text-white">{selectedCita.titulo}</h3>
-                      <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${getStatusBadgeClass(selectedCita.estadoCita)}`}>
-                        {selectedCita.estadoCita}
+                  {/* Summary card */}
+                  <div className="rounded-xl border border-slate-100 dark:border-white/10 bg-slate-50 dark:bg-white/5 p-4 space-y-2">
+                    <div className="flex items-start justify-between gap-2">
+                      <p className="text-sm font-bold text-build-main dark:text-white leading-snug">{selectedCita.titulo}</p>
+                      <span className={`shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full ${STATUS_META[selectedCita.estadoCita]?.bg ?? ""}`}>
+                        {STATUS_META[selectedCita.estadoCita]?.label ?? selectedCita.estadoCita}
                       </span>
                     </div>
-                    <p className="text-xs text-slate-500 dark:text-white/60">{selectedCita.descripcion}</p>
+                    {selectedCita.descripcion && (
+                      <p className="text-xs text-slate-500 dark:text-white/50">{selectedCita.descripcion}</p>
+                    )}
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4 text-xs">
+                  {/* Details grid */}
+                  <div className="grid grid-cols-2 gap-x-4 gap-y-3 text-xs">
                     <div>
-                      <span className="block text-slate-400 font-semibold mb-0.5">Cliente:</span>
-                      <span className="text-build-main dark:text-white font-bold">{selectedCita.clienteNombre}</span>
-                      <span className="block text-[10px] text-slate-400">{selectedCita.clienteEmail}</span>
+                      <span className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-white/40 mb-0.5">Cliente</span>
+                      <span className="font-semibold text-build-main dark:text-white">{selectedCita.clienteNombre}</span>
+                      {selectedCita.clienteEmail && <span className="block text-slate-400 dark:text-white/40 truncate">{selectedCita.clienteEmail}</span>}
                     </div>
                     <div>
-                      <span className="block text-slate-400 font-semibold mb-0.5">Unidad Inmobiliaria:</span>
-                      <span className="text-build-main dark:text-white font-bold">Dpto/Cochera {selectedCita.activoNro}</span>
+                      <span className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-white/40 mb-0.5">Unidad</span>
+                      <span className="font-semibold text-build-main dark:text-white">Dpto/Cochera {selectedCita.activoNro}</span>
                     </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4 text-xs">
                     <div>
-                      <span className="block text-slate-400 font-semibold mb-0.5">Fecha y Hora:</span>
-                      <span className="text-build-main dark:text-white font-bold">
-                        {new Date(selectedCita.fechaInicio).toLocaleDateString("es-PE")}
+                      <span className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-white/40 mb-0.5">Fecha y hora</span>
+                      <span className="font-semibold text-build-main dark:text-white">{new Date(selectedCita.fechaInicio).toLocaleDateString("es-PE")}</span>
+                      <span className="block text-slate-500 dark:text-white/50">
+                        {new Date(selectedCita.fechaInicio).toLocaleTimeString("es-PE", { hour: "2-digit", minute: "2-digit" })}
+                        {" – "}
+                        {new Date(selectedCita.fechaFin).toLocaleTimeString("es-PE", { hour: "2-digit", minute: "2-digit" })}
                       </span>
-                      <span className="block text-[11px] text-slate-500">
-                        {new Date(selectedCita.fechaInicio).toLocaleTimeString("es-PE", {hour: "2-digit", minute: "2-digit"})} - {new Date(selectedCita.fechaFin).toLocaleTimeString("es-PE", {hour: "2-digit", minute: "2-digit"})}
-                      </span>
                     </div>
                     <div>
-                      <span className="block text-slate-400 font-semibold mb-0.5">Ubicación / Link:</span>
-                      <span className="text-build-main dark:text-white font-bold truncate block">{selectedCita.ubicacion || "Sin ubicación"}</span>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4 text-xs pt-2 border-t border-slate-100 dark:border-white/5">
-                    <div>
-                      <span className="block text-slate-400 font-semibold mb-0.5">Google Calendar Sync:</span>
-                      <span className="text-build-main dark:text-white font-bold">{selectedCita.estadoSincronizacion}</span>
+                      <span className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-white/40 mb-0.5">Ubicación</span>
+                      <span className="font-semibold text-build-main dark:text-white truncate block">{selectedCita.ubicacion || "Sin ubicación"}</span>
                     </div>
                     <div>
-                      <span className="block text-slate-400 font-semibold mb-0.5">Confirmación del Cliente:</span>
-                      <span className="text-build-main dark:text-white font-bold">
-                        {getConfirmationText(selectedCita.confirmacionCliente)}
+                      <span className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-white/40 mb-0.5">Confirmación cliente</span>
+                      <span className="font-semibold text-build-main dark:text-white">
+                        {selectedCita.confirmacionCliente === true ? "✓ Confirmado" : selectedCita.confirmacionCliente === false ? "✕ Declinado" : "Sin respuesta"}
                       </span>
                     </div>
                   </div>
 
-                  {selectedCita.estadoCita === "REPROGRAMACION_PENDIENTE" && selectedCita.disponibilidades && selectedCita.disponibilidades.length > 0 && (
-                    <div className="pt-3 border-t border-slate-100 dark:border-white/5">
-                      <span className="block text-[11px] font-bold text-orange-500 uppercase tracking-wider mb-2">Bloques propuestos por el cliente</span>
+                  {/* Reprogramming blocks */}
+                  {selectedCita.estadoCita === "REPROGRAMACION_PENDIENTE" && (selectedCita.disponibilidades?.length ?? 0) > 0 && (
+                    <div>
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400 mb-2">Bloques propuestos por el cliente</p>
                       <div className="space-y-2">
-                        {selectedCita.disponibilidades.map(disp => (
-                          <div key={disp.id} className="flex items-center justify-between p-2.5 rounded-lg border border-orange-100 dark:border-orange-950/20 bg-orange-50/50 dark:bg-orange-950/10">
-                            <div className="text-xs">
-                              <span className="font-bold text-build-main dark:text-white">{new Date(disp.bloqueInicio).toLocaleDateString("es-PE")}</span>
-                              <span className="block text-[10px] text-slate-500">
-                                {new Date(disp.bloqueInicio).toLocaleTimeString("es-PE", {hour: "2-digit", minute: "2-digit"})} - {new Date(disp.bloqueFin).toLocaleTimeString("es-PE", {hour: "2-digit", minute: "2-digit"})}
-                              </span>
+                        {selectedCita.disponibilidades!.map((d) => (
+                          <div key={d.id} className="flex items-center justify-between p-3 rounded-lg border border-amber-100 dark:border-amber-900/20 bg-amber-50/60 dark:bg-amber-900/10">
+                            <div>
+                              <p className="text-xs font-bold text-build-main dark:text-white">{new Date(d.bloqueInicio).toLocaleDateString("es-PE")}</p>
+                              <p className="text-[10px] text-slate-500">
+                                {new Date(d.bloqueInicio).toLocaleTimeString("es-PE", { hour: "2-digit", minute: "2-digit" })}
+                                {" – "}
+                                {new Date(d.bloqueFin).toLocaleTimeString("es-PE", { hour: "2-digit", minute: "2-digit" })}
+                              </p>
                             </div>
-                            <button
-                              onClick={() => handleConfirmBlock(disp.id)}
-                              disabled={isSaving}
-                              className="bg-orange-500 hover:bg-orange-600 text-white text-[11px] font-bold px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50"
-                            >
+                            <button onClick={() => confirmBlock(d.id)} disabled={isSaving}
+                              className="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold rounded-lg transition-colors disabled:opacity-50">
                               Confirmar
                             </button>
                           </div>
@@ -1161,24 +1042,17 @@ export default function SchedulePage() {
                     </div>
                   )}
 
+                  {/* Cancel form */}
                   {showCancelForm && (
-                    <div className="pt-3 border-t border-slate-100 dark:border-white/5 space-y-2">
-                      <label htmlFor="cancel-reason" className="block text-[11px] font-bold text-red-500 uppercase">Motivo de cancelación *</label>
+                    <div className="space-y-2 pt-3 border-t border-slate-100 dark:border-white/10">
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-red-500">Motivo de cancelación *</p>
                       <div className="flex gap-2">
-                        <input 
-                          id="cancel-reason"
-                          type="text" 
-                          placeholder="Ej. Cambio de horario solicitado" 
-                          value={motivoCancelacion}
-                          onChange={e => setMotivoCancelacion(e.target.value)}
-                          className="flex-1 px-3 py-1.5 border border-red-200 rounded-xl text-xs bg-white dark:bg-white/5 focus:outline-none"
-                        />
-                        <button
-                          onClick={handleConfirmCancel}
-                          disabled={isSaving || !motivoCancelacion.trim()}
-                          className="bg-red-500 text-white text-xs font-bold px-4 py-1.5 rounded-xl hover:bg-red-600 disabled:opacity-50"
-                        >
-                          Confirmar
+                        <input type="text" placeholder="Ej. Cambio de horario solicitado" value={motivoCancelacion}
+                          onChange={(e) => setMotivoCancelacion(e.target.value)}
+                          className={`${inputCls} text-xs`} />
+                        <button onClick={confirmCancel} disabled={isSaving || !motivoCancelacion.trim()}
+                          className="px-3 py-2 bg-red-500 hover:bg-red-600 text-white text-xs font-bold rounded-lg transition-colors disabled:opacity-50 shrink-0">
+                          OK
                         </button>
                       </div>
                     </div>
@@ -1188,53 +1062,36 @@ export default function SchedulePage() {
             </div>
 
             {/* Footer */}
-            <div className="px-6 py-4 flex justify-between bg-white dark:bg-[#111] border-t border-slate-200 dark:border-white/10 shrink-0">
+            <div className="px-6 py-4 border-t border-slate-100 dark:border-white/10 flex items-center justify-between gap-2">
               {isEditing ? (
                 <>
-                  <button 
-                    type="button" 
-                    onClick={() => setIsEditing(false)} 
-                    className="px-5 py-2 text-sm font-bold text-slate-500 dark:text-white/60 hover:bg-slate-50 dark:bg-white/5 rounded-xl"
-                  >
+                  <button onClick={() => setIsEditing(false)} className="px-4 py-2 text-sm font-semibold text-slate-500 hover:bg-slate-100 dark:hover:bg-white/10 rounded-lg transition-colors">
                     Volver
                   </button>
-                  <button 
-                    type="button" 
-                    onClick={handleSaveEdit} 
-                    disabled={isSaving}
-                    className="px-6 py-2 bg-build-main text-white rounded-xl text-sm font-bold hover:bg-build-main/90 transition-all disabled:opacity-50"
-                  >
-                    {getSaveButtonText(isSaving, true)}
+                  <button onClick={saveEdit} disabled={isSaving}
+                    className="px-5 py-2 bg-build-main text-white rounded-lg text-sm font-bold hover:bg-build-main/90 transition-colors disabled:opacity-50">
+                    {isSaving ? "Guardando…" : "Guardar cambios"}
                   </button>
                 </>
               ) : (
                 <>
-                  <div className="flex gap-2">
+                  <div>
                     {selectedCita.estadoCita !== "CANCELADA" && selectedCita.estadoCita !== "COMPLETADA" && (
-                      <button 
-                        type="button" 
-                        onClick={() => setShowCancelForm(v => !v)} 
-                        className="px-4 py-2 border border-red-200 text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20 rounded-xl text-xs font-bold transition-all"
-                      >
-                        Cancelar Cita
+                      <button onClick={() => setShowCancelForm((v) => !v)}
+                        className="px-3 py-2 border border-red-200 dark:border-red-900/30 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/10 rounded-lg text-xs font-bold transition-colors">
+                        Cancelar cita
                       </button>
                     )}
                   </div>
                   <div className="flex gap-2">
                     {selectedCita.estadoCita !== "CANCELADA" && selectedCita.estadoCita !== "COMPLETADA" && (
-                      <button 
-                        type="button" 
-                        onClick={handleStartEdit} 
-                        className="px-4 py-2 bg-build-main text-white hover:bg-build-main/90 rounded-xl text-xs font-bold transition-all"
-                      >
+                      <button onClick={startEdit}
+                        className="px-4 py-2 bg-build-main text-white hover:bg-build-main/90 rounded-lg text-xs font-bold transition-colors">
                         Editar
                       </button>
                     )}
-                    <button 
-                      type="button" 
-                      onClick={() => setDetailModalOpen(false)} 
-                      className="px-4 py-2 bg-slate-100 dark:bg-white/5 text-slate-700 dark:text-white/70 rounded-xl text-xs font-bold hover:bg-slate-200 dark:hover:bg-white/10"
-                    >
+                    <button onClick={() => { setDetailOpen(false); setIsEditing(false); }}
+                      className="px-4 py-2 bg-slate-100 dark:bg-white/10 text-slate-700 dark:text-white/70 hover:bg-slate-200 dark:hover:bg-white/20 rounded-lg text-xs font-bold transition-colors">
                       Cerrar
                     </button>
                   </div>

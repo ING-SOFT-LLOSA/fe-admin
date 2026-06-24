@@ -157,9 +157,10 @@ export function TabDocumentos({
             {/* Document rows */}
             <div className="divide-y divide-slate-100 dark:divide-white/5">
               {seccion.docs.length === 0 ? (
-                <p className="px-5 py-4 text-xs text-slate-400 dark:text-white/30 text-center">
-                  No se han configurado requisitos para esta etapa.
-                </p>
+                <div className="px-5 py-6 flex flex-col items-center gap-1.5 text-center">
+                  <span className="material-symbols-outlined text-[28px] text-slate-200 dark:text-white/10">folder_open</span>
+                  <p className="text-xs text-slate-400 dark:text-white/30">No se han configurado requisitos para esta etapa.</p>
+                </div>
               ) : (
                 seccion.docs.map((doc) => (
                   <DocRow
@@ -321,7 +322,7 @@ function DocRow({
               type="button"
               onClick={onSaveNota}
               disabled={isSavingNota}
-              className="px-3 py-1.5 bg-build-main text-white rounded-lg text-[10px] font-bold hover:bg-build-main/90 transition-colors disabled:opacity-50 flex items-center gap-1"
+              className="px-3 py-1.5 bg-build-main text-white rounded-lg text-xs font-bold hover:bg-build-main/90 transition-colors disabled:opacity-50 flex items-center gap-1"
             >
               {isSavingNota && <Spinner className="w-3 h-3 text-white" />}
               Guardar
@@ -330,7 +331,7 @@ function DocRow({
               type="button"
               onClick={onCancelNota}
               disabled={isSavingNota}
-              className="px-3 py-1.5 bg-slate-100 dark:bg-white/10 text-slate-600 dark:text-white/60 rounded-lg text-[10px] font-bold hover:bg-slate-200 dark:hover:bg-white/20 transition-colors"
+              className="px-3 py-1.5 bg-slate-100 dark:bg-white/10 text-slate-600 dark:text-white/60 rounded-lg text-xs font-bold hover:bg-slate-200 dark:hover:bg-white/20 transition-colors"
             >
               Cancelar
             </button>
@@ -355,7 +356,7 @@ function DocRow({
                 onClick={onEditNotaStart}
                 className="inline-flex items-center gap-1 text-[10px] font-bold text-arch-gold hover:text-build-main dark:hover:text-white transition-colors"
               >
-                <span className="material-symbols-outlined text-[13px]">edit_note</span>
+                <span className="material-symbols-outlined text-[12px]">edit_note</span>
                 {doc.notaCorporativa ? "Editar Nota" : "Agregar Nota"}
               </button>
             )}

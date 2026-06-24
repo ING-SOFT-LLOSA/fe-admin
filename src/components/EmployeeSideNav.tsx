@@ -46,9 +46,10 @@ const groups: NavGroup[] = [
 export default function EmployeeSideNav() {
   const pathname = usePathname();
   const router   = useRouter();
-  const { perfil } = useAuth();
+  const { perfil, logout } = useAuth();
 
-  function handleLogout() {
+  async function handleLogout() {
+    await logout();
     router.push("/login");
   }
 
@@ -118,12 +119,16 @@ export default function EmployeeSideNav() {
       <div className="px-3 pb-5 pt-3 border-t border-white/8 space-y-1">
         {/* Profile row */}
         <div className="flex items-center gap-3 px-3 py-2.5 rounded-lg">
-          <div className="w-8 h-8 rounded-full bg-[#c2e8ff]/20 border border-white/20 overflow-hidden shrink-0">
-            <span className="material-symbols-outlined text-white/70 text-[20px] m-auto mt-1">person</span>
+          <div className="w-8 h-8 rounded-full bg-[#c2e8ff]/20 border border-white/20 flex items-center justify-center shrink-0">
+            <span className="material-symbols-outlined text-white/70 text-[20px]">person</span>
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-[12px] font-semibold text-white truncate">Juan Empleado</p>
-            <p className="text-[10px] text-white/40 truncate">Mi Perfil</p>
+            <p className="text-[12px] font-semibold text-white truncate">
+              {perfil?.nombre?.trim() || "Empleado"}
+            </p>
+            <p className="text-[10px] text-white/40 truncate">
+              {perfil?.tipoUsuario ? perfil.tipoUsuario.charAt(0) + perfil.tipoUsuario.slice(1).toLowerCase() : "Mi Perfil"}
+            </p>
           </div>
         </div>
 

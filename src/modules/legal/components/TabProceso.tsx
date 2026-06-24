@@ -128,7 +128,7 @@ export function TabProceso({ etapas, loadingStepper, canEdit, onUpdateHito }: Re
                                 disabled={loadingStepper}
                                 onChange={(e) => onUpdateHito(etapa.uuidHito!, e.target.value)}
                                 className={`
-                                  text-[10px] font-bold px-2.5 py-0.5 rounded-full border-0 cursor-pointer
+                                  text-[10px] font-bold px-2 py-0.5 rounded-full border-0 cursor-pointer
                                   focus:ring-2 focus:ring-arch-gold/50 focus:outline-none transition-all
                                   ${badge.cls}
                                   ${loadingStepper ? "opacity-50 cursor-not-allowed" : ""}
@@ -145,7 +145,7 @@ export function TabProceso({ etapas, loadingStepper, canEdit, onUpdateHito }: Re
                                 ))}
                               </select>
                             ) : (
-                              <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full ${badge.cls}`}>
+                              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${badge.cls}`}>
                                 {badge.label}
                               </span>
                             )}
