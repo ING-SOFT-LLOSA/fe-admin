@@ -85,24 +85,27 @@ export default function ClientActivos({ clientId, refreshKey = 0, onUnlinked }: 
   // Carga contratos (expedientes) que ya traen activos[]
   useEffect(() => {
     let mounted = true;
-    setLoading(true);
-    setError(null);
 
-    Promise.all([
-      fetchExpedientesPorUsuario(clientId),
-      fetchProyectos().catch(() => [] as Proyecto[]),
-    ])
-      .then(([contratosData, proyectosData]) => {
+    async function loadContratos() {
+      setLoading(true);
+      setError(null);
+      try {
+        const [contratosData, proyectosData] = await Promise.all([
+          fetchExpedientesPorUsuario(clientId),
+          fetchProyectos().catch(() => [] as Proyecto[]),
+        ]);
         if (!mounted) return;
         setContratos(contratosData ?? []);
         setProyectos(proyectosData ?? []);
-      })
-      .catch((err) => {
+      } catch (err) {
         if (!mounted) return;
         setError(err instanceof Error ? err.message : "No se pudieron cargar los contratos.");
-      })
-      .finally(() => { if (mounted) setLoading(false); });
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    }
 
+    loadContratos();
     return () => { mounted = false; };
   }, [clientId, refreshKey]);
 

@@ -379,35 +379,52 @@ export default function AgendaView() {
 
   // Load units when client changes
   useEffect(() => {
-    if (!clientId) { setClientUnits([]); setSelectedUnitId(""); return; }
-    setClientUnits([]); setSelectedUnitId("");
-    fetchExpedientesPorUsuario(Number(clientId))
-      .then((exps) => {
+    let active = true;
+
+    async function loadUnits() {
+      // Reset is synchronous (runs before the first await) so we never show
+      // the previous client's units while the new ones are loading.
+      setClientUnits([]);
+      setSelectedUnitId("");
+      if (!clientId) return;
+      try {
+        const exps = await fetchExpedientesPorUsuario(Number(clientId));
+        if (!active) return;
         const units = mapExpedientesToUnits(exps ?? []);
         setClientUnits(units);
         if (units.length > 0) setSelectedUnitId(units[0].id);
-      })
-      .catch(console.error);
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    loadUnits();
+    return () => { active = false; };
   }, [clientId]);
 
   // Grid cells
   const gridCells = useMemo(() => generateCalendarGrid(currentDate), [currentDate]);
 
   // Fetch appointments
-  const fetchAppointments = React.useCallback(() => {
+  const fetchAppointments = React.useCallback(async () => {
     if (!gridCells.length) return;
     const { startDateStr, endDateStr } = getGridDateRange(gridCells, currentDate);
     setLoadingEvents(true);
-    fetchCitasCalendario(startDateStr, endDateStr)
-      .then((citas) => {
-        setRawCitas(citas);
-        setCalDays(mapCitasToGrid(citas, gridCells, currentDate));
-      })
-      .catch(console.error)
-      .finally(() => setLoadingEvents(false));
+    try {
+      const citas = await fetchCitasCalendario(startDateStr, endDateStr);
+      setRawCitas(citas);
+      setCalDays(mapCitasToGrid(citas, gridCells, currentDate));
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoadingEvents(false);
+    }
   }, [gridCells, currentDate]);
 
-  useEffect(() => { fetchAppointments(); }, [fetchAppointments]);
+  useEffect(() => {
+    async function load() { await fetchAppointments(); }
+    load();
+  }, [fetchAppointments]);
 
   // Month nav
   const prevMonth = () => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1));
