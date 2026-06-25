@@ -188,7 +188,7 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
     if (!isAuthenticated) return;
 
     const now = Date.now();
-    const storedActivity = globalThis.window === undefined ? 0 : Number(localStorage.getItem(LAST_ACTIVITY_KEY));
+    const storedActivity = typeof window !== "undefined" ? Number(localStorage.getItem(LAST_ACTIVITY_KEY)) : 0;
     lastActivityRef.current = Number.isFinite(storedActivity) && storedActivity > 0 ? storedActivity : now;
 
     const isInactive = () => {
