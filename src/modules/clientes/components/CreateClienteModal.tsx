@@ -1,6 +1,6 @@
 "use client";
  
-import { useState, useId } from "react";
+import { useState, useId, useRef, useEffect } from "react";
 import { registerCliente } from "@/lib/api/users";
 import { validateClienteForm } from "@/modules/clientes/utils/validation";
  
@@ -28,6 +28,16 @@ export default function CreateClienteModal({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+
+  const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Limpia el timer de auto-cierre si el componente se desmonta antes de que
+  // dispare (evita setState tras unmount / "window is not defined" en tests).
+  useEffect(() => {
+    return () => {
+      if (closeTimerRef.current) clearTimeout(closeTimerRef.current);
+    };
+  }, []);
 
   const nombreId = useId();
   const apellidosId = useId();
@@ -81,7 +91,7 @@ export default function CreateClienteModal({
       setSuccess("Cliente creado correctamente.");
       onCreated();
  
-      setTimeout(() => {
+      closeTimerRef.current = setTimeout(() => {
         handleClose();
       }, 1200);
     } catch (err) {
