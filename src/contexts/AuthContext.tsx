@@ -110,7 +110,7 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
     return unsubscribe;
   }, []);
 
-  // -- React to 401 responses from the API ----------------------------------
+  //- React to 401 responses from the API ----------------------------------
   // http.ts dispatches this event when the backend rejects the token.
   // Clearing React state here makes isAuthenticated -> false which
   // causes AuthGuard to redirect to /login.
