@@ -100,7 +100,7 @@ export default function ClientHeader({
           className="w-full flex items-center justify-center gap-2 px-4 py-2.5 border border-slate-200 dark:border-white/10 text-build-main dark:text-white rounded-xl text-sm font-semibold hover:bg-slate-50 dark:hover:bg-white/5 transition-colors"
         >
           <span className="material-symbols-outlined text-[18px]">edit</span>
-          Editar información
+          <span>Editar información</span>
         </button>
 
         {onAssign && (
@@ -110,7 +110,7 @@ export default function ClientHeader({
             className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-build-main text-white rounded-xl text-sm font-semibold hover:bg-build-main/90 transition-colors"
           >
             <span className="material-symbols-outlined text-[18px]">add_home</span>
-            Asignar propiedad
+            <span>Asignar propiedad</span>
           </button>
         )}
 
@@ -122,7 +122,7 @@ export default function ClientHeader({
           title={hasActiveProperties ? "No se puede eliminar un cliente con contratos activos" : "Eliminar cliente"}
         >
           <span className="material-symbols-outlined text-[18px]">delete</span>
-          Eliminar cliente
+          <span>Eliminar cliente</span>
         </button>
       </div>
 

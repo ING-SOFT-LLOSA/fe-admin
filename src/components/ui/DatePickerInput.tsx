@@ -67,7 +67,6 @@ export default function DatePickerInput({
         onChange(newVal);
     };
 
-    const paddingClass = size === "sm" ? "px-2 py-1 text-xs" : "px-3 py-2 text-sm";
     const hasError = Boolean(error);
 
     const borderClass = hasError

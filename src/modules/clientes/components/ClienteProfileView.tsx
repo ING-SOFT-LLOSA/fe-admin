@@ -5,8 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import { fetchUsuarioPorId, mapUsuarioToClienteRow } from "@/lib/api/users";
-import { fetchExpedientesPorUsuario } from "@/lib/api/expedientes";
-import type { ActivoResponseDTO } from "@/lib/api/proyectos";
+import { fetchExpedientesPorUsuario, type UsuarioActivoResponseDTO } from "@/lib/api/expedientes";
 import type { ClienteRow, ClienteAssignment } from "@/types/user";
 
 import AssignPropertyWizard from "@/modules/asignaciones/components/AssignPropertyWizard";
@@ -21,6 +20,28 @@ type Modal = "edit" | "delete" | "assign" | null;
 type ClienteProfileViewProps = {
   readonly clientId: string;
 };
+
+/** Mapea los contratos del cliente a la timeline de asignaciones. */
+function buildAssignments(
+  contratos: readonly UsuarioActivoResponseDTO[],
+  clientId: string,
+): ClienteAssignment[] {
+  return contratos.flatMap((c) =>
+    (c.activos ?? []).map((a) => ({
+      clientId: Number(clientId),
+      unitId: a.id,
+      unitLabel: a.nro,
+      projectName: a.proyectoNombre ?? "Proyecto",
+      financing: c.tipoFinanciamiento ?? "Contrato",
+      assignedAt: c.fechaAdquisicion
+        ? c.fechaAdquisicion.split("T")[0]
+        : new Date().toISOString().split("T")[0],
+      status: c.vigente === false ? "Inactivo" : "Vigente",
+      estadoTramiteLegal: c.estadoTramiteLegal ?? "",
+      uuidUsuarioActivo: c.uuidUsuarioActivo,
+    })),
+  );
+}
 
 export default function ClienteProfileView({ clientId }: Readonly<ClienteProfileViewProps>) {
   const router = useRouter();
@@ -51,28 +72,13 @@ export default function ClienteProfileView({ clientId }: Readonly<ClienteProfile
         // Stats para el header
         setTotalContratos(contratos.length);
         const unidades = contratos.reduce(
-          (sum, c) => sum + ((c.activos as ActivoResponseDTO[])?.length ?? 0),
+          (sum, c) => sum + (c.activos?.length ?? 0),
           0
         );
         setTotalUnidades(unidades);
 
         // Timeline de actividad (basada en contratos)
-        const mapped: ClienteAssignment[] = contratos.flatMap((c) =>
-          ((c.activos as ActivoResponseDTO[]) ?? []).map((a) => ({
-            clientId: Number(clientId),
-            unitId: a.id,
-            unitLabel: a.nro,
-            projectName: a.proyectoNombre ?? "Proyecto",
-            financing: c.tipoFinanciamiento ?? "Contrato",
-            assignedAt: c.fechaAdquisicion
-              ? c.fechaAdquisicion.split("T")[0]
-              : new Date().toISOString().split("T")[0],
-            status: c.vigente !== false ? "Vigente" : "Inactivo",
-            estadoTramiteLegal: c.estadoTramiteLegal ?? "",
-            uuidUsuarioActivo: c.uuidUsuarioActivo,
-          }))
-        );
-        setAssignments(mapped);
+        setAssignments(buildAssignments(contratos, clientId));
       } catch (err) {
         if (mounted) {
           setError(err instanceof Error ? err.message : "No se pudo cargar el cliente.");
@@ -122,7 +128,7 @@ export default function ClienteProfileView({ clientId }: Readonly<ClienteProfile
           className="inline-flex items-center gap-1 text-sm font-semibold text-arch-gold hover:text-build-main dark:hover:text-white mb-4 transition-colors"
         >
           <span className="material-symbols-outlined text-[18px]">arrow_back</span>
-          Volver a Clientes
+          <span>Volver a Clientes</span>
         </Link>
         <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-build-main dark:text-white">
           Perfil del cliente

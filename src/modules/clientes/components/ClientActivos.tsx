@@ -7,8 +7,7 @@ import {
   fetchExpedientesPorUsuario,
   type UsuarioActivoResponseDTO,
 } from "@/lib/api/expedientes";
-import type { ActivoResponseDTO } from "@/lib/api/proyectos";
-import { fetchProyectos, type Proyecto } from "@/lib/api/proyectos";
+import { fetchProyectos, type ActivoResponseDTO, type Proyecto } from "@/lib/api/proyectos";
 import UnlinkPropertyModal, { type UnlinkAssignmentInfo } from "./UnlinkPropertyModal";
 
 type ClientActivosProps = {
@@ -110,7 +109,7 @@ export default function ClientActivos({ clientId, refreshKey = 0, onUnlinked }: 
   }, [clientId, refreshKey]);
 
   function handleCancelContrato(contrato: UsuarioActivoResponseDTO) {
-    const activos = contrato.activos as ActivoResponseDTO[];
+    const activos = contrato.activos;
     const primeraUnidad = activos[0];
     const proyectoNombre = primeraUnidad?.proyectoNombre ?? "Proyecto";
 
@@ -135,14 +134,14 @@ export default function ClientActivos({ clientId, refreshKey = 0, onUnlinked }: 
   // Separar activos vs cancelados
   // Un contrato está cancelado si vigente===false O si no tiene unidades (backend lo deja así tras cancelar)
   const contratosActivos = contratos.filter(
-    (c) => c.vigente !== false && ((c.activos as ActivoResponseDTO[])?.length ?? 0) > 0
+    (c) => c.vigente !== false && (c.activos?.length ?? 0) > 0
   );
   const contratosCancelados = contratos.filter(
-    (c) => c.vigente === false || ((c.activos as ActivoResponseDTO[])?.length ?? 0) === 0
+    (c) => c.vigente === false || (c.activos?.length ?? 0) === 0
   );
 
   const totalUnidades = contratosActivos.reduce(
-    (sum, c) => sum + ((c.activos as ActivoResponseDTO[])?.length ?? 0),
+    (sum, c) => sum + (c.activos?.length ?? 0),
     0
   );
 
@@ -152,7 +151,7 @@ export default function ClientActivos({ clientId, refreshKey = 0, onUnlinked }: 
       <div className="px-5 py-4 border-b border-slate-100 dark:border-white/5 flex items-center justify-between bg-slate-50/50 dark:bg-white/2">
         <h3 className="text-sm font-bold text-build-main dark:text-white flex items-center gap-2">
           <span className="material-symbols-outlined text-arch-gold text-[18px]">domain</span>
-          Propiedades del cliente
+          <span>Propiedades del cliente</span>
         </h3>
         {!loading && (
           <div className="flex items-center gap-2">
@@ -206,7 +205,7 @@ export default function ClientActivos({ clientId, refreshKey = 0, onUnlinked }: 
       {!loading && !error && contratosActivos.length > 0 && (
         <div className="divide-y divide-slate-100 dark:divide-white/5">
           {contratosActivos.map((contrato, idx) => {
-            const activos = (contrato.activos as ActivoResponseDTO[]) ?? [];
+            const activos = contrato.activos ?? [];
             const etapa = getEtapaLabel(contrato.estadoTramiteLegal);
             const financiamiento = getFinanciamientoLabel(contrato.tipoFinanciamiento);
             const contratoNum = String(idx + 1).padStart(2, "0");
@@ -214,7 +213,6 @@ export default function ClientActivos({ clientId, refreshKey = 0, onUnlinked }: 
             return (
               <ContratoCard
                 key={contrato.uuidUsuarioActivo}
-                contrato={contrato}
                 activos={activos}
                 contratoNum={contratoNum}
                 etapa={etapa}
@@ -259,7 +257,6 @@ export default function ClientActivos({ clientId, refreshKey = 0, onUnlinked }: 
 // ─── ContratoCard ─────────────────────────────────────────────────────────────
 
 type ContratoCardProps = {
-  contrato: UsuarioActivoResponseDTO;
   activos: ActivoResponseDTO[];
   contratoNum: string;
   etapa: { label: string; cls: string };
@@ -275,7 +272,7 @@ function ContratoCard({
   activos, contratoNum, etapa, financiamiento,
   proyectos, loadingLegal, cancelado,
   onVerExpediente, onCancelar,
-}: ContratoCardProps) {
+}: Readonly<ContratoCardProps>) {
   return (
     <div className={`p-5 ${cancelado ? "opacity-60" : ""}`}>
       {/* Contrato header */}
@@ -318,7 +315,7 @@ function ContratoCard({
             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-arch-gold hover:text-build-main hover:bg-slate-100 dark:hover:bg-white/10 transition-colors disabled:opacity-50"
           >
             <span className="material-symbols-outlined text-[14px]">gavel</span>
-            Expediente legal
+            <span>Expediente legal</span>
           </button>
           {!cancelado && onCancelar && (
             <button
@@ -327,7 +324,7 @@ function ContratoCard({
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/20 transition-colors border border-red-200 dark:border-red-900/30"
             >
               <span className="material-symbols-outlined text-[14px]">contract_delete</span>
-              Cancelar contrato
+              <span>Cancelar contrato</span>
             </button>
           )}
         </div>
@@ -398,7 +395,7 @@ function ContratoCard({
                     className="inline-flex items-center gap-1 text-[10px] font-semibold text-slate-400 dark:text-white/40 hover:text-build-main dark:hover:text-white transition-colors"
                   >
                     <span className="material-symbols-outlined text-[12px]">visibility</span>
-                    Ver detalle de unidad
+                    <span>Ver detalle de unidad</span>
                   </Link>
                 </div>
               </div>
@@ -416,11 +413,11 @@ function ContratosHistorial({
   contratos,
   loadingLegal,
   onVerExpediente,
-}: {
+}: Readonly<{
   contratos: UsuarioActivoResponseDTO[];
   loadingLegal: Record<string, boolean>;
   onVerExpediente: (uuid: string) => void;
-}) {
+}>) {
   const [open, setOpen] = useState(false);
 
   return (
@@ -446,7 +443,7 @@ function ContratosHistorial({
       {open && (
         <div className="border-t border-slate-100 dark:border-white/5 divide-y divide-slate-100 dark:divide-white/5 bg-slate-50/40 dark:bg-white/[0.01]">
           {contratos.map((contrato, idx) => {
-            const activos = (contrato.activos as ActivoResponseDTO[]) ?? [];
+            const activos = contrato.activos ?? [];
             const financiamiento = getFinanciamientoLabel(contrato.tipoFinanciamiento);
             const canceladoEn = contrato.updatedAt
               ? new Date(contrato.updatedAt).toLocaleDateString("es-PE", { day: "numeric", month: "short", year: "numeric" })
@@ -490,7 +487,7 @@ function ContratosHistorial({
                   className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-semibold text-slate-400 dark:text-white/30 hover:text-arch-gold hover:bg-white dark:hover:bg-white/5 transition-colors border border-slate-200 dark:border-white/10 disabled:opacity-50 shrink-0"
                 >
                   <span className="material-symbols-outlined text-[12px]">gavel</span>
-                  Ver expediente
+                  <span>Ver expediente</span>
                 </button>
               </div>
             );

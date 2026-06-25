@@ -153,11 +153,13 @@ export default function ObraOverview() {
       </div>
 
       {/* ── Project cards grid ── */}
-      {isLoading ? (
+      {isLoading && (
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {[1, 2, 3].map((k) => <SkeletonCard key={k} />)}
         </div>
-      ) : filtered.length === 0 ? (
+      )}
+
+      {!isLoading && filtered.length === 0 && (
         <div className="rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 py-16 flex flex-col items-center gap-3 text-center">
           <span className="material-symbols-outlined text-[48px] text-slate-200 dark:text-white/10">domain</span>
           <p className="text-sm font-semibold text-slate-500 dark:text-white/40">
@@ -172,7 +174,9 @@ export default function ObraOverview() {
             </button>
           )}
         </div>
-      ) : (
+      )}
+
+      {!isLoading && filtered.length > 0 && (
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {filtered.map((project) => {
             const pct  = Math.min(project.porcentajeAvance ?? 0, 100);
@@ -226,7 +230,7 @@ export default function ObraOverview() {
                 <div className="flex items-center justify-between pt-1 border-t border-slate-100 dark:border-white/5">
                   <span className="text-[10px] font-semibold text-slate-400 dark:text-white/30 flex items-center gap-1">
                     <span className="material-symbols-outlined text-[13px]">engineering</span>
-                    Ver detalles
+                    <span>Ver detalles</span>
                   </span>
                   <span className="material-symbols-outlined text-[18px] text-slate-300 dark:text-white/20 group-hover:text-arch-gold dark:group-hover:text-arch-gold group-hover:translate-x-0.5 transition-all duration-200">
                     arrow_forward
@@ -241,7 +245,7 @@ export default function ObraOverview() {
       {/* Result count */}
       {!isLoading && filtered.length > 0 && (
         <p className="text-xs text-slate-400 dark:text-white/30 text-right">
-          {filtered.length} proyecto{filtered.length !== 1 ? "s" : ""} encontrado{filtered.length !== 1 ? "s" : ""}
+          {filtered.length} proyecto{filtered.length === 1 ? "" : "s"} encontrado{filtered.length === 1 ? "" : "s"}
         </p>
       )}
 
