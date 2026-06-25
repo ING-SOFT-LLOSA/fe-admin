@@ -144,7 +144,6 @@ export default function ClienteProfileView({ clientId }: Readonly<ClienteProfile
         <div className="lg:col-span-1">
           <ClientHeader
             client={client}
-            clientId={clientId}
             hasActiveProperties={activeAssignments.length > 0}
             totalContratos={totalContratos}
             totalUnidades={totalUnidades}

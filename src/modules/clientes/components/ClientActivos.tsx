@@ -290,11 +290,12 @@ function ContratoCard({
               Contrato {contratoNum}
             </p>
             <div className="flex items-center gap-2 mt-1 flex-wrap">
-              {cancelado ? (
+              {cancelado && (
                 <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 dark:bg-white/10 dark:text-white/40">
                   Cancelado
                 </span>
-              ) : (
+              )}
+              {!cancelado && etapa.label !== "—" && (
                 <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${etapa.cls}`}>
                   {etapa.label}
                 </span>

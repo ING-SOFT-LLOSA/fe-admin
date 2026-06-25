@@ -1,12 +1,10 @@
 "use client";
 
-import Link from "next/link";
 import type { ClienteRow } from "@/types/user";
 
 type ClientHeaderProps = {
   readonly client: ClienteRow;
   readonly hasActiveProperties: boolean;
-  readonly clientId?: string | number;
   readonly totalContratos?: number;
   readonly totalUnidades?: number;
   readonly onEdit: () => void;
@@ -17,7 +15,6 @@ type ClientHeaderProps = {
 export default function ClientHeader({
   client,
   hasActiveProperties,
-  clientId,
   totalContratos = 0,
   totalUnidades = 0,
   onEdit,
@@ -126,29 +123,6 @@ export default function ClientHeader({
         </button>
       </div>
 
-      {/* Quick links */}
-      <div className="px-5 py-3.5">
-        <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-white/30 mb-2.5">
-          Accesos rápidos
-        </p>
-        <div className="space-y-1">
-          <QuickLink
-            href={`/finanzas?clienteId=${clientId}`}
-            icon="payments"
-            label="Pagos y cronogramas"
-          />
-          <QuickLink
-            href={`/agenda?clienteId=${clientId}`}
-            icon="calendar_month"
-            label="Citas del cliente"
-          />
-          <QuickLink
-            href={`/legal?clienteId=${clientId}`}
-            icon="gavel"
-            label="Gestión legal"
-          />
-        </div>
-      </div>
     </div>
   );
 }
@@ -174,23 +148,3 @@ function InfoRow({
   );
 }
 
-function QuickLink({
-  href,
-  icon,
-  label,
-}: Readonly<{ href: string; icon: string; label: string }>) {
-  return (
-    <Link
-      href={href}
-      className="flex items-center gap-2.5 px-3 py-2 rounded-lg hover:bg-slate-50 dark:hover:bg-white/5 text-slate-500 dark:text-white/50 hover:text-build-main dark:hover:text-white transition-colors group"
-    >
-      <span className="material-symbols-outlined text-[15px] text-arch-gold group-hover:scale-110 transition-transform">
-        {icon}
-      </span>
-      <span className="text-xs font-semibold">{label}</span>
-      <span className="material-symbols-outlined text-[13px] ml-auto opacity-0 group-hover:opacity-100 transition-opacity">
-        arrow_forward
-      </span>
-    </Link>
-  );
-}
