@@ -41,7 +41,7 @@ export default function EmployeeDashboardPage() {
         <div className="flex gap-3 shrink-0">
           <button className="flex items-center gap-2 px-4 py-2 bg-build-main text-white rounded-lg text-sm font-semibold hover:bg-build-main/80 transition-colors shadow-sm">
             <span className="material-symbols-outlined text-[18px]">add</span>
-            Nuevo Seguimiento
+            <span>Nuevo Seguimiento</span>
           </button>
         </div>
       </div>

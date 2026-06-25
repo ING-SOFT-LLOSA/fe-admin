@@ -3,7 +3,6 @@ import React, { useState, useEffect, useMemo } from "react";
 import { fetchUsuarios, fetchExpedientesPorUsuario } from "@/lib/api/users";
 import type { Usuario } from "@/types/user";
 import type { UsuarioActivoResponseDTO } from "@/lib/api/expedientes";
-import type { ActivoResponseDTO } from "@/lib/api/proyectos";
 import {
   fetchCitasCalendario,
   crearCita,
@@ -94,11 +93,34 @@ function getGridDateRange(gridCells: CalDay[], currentDate: Date): { startDateSt
   };
 }
 
+function rsvpMeta(confirmacion: boolean | null | undefined): { dot: string; text: string } {
+  if (confirmacion === true) return { dot: "bg-emerald-500", text: "Confirmado" };
+  if (confirmacion === false) return { dot: "bg-rose-500", text: "Declinado" };
+  return { dot: "bg-slate-300", text: "Sin respuesta" };
+}
+
+function confirmacionLabel(confirmacion: boolean | null | undefined): string {
+  if (confirmacion === true) return "✓ Confirmado";
+  if (confirmacion === false) return "✕ Declinado";
+  return "Sin respuesta";
+}
+
+function slotStateClass(isSelected: boolean, isDisabled: boolean): string {
+  if (isSelected) return "border-arch-gold bg-arch-gold text-white shadow-sm scale-105";
+  if (isDisabled) return "border-slate-100 dark:border-white/5 text-slate-200 dark:text-white/15 cursor-not-allowed";
+  return "border-slate-200 dark:border-white/10 text-slate-600 dark:text-white/60 hover:border-arch-gold/60 hover:text-arch-gold";
+}
+
+function dayNumberClass(today: boolean | undefined, grey: boolean | undefined): string {
+  if (today) return "bg-build-main text-white font-bold shadow-sm";
+  if (grey) return "text-slate-300 dark:text-white/20";
+  return "text-build-main dark:text-white";
+}
+
 function mapCitaToEvent(c: CitaResponse): CalEvent {
   const time = c.fechaInicio.split("T")[1]?.slice(0, 5) || "";
   const meta = STATUS_META[c.estadoCita] ?? STATUS_META.PROGRAMADA;
-  const rsvpDot = c.confirmacionCliente === true ? "bg-emerald-500" : c.confirmacionCliente === false ? "bg-rose-500" : "bg-slate-300";
-  const rsvpText = c.confirmacionCliente === true ? "Confirmado" : c.confirmacionCliente === false ? "Declinado" : "Sin respuesta";
+  const { dot: rsvpDot, text: rsvpText } = rsvpMeta(c.confirmacionCliente);
 
   return {
     id: c.id,
@@ -136,7 +158,7 @@ function getTipoLabel(tipo: string) {
 
 function mapExpedientesToUnits(exps: UsuarioActivoResponseDTO[]): { id: string; name: string }[] {
   return exps.flatMap((exp) =>
-    (exp.activos as ActivoResponseDTO[] || []).map((a) => ({ id: String(a.id), name: `${getTipoLabel(a.tipo)} ${a.nro}` }))
+    (exp.activos || []).map((a) => ({ id: String(a.id), name: `${getTipoLabel(a.tipo)} ${a.nro}` }))
   );
 }
 
@@ -173,7 +195,7 @@ const TIME_SLOTS: string[] = (() => {
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
-function FormField({ label, children }: { label: string; children: React.ReactNode }) {
+function FormField({ label, children }: Readonly<{ label: string; children: React.ReactNode }>) {
   return (
     <div>
       <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-white/40 mb-1.5">{label}</label>
@@ -185,7 +207,7 @@ function FormField({ label, children }: { label: string; children: React.ReactNo
 const inputCls = "w-full px-3 py-2.5 border border-slate-200 dark:border-white/10 rounded-xl text-sm text-build-main dark:text-white bg-white dark:bg-white/5 outline-none focus:border-arch-gold focus:ring-2 focus:ring-arch-gold/20 transition-colors";
 
 /** Date picker: shortcut chips (Hoy / Mañana / Pasado) + hidden native input triggered by "Otra fecha" */
-function DateQuickPicker({ value, onChange, id = "agenda-date-native" }: { value: string; onChange: (v: string) => void; id?: string }) {
+function DateQuickPicker({ value, onChange, id = "agenda-date-native" }: Readonly<{ value: string; onChange: (v: string) => void; id?: string }>) {
   const today = new Date();
   const tomorrow = new Date(today); tomorrow.setDate(today.getDate() + 1);
   const dat2   = new Date(today); dat2.setDate(today.getDate() + 2);
@@ -273,13 +295,13 @@ function TimeSlotGrid({
   onChange,
   disabledBefore,
   extra,
-}: {
+}: Readonly<{
   label?: string;
   value: string;
   onChange: (v: string) => void;
   disabledBefore?: string;
   extra?: React.ReactNode;
-}) {
+}>) {
   return (
     <div className="space-y-1.5">
       {(label || extra) && (
@@ -304,11 +326,7 @@ function TimeSlotGrid({
               onClick={() => onChange(slot)}
               className={[
                 "px-2.5 py-1 rounded-lg text-xs font-semibold border transition-all",
-                isSelected
-                  ? "border-arch-gold bg-arch-gold text-white shadow-sm scale-105"
-                  : isDisabled
-                  ? "border-slate-100 dark:border-white/5 text-slate-200 dark:text-white/15 cursor-not-allowed"
-                  : "border-slate-200 dark:border-white/10 text-slate-600 dark:text-white/60 hover:border-arch-gold/60 hover:text-arch-gold",
+                slotStateClass(isSelected, isDisabled),
               ].join(" ")}
             >
               {slot}
@@ -458,7 +476,7 @@ export default function AgendaView() {
     }
   }
 
-  async function saveEvent(e: React.FormEvent<HTMLFormElement>) {
+  async function saveEvent(e: React.SyntheticEvent<HTMLFormElement>) {
     e.preventDefault();
     const err = validateForm(clientId, selectedUnitId, eventDate, startTime, endTime);
     if (err) { setFormError(err); return; }
@@ -573,7 +591,7 @@ export default function AgendaView() {
           className="inline-flex items-center gap-2 rounded-lg bg-build-main px-4 py-2.5 text-sm font-bold text-white shadow-sm hover:bg-build-main/90 transition-colors shrink-0"
         >
           <span className="material-symbols-outlined text-[18px]">add</span>
-          Nueva cita
+          <span>Nueva cita</span>
         </button>
       </div>
 
@@ -757,11 +775,7 @@ export default function AgendaView() {
                 {/* Day number */}
                 <span className={[
                   "text-xs w-6 h-6 flex items-center justify-center rounded-full mb-0.5 font-semibold",
-                  cell.today
-                    ? "bg-build-main text-white font-bold shadow-sm"
-                    : cell.grey
-                    ? "text-slate-300 dark:text-white/20"
-                    : "text-build-main dark:text-white",
+                  dayNumberClass(cell.today, cell.grey),
                 ].join(" ")}>
                   {cell.day}
                 </span>
@@ -874,7 +888,7 @@ export default function AgendaView() {
                           className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border border-arch-gold/40 text-arch-gold text-[10px] font-bold hover:bg-arch-gold/10 transition-colors"
                         >
                           <span className="material-symbols-outlined text-[12px]">add</span>
-                          +30 min
+                          <span>+30 min</span>
                         </button>
                       </div>
                       <TimeSlotGrid
@@ -967,7 +981,7 @@ export default function AgendaView() {
                           className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border border-arch-gold/40 text-arch-gold text-[10px] font-bold hover:bg-arch-gold/10 transition-colors"
                         >
                           <span className="material-symbols-outlined text-[12px]">add</span>
-                          +30 min
+                          <span>+30 min</span>
                         </button>
                       </div>
                       <TimeSlotGrid
@@ -1029,7 +1043,7 @@ export default function AgendaView() {
                     <div>
                       <span className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-white/40 mb-0.5">Confirmación cliente</span>
                       <span className="font-semibold text-build-main dark:text-white">
-                        {selectedCita.confirmacionCliente === true ? "✓ Confirmado" : selectedCita.confirmacionCliente === false ? "✕ Declinado" : "Sin respuesta"}
+                        {confirmacionLabel(selectedCita.confirmacionCliente)}
                       </span>
                     </div>
                   </div>
