@@ -14,6 +14,7 @@ import {
   asignarRol,
   fetchRoles,
   desactivarUsuario,
+  activarUsuario,
   eliminarUsuarioCompleto,
   mapUsuarioToClienteRow,
   fetchExpedientesPorUsuario,
@@ -149,6 +150,14 @@ describe("users API", () => {
       mockApiFetch.mockResolvedValue(undefined);
       await desactivarUsuario(7);
       expect(mockApiFetch).toHaveBeenCalledWith("/api/users/7", { method: "DELETE" });
+    });
+  });
+
+  describe("activarUsuario", () => {
+    it("hace PATCH a /api/users/{id}/activar", async () => {
+      mockApiFetch.mockResolvedValue(undefined);
+      await activarUsuario(7);
+      expect(mockApiFetch).toHaveBeenCalledWith("/api/users/7/activar", { method: "PATCH" });
     });
   });
 

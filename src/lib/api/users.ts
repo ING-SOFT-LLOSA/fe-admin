@@ -68,6 +68,10 @@ export function desactivarUsuario(id: number): Promise<void> {
   return apiFetch<void>(`/api/users/${id}`, { method: "DELETE" });
 }
 
+export function activarUsuario(id: number): Promise<void> {
+  return apiFetch<void>(`/api/users/${id}/activar`, { method: "PATCH" });
+}
+
 export function eliminarUsuarioCompleto(id: number): Promise<void> {
   return apiFetch<void>(`/api/users/${id}/hard`, { method: "DELETE" });
 }

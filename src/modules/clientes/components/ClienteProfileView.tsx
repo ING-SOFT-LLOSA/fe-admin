@@ -11,11 +11,12 @@ import type { ClienteRow, ClienteAssignment } from "@/types/user";
 import AssignPropertyWizard from "@/modules/asignaciones/components/AssignPropertyWizard";
 import EditClienteModal from "@/modules/clientes/components/EditClienteModal";
 import DeleteUsuarioModal from "@/modules/clientes/components/DeleteUsuarioModal";
+import ReactivarUsuarioModal from "@/modules/clientes/components/ReactivarUsuarioModal";
 import ClientHeader from "./ClientHeader";
 import ClientActivos from "./ClientActivos";
 import ClientActivity from "./ClientActivity";
 
-type Modal = "edit" | "delete" | "assign" | null;
+type Modal = "edit" | "delete" | "reactivate" | "assign" | null;
 
 type ClienteProfileViewProps = {
   readonly clientId: string;
@@ -149,6 +150,7 @@ export default function ClienteProfileView({ clientId }: Readonly<ClienteProfile
             totalUnidades={totalUnidades}
             onEdit={() => setActiveModal("edit")}
             onDelete={() => setActiveModal("delete")}
+            onReactivate={() => setActiveModal("reactivate")}
             onAssign={() => setActiveModal("assign")}
           />
         </div>
@@ -180,6 +182,13 @@ export default function ClienteProfileView({ clientId }: Readonly<ClienteProfile
         usuario={client}
         onClose={closeModal}
         onDeleted={() => router.push("/clientes")}
+      />
+
+      <ReactivarUsuarioModal
+        open={activeModal === "reactivate"}
+        usuario={client}
+        onClose={closeModal}
+        onReactivated={() => { closeModal(); refresh(); }}
       />
 
       {activeModal === "assign" && (

@@ -9,6 +9,7 @@ type ClientHeaderProps = {
   readonly totalUnidades?: number;
   readonly onEdit: () => void;
   readonly onDelete: () => void;
+  readonly onReactivate?: () => void;
   readonly onAssign?: () => void;
 };
 
@@ -19,6 +20,7 @@ export default function ClientHeader({
   totalUnidades = 0,
   onEdit,
   onDelete,
+  onReactivate,
   onAssign,
 }: Readonly<ClientHeaderProps>) {
   const initials = client.name
@@ -111,16 +113,30 @@ export default function ClientHeader({
           </button>
         )}
 
-        <button
-          type="button"
-          onClick={onDelete}
-          disabled={hasActiveProperties}
-          className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-red-500 dark:text-red-400 rounded-xl text-sm font-semibold hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-          title={hasActiveProperties ? "No se puede eliminar un cliente con contratos activos" : "Eliminar cliente"}
-        >
-          <span className="material-symbols-outlined text-[18px]">delete</span>
-          <span>Eliminar cliente</span>
-        </button>
+        {isActive ? (
+          <button
+            type="button"
+            onClick={onDelete}
+            disabled={hasActiveProperties}
+            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-red-500 dark:text-red-400 rounded-xl text-sm font-semibold hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            title={hasActiveProperties ? "No se puede eliminar un cliente con contratos activos" : "Eliminar cliente"}
+          >
+            <span className="material-symbols-outlined text-[18px]">delete</span>
+            <span>Eliminar cliente</span>
+          </button>
+        ) : (
+          onReactivate && (
+            <button
+              type="button"
+              onClick={onReactivate}
+              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-emerald-600 dark:text-emerald-400 rounded-xl text-sm font-semibold hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors"
+              title="Reactivar cliente"
+            >
+              <span className="material-symbols-outlined text-[18px]">check_circle</span>
+              <span>Reactivar cliente</span>
+            </button>
+          )
+        )}
       </div>
 
     </div>

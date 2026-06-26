@@ -8,10 +8,14 @@ import DialogModal from "@/components/ui/DialogModal";
 
 type DocCategoria = "anteproyecto" | "licencia" | "planos" | "acabados" | "certificacion";
 
+// Categoría efectiva: las conocidas + el bucket para documentos cuyo prefijo no se
+// pudo parsear (evita clasificarlos silenciosamente como "planos").
+type DocCategoriaEfectiva = DocCategoria | "sin_clasificar";
+
 type Documento = {
   id: string;
   nombre: string;
-  categoria: DocCategoria;
+  categoria: DocCategoriaEfectiva;
   fechaCarga: string;
 };
 
@@ -28,6 +32,44 @@ const CATEGORIAS: { id: DocCategoria; label: string; icon: string; description: 
   { id: "acabados",        label: "Cuadro de Acabados",            icon: "format_paint",       description: "Especificaciones técnicas de acabados por unidad inmobiliaria"        },
   { id: "certificacion",   label: "Certificación EDGE / LEED",    icon: "eco",                description: "Documentos de pre-certificación y certificación de sostenibilidad"    },
 ];
+
+const CATEGORIA_IDS = new Set<string>(CATEGORIAS.map((c) => c.id));
+
+// ─── Codificación de categoría en el nombre (mitigación temporal) ───────────────
+// El backend aún no persiste la categoría como campo consultable, así que la
+// transportamos en el nombre del archivo. Usamos un sentinel poco colisionable
+// (`__llosadoc__<categoria>__<nombre>`) en vez del antiguo `[categoria] <nombre>`,
+// que un usuario podía reproducir por accidente. Al leer se valida la categoría
+// contra el set conocido y, si no se reconoce, el documento cae en "sin_clasificar"
+// en lugar de asumir "planos".
+// TODO: eliminar cuando el backend exponga la categoría en el DTO de Documento.
+const CAT_SENTINEL = "__llosadoc__";
+
+function encodeCategoria(categoria: DocCategoria, nombre: string): string {
+  return `${CAT_SENTINEL}${categoria}__${nombre}`;
+}
+
+function decodeCategoria(nombreOriginal: string): { categoria: DocCategoriaEfectiva; nombre: string } {
+  // Formato nuevo: __llosadoc__<categoria>__<nombre>
+  if (nombreOriginal.startsWith(CAT_SENTINEL)) {
+    const rest = nombreOriginal.slice(CAT_SENTINEL.length);
+    const sep = rest.indexOf("__");
+    if (sep > 0) {
+      const cat = rest.slice(0, sep);
+      if (CATEGORIA_IDS.has(cat)) {
+        return { categoria: cat as DocCategoria, nombre: rest.slice(sep + 2) };
+      }
+    }
+  }
+  // Formato antiguo (compatibilidad hacia atrás): [categoria] <nombre>
+  for (const cat of CATEGORIAS) {
+    if (nombreOriginal.startsWith(`[${cat.id}] `)) {
+      return { categoria: cat.id, nombre: nombreOriginal.substring(cat.id.length + 3) };
+    }
+  }
+  // No se pudo determinar: no asumimos categoría.
+  return { categoria: "sin_clasificar", nombre: nombreOriginal };
+}
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
@@ -67,15 +109,7 @@ export default function ObraTabDocumentacion({ projectId }: Readonly<ObraTabDocu
       const dbDocs = await fetchDocumentosByReferencia(currentProjectId);
       if (currentProjectId !== lastProjectIdRef.current) return;
       const mapped = dbDocs.map((doc) => {
-        let categoria: DocCategoria = "planos";
-        let nombre = doc.nombreOriginal;
-        for (const cat of CATEGORIAS) {
-          if (doc.nombreOriginal.startsWith(`[${cat.id}] `)) {
-            categoria = cat.id;
-            nombre = doc.nombreOriginal.substring(cat.id.length + 3);
-            break;
-          }
-        }
+        const { categoria, nombre } = decodeCategoria(doc.nombreOriginal);
         return {
           id: doc.id,
           nombre,
@@ -139,7 +173,7 @@ export default function ObraTabDocumentacion({ projectId }: Readonly<ObraTabDocu
     setUploadingCat(categoria);
     setActionError(null);
     try {
-      const finalFileName = `[${categoria}] ${file.name}`;
+      const finalFileName = encodeCategoria(categoria, file.name);
       const renamedFile = new File([file], finalFileName, { type: file.type });
       
       await uploadDocument(projectId, renamedFile, "PDF_LEGAL");
@@ -189,6 +223,8 @@ export default function ObraTabDocumentacion({ projectId }: Readonly<ObraTabDocu
       },
     });
   };
+
+  const sinClasificar = documents.filter((d) => d.categoria === "sin_clasificar");
 
   return (
     <div className="space-y-4">
@@ -302,6 +338,52 @@ export default function ObraTabDocumentacion({ projectId }: Readonly<ObraTabDocu
           )}
         </div>
       </div>
+
+      {/* Documentos cuya categoría no se pudo determinar: se muestran aquí en vez
+          de clasificarse silenciosamente como "Planos". */}
+      {sinClasificar.length > 0 && (
+        <div className="rounded-xl border border-amber-200 dark:border-amber-900/40 bg-amber-50/60 dark:bg-amber-900/10 shadow-sm overflow-hidden">
+          <div className="px-5 py-4 border-b border-amber-100 dark:border-amber-900/30 flex items-center gap-3">
+            <span className="material-symbols-outlined text-amber-500 text-[20px]">help</span>
+            <h3 className="text-sm font-bold text-amber-700 dark:text-amber-400 font-sans">Sin clasificar</h3>
+          </div>
+          <div className="divide-y divide-amber-100 dark:divide-amber-900/20">
+            {sinClasificar.map((doc) => (
+              <div
+                key={doc.id}
+                className="flex items-center justify-between px-5 py-4 gap-3"
+              >
+                <div className="min-w-0">
+                  <p className="text-xs text-slate-600 dark:text-white/60 truncate max-w-[280px] sm:max-w-md" title={doc.nombre}>
+                    Archivo: {doc.nombre}
+                  </p>
+                  <p className="text-[10px] text-slate-400 dark:text-white/30">
+                    Subido el: {new Date(doc.fechaCarga).toLocaleDateString("es-PE", { day: "2-digit", month: "short", year: "numeric" })}
+                  </p>
+                </div>
+                <div className="flex items-center gap-3 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => handleDownload(doc.id)}
+                    className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-white/10 text-slate-500 dark:text-white/50 hover:text-build-main dark:hover:text-white transition-colors"
+                    title="Descargar / Ver archivo"
+                  >
+                    <span className="material-symbols-outlined text-[18px]">download</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleDelete(doc.id)}
+                    className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-950/20 text-red-500 hover:text-red-600 transition-colors"
+                    title="Eliminar archivo"
+                  >
+                    <span className="material-symbols-outlined text-[18px]">delete</span>
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <DialogModal
         isOpen={dialog.isOpen}
