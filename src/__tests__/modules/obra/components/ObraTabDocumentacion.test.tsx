@@ -335,7 +335,7 @@ describe("ObraTabDocumentacion", () => {
     });
     const [projectIdArg, fileArg, tipoArg] = mockUploadDoc.mock.calls[0];
     expect(projectIdArg).toBe("p-1");
-    expect(fileArg.name).toMatch(/^\[[a-z]+\] doc\.pdf$/);
+    expect(fileArg.name).toMatch(/^__llosadoc__[a-z]+__doc\.pdf$/);
     expect(tipoArg).toBe("PDF_LEGAL");
 
     if (origSet) {
