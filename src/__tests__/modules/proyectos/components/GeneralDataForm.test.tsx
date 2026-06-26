@@ -120,7 +120,7 @@ describe("GeneralDataForm", () => {
     );
 
     fireEvent.click(screen.getByText("Siguiente paso"));
-    expect(screen.getByText("La fecha de fin no puede ser anterior a la fecha de inicio.")).toBeDefined();
+    expect(screen.getByText("La fecha de fin debe ser posterior a la fecha de inicio.")).toBeDefined();
   });
 
   it("muestra el checkbox de precertificación", () => {

@@ -742,7 +742,17 @@ function NuevoReporteForm({ projectId, onClose, onSubmit }: NuevoReporteFormProp
             accept="image/*,video/*"
             onChange={(e) => {
               if (e.target.files) {
-                setFiles(Array.from(e.target.files));
+                const selectedFiles = Array.from(e.target.files);
+                const MAX_SIZE = 5 * 1024 * 1024; // 5 MB
+                const oversizedFile = selectedFiles.find(f => f.size > MAX_SIZE);
+                if (oversizedFile) {
+                  setError(`El archivo "${oversizedFile.name}" supera el límite de 5 MB. Por favor, selecciona archivos más pequeños.`);
+                  e.target.value = ""; // Clear file input
+                  setFiles([]);
+                  return;
+                }
+                setError(null);
+                setFiles(selectedFiles);
               }
             }}
             className="w-full text-xs text-slate-500 dark:text-white/40

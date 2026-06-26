@@ -22,7 +22,7 @@ describe("validateProjectForm", () => {
       fechaInicio: "2026-01-10",
       fechaFin: "2026-01-05", // Fin antes del inicio
     });
-    expect(errors.fechaFin).toBe("La fecha de fin no puede ser anterior a la fecha de inicio.");
+    expect(errors.fechaFin).toBe("La fecha de fin debe ser posterior a la fecha de inicio.");
 
     errors = validateProjectForm({
       nombre: "Proyecto A",

@@ -225,6 +225,17 @@ function MortgagePagoRow({
     }, [showDropzone]);
 
     const handleSelectFile = (file: File) => {
+        const MAX_SIZE = 5 * 1024 * 1024; // 5 MB
+        if (file.size > MAX_SIZE) {
+            setDialog({
+                isOpen: true,
+                title: "Archivo demasiado grande",
+                message: `El archivo "${file.name}" supera el límite de 5 MB. Por favor, sube un comprobante más pequeño.`,
+                type: "danger",
+                confirmText: "Aceptar",
+            });
+            return;
+        }
         setDropzoneFile(file);
     };
 
@@ -505,7 +516,7 @@ function MortgagePagoRow({
                                 ) : (
                                     <>
                                         <p className="text-xs font-bold text-slate-600 dark:text-white/80">Arrastra el comprobante o haz clic para seleccionar</p>
-                                        <p className="text-[10px] text-slate-400">PDF, JPG, PNG (máx 10MB)</p>
+                                        <p className="text-[10px] text-slate-400">PDF, JPG, PNG (máx 5MB)</p>
                                     </>
                                 )}
                             </button>
