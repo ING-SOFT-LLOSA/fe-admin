@@ -1,9 +1,11 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
-import { fetchActivosPorProyecto, updateActivo } from "@/modules/inventario/services";
+import { fetchActivosPorProyecto, updateActivo, deleteActivo } from "@/modules/inventario/services";
+import DialogModal from "@/components/ui/DialogModal";
 import type { ActivoRequestDTO, ActivoResponseDTO } from "@/modules/inventario/types";
 
 type UnitDetailViewProps = {
@@ -12,6 +14,7 @@ type UnitDetailViewProps = {
 };
 
 export default function UnitDetailView({ projectId, unitId }: Readonly<UnitDetailViewProps>) {
+  const router = useRouter();
   const [unit, setUnit] = useState<ActivoResponseDTO | null>(null);
   const [form, setForm] = useState<ActivoRequestDTO>({
     nro: "",
@@ -25,8 +28,26 @@ export default function UnitDetailView({ projectId, unitId }: Readonly<UnitDetai
   });
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+
+  async function handleDelete() {
+    if (!unit) return;
+    setIsDeleting(true);
+    setError("");
+    setMessage("");
+    try {
+      await deleteActivo(unit.id);
+      router.push(`/proyectos/${projectId}/unidades`);
+    } catch (deleteError) {
+      setError(deleteError instanceof Error ? deleteError.message : "No se pudo eliminar la unidad.");
+      setShowDeleteConfirm(false);
+    } finally {
+      setIsDeleting(false);
+    }
+  }
 
   useEffect(() => {
     let mounted = true;
@@ -194,8 +215,21 @@ export default function UnitDetailView({ projectId, unitId }: Readonly<UnitDetai
             </div>
           </div>
 
-          <div className="mt-6 flex justify-end">
-            <button type="button" onClick={handleSave} disabled={isSaving} className="rounded-xl bg-build-main px-6 py-2.5 text-sm font-bold text-white shadow-sm hover:bg-build-main/90 disabled:opacity-60">
+          <div className="mt-6 flex justify-between items-center border-t border-slate-100 dark:border-white/5 pt-6">
+            <button
+              type="button"
+              onClick={() => setShowDeleteConfirm(true)}
+              disabled={isSaving || isDeleting}
+              className="rounded-xl border border-red-200 dark:border-red-900/50 text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20 px-6 py-2.5 text-sm font-bold shadow-sm transition-all"
+            >
+              Eliminar unidad
+            </button>
+            <button
+              type="button"
+              onClick={handleSave}
+              disabled={isSaving || isDeleting}
+              className="rounded-xl bg-build-main px-6 py-2.5 text-sm font-bold text-white shadow-sm hover:bg-build-main/90 disabled:opacity-60 transition-all"
+            >
               {isSaving ? "Guardando..." : "Guardar cambios"}
             </button>
           </div>
@@ -224,6 +258,17 @@ export default function UnitDetailView({ projectId, unitId }: Readonly<UnitDetai
           </section>
         </div>
       </div>
+
+      <DialogModal
+        isOpen={showDeleteConfirm}
+        onClose={() => setShowDeleteConfirm(false)}
+        onConfirm={handleDelete}
+        title="¿Eliminar unidad?"
+        message={`¿Estás seguro de que deseas eliminar la unidad "${unit.nro}"?\nEsta acción es irreversible y podría fallar si la unidad ya tiene un contrato u otras asociaciones.`}
+        confirmText={isDeleting ? "Eliminando..." : "Eliminar"}
+        cancelText="Cancelar"
+        type="danger"
+      />
     </section>
   );
 }

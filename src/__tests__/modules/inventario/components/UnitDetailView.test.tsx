@@ -1,9 +1,17 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 
+const mockPush = vi.fn();
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({
+    push: mockPush,
+  }),
+}));
+
 vi.mock("@/modules/inventario/services", () => ({
   fetchActivosPorProyecto: vi.fn(),
   updateActivo: vi.fn(),
+  deleteActivo: vi.fn(),
 }));
 
 vi.mock("next/link", () => ({
@@ -12,11 +20,12 @@ vi.mock("next/link", () => ({
   ),
 }));
 
-import { fetchActivosPorProyecto, updateActivo } from "@/modules/inventario/services";
+import { fetchActivosPorProyecto, updateActivo, deleteActivo } from "@/modules/inventario/services";
 import UnitDetailView from '@/modules/inventario/components/UnitDetailView';
 
 const mockFetchActivosPorProyecto = vi.mocked(fetchActivosPorProyecto);
 const mockUpdateActivo = vi.mocked(updateActivo);
+const mockDeleteActivo = vi.mocked(deleteActivo);
 
 const sampleUnit = {
   id: "unit-1",
@@ -36,12 +45,14 @@ const sampleUnit = {
 describe("UnitDetailView", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockPush.mockClear();
     mockFetchActivosPorProyecto.mockResolvedValue({
       content: [sampleUnit],
       totalElements: 1,
       totalPages: 1,
     } as any);
     mockUpdateActivo.mockResolvedValue(sampleUnit as any);
+    mockDeleteActivo.mockResolvedValue(undefined as any);
   });
 
   it("shows loading skeleton initially", () => {
@@ -183,5 +194,67 @@ describe("UnitDetailView", () => {
     fireEvent.change(areaInput, { target: { value: "120" } });
     expect(areaInput.value).toBe("120");
     expect(areaTechadaInput.value).toBe("120");
+  });
+
+  it("abre diálogo de confirmación al hacer clic en eliminar", async () => {
+    render(<UnitDetailView projectId="proj-1" unitId="unit-1" />);
+    await waitFor(() => {
+      expect(screen.getByText("Unidad 502")).toBeDefined();
+    });
+
+    const deleteBtn = screen.getByText("Eliminar unidad");
+    fireEvent.click(deleteBtn);
+
+    expect(screen.getByText("¿Eliminar unidad?")).toBeDefined();
+    expect(screen.getByText(/¿Estás seguro de que deseas eliminar la unidad "502"?/)).toBeDefined();
+  });
+
+  it("cancela la eliminación si el usuario cancela en el diálogo", async () => {
+    render(<UnitDetailView projectId="proj-1" unitId="unit-1" />);
+    await waitFor(() => {
+      expect(screen.getByText("Unidad 502")).toBeDefined();
+    });
+
+    fireEvent.click(screen.getByText("Eliminar unidad"));
+    expect(screen.getByText("¿Eliminar unidad?")).toBeDefined();
+
+    const cancelBtn = screen.getByText("Cancelar");
+    fireEvent.click(cancelBtn);
+
+    expect(screen.queryByText("¿Eliminar unidad?")).toBeNull();
+    expect(mockDeleteActivo).not.toHaveBeenCalled();
+  });
+
+  it("llama a deleteActivo y redirige al confirmar en el diálogo", async () => {
+    render(<UnitDetailView projectId="proj-1" unitId="unit-1" />);
+    await waitFor(() => {
+      expect(screen.getByText("Unidad 502")).toBeDefined();
+    });
+
+    fireEvent.click(screen.getByText("Eliminar unidad"));
+    const confirmBtn = screen.getByText("Eliminar");
+    fireEvent.click(confirmBtn);
+
+    await waitFor(() => {
+      expect(mockDeleteActivo).toHaveBeenCalledWith("unit-1");
+    });
+    await waitFor(() => {
+      expect(mockPush).toHaveBeenCalledWith("/proyectos/proj-1/unidades");
+    });
+  });
+
+  it("muestra error si falla la eliminación", async () => {
+    mockDeleteActivo.mockRejectedValue(new Error("No se puede eliminar porque tiene contratos"));
+    render(<UnitDetailView projectId="proj-1" unitId="unit-1" />);
+    await waitFor(() => {
+      expect(screen.getByText("Unidad 502")).toBeDefined();
+    });
+
+    fireEvent.click(screen.getByText("Eliminar unidad"));
+    const confirmBtn = screen.getByText("Eliminar");
+    fireEvent.click(confirmBtn);
+
+    expect(await screen.findByText("No se puede eliminar porque tiene contratos")).toBeDefined();
+    expect(screen.queryByText("¿Eliminar unidad?")).toBeNull();
   });
 });

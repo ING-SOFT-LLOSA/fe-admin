@@ -185,4 +185,96 @@ describe("UnitsOverviewView", () => {
     expect(screen.getAllByText("BLOQUEADO").length).toBeGreaterThanOrEqual(1);
     expect(screen.getAllByText("VENDIDO").length).toBeGreaterThanOrEqual(1);
   });
+
+  it("divide las unidades en páginas basándose en el tamaño de página", async () => {
+    // Generar 20 departamentos
+    const twentyUnits = Array.from({ length: 20 }, (_, i) => ({
+      ...sampleUnit,
+      id: `u-${i}`,
+      nro: `${101 + i}`,
+    }));
+    mockFetchAllActivos.mockResolvedValue(twentyUnits as any);
+
+    render(<UnitsOverviewView projectId="proj-1" />);
+
+    await waitFor(() => {
+      // Debería mostrar la primera unidad (101)
+      expect(screen.getByText("101")).toBeDefined();
+    });
+
+    // Debería mostrar 15 unidades en la primera página (por defecto el tamaño es 15)
+    // El texto "Mostrando 1-15 de 20 unidades" debería estar presente
+    expect(screen.getByText("Mostrando 1-15 de 20 unidades")).toBeDefined();
+
+    // La unidad número 16 (nro 116) NO debería mostrarse en la primera página
+    expect(screen.queryByText("116")).toBeNull();
+  });
+
+  it("cambia de página al presionar siguiente y anterior", async () => {
+    const twentyUnits = Array.from({ length: 20 }, (_, i) => ({
+      ...sampleUnit,
+      id: `u-${i}`,
+      nro: `${101 + i}`,
+    }));
+    mockFetchAllActivos.mockResolvedValue(twentyUnits as any);
+
+    render(<UnitsOverviewView projectId="proj-1" />);
+    await waitFor(() => {
+      expect(screen.getByText("101")).toBeDefined();
+    });
+
+    // Hacer clic en Siguiente
+    const nextBtn = screen.getByText("chevron_right").closest("button");
+    expect(nextBtn).toBeDefined();
+    fireEvent.click(nextBtn!);
+
+    await waitFor(() => {
+      // Ahora debería mostrar la unidad 116 (que pertenece a la segunda página)
+      expect(screen.getByText("116")).toBeDefined();
+    });
+    // El texto debería actualizarse a "Mostrando 16-20 de 20 unidades"
+    expect(screen.getByText("Mostrando 16-20 de 20 unidades")).toBeDefined();
+
+    // Hacer clic en Anterior
+    const prevBtn = screen.getByText("chevron_left").closest("button");
+    fireEvent.click(prevBtn!);
+
+    await waitFor(() => {
+      // Vuelve a mostrar 101 y oculta 116
+      expect(screen.getByText("101")).toBeDefined();
+      expect(screen.queryByText("116")).toBeNull();
+    });
+  });
+
+  it("se reinicia la página actual a 1 cuando cambian los filtros", async () => {
+    const twentyUnits = Array.from({ length: 20 }, (_, i) => ({
+      ...sampleUnit,
+      id: `u-${i}`,
+      nro: `${101 + i}`,
+    }));
+    mockFetchAllActivos.mockResolvedValue(twentyUnits as any);
+
+    render(<UnitsOverviewView projectId="proj-1" />);
+    await waitFor(() => {
+      expect(screen.getByText("101")).toBeDefined();
+    });
+
+    // Ir a la página 2
+    const nextBtn = screen.getByText("chevron_right").closest("button");
+    fireEvent.click(nextBtn!);
+
+    await waitFor(() => {
+      expect(screen.getByText("116")).toBeDefined();
+    });
+
+    // Escribir en el buscador para filtrar
+    const searchInput = screen.getByPlaceholderText("Ej. 101, departamento, terraza");
+    fireEvent.change(searchInput, { target: { value: "116" } });
+
+    await waitFor(() => {
+      // Al filtrar, la página debe reiniciarse a 1, y como el único que coincide es 116,
+      // ahora debe mostrar "Mostrando 1-1 de 1 unidades"
+      expect(screen.getByText("Mostrando 1-1 de 1 unidades")).toBeDefined();
+    });
+  });
 });
