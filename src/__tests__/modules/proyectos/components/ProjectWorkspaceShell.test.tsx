@@ -17,7 +17,7 @@ vi.mock("@/lib/api/http", () => ({
 }));
 
 vi.mock("@/modules/inventario/services", () => ({
-  fetchActivosPorProyecto: vi.fn(),
+  fetchAllActivosPorProyecto: vi.fn(),
 }));
 
 vi.mock("@/modules/proyectos/components/ProjectSectionNav", () => ({
@@ -29,10 +29,10 @@ vi.mock("@/modules/proyectos/utils/format", () => ({
 }));
 
 import { apiFetch } from "@/lib/api/http";
-import { fetchActivosPorProyecto } from "@/modules/inventario/services";
+import { fetchAllActivosPorProyecto } from "@/modules/inventario/services";
 
 const mockApiFetch = vi.mocked(apiFetch);
-const mockFetchActivos = vi.mocked(fetchActivosPorProyecto);
+const mockFetchAllActivos = vi.mocked(fetchAllActivosPorProyecto);
 
 const mockProject = {
   id: "p-123",
@@ -42,15 +42,13 @@ const mockProject = {
   fechaInicio: "2026-01-01",
 };
 
-const mockUnits = {
-  content: [
-    { estadoComercial: "DISPONIBLE" },
-    { estadoComercial: "DISPONIBLE" },
-    { estadoComercial: "SEPARADO" },
-    { estadoComercial: "VENDIDO" },
-    { estadoComercial: "EN_CONTRATO" },
-  ],
-} as any;
+const mockUnits = [
+  { estadoComercial: "DISPONIBLE" },
+  { estadoComercial: "DISPONIBLE" },
+  { estadoComercial: "SEPARADO" },
+  { estadoComercial: "VENDIDO" },
+  { estadoComercial: "EN_CONTRATO" },
+] as any;
 
 describe("ProjectWorkspaceShell", () => {
   beforeEach(() => {
@@ -83,7 +81,7 @@ describe("ProjectWorkspaceShell", () => {
 
   it("renders project name and details when project is found", async () => {
     mockApiFetch.mockResolvedValue([mockProject]);
-    mockFetchActivos.mockResolvedValue(mockUnits);
+    mockFetchAllActivos.mockResolvedValue(mockUnits);
     render(
       <ProjectWorkspaceShell projectId="p-123">
         <div data-testid="child">Content</div>
@@ -99,7 +97,7 @@ describe("ProjectWorkspaceShell", () => {
 
   it("displays correct unit counts: Unidades, Disponibles, Separadas, Vendidas", async () => {
     mockApiFetch.mockResolvedValue([mockProject]);
-    mockFetchActivos.mockResolvedValue(mockUnits);
+    mockFetchAllActivos.mockResolvedValue(mockUnits);
     render(
       <ProjectWorkspaceShell projectId="p-123">
         <div data-testid="child">Content</div>
@@ -119,7 +117,7 @@ describe("ProjectWorkspaceShell", () => {
     mockApiFetch.mockResolvedValue([
       { id: "p-123", nombre: "Test Project", fechaInicio: "2026-01-01" },
     ]);
-    mockFetchActivos.mockResolvedValue({ content: [] } as any);
+    mockFetchAllActivos.mockResolvedValue([] as any);
     render(
       <ProjectWorkspaceShell projectId="p-123">
         <div data-testid="child">Content</div>
@@ -133,7 +131,7 @@ describe("ProjectWorkspaceShell", () => {
 
   it("shows zero units when fetchActivosPorProyecto fails gracefully", async () => {
     mockApiFetch.mockResolvedValue([mockProject]);
-    mockFetchActivos.mockRejectedValue(new Error("Fetch error"));
+    mockFetchAllActivos.mockRejectedValue(new Error("Fetch error"));
     render(
       <ProjectWorkspaceShell projectId="p-123">
         <div data-testid="child">Content</div>
@@ -183,7 +181,7 @@ describe("ProjectWorkspaceShell", () => {
       { id: "b", nombre: "Beta" },
       { id: "target", nombre: "Target Project", direccion: "Target Address", fechaInicio: "2026-03-01" },
     ]);
-    mockFetchActivos.mockResolvedValue({ content: [] } as any);
+    mockFetchAllActivos.mockResolvedValue([] as any);
     render(
       <ProjectWorkspaceShell projectId="target">
         <div data-testid="child">Content</div>
@@ -196,13 +194,11 @@ describe("ProjectWorkspaceShell", () => {
 
   it("counts EN_CONTRATO units as Vendidas", async () => {
     mockApiFetch.mockResolvedValue([mockProject]);
-    mockFetchActivos.mockResolvedValue({
-      content: [
-        { estadoComercial: "VENDIDO" },
-        { estadoComercial: "EN_CONTRATO" },
-        { estadoComercial: "EN_CONTRATO" },
-      ],
-    } as any);
+    mockFetchAllActivos.mockResolvedValue([
+      { estadoComercial: "VENDIDO" },
+      { estadoComercial: "EN_CONTRATO" },
+      { estadoComercial: "EN_CONTRATO" },
+    ] as any);
     render(
       <ProjectWorkspaceShell projectId="p-123">
         <div data-testid="child">Content</div>
@@ -219,7 +215,7 @@ describe("ProjectWorkspaceShell", () => {
     mockApiFetch.mockResolvedValue([
       { id: "p-123", nombre: "Created Project", createdAt: "2026-06-15" },
     ]);
-    mockFetchActivos.mockResolvedValue({ content: [] } as any);
+    mockFetchAllActivos.mockResolvedValue([] as any);
     render(
       <ProjectWorkspaceShell projectId="p-123">
         <div data-testid="child">Content</div>
@@ -235,7 +231,7 @@ describe("ProjectWorkspaceShell", () => {
     mockApiFetch.mockResolvedValue([
       { id: "p-123", nombre: "No Dates Project", direccion: "Address" },
     ]);
-    mockFetchActivos.mockResolvedValue({ content: [] } as any);
+    mockFetchAllActivos.mockResolvedValue([] as any);
     render(
       <ProjectWorkspaceShell projectId="p-123">
         <div data-testid="child">Content</div>
@@ -265,7 +261,7 @@ describe("ProjectWorkspaceShell", () => {
 
     await new Promise((r) => setTimeout(r, 0));
 
-    expect(mockFetchActivos).not.toHaveBeenCalled();
+    expect(mockFetchAllActivos).not.toHaveBeenCalled();
   });
 
   it("skips setUnits when unmounted after project is found but before activos fetch resolves", async () => {
@@ -275,7 +271,7 @@ describe("ProjectWorkspaceShell", () => {
     const deferredActivos = new Promise<unknown>((resolve) => {
       resolveFetchActivos = resolve;
     });
-    mockFetchActivos.mockReturnValue(deferredActivos);
+    mockFetchAllActivos.mockReturnValue(deferredActivos);
 
     const { unmount } = render(
       <ProjectWorkspaceShell projectId="p-123">
@@ -284,11 +280,11 @@ describe("ProjectWorkspaceShell", () => {
     );
 
     await waitFor(() => {
-      expect(mockFetchActivos).toHaveBeenCalled();
+      expect(mockFetchAllActivos).toHaveBeenCalled();
     });
 
     unmount();
-    resolveFetchActivos!({ content: [] });
+    resolveFetchActivos!([]);
 
     await new Promise((r) => setTimeout(r, 0));
   });

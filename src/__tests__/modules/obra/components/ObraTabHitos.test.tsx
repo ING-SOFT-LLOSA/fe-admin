@@ -272,13 +272,13 @@ describe("ObraTabHitos", () => {
     const pisoSelect = screen.getAllByRole("combobox")[1] as HTMLSelectElement;
     fireEvent.change(pisoSelect, { target: { value: "10" } });
 
-    const toggle = await screen.findByText("Completar");
+    const toggle = await screen.findByText("Iniciar");
     await act(async () => {
       fireEvent.click(toggle);
     });
 
     await waitFor(() => {
-      expect(mockUpdateAvance).toHaveBeenCalledWith("av-1", "COMPLETADO");
+      expect(mockUpdateAvance).toHaveBeenCalledWith("av-1", "EN_PROGRESO");
     });
   });
 
@@ -293,19 +293,19 @@ describe("ObraTabHitos", () => {
     ] as any);
     const onRefresh = vi.fn().mockResolvedValue(undefined);
 
-    // solo 1 etapa PENDIENTE para que solo haya un botón "Completar"
+    // solo 1 etapa PENDIENTE para que solo haya un botón "Iniciar"
     const etapas = [
       { id: 3, nombre: "Acabados", orden: 3, estado: "PENDIENTE", hitos: [] },
     ];
     render(<ObraTabHitos projectId="p-1" etapas={etapas} onRefresh={onRefresh} />);
 
-    const completeBtn = screen.getByText("Completar");
+    const completeBtn = screen.getByText("Iniciar");
     await act(async () => {
       fireEvent.click(completeBtn);
     });
 
     await waitFor(() => {
-      expect(mockUpdateAvance).toHaveBeenCalledWith("av-3", "COMPLETADO");
+      expect(mockUpdateAvance).toHaveBeenCalledWith("av-3", "EN_PROGRESO");
     });
     expect(onRefresh).toHaveBeenCalled();
   });
@@ -322,13 +322,13 @@ describe("ObraTabHitos", () => {
     const onRefresh = vi.fn().mockResolvedValue(undefined);
 
     render(<ObraTabHitos projectId="p-1" etapas={sampleEtapas} onRefresh={onRefresh} />);
-    const reset = screen.getByText("Restablecer");
+    const reset = screen.getByText("Deshacer");
     await act(async () => {
       fireEvent.click(reset);
     });
 
     await waitFor(() => {
-      expect(mockUpdateAvance).toHaveBeenCalledWith("av-1", "PENDIENTE");
+      expect(mockUpdateAvance).toHaveBeenCalledWith("av-1", "EN_PROGRESO");
     });
   });
 
@@ -353,7 +353,7 @@ describe("ObraTabHitos", () => {
     ];
     render(<ObraTabHitos projectId="p-1" etapas={etapas} onRefresh={onRefresh} />);
 
-    const completeBtn = screen.getByText("Completar");
+    const completeBtn = screen.getByText("Iniciar");
     await act(async () => {
       fireEvent.click(completeBtn);
     });
@@ -377,10 +377,10 @@ describe("ObraTabHitos", () => {
     ];
     render(<ObraTabHitos projectId="p-1" etapas={etapas} onRefresh={onRefresh} />);
 
-    fireEvent.click(screen.getByText("Completar"));
+    fireEvent.click(screen.getByText("Iniciar"));
 
     expect(
-      await screen.findByText(/Cimentación.*completado/),
+      await screen.findByText(/Cimentación.*en progreso/),
     ).toBeDefined();
   });
 
@@ -390,9 +390,9 @@ describe("ObraTabHitos", () => {
     const etapas = [
       { id: 1, nombre: "X", orden: 1, estado: "PENDIENTE", hitos: [] },
     ];
-    render(<ObraTabHitos projectId="p-1" etapas={etapas} onRefresh={onRefresh} />);
+    render(<ObraTabHitos projectId="p-1" etapas={etapas} onRefresh={vi.fn()} />);
 
-    fireEvent.click(screen.getByText("Completar"));
+    fireEvent.click(screen.getByText("Iniciar"));
 
     expect(await screen.findByText("Falla en fetchActivos")).toBeDefined();
   });
@@ -404,7 +404,7 @@ describe("ObraTabHitos", () => {
     ];
     render(<ObraTabHitos projectId="p-1" etapas={etapas} onRefresh={vi.fn()} />);
 
-    fireEvent.click(screen.getByText("Completar"));
+    fireEvent.click(screen.getByText("Iniciar"));
 
     expect(
       await screen.findByText("Error al actualizar el hito global."),
@@ -440,7 +440,7 @@ describe("ObraTabHitos", () => {
     const pisoSelect = screen.getAllByRole("combobox")[1] as HTMLSelectElement;
     fireEvent.change(pisoSelect, { target: { value: "10" } });
 
-    const toggle = await screen.findByText("Completar");
+    const toggle = await screen.findByText("Iniciar");
     await act(async () => {
       fireEvent.click(toggle);
     });
@@ -506,7 +506,7 @@ describe("ObraTabHitos", () => {
     const pisoSelect = screen.getAllByRole("combobox")[1] as HTMLSelectElement;
     fireEvent.change(pisoSelect, { target: { value: "10" } });
 
-    const toggle = await screen.findByText("Completar");
+    const toggle = await screen.findByText("Iniciar");
     await act(async () => {
       fireEvent.click(toggle);
     });
