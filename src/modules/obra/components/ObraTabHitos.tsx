@@ -65,6 +65,13 @@ const ESTADO_LABELS: Record<string, string> = {
   RETRASADA:   "Retrasada",
 };
 
+/** Compute the "next" estado in the sequential flow PENDIENTE → EN_PROGRESO → COMPLETADO. */
+function nextEstado(current: string): string {
+  if (current === "PENDIENTE") return "EN_PROGRESO";
+  if (current === "EN_PROGRESO") return "COMPLETADO";
+  return "EN_PROGRESO"; // COMPLETADO goes back to EN_PROGRESO
+}
+
 // ─── Module Helpers (to prevent nesting) ──────────────────────────────────────
 
 async function loadPisosParaTorre(
@@ -117,11 +124,17 @@ function HitoMaestroRow({
 }: Readonly<{
   etapa: EtapaResponseDTO;
   globalToggling: string | null;
-  onToggle: (etapa: EtapaResponseDTO) => void;
+  onToggle: (etapa: EtapaResponseDTO, newEstado: string) => void;
 }>) {
   const isToggling = globalToggling === String(etapa.id);
-  const isCompletado = etapa.estado === "COMPLETADO";
-  const buttonLabel = isCompletado ? "Restablecer" : "Completar";
+  const estado = etapa.estado ?? "PENDIENTE";
+
+  const spinnerIcon = (
+    <svg className="animate-spin w-3.5 h-3.5" viewBox="0 0 24 24" fill="none">
+      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+    </svg>
+  );
 
   return (
     <tr className="hover:bg-slate-50 dark:hover:bg-white/[0.03]">
@@ -137,32 +150,55 @@ function HitoMaestroRow({
       <td className="px-5 py-3">
         <span
           className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-            ESTADO_STYLES[etapa.estado ?? "PENDIENTE"] ?? ESTADO_STYLES.PENDIENTE
+            ESTADO_STYLES[estado] ?? ESTADO_STYLES.PENDIENTE
           }`}
         >
-          {ESTADO_LABELS[etapa.estado ?? "PENDIENTE"] ?? "Pendiente"}
+          {ESTADO_LABELS[estado] ?? "Pendiente"}
         </span>
       </td>
       <td className="px-5 py-3">
-        <button
-          type="button"
-          disabled={isToggling}
-          onClick={() => onToggle(etapa)}
-          className={`text-xs font-bold px-3 py-1 rounded-lg transition-colors border ${
-            isCompletado
-              ? "border-red-200 text-red-600 hover:bg-red-50 dark:border-red-900/50 dark:hover:bg-red-900/20"
-              : "border-green-200 text-green-600 hover:bg-green-50 dark:border-green-900/50 dark:hover:bg-green-900/20"
-          } disabled:opacity-50 disabled:cursor-not-allowed`}
-        >
-          {isToggling ? (
-            <svg className="animate-spin w-3.5 h-3.5" viewBox="0 0 24 24" fill="none">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
-            </svg>
-          ) : (
-            buttonLabel
+        <div className="flex items-center gap-1.5">
+          {estado === "PENDIENTE" && (
+            <button
+              type="button"
+              disabled={isToggling}
+              onClick={() => onToggle(etapa, "EN_PROGRESO")}
+              className="text-xs font-bold px-3 py-1 rounded-lg transition-colors border border-blue-200 text-blue-600 hover:bg-blue-50 dark:border-blue-900/50 dark:hover:bg-blue-900/20 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isToggling ? spinnerIcon : "Iniciar"}
+            </button>
           )}
-        </button>
+          {estado === "EN_PROGRESO" && (
+            <>
+              <button
+                type="button"
+                disabled={isToggling}
+                onClick={() => onToggle(etapa, "COMPLETADO")}
+                className="text-xs font-bold px-3 py-1 rounded-lg transition-colors border border-green-200 text-green-600 hover:bg-green-50 dark:border-green-900/50 dark:hover:bg-green-900/20 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isToggling ? spinnerIcon : "Completar"}
+              </button>
+              <button
+                type="button"
+                disabled={isToggling}
+                onClick={() => onToggle(etapa, "PENDIENTE")}
+                className="text-[10px] font-medium px-2 py-0.5 rounded-md transition-colors border border-red-200 text-red-500 hover:bg-red-50 dark:border-red-900/50 dark:hover:bg-red-900/20 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Detener
+              </button>
+            </>
+          )}
+          {estado === "COMPLETADO" && (
+            <button
+              type="button"
+              disabled={isToggling}
+              onClick={() => onToggle(etapa, "EN_PROGRESO")}
+              className="text-xs font-bold px-3 py-1 rounded-lg transition-colors border border-red-200 text-red-600 hover:bg-red-50 dark:border-red-900/50 dark:hover:bg-red-900/20 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isToggling ? spinnerIcon : "Deshacer"}
+            </button>
+          )}
+        </div>
       </td>
     </tr>
   );
@@ -225,8 +261,7 @@ function ObraTabHitosProyecto({
   }
 
   // ── Completar / deshacer hito maestro (impacto global en todos los pisos) ──
-  async function handleToggleEstadoGlobal(etapa: EtapaResponseDTO) {
-    const newEstado = etapa.estado === "COMPLETADO" ? "PENDIENTE" : "COMPLETADO";
+  async function handleToggleEstadoGlobal(etapa: EtapaResponseDTO, newEstado: string) {
     setGlobalToggling(String(etapa.id));
     setError("");
     try {
@@ -247,8 +282,8 @@ function ObraTabHitosProyecto({
           `Se actualizaron ${assetIds.length - errors} de ${assetIds.length} pisos. Algunos hitos no se pudieron modificar (verifica el orden secuencial).`
         );
       } else {
-        const estadoLabel = newEstado === "COMPLETADO" ? "completado" : "pendiente";
-        setSuccess(`Hito "${etapa.nombre}" marcado como ${estadoLabel} en todos los pisos.`);
+        const estadoLabel = ESTADO_LABELS[newEstado] ?? newEstado;
+        setSuccess(`Hito "${etapa.nombre}" marcado como ${estadoLabel.toLowerCase()} en todos los pisos.`);
         if (successTimeoutRef.current) clearTimeout(successTimeoutRef.current);
         successTimeoutRef.current = setTimeout(() => setSuccess(""), 4000);
       }
@@ -391,7 +426,7 @@ function PisoAvancesTable({
   loadingAvances: boolean;
   selectedPisoId: string;
   etapasLength: number;
-  onToggle: (avanceId: string, currentEstado: string) => Promise<void>;
+  onToggle: (avanceId: string, newEstado: string) => Promise<void>;
 }>) {
   if (!selectedPisoId) {
     return (
@@ -438,8 +473,7 @@ function PisoAvancesTable({
       </thead>
       <tbody className="divide-y divide-slate-100 dark:divide-white/5">
         {avances.map((avance) => {
-          const isCompletado = avance.estado === "COMPLETADO";
-          const buttonText = isCompletado ? "Deshacer" : "Completar";
+          const estado = avance.estado ?? "PENDIENTE";
           return (
             <tr key={avance.id} className="hover:bg-slate-50 dark:hover:bg-white/[0.03]">
               <td className="px-5 py-3 text-sm font-bold text-slate-400 dark:text-white/30 w-10">
@@ -454,10 +488,10 @@ function PisoAvancesTable({
               <td className="px-5 py-3">
                 <span
                   className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                    ESTADO_STYLES[avance.estado ?? "PENDIENTE"] ?? ESTADO_STYLES.PENDIENTE
+                    ESTADO_STYLES[estado] ?? ESTADO_STYLES.PENDIENTE
                   }`}
                 >
-                  {ESTADO_LABELS[avance.estado ?? "PENDIENTE"] ?? avance.estado}
+                  {ESTADO_LABELS[estado] ?? avance.estado}
                 </span>
                 {avance.fechaCompletado && (
                   <p className="text-[10px] text-slate-400 dark:text-white/30 mt-1">
@@ -466,17 +500,44 @@ function PisoAvancesTable({
                 )}
               </td>
               <td className="px-5 py-3">
-                <button
-                  type="button"
-                  onClick={() => onToggle(avance.id, avance.estado ?? "PENDIENTE")}
-                  className={`text-xs font-bold px-3 py-1 rounded-lg transition-colors border ${
-                    isCompletado
-                      ? "border-red-200 text-red-600 hover:bg-red-50 dark:border-red-900/50 dark:hover:bg-red-900/20"
-                      : "border-green-200 text-green-600 hover:bg-green-50 dark:border-green-900/50 dark:hover:bg-green-900/20"
-                  }`}
-                >
-                  {buttonText}
-                </button>
+                <div className="flex items-center gap-1.5">
+                  {estado === "PENDIENTE" && (
+                    <button
+                      type="button"
+                      onClick={() => onToggle(avance.id, "EN_PROGRESO")}
+                      className="text-xs font-bold px-3 py-1 rounded-lg transition-colors border border-blue-200 text-blue-600 hover:bg-blue-50 dark:border-blue-900/50 dark:hover:bg-blue-900/20"
+                    >
+                      Iniciar
+                    </button>
+                  )}
+                  {estado === "EN_PROGRESO" && (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => onToggle(avance.id, "COMPLETADO")}
+                        className="text-xs font-bold px-3 py-1 rounded-lg transition-colors border border-green-200 text-green-600 hover:bg-green-50 dark:border-green-900/50 dark:hover:bg-green-900/20"
+                      >
+                        Completar
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => onToggle(avance.id, "PENDIENTE")}
+                        className="text-[10px] font-medium px-2 py-0.5 rounded-md transition-colors border border-red-200 text-red-500 hover:bg-red-50 dark:border-red-900/50 dark:hover:bg-red-900/20"
+                      >
+                        Detener
+                      </button>
+                    </>
+                  )}
+                  {estado === "COMPLETADO" && (
+                    <button
+                      type="button"
+                      onClick={() => onToggle(avance.id, "EN_PROGRESO")}
+                      className="text-xs font-bold px-3 py-1 rounded-lg transition-colors border border-red-200 text-red-600 hover:bg-red-50 dark:border-red-900/50 dark:hover:bg-red-900/20"
+                    >
+                      Deshacer
+                    </button>
+                  )}
+                </div>
               </td>
             </tr>
           );
@@ -595,10 +656,9 @@ function ObraTabHitosPiso({
     };
   }, [selectedPisoId, activos]);
 
-  // ── Completar / deshacer hito de piso ────────────────────────────────────
-  const handleToggleEstadoPiso = useCallback(async (avanceId: string, currentEstado: string) => {
+  // ── Cambiar estado de hito de piso ────────────────────────────────────────
+  const handleToggleEstadoPiso = useCallback(async (avanceId: string, newEstado: string) => {
     setErrorPiso("");
-    const newEstado = currentEstado === "COMPLETADO" ? "PENDIENTE" : "COMPLETADO";
 
     const activoProxy = activos.find((a) => a.pisoId === Number(selectedPisoId));
 
