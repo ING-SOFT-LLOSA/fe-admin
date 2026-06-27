@@ -79,11 +79,12 @@ export default function ConstructionProgressView({
  
         let computedEstado = etapa.estado;
         if (floorStates.length > 0) {
-          const allCompleted = floorStates.every((st) => st === "COMPLETADO");
-          const anyCompleted = floorStates.includes("COMPLETADO");
+          const allCompleted  = floorStates.every((st) => st === "COMPLETADO");
+          const anyCompleted  = floorStates.includes("COMPLETADO");
+          const anyInProgress = floorStates.includes("EN_PROGRESO");
           if (allCompleted) {
             computedEstado = "COMPLETADO";
-          } else if (anyCompleted) {
+          } else if (anyCompleted || anyInProgress) {
             computedEstado = "EN_PROGRESO";
           } else {
             computedEstado = "PENDIENTE";
