@@ -277,4 +277,41 @@ describe("UnitsOverviewView", () => {
       expect(screen.getByText("Mostrando 1-1 de 1 unidades")).toBeDefined();
     });
   });
+
+  it("muestra la columna de Torre con el nombre de la torre correspondiente", async () => {
+    mockFetchAllActivos.mockResolvedValue([
+      { ...sampleUnit, id: "u-1", nro: "101", torreNombre: "Torre Norte" },
+    ] as any);
+
+    render(<UnitsOverviewView projectId="proj-1" />);
+
+    await waitFor(() => {
+      expect(screen.getByText("101")).toBeDefined();
+      expect(screen.getAllByText("Torre Norte").length).toBeGreaterThanOrEqual(1);
+    });
+  });
+
+  it("filtra las unidades por torre al seleccionar una del selector", async () => {
+    mockFetchAllActivos.mockResolvedValue([
+      { ...sampleUnit, id: "u-1", nro: "101", torreNombre: "Torre A" },
+      { ...sampleUnit, id: "u-2", nro: "201", torreNombre: "Torre B" },
+    ] as any);
+
+    render(<UnitsOverviewView projectId="proj-1" />);
+
+    await waitFor(() => {
+      expect(screen.getByText("101")).toBeDefined();
+      expect(screen.getByText("201")).toBeDefined();
+    });
+
+    // Cambiar filtro de torre a "Torre B"
+    const towerSelect = screen.getByLabelText("Torre");
+    fireEvent.change(towerSelect, { target: { value: "Torre B" } });
+
+    await waitFor(() => {
+      // Debería ocultar 101 (Torre A) y mostrar 201 (Torre B)
+      expect(screen.queryByText("101")).toBeNull();
+      expect(screen.getByText("201")).toBeDefined();
+    });
+  });
 });

@@ -32,10 +32,11 @@ export default function UnitsOverviewView({ projectId }: Readonly<UnitsOverviewV
 
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(15);
+  const [towerFilter, setTowerFilter] = useState("all");
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [deferredSearch, statusFilter, typeFilter]);
+  }, [deferredSearch, statusFilter, typeFilter, towerFilter]);
 
   useEffect(() => {
     let mounted = true;
@@ -75,7 +76,8 @@ export default function UnitsOverviewView({ projectId }: Readonly<UnitsOverviewV
           unit.descripcion?.toLowerCase().includes(query);
         const matchesStatus = statusFilter === "all" || unit.estadoComercial === statusFilter;
         const matchesType = typeFilter === "all" || unit.tipo === typeFilter;
-        return matchesQuery && matchesStatus && matchesType;
+        const matchesTower = towerFilter === "all" || unit.torreNombre === towerFilter;
+        return matchesQuery && matchesStatus && matchesType && matchesTower;
       })
       .sort((a, b) => {
         const orderA = TYPE_ORDER[a.tipo] ?? 99;
@@ -83,7 +85,7 @@ export default function UnitsOverviewView({ projectId }: Readonly<UnitsOverviewV
         if (orderA !== orderB) return orderA - orderB;
         return a.nro.localeCompare(b.nro, undefined, { numeric: true });
       });
-  }, [deferredSearch, statusFilter, typeFilter, units]);
+  }, [deferredSearch, statusFilter, typeFilter, towerFilter, units]);
 
   const paginatedUnits = useMemo(() => {
     const start = (currentPage - 1) * pageSize;
@@ -94,6 +96,9 @@ export default function UnitsOverviewView({ projectId }: Readonly<UnitsOverviewV
 
   const unitTypes = Array.from(new Set(units.map((unit) => unit.tipo))).sort((a, b) => a.localeCompare(b));
   const unitStatuses = Array.from(new Set(units.map((unit) => unit.estadoComercial))).sort((a, b) => a.localeCompare(b));
+  const unitTowers = useMemo(() => {
+    return Array.from(new Set(units.map((unit) => unit.torreNombre).filter(Boolean))) as string[];
+  }, [units]);
 
   return (
     <section className="space-y-6">
@@ -105,7 +110,7 @@ export default function UnitsOverviewView({ projectId }: Readonly<UnitsOverviewV
 
       
       <section className="rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 p-6 shadow-sm">
-        <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_220px_220px]">
+        <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_180px_180px_180px]">
           <div>
             <label htmlFor="units-search" className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-white/60">
               Buscar unidad
@@ -115,9 +120,27 @@ export default function UnitsOverviewView({ projectId }: Readonly<UnitsOverviewV
               value={search}
               onChange={(event) => setSearch(event.target.value)}
               placeholder="Ej. 101, departamento, terraza"
-              className="w-full rounded-xl border border-slate-200 dark:border-white/10 px-3 py-2 text-sm outline-none transition-all focus:border-arch-gold focus:ring-1 focus:ring-arch-gold/20"
+              className="w-full rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 px-3 py-2 text-sm outline-none transition-all focus:border-arch-gold focus:ring-1 focus:ring-arch-gold/20 dark:text-white"
             />
           </div>
+          {unitTowers.length > 0 && (
+            <div>
+              <label htmlFor="units-tower-filter" className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-white/60">
+                Torre
+              </label>
+              <select
+                id="units-tower-filter"
+                value={towerFilter}
+                onChange={(event) => setTowerFilter(event.target.value)}
+                className="w-full rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 px-3 py-2 text-sm outline-none transition-all focus:border-arch-gold focus:ring-1 focus:ring-arch-gold/20 dark:text-white"
+              >
+                <option value="all">Todas</option>
+                {unitTowers.map((tower) => (
+                  <option key={tower} value={tower}>{tower}</option>
+                ))}
+              </select>
+            </div>
+          )}
           <div>
             <label htmlFor="units-type-filter" className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-white/60">
               Tipo
@@ -126,7 +149,7 @@ export default function UnitsOverviewView({ projectId }: Readonly<UnitsOverviewV
               id="units-type-filter"
               value={typeFilter}
               onChange={(event) => setTypeFilter(event.target.value)}
-              className="w-full rounded-xl border border-slate-200 dark:border-white/10 px-3 py-2 text-sm outline-none transition-all focus:border-arch-gold focus:ring-1 focus:ring-arch-gold/20"
+              className="w-full rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 px-3 py-2 text-sm outline-none transition-all focus:border-arch-gold focus:ring-1 focus:ring-arch-gold/20 dark:text-white"
             >
               <option value="all">Todos</option>
               {unitTypes.map((type) => (
@@ -142,7 +165,7 @@ export default function UnitsOverviewView({ projectId }: Readonly<UnitsOverviewV
               id="units-status-filter"
               value={statusFilter}
               onChange={(event) => setStatusFilter(event.target.value)}
-              className="w-full rounded-xl border border-slate-200 dark:border-white/10 px-3 py-2 text-sm outline-none transition-all focus:border-arch-gold focus:ring-1 focus:ring-arch-gold/20"
+              className="w-full rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 px-3 py-2 text-sm outline-none transition-all focus:border-arch-gold focus:ring-1 focus:ring-arch-gold/20 dark:text-white"
             >
               <option value="all">Todos</option>
               {unitStatuses.map((status) => (
@@ -158,7 +181,7 @@ export default function UnitsOverviewView({ projectId }: Readonly<UnitsOverviewV
           <table className="w-full border-collapse text-left">
             <thead>
               <tr className="bg-slate-50 dark:bg-white/5">
-                {["Unidad", "Piso", "Tipo", "Ocupada (m²)", "Techada", "Precio base", "Estado", "Acciones"].map((header) => (
+                {["Unidad", "Torre", "Piso", "Tipo", "Ocupada (m²)", "Techada", "Precio base", "Estado", "Acciones"].map((header) => (
                   <th key={header} className="px-6 py-3 text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-white/60">
                     {header}
                   </th>
@@ -170,7 +193,7 @@ export default function UnitsOverviewView({ projectId }: Readonly<UnitsOverviewV
                 if (isLoading) {
                   return (
                     <tr>
-                      <td colSpan={8} className="px-6 py-10 text-center text-sm text-slate-500 dark:text-white/60">
+                      <td colSpan={9} className="px-6 py-10 text-center text-sm text-slate-500 dark:text-white/60">
                         Cargando inventario...
                       </td>
                     </tr>
@@ -179,7 +202,7 @@ export default function UnitsOverviewView({ projectId }: Readonly<UnitsOverviewV
                 if (visibleUnits.length === 0) {
                   return (
                     <tr>
-                      <td colSpan={8} className="px-6 py-10 text-center text-sm text-slate-500 dark:text-white/60">
+                      <td colSpan={9} className="px-6 py-10 text-center text-sm text-slate-500 dark:text-white/60">
                         No hay unidades para los filtros seleccionados.
                       </td>
                     </tr>
@@ -188,6 +211,7 @@ export default function UnitsOverviewView({ projectId }: Readonly<UnitsOverviewV
                 return paginatedUnits.map((unit) => (
                   <tr key={unit.id} className="hover:bg-slate-50 dark:bg-white/5 transition-colors">
                     <td className="px-6 py-4 text-sm font-bold text-build-main dark:text-white">{unit.nro}</td>
+                    <td className="px-6 py-4 text-sm text-slate-500 dark:text-white/60">{unit.torreNombre ?? "—"}</td>
                     <td className="px-6 py-4 text-sm text-slate-500 dark:text-white/60">{unit.nroPiso ?? unit.pisoId}</td>
                     <td className="px-6 py-4 text-sm text-slate-500 dark:text-white/60">{unit.tipo}</td>
                     <td className="px-6 py-4 text-sm text-slate-500 dark:text-white/60">{unit.areaM2} m2</td>
