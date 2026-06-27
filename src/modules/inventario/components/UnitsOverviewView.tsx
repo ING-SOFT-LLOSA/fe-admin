@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useDeferredValue, useEffect, useMemo, useState } from "react";
 
-import { fetchActivosPorProyecto } from "@/modules/inventario/services";
+import { fetchAllActivosPorProyecto } from "@/modules/inventario/services";
 import type { ActivoResponseDTO } from "@/modules/inventario/types";
 
 type UnitsOverviewViewProps = {
@@ -38,9 +38,9 @@ export default function UnitsOverviewView({ projectId }: Readonly<UnitsOverviewV
       setIsLoading(true);
       setError("");
       try {
-        const activosPage = await fetchActivosPorProyecto(projectId);
-  
-        if (mounted) setUnits(activosPage.content ?? []);
+        const activos = await fetchAllActivosPorProyecto(projectId);
+
+        if (mounted) setUnits(activos);
       } catch (loadError) {
         if (mounted) {
           setError(loadError instanceof Error ? loadError.message : "No se pudo cargar el inventario.");

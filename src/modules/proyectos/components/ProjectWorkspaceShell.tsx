@@ -43,7 +43,7 @@ export default function ProjectWorkspaceShell({ projectId, children }: Readonly<
           fechaInicio?: string;
           createdAt?: string;
         } | undefined;
-        const { fetchActivosPorProyecto } = await import("@/modules/inventario/services");
+        const { fetchAllActivosPorProyecto } = await import("@/modules/inventario/services");
         if (!mounted) return;
 
         if (!backendProject) {
@@ -59,10 +59,10 @@ export default function ProjectWorkspaceShell({ projectId, children }: Readonly<
           startDate: backendProject.fechaInicio || backendProject.createdAt || "",
         });
 
-        const activosPage = await fetchActivosPorProyecto(projectId).catch(() => null);
+        const activos = await fetchAllActivosPorProyecto(projectId).catch(() => []);
 
         if (mounted) {
-          setUnits((activosPage?.content ?? []) as UnitHeader[]);
+          setUnits(activos as UnitHeader[]);
         }
 
       } finally {
