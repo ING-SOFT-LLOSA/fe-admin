@@ -27,16 +27,17 @@ beforeEach(() => {
 describe("proyectos API", () => {
   describe("fetchProyectos", () => {
     it("llama a /api/proyectos", async () => {
-      mockApiFetch.mockResolvedValue([]);
+      mockApiFetch.mockResolvedValue({ content: [], totalElements: 0 });
       await fetchProyectos();
-      expect(mockApiFetch).toHaveBeenCalledWith("/api/proyectos");
+      expect(mockApiFetch).toHaveBeenCalledWith("/api/proyectos?size=200");
     });
 
     it("retorna la lista de proyectos", async () => {
-      const proyectos = [{ id: "p1", nombre: "Edificio Norte" }];
-      mockApiFetch.mockResolvedValue(proyectos);
+      const proyectos = [{ id: "p1", nombre: "Edificio Norte", fechaFin: "2027-01-01" }];
+      // El backend devuelve Page<ProyectoResponseDTO> — simulamos el shape real
+      mockApiFetch.mockResolvedValue({ content: proyectos, totalElements: 1 });
       const result = await fetchProyectos();
-      expect(result).toEqual(proyectos);
+      expect(result[0]).toMatchObject({ id: "p1", nombre: "Edificio Norte" });
     });
   });
 
@@ -80,6 +81,7 @@ describe("proyectos API", () => {
         nombre: "Nuevo nombre",
         descripcion: "Descripción",
         precertificacionEdgeLeed: false,
+        linkRecorridoVirtual: "",
         departamento: "Lima",
         distrito: "Miraflores",
         direccion: "Av. Principal 123",
@@ -109,9 +111,11 @@ describe("proyectos API", () => {
         nro: "101",
         tipo: "DEPARTAMENTO",
         areaM2: 80,
+        areaTechada: 75,
         estadoComercial: "DISPONIBLE",
         precio: 200000,
         descripcion: "Dep bonito",
+        tieneRecorridoVirtual: false,
       };
       mockApiFetch.mockResolvedValue({ id: "act-1", ...data });
       await createActivo(10, data);
@@ -127,9 +131,11 @@ describe("proyectos API", () => {
         nro: "102",
         tipo: "ESTACIONAMIENTO",
         areaM2: 14,
+        areaTechada: 14,
         estadoComercial: "DISPONIBLE",
         precio: 30000,
         descripcion: "Parking",
+        tieneRecorridoVirtual: false,
       };
       mockApiFetch.mockResolvedValue({ id: "act-2", ...data });
       await updateActivo("act-2", data);
