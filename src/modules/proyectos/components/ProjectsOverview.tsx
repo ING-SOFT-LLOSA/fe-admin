@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import ProjectCard from "./ProjectCard";
 import { apiFetch } from "@/lib/api/http";
+import { fetchProyectos } from "@/lib/api/proyectos";
 import { Proyecto } from "../types/proyecto";
 
 async function fetchProjectDetails(projectId: string) {
@@ -75,7 +76,7 @@ export default function ProjectsOverview() {
       setError("");
       try {
         const [projData, contractsData] = await Promise.all([
-          apiFetch<Proyecto[]>("/api/proyectos"),
+          fetchProyectos(),
           apiFetch<unknown>("/api/expedientes?unpaginated=true").catch(() => []),
         ]);
 

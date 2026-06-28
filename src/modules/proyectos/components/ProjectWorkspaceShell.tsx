@@ -34,7 +34,8 @@ export default function ProjectWorkspaceShell({ projectId, children }: Readonly<
       setIsLoading(true);
       try {
         const { apiFetch } = await import("@/lib/api/http");
-        const allProjects = await apiFetch<unknown[]>("/api/proyectos");
+        const raw = await apiFetch<{ content?: unknown[] } | unknown[]>("/api/proyectos?size=200");
+        const allProjects: unknown[] = Array.isArray(raw) ? raw : (raw as { content?: unknown[] }).content ?? [];
         const backendProject = allProjects.find((entry) => (entry as { id: string }).id === projectId) as {
           id: string;
           nombre: string;
