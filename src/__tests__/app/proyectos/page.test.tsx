@@ -16,7 +16,7 @@ describe("ProjectsOverview", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(apiFetch).mockImplementation((path: string) => {
-      if (path === "/api/proyectos") return Promise.resolve(projects as never);
+      if (path.startsWith("/api/proyectos") && !path.includes("/avance-general")) return Promise.resolve(projects as never);
       if (path === "/api/expedientes?unpaginated=true") return Promise.resolve([] as never);
       if (path === "/api/activos/proyecto/p1?size=9999") return Promise.resolve({ content: [{ tipo: "DEPARTAMENTO" }] } as never);
       if (path === "/api/activos/proyecto/p2?size=9999") return Promise.resolve({ content: [] } as never);
