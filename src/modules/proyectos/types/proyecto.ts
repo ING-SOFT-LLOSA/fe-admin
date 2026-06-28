@@ -3,18 +3,22 @@ export interface Proyecto {
   nombre: string;
   direccion: string;
   fechaInicio: string;
-  fechaFinEstimada: string;
+  /** Campo real del backend (ProyectoResponseDTO.fechaFin) */
+  fechaFin: string;
+  /** @deprecated alias de fechaFin para compatibilidad con componentes existentes */
+  fechaFinEstimada?: string;
   descripcion?: string;
   precertificacionEdgeLeed?: boolean;
   departamento?: string;
   distrito?: string;
-  fechaFin?: string;
+  createdAt?: string;
 }
 
 export interface ProyectoCreateDTO {
   nombre: string;
   descripcion: string;
   precertificacionEdgeLeed: boolean;
+  linkRecorridoVirtual: string;
   departamento: string;
   distrito: string;
   direccion: string;

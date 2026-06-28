@@ -66,13 +66,38 @@ export function fetchReportesActivo(
 
 /**
  * Create a new physical progress report for a project.
- * POST /api/reportes
+ * POST /api/reportes  (multipart/form-data)
+ *
+ * The backend accepts:
+ *  - part "reporte"  → JSON blob with the report metadata
+ *  - part "archivos" → optional list of image/pdf/video files
+ *
+ * Do NOT set the Content-Type header manually — the browser sets the
+ * correct multipart boundary automatically when using FormData.
  */
-export function createReporte(payload: ReporteCreatePayload): Promise<ReporteResponse> {
+export function createReporte(
+  payload: ReporteCreatePayload,
+  files?: File[]
+): Promise<ReporteResponse> {
+  const formData = new FormData();
+
+  // The backend uses @RequestPart("reporte") which expects a JSON blob
+  formData.append(
+    "reporte",
+    new Blob([JSON.stringify(payload)], { type: "application/json" })
+  );
+
+  // Attach each file as the "archivos" multi-value part
+  if (files && files.length > 0) {
+    for (const file of files) {
+      formData.append("archivos", file);
+    }
+  }
+
   return apiFetch<ReporteResponse>("/api/reportes", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
+    // Do NOT set Content-Type — browser sets it with the correct boundary
+    body: formData,
   });
 }
 

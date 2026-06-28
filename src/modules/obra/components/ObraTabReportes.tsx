@@ -3,7 +3,6 @@
 import { useEffect, useState, useCallback, useRef, useId } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import type { Proyecto } from "@/modules/proyectos/types";
-import { uploadDocument } from "@/lib/api/documents";
 import {
   fetchReportesProyecto,
   createReporte,
@@ -39,6 +38,12 @@ export default function ObraTabReportes({ projectId, avance, project }: ObraTabR
  
   const [reports, setReports] = useState<ReporteResponse[]>([]);
   const [loading, setLoading] = useState(false);
+  // ── Pagination state ───────────────────────────────────────────────────────
+  const PAGE_SIZE = 10;
+  const [currentPage, setCurrentPage] = useState(0);
+  const [totalPages, setTotalPages]   = useState(0);
+  const [totalItems, setTotalItems]   = useState(0);
+  // ─────────────────────────────────────────────────────────────────────────
   const [dialog, setDialog] = useState<{
     isOpen: boolean;
     title: string;
@@ -63,15 +68,18 @@ export default function ObraTabReportes({ projectId, avance, project }: ObraTabR
     lastProjectIdRef.current = projectId;
   }, [projectId]);
 
-  const loadReports = useCallback(async () => {
+  const loadReports = useCallback(async (page = 0) => {
     if (!projectId) return;
     const currentProjectId = projectId;
     setLoading(true);
     setError(null);
     try {
-      const pageRes = await fetchReportesProyecto(currentProjectId, 0, 100);
+      const pageRes = await fetchReportesProyecto(currentProjectId, page, PAGE_SIZE);
       if (currentProjectId !== lastProjectIdRef.current) return;
       setReports(pageRes.content || []);
+      setTotalPages(pageRes.totalPages ?? 0);
+      setTotalItems(pageRes.totalElements ?? 0);
+      setCurrentPage(pageRes.number ?? 0);
     } catch (err) {
       if (currentProjectId === lastProjectIdRef.current) {
         console.error("Error loading reports:", err);
@@ -85,43 +93,19 @@ export default function ObraTabReportes({ projectId, avance, project }: ObraTabR
   }, [projectId]);
 
   useEffect(() => {
+    setCurrentPage(0);
     Promise.resolve().then(() => {
-      loadReports();
+      loadReports(0);
     });
   }, [loadReports]);
 
-  const uploadReportFiles = async (reportId: string, files: File[]) => {
-    let failedUploads = 0;
-    let lastErrorMessage = "";
-    for (const file of files) {
-      const tipo: "FOTO_OBRA" | "VIDEO_OBRA" = file.type.startsWith("image/") ? "FOTO_OBRA" : "VIDEO_OBRA";
-      try {
-        await uploadDocument(reportId, file, tipo);
-      } catch (err) {
-        console.error("Error uploading file to report:", err);
-        failedUploads++;
-        lastErrorMessage = err instanceof Error ? err.message : String(err);
-      }
-    }
-    return { failedUploads, lastErrorMessage };
-  };
- 
   const handleCreateReport = async (payload: ReporteCreatePayload, files: File[]) => {
-    const report = await createReporte(payload);
-    if (files && files.length > 0) {
-      const { failedUploads, lastErrorMessage } = await uploadReportFiles(report.id, files);
-      if (failedUploads > 0) {
-        setDialog({
-          isOpen: true,
-          title: "Advertencia de Subida",
-          message: `Se creó el reporte, pero falló la subida de ${failedUploads} archivo(s).\nError del servidor: ${lastErrorMessage}`,
-          type: "warning",
-          confirmText: "Aceptar",
-        });
-      }
-    }
+    // The backend now handles file upload atomically in the multipart POST.
+    // We simply pass the files to createReporte — no separate upload step needed.
+    await createReporte(payload, files.length > 0 ? files : undefined);
     setShowForm(false);
-    await loadReports();
+    // Always reload from page 0 after creating a new report
+    await loadReports(0);
   };
  
   const handleDeleteReport = (id: string) => {
@@ -137,7 +121,7 @@ export default function ObraTabReportes({ projectId, avance, project }: ObraTabR
         try {
           await deleteReporte(id);
           setSelectedReport(null);
-          await loadReports();
+          await loadReports(0);
         } catch (err) {
           console.error("Error deleting report:", err);
           setDialog({
@@ -151,10 +135,6 @@ export default function ObraTabReportes({ projectId, avance, project }: ObraTabR
       },
     });
   };
- 
-  const sorted = [...reports].sort(
-    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-  );
  
   const totalPublicados = reports.length;
   const totalBorradores = 0;
@@ -171,7 +151,7 @@ export default function ObraTabReportes({ projectId, avance, project }: ObraTabR
         </div>
       );
     }
-    if (sorted.length === 0) {
+    if (reports.length === 0) {
       return (
         <div className="px-6 py-14 flex flex-col items-center gap-3 text-center">
           <span className="material-symbols-outlined text-[40px] text-slate-200 dark:text-white/20">
@@ -185,15 +165,49 @@ export default function ObraTabReportes({ projectId, avance, project }: ObraTabR
       );
     }
     return (
-      <div className="divide-y divide-slate-100 dark:divide-white/5">
-        {sorted.map((report) => (
-          <ReportRow
-            key={report.id}
-            report={report}
-            onView={() => setSelectedReport(report)}
-          />
-        ))}
-      </div>
+      <>
+        <div className="divide-y divide-slate-100 dark:divide-white/5">
+          {reports.map((report) => (
+            <ReportRow
+              key={report.id}
+              report={report}
+              onView={() => setSelectedReport(report)}
+            />
+          ))}
+        </div>
+
+        {/* ── Pagination controls ── */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between gap-4 px-6 py-3 border-t border-slate-100 dark:border-white/5 bg-slate-50/50 dark:bg-white/[0.01]">
+            <p className="text-xs text-slate-500 dark:text-white/40">
+              Página <span className="font-semibold">{currentPage + 1}</span> de{" "}
+              <span className="font-semibold">{totalPages}</span>
+              {" "}·{" "}
+              <span className="font-semibold">{totalItems}</span> reporte{totalItems !== 1 ? "s" : ""}
+            </p>
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                disabled={currentPage === 0 || loading}
+                onClick={() => loadReports(currentPage - 1)}
+                className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 text-slate-500 dark:text-white/60 hover:bg-slate-50 dark:hover:bg-white/5 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                aria-label="Página anterior"
+              >
+                <span className="material-symbols-outlined text-[18px]">chevron_left</span>
+              </button>
+              <button
+                type="button"
+                disabled={currentPage >= totalPages - 1 || loading}
+                onClick={() => loadReports(currentPage + 1)}
+                className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 text-slate-500 dark:text-white/60 hover:bg-slate-50 dark:hover:bg-white/5 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                aria-label="Página siguiente"
+              >
+                <span className="material-symbols-outlined text-[18px]">chevron_right</span>
+              </button>
+            </div>
+          </div>
+        )}
+      </>
     );
   };
  
@@ -265,7 +279,7 @@ export default function ObraTabReportes({ projectId, avance, project }: ObraTabR
         <div className="px-6 py-4 border-b border-slate-100 dark:border-white/10">
           <h3 className="text-sm font-bold text-build-main dark:text-white">Reportes de avance</h3>
           <p className="text-xs text-slate-400 dark:text-white/40 mt-0.5">
-            {sorted.length} reporte{sorted.length === 1 ? "" : "s"} encontrado{sorted.length === 1 ? "" : "s"}
+            {totalItems > 0 ? totalItems : reports.length} reporte{(totalItems || reports.length) === 1 ? "" : "s"} encontrado{(totalItems || reports.length) === 1 ? "" : "s"}
             {project ? ` · ${project.nombre}` : ""}
           </p>
         </div>

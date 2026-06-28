@@ -269,17 +269,15 @@ describe("ObraTabReportes", () => {
     });
   });
 
-  it("sube archivos al crear el reporte y reporta fallos parciales", async () => {
-    mockUpload
-      .mockResolvedValueOnce({} as any)
-      .mockRejectedValueOnce(new Error("fallo archivo"));
-
+  it("pasa los archivos seleccionados a createReporte como parte del payload multipart", async () => {
+    // With the new backend, files are uploaded atomically via multipart POST.
+    // The component passes them directly to createReporte() — no separate uploadDocument call.
     render(<ObraTabReportes projectId="p-1" avance={0} project={null} />);
     fireEvent.click(await screen.findByText("Nuevo reporte"));
 
     const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
     const file1 = new File(["x"], "foto1.jpg", { type: "image/jpeg" });
-    const file2 = new File(["y"], "video.mp4", { type: "video/mp4" });
+    const file2 = new File(["y"], "foto2.png", { type: "image/png" });
     Object.defineProperty(fileInput, "files", { value: [file1, file2] });
     fireEvent.change(fileInput);
 
@@ -299,10 +297,15 @@ describe("ObraTabReportes", () => {
     await waitFor(() => {
       expect(mockCreateReporte).toHaveBeenCalled();
     });
-    await waitFor(() => {
-      expect(mockUpload).toHaveBeenCalledTimes(2);
-    });
-    expect(await screen.findByText("Advertencia de Subida")).toBeDefined();
+
+    // Verify createReporte was called with the files array (new multipart behavior)
+    const [, filesArg] = mockCreateReporte.mock.calls[0];
+    expect(filesArg).toHaveLength(2);
+    expect(filesArg[0].name).toBe("foto1.jpg");
+    expect(filesArg[1].name).toBe("foto2.png");
+
+    // The old uploadDocument should NOT be called anymore
+    expect(mockUpload).not.toHaveBeenCalled();
   });
 
   it("abre diálogo de confirmación para eliminar y elimina al confirmar", async () => {

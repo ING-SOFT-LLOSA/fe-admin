@@ -3,9 +3,18 @@ import { apiFetch } from "@/lib/api/http";
 export interface Proyecto {
   id: string; // UUID
   nombre: string;
+  descripcion?: string;
+  precertificacionEdgeLeed?: boolean;
+  linkRecorridoVirtual?: string;
+  departamento?: string;
+  distrito?: string;
   direccion: string;
   fechaInicio: string;
-  fechaFinEstimada: string;
+  /** Fecha fin del proyecto (campo real que devuelve el backend) */
+  fechaFin: string;
+  /** @deprecated Alias de fechaFin — mantenido por compatibilidad con componentes existentes */
+  fechaFinEstimada?: string;
+  createdAt?: string;
 }
 
 export interface ProyectoCreateDTO {
@@ -64,8 +73,20 @@ export interface PisoResponseDTO {
   nroPiso: number;
 }
 
+/**
+ * GET /api/proyectos
+ * El backend retorna un Page<ProyectoResponseDTO>. Desempaquetamos .content
+ * y añadimos el alias fechaFinEstimada para compatibilidad con componentes existentes.
+ */
 export function fetchProyectos(): Promise<Proyecto[]> {
-  return apiFetch<Proyecto[]>("/api/proyectos");
+  return apiFetch<{ content?: Proyecto[] } | Proyecto[]>("/api/proyectos?size=200").then((res) => {
+    const list: Proyecto[] = Array.isArray(res) ? res : (res as { content?: Proyecto[] }).content ?? [];
+    return list.map((p) => ({
+      ...p,
+      // alias para componentes que aún leen fechaFinEstimada
+      fechaFinEstimada: p.fechaFinEstimada ?? p.fechaFin,
+    }));
+  });
 }
 
 export function fetchTorresPorProyecto(uuidProyecto: string): Promise<TorreResponseDTO[]> {
