@@ -40,6 +40,12 @@ export interface Page<T> {
   first: boolean;
   numberOfElements: number;
   empty: boolean;
+  page?: {
+    size: number;
+    number: number;
+    totalElements: number;
+    totalPages: number;
+  };
 }
 
 export interface ActivoResponseDTO {
@@ -118,9 +124,10 @@ export async function fetchAllActivosPorProyecto(uuidProyecto: string): Promise<
     const content = response.content ?? [];
     all.push(...content);
     
-    const realSize = response.size ?? PAGE_SIZE;
+    const pageInfo = response.page || response;
+    const realSize = pageInfo.size ?? PAGE_SIZE;
     const isLast = response.last ?? (content.length < realSize);
-    const totalPages = response.totalPages ?? 1;
+    const totalPages = pageInfo.totalPages ?? 1;
 
     if (isLast || page >= totalPages - 1 || content.length === 0) {
       hasMore = false;
