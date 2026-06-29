@@ -14,6 +14,7 @@ vi.mock("@/lib/api/expedientes", () => ({
 
 vi.mock("@/modules/inventario/services", () => ({
   fetchActivosPorProyecto: vi.fn(),
+  fetchAllActivosPorProyecto: vi.fn(),
 }));
 
 vi.mock("@/modules/proyectos/services", () => ({
@@ -22,7 +23,7 @@ vi.mock("@/modules/proyectos/services", () => ({
 
 import { fetchUsuarios, mapUsuarioToClienteRow } from "@/lib/api/users";
 import { crearContrato, asignarActivo } from "@/lib/api/expedientes";
-import { fetchActivosPorProyecto } from "@/modules/inventario/services";
+import { fetchActivosPorProyecto, fetchAllActivosPorProyecto } from "@/modules/inventario/services";
 import { fetchProyectos } from "@/modules/proyectos/services";
 
 const mockFetchUsuarios = vi.mocked(fetchUsuarios);
@@ -30,6 +31,7 @@ const mockMapUsuarioToClienteRow = vi.mocked(mapUsuarioToClienteRow);
 const mockCrearContrato = vi.mocked(crearContrato);
 const mockAsignarActivo = vi.mocked(asignarActivo);
 const mockFetchActivosPorProyecto = vi.mocked(fetchActivosPorProyecto);
+const mockFetchAllActivosPorProyecto = vi.mocked(fetchAllActivosPorProyecto);
 const mockFetchProyectos = vi.mocked(fetchProyectos);
 
 const sampleProject = { id: "proj-1", nombre: "Torre A" };
@@ -59,6 +61,7 @@ describe("AssignPropertyWizard", () => {
       content: [sampleUnit],
       totalElements: 1,
     } as any);
+    mockFetchAllActivosPorProyecto.mockResolvedValue([sampleUnit] as any);
     mockCrearContrato.mockResolvedValue({ uuidUsuarioActivo: "uuid-1" } as any);
     mockAsignarActivo.mockResolvedValue({} as any);
   });
@@ -136,13 +139,13 @@ describe("AssignPropertyWizard", () => {
     fireEvent.change(projectInput, { target: { value: "Torre" } });
     fireEvent.click(await screen.findByText("Torre A"));
     await waitFor(() => {
-      expect(mockFetchActivosPorProyecto).toHaveBeenCalled();
+      expect(mockFetchAllActivosPorProyecto).toHaveBeenCalled();
     });
     await screen.findByText("101");
   });
 
   it("step 2: shows loading while fetching units", async () => {
-    mockFetchActivosPorProyecto.mockReturnValue(new Promise(() => {}));
+    mockFetchAllActivosPorProyecto.mockReturnValue(new Promise(() => {}));
     renderWizard();
     await screen.findByText("Seleccionar personas");
     fireEvent.click(await screen.findByText("Ana García"));
@@ -155,7 +158,7 @@ describe("AssignPropertyWizard", () => {
   });
 
   it("step 2: shows empty units state", async () => {
-    mockFetchActivosPorProyecto.mockResolvedValue({ content: [], totalElements: 0 } as any);
+    mockFetchAllActivosPorProyecto.mockResolvedValue([] as any);
     renderWizard();
     await screen.findByText("Seleccionar personas");
     fireEvent.click(await screen.findByText("Ana García"));

@@ -110,16 +110,18 @@ export function fetchActivosPorProyecto(uuidProyecto: string, estado?: string): 
   return apiFetch<Page<ActivoResponseDTO>>(url);
 }
 
-export async function fetchAllActivosPorProyecto(uuidProyecto: string): Promise<ActivoResponseDTO[]> {
+export async function fetchAllActivosPorProyecto(uuidProyecto: string, estado?: string): Promise<ActivoResponseDTO[]> {
   const PAGE_SIZE = 500;
   const all: ActivoResponseDTO[] = [];
   let page = 0;
   let hasMore = true;
 
   while (hasMore) {
-    const response = await apiFetch<Page<ActivoResponseDTO>>(
-      `/api/activos/proyecto/${uuidProyecto}?size=${PAGE_SIZE}&page=${page}`
-    );
+    const url = estado
+      ? `/api/activos/proyecto/${uuidProyecto}?estado=${estado}&size=${PAGE_SIZE}&page=${page}`
+      : `/api/activos/proyecto/${uuidProyecto}?size=${PAGE_SIZE}&page=${page}`;
+
+    const response = await apiFetch<Page<ActivoResponseDTO>>(url);
     
     const content = response.content ?? [];
     all.push(...content);

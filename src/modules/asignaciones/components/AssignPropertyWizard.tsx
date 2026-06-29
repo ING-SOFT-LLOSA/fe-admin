@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { fetchUsuarios, mapUsuarioToClienteRow } from "@/lib/api/users";
 import { crearContrato, asignarActivo } from "@/lib/api/expedientes";
-import { fetchActivosPorProyecto } from "@/modules/inventario/services";
+import { fetchAllActivosPorProyecto } from "@/modules/inventario/services";
 import { fetchProyectos } from "@/modules/proyectos/services";
 import type { Proyecto } from "@/modules/proyectos/types";
 import type { ClienteRow } from "@/types/user";
@@ -18,6 +18,7 @@ interface UnitSelection {
   id: string; // UUID
   name: string; // e.g. "Dpto 101"
   type: string;
+  torreNombre?: string;
 }
 
 interface UnitCardProps {
@@ -120,13 +121,14 @@ export default function AssignPropertyWizard({ onClose, onSuccess, client }: Ass
     setUnits([]);
     setSelectedUnitIds([]);
     
-    fetchActivosPorProyecto(selectedProjectId, "DISPONIBLE")
-      .then(page => {
+    fetchAllActivosPorProyecto(selectedProjectId, "DISPONIBLE")
+      .then(list => {
         if (!active) return;
-        const availableUnits: UnitSelection[] = page.content.map(a => ({
+        const availableUnits: UnitSelection[] = list.map(a => ({
           id: a.id,
           name: a.nro,
-          type: a.tipo
+          type: a.tipo,
+          torreNombre: a.torreNombre
         }));
         setUnits(availableUnits);
       })
@@ -552,6 +554,23 @@ function StepSelectUnits({
   handleToggleUnit,
   errorMsg,
 }: StepSelectUnitsProps) {
+  const [selectedTower, setSelectedTower] = useState<string>("");
+
+  useEffect(() => {
+    setSelectedTower("");
+  }, [selectedProjectId]);
+
+  const uniqueTowers = React.useMemo(() => {
+    return Array.from(
+      new Set(units.map(u => u.torreNombre).filter(Boolean))
+    ).sort() as string[];
+  }, [units]);
+
+  const filteredUnits = React.useMemo(() => {
+    if (!selectedTower) return units;
+    return units.filter(u => u.torreNombre === selectedTower);
+  }, [units, selectedTower]);
+
   let inventoryContent;
   if (loadingUnits) {
     inventoryContent = (
@@ -570,12 +589,46 @@ function StepSelectUnits({
   } else {
     inventoryContent = (
       <div className="space-y-6">
+        {/* Selector de Torres si hay más de 1 */}
+        {uniqueTowers.length > 1 && (
+          <div className="border-b border-slate-100 dark:border-white/5 pb-4">
+            <span className="block text-[11px] font-bold text-slate-400 dark:text-white/40 uppercase tracking-wider mb-2">Torre</span>
+            <div className="flex flex-wrap gap-1.5">
+              <button
+                type="button"
+                onClick={() => setSelectedTower("")}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all border ${
+                  selectedTower === ""
+                    ? "border-build-main bg-build-main text-white"
+                    : "border-slate-200 dark:border-white/10 text-slate-600 dark:text-white/70 hover:border-build-accent bg-white dark:bg-white/5"
+                }`}
+              >
+                Todas
+              </button>
+              {uniqueTowers.map(tower => (
+                <button
+                  key={tower}
+                  type="button"
+                  onClick={() => setSelectedTower(tower)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all border ${
+                    selectedTower === tower
+                      ? "border-build-main bg-build-main text-white"
+                      : "border-slate-200 dark:border-white/10 text-slate-600 dark:text-white/70 hover:border-build-accent bg-white dark:bg-white/5"
+                  }`}
+                >
+                  {tower}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Departamentos */}
-        {units.some(u => u.type !== "ESTACIONAMIENTO" && u.type !== "COCHERA" && u.type !== "DEPOSITO") && (
+        {filteredUnits.some(u => u.type !== "ESTACIONAMIENTO" && u.type !== "COCHERA" && u.type !== "DEPOSITO") && (
           <div>
             <h4 className="text-xs font-bold text-slate-400 dark:text-white/50 uppercase tracking-wider mb-3">Departamentos</h4>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-              {units
+              {filteredUnits
                 .filter(u => u.type !== "ESTACIONAMIENTO" && u.type !== "COCHERA" && u.type !== "DEPOSITO")
                 .map(u => (
                   <UnitCard
@@ -590,11 +643,11 @@ function StepSelectUnits({
         )}
 
         {/* Estacionamientos */}
-        {units.some(u => u.type === "ESTACIONAMIENTO" || u.type === "COCHERA") && (
+        {filteredUnits.some(u => u.type === "ESTACIONAMIENTO" || u.type === "COCHERA") && (
           <div>
             <h4 className="text-xs font-bold text-slate-400 dark:text-white/50 uppercase tracking-wider mb-3">Estacionamientos</h4>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-              {units
+              {filteredUnits
                 .filter(u => u.type === "ESTACIONAMIENTO" || u.type === "COCHERA")
                 .map(u => (
                   <UnitCard
@@ -609,11 +662,11 @@ function StepSelectUnits({
         )}
 
         {/* Depósitos */}
-        {units.some(u => u.type === "DEPOSITO") && (
+        {filteredUnits.some(u => u.type === "DEPOSITO") && (
           <div>
             <h4 className="text-xs font-bold text-slate-400 dark:text-white/50 uppercase tracking-wider mb-3">Depósitos</h4>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-              {units
+              {filteredUnits
                 .filter(u => u.type === "DEPOSITO")
                 .map(u => (
                   <UnitCard
