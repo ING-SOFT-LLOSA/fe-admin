@@ -4,9 +4,9 @@ import type { Proyecto } from "../types/proyecto";
 
 type Props = {
   readonly project: Proyecto;
-  readonly clientesCount: number;
-  readonly dptosCount: number;
-  readonly avance: number;
+  readonly clientesCount?: number;
+  readonly dptosCount?: number;
+  readonly avance?: number;
 };
 
 export default function ProjectCard({ project, clientesCount, dptosCount, avance }: Readonly<Props>) {
@@ -51,12 +51,16 @@ export default function ProjectCard({ project, clientesCount, dptosCount, avance
       <div className="mt-4 border-t border-slate-100 dark:border-white/5 pt-4">
         <div className="flex justify-between text-[11px] font-semibold mb-1.5">
           <span className="text-slate-500 uppercase">Avance de Obra</span>
-          <span className="text-arch-gold font-bold">{avance.toFixed(0)}%</span>
+          {avance !== undefined ? (
+            <span className="text-arch-gold font-bold">{avance.toFixed(0)}%</span>
+          ) : (
+            <div className="h-3.5 w-8 animate-pulse rounded bg-slate-100 dark:bg-white/10" />
+          )}
         </div>
         <div className="w-full bg-slate-100 dark:bg-white/10 rounded-full h-1.5 overflow-hidden">
           <div
             className="bg-arch-gold h-1.5 rounded-full transition-all duration-500"
-            style={{ width: `${Math.min(100, Math.max(0, avance))}%` }}
+            style={{ width: `${Math.min(100, Math.max(0, avance ?? 0))}%` }}
           />
         </div>
       </div>
@@ -65,22 +69,28 @@ export default function ProjectCard({ project, clientesCount, dptosCount, avance
         {showInicio && (
           <div>
             <p className="text-[11px] text-slate-500 uppercase">Inicio</p>
-            <p className="font-medium">
+            <p className="font-medium text-xs sm:text-sm">
               {formatProjectDate(new Date(project.fechaInicio))}
             </p>
           </div>
         )}
         <div>
           <p className="text-[11px] text-slate-500 uppercase">Clientes</p>
-          <p className="font-medium">{clientesCount}</p>
+          {clientesCount !== undefined ? (
+            <p className="font-medium">{clientesCount}</p>
+          ) : (
+            <div className="mt-1 h-4 w-10 animate-pulse rounded bg-slate-100 dark:bg-white/10" />
+          )}
         </div>
         <div>
           <p className="text-[11px] text-slate-500 uppercase">Dptos.</p>
-          <p className="font-medium">{dptosCount}</p>
+          {dptosCount !== undefined ? (
+            <p className="font-medium">{dptosCount}</p>
+          ) : (
+            <div className="mt-1 h-4 w-10 animate-pulse rounded bg-slate-100 dark:bg-white/10" />
+          )}
         </div>
       </div>
-
-  
     </Link>
   );
 }

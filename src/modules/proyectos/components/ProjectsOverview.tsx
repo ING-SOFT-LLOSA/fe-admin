@@ -62,7 +62,7 @@ const getClientCountForProject = (projectName: string, allContracts: ContractOve
 export default function ProjectsOverview() {
 
   const [projects, setProjects]   = useState<Proyecto[]>([]);
-  const [contracts, setContracts] = useState<ContractOverview[]>([]);
+  const [contracts, setContracts] = useState<ContractOverview[] | null>(null);
   const [dptosCountMap, setDptosCountMap] = useState<Record<string, number>>({});
   const [avanceMap, setAvanceMap] = useState<Record<string, number>>({});
   const [isLoading, setIsLoading] = useState(true);
@@ -75,40 +75,41 @@ export default function ProjectsOverview() {
       setIsLoading(true);
       setError("");
       try {
-        const [projData, contractsData] = await Promise.all([
-          fetchProyectos(),
-          apiFetch<unknown>("/api/expedientes?unpaginated=true").catch(() => []),
-        ]);
+        const projData = await fetchProyectos();
 
         if (!mounted) return;
 
         setProjects(projData || []);
-        const list = (Array.isArray(contractsData)
-          ? contractsData
-          : ((contractsData as { content?: unknown[] })?.content || [])) as ContractOverview[];
-        setContracts(list);
+        setIsLoading(false); // Renderiza los proyectos inmediatamente
 
-        // Fetch assets and physical progress for each project in parallel
-        const assetsMap: Record<string, number> = {};
-        const progressMap: Record<string, number> = {};
+        // 1. Cargar contratos en segundo plano de forma no bloqueante
+        apiFetch<unknown>("/api/expedientes?unpaginated=true")
+          .then((contractsData) => {
+            if (!mounted) return;
+            const list = (Array.isArray(contractsData)
+              ? contractsData
+              : ((contractsData as { content?: unknown[] })?.content || [])) as ContractOverview[];
+            setContracts(list);
+          })
+          .catch((err) => console.error("Error loading contracts for stats:", err));
+
+        // 2. Cargar detalles (Dptos y avance) por proyecto de forma diferida y paralela
         if (projData && projData.length > 0) {
-          const details = await Promise.all(
-            projData.map((p) => fetchProjectDetails(p.id))
-          );
-          projData.forEach((p, index) => {
-            const { dptosCount, porcentajeAvance } = details[index];
-            assetsMap[p.id] = dptosCount;
-            progressMap[p.id] = porcentajeAvance;
+          projData.forEach((p) => {
+            fetchProjectDetails(p.id)
+              .then((details) => {
+                if (!mounted) return;
+                setDptosCountMap((prev) => ({ ...prev, [p.id]: details.dptosCount }));
+                setAvanceMap((prev) => ({ ...prev, [p.id]: details.porcentajeAvance }));
+              })
+              .catch((err) => console.error(`Error loading details for project ${p.id}:`, err));
           });
         }
-        if (mounted) {
-          setDptosCountMap(assetsMap);
-          setAvanceMap(progressMap);
-        }
       } catch (err) {
-        if (mounted) setError(err instanceof Error ? err.message : "No se pudieron cargar los proyectos.");
-      } finally {
-        if (mounted) setIsLoading(false);
+        if (mounted) {
+          setError(err instanceof Error ? err.message : "No se pudieron cargar los proyectos.");
+          setIsLoading(false);
+        }
       }
     }
     void loadData();
@@ -162,8 +163,9 @@ const filtered = useMemo(() => {
     return (
       <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
         {filtered.map((project) => {
-          const dptosCount = dptosCountMap[project.id] ?? 0;
-          const clientesCount = getClientCountForProject(project.nombre, contracts);
+          const dptosCount = dptosCountMap[project.id];
+          const clientesCount = contracts !== null ? getClientCountForProject(project.nombre, contracts) : undefined;
+          const avance = avanceMap[project.id];
 
           return (
             <ProjectCard
@@ -171,7 +173,7 @@ const filtered = useMemo(() => {
               project={project}
               clientesCount={clientesCount}
               dptosCount={dptosCount}
-              avance={avanceMap[project.id] ?? 0}
+              avance={avance}
             />
           );
         })}
