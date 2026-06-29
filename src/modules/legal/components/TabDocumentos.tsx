@@ -94,6 +94,13 @@ export function TabDocumentos({
     try {
       await uploadRequisitoArchivo(requisitoId, file);
       await onRefresh();
+      setDialog({
+        isOpen: true,
+        title: "¡Éxito!",
+        message: "El archivo se subió correctamente.",
+        type: "success",
+        confirmText: "Aceptar",
+      });
     } catch (err) {
       setActionError(err instanceof Error ? err.message : "Error al subir el documento.");
     } finally {
@@ -175,25 +182,27 @@ export function TabDocumentos({
                   <p className="text-xs text-slate-400 dark:text-white/30">No se han configurado requisitos para esta etapa.</p>
                 </div>
               ) : (
-                seccion.docs.map((doc) => (
-                  <DocRow
-                    key={doc.id}
-                    doc={doc}
-                    isUploading={uploadingDoc === doc.id}
-                    isEditingNota={editingNota?.id === doc.id}
-                    editingNotaText={editingNota?.id === doc.id ? editingNota.text : ""}
-                    isSavingNota={savingNotaId === doc.id}
-                    canUploadDocs={canUploadDocs}
-                    canEditNotes={canEditNotes}
-                    onUploadClick={() => handleUploadClick(doc.id)}
-                    onDelete={() => handleDelete(doc.id)}
-                    onDownload={() => doc.downloadUrl && window.open(doc.downloadUrl, "_blank", "noopener,noreferrer")}
-                    onEditNotaStart={() => setEditingNota({ id: doc.id, text: doc.notaCorporativa ?? "" })}
-                    onEditNotaChange={(text) => setEditingNota({ id: doc.id, text })}
-                    onSaveNota={() => handleSaveNota(doc)}
-                    onCancelNota={() => setEditingNota(null)}
-                  />
-                ))
+                [...seccion.docs]
+                  .sort((a, b) => a.title.localeCompare(b.title) || a.id.localeCompare(b.id))
+                  .map((doc) => (
+                    <DocRow
+                      key={doc.id}
+                      doc={doc}
+                      isUploading={uploadingDoc === doc.id}
+                      isEditingNota={editingNota?.id === doc.id}
+                      editingNotaText={editingNota?.id === doc.id ? editingNota.text : ""}
+                      isSavingNota={savingNotaId === doc.id}
+                      canUploadDocs={canUploadDocs}
+                      canEditNotes={canEditNotes}
+                      onUploadClick={() => handleUploadClick(doc.id)}
+                      onDelete={() => handleDelete(doc.id)}
+                      onDownload={() => doc.downloadUrl && window.open(doc.downloadUrl, "_blank", "noopener,noreferrer")}
+                      onEditNotaStart={() => setEditingNota({ id: doc.id, text: doc.notaCorporativa ?? "" })}
+                      onEditNotaChange={(text) => setEditingNota({ id: doc.id, text })}
+                      onSaveNota={() => handleSaveNota(doc)}
+                      onCancelNota={() => setEditingNota(null)}
+                    />
+                  ))
               )}
             </div>
           </div>

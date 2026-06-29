@@ -1128,10 +1128,12 @@ function DocumentosTab({
     }));
   });
 
-  const filteredDocs = allDocs.filter((d) => {
-    if (selectedFilter === "ALL") return true;
-    return d.stageKey === selectedFilter;
-  });
+  const filteredDocs = allDocs
+    .filter((d) => {
+      if (selectedFilter === "ALL") return true;
+      return d.stageKey === selectedFilter;
+    })
+    .sort((a, b) => a.title.localeCompare(b.title) || a.id.localeCompare(b.id));
 
   let documentsContent;
   if (isLoading && allDocs.length === 0) {
@@ -1376,6 +1378,13 @@ function DocumentosTab({
       try {
         await uploadRequisitoArchivo(docId, file);
         await onRefresh();
+        setDialog({
+          isOpen: true,
+          title: "¡Éxito!",
+          message: "El archivo se subió correctamente.",
+          type: "success",
+          confirmText: "Aceptar",
+        });
       } catch (err) {
         setActionError(err instanceof Error ? err.message : "Error al subir el archivo.");
       } finally {
