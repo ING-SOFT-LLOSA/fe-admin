@@ -130,6 +130,8 @@ function PisoSection({
   onEdit,
   onDeleteClick,
   onAdd,
+  onDeletePisoClick,
+  onDeleteUnitsByTypeClick,
 }: Readonly<{
   piso: PisoData;
   pIdx: number;
@@ -137,6 +139,8 @@ function PisoSection({
   onEdit: (tIdx: number, pIdx: number, aIdx: number, field: keyof ActivoData, value: string | number) => void;
   onDeleteClick: (tIdx: number, pIdx: number, aIdx: number) => void;
   onAdd: (tIdx: number, pIdx: number, tipo: TabType) => void;
+  onDeletePisoClick: (tIdx: number, pIdx: number) => void;
+  onDeleteUnitsByTypeClick: (tIdx: number, pIdx: number, tipo: TabType) => void;
 }>) {
   const grouped = piso.activos.reduce((acc, a) => {
     if (!acc[a.tipo]) acc[a.tipo] = [];
@@ -149,7 +153,20 @@ function PisoSection({
       <summary className="flex cursor-pointer items-center gap-1.5 bg-slate-50/50 dark:bg-white/[0.02] px-6 py-2 text-xs font-semibold text-slate-600 dark:text-white/70">
         <span className="material-symbols-outlined text-[15px] text-slate-400">layers</span>
         Piso {piso.nroPiso}
-        <span className="ml-auto text-[10px] text-slate-400">{piso.activos.length} uds.</span>
+        <div className="ml-auto flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+          <span className="text-[10px] text-slate-400">{piso.activos.length} uds.</span>
+          <button
+            type="button"
+            onClick={(e) => {
+              e.preventDefault();
+              onDeletePisoClick(tIdx, pIdx);
+            }}
+            className="rounded p-1 text-slate-400 hover:bg-red-50 hover:text-red-500 transition-colors"
+            title="Eliminar piso completo"
+          >
+            <span className="material-symbols-outlined text-[14px]">delete_sweep</span>
+          </button>
+        </div>
         <span className="material-symbols-outlined text-[15px] text-slate-400 transition-transform group-open:rotate-180">expand_more</span>
       </summary>
       <div className="px-6 py-3 space-y-3">
@@ -158,10 +175,23 @@ function PisoSection({
           const info = TAB_INFO[tipo];
           return (
             <div key={tipo}>
-              <p className="mb-2 flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                <span className="material-symbols-outlined text-[14px]">{info.icon}</span>
-                {info.label} ({units.length})
-              </p>
+              <div className="mb-2 flex items-center justify-between">
+                <p className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                  <span className="material-symbols-outlined text-[14px]">{info.icon}</span>
+                  {info.label} ({units.length})
+                </p>
+                {units.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => onDeleteUnitsByTypeClick(tIdx, pIdx, tipo)}
+                    className="flex items-center gap-0.5 rounded px-1.5 py-0.5 text-[9px] font-bold text-red-500 hover:bg-red-50 transition-colors"
+                    title={`Eliminar todos los ${info.label.toLowerCase()}`}
+                  >
+                    <span className="material-symbols-outlined text-[12px]">delete_outline</span>
+                    <span>Borrar todos</span>
+                  </button>
+                )}
+              </div>
               {units.length > 0 && (
                 <div className="mb-2 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
                   {units.map((activo) => {
@@ -196,6 +226,8 @@ function PisoSection({
 export default function UnitEditorStep({ torres: initialTorres, onBack, onSubmit }: Readonly<UnitEditorStepProps>) {
   const [torres, setTorres] = useState<TorreData[]>(() => structuredClone(initialTorres));
   const [confirmDelete, setConfirmDelete] = useState<{ tIdx: number; pIdx: number; aIdx: number } | null>(null);
+  const [confirmDeletePiso, setConfirmDeletePiso] = useState<{ tIdx: number; pIdx: number } | null>(null);
+  const [confirmDeleteUnitsType, setConfirmDeleteUnitsType] = useState<{ tIdx: number; pIdx: number; tipo: TabType } | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const handleEdit = (tIdx: number, pIdx: number, aIdx: number, field: keyof ActivoData, value: string | number) => {
@@ -217,6 +249,25 @@ export default function UnitEditorStep({ torres: initialTorres, onBack, onSubmit
       return next;
     });
     setConfirmDelete(null);
+  };
+
+  const handleDeletePiso = (tIdx: number, pIdx: number) => {
+    setTorres((prev) => {
+      const next = structuredClone(prev);
+      next[tIdx].pisos.splice(pIdx, 1);
+      return next;
+    });
+    setConfirmDeletePiso(null);
+  };
+
+  const handleDeleteUnitsByType = (tIdx: number, pIdx: number, tipo: TabType) => {
+    setTorres((prev) => {
+      const next = structuredClone(prev);
+      const piso = next[tIdx].pisos[pIdx];
+      piso.activos = piso.activos.filter((a) => a.tipo !== tipo);
+      return next;
+    });
+    setConfirmDeleteUnitsType(null);
   };
 
   const handleAdd = (tIdx: number, pIdx: number, tipo: TabType) => {
@@ -302,6 +353,8 @@ export default function UnitEditorStep({ torres: initialTorres, onBack, onSubmit
                   onEdit={handleEdit}
                   onDeleteClick={(t, p, a) => setConfirmDelete({ tIdx: t, pIdx: p, aIdx: a })}
                   onAdd={handleAdd}
+                  onDeletePisoClick={(t, p) => setConfirmDeletePiso({ tIdx: t, pIdx: p })}
+                  onDeleteUnitsByTypeClick={(t, p, tipo) => setConfirmDeleteUnitsType({ tIdx: t, pIdx: p, tipo })}
                 />
               ))}
             </div>
@@ -348,6 +401,58 @@ export default function UnitEditorStep({ torres: initialTorres, onBack, onSubmit
                 className="rounded-xl bg-red-500 px-4 py-2 text-sm font-bold text-white transition-colors hover:bg-red-600"
               >
                 Eliminar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {confirmDeletePiso && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="rounded-2xl bg-white dark:bg-slate-800 p-6 shadow-xl max-w-sm w-full mx-4 space-y-4">
+            <p className="text-sm text-slate-600 dark:text-white/70">
+              ¿Eliminar el <strong className="text-build-main dark:text-white">Piso {torres[confirmDeletePiso.tIdx]?.pisos[confirmDeletePiso.pIdx]?.nroPiso}</strong> completo de {torres[confirmDeletePiso.tIdx]?.nombre} con todas sus unidades?
+            </p>
+            <div className="flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setConfirmDeletePiso(null)}
+                className="rounded-xl px-4 py-2 text-sm font-semibold text-slate-600 transition-colors hover:bg-slate-100"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={() => handleDeletePiso(confirmDeletePiso.tIdx, confirmDeletePiso.pIdx)}
+                className="rounded-xl bg-red-500 px-4 py-2 text-sm font-bold text-white transition-colors hover:bg-red-600"
+              >
+                Eliminar Piso
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {confirmDeleteUnitsType && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="rounded-2xl bg-white dark:bg-slate-800 p-6 shadow-xl max-w-sm w-full mx-4 space-y-4">
+            <p className="text-sm text-slate-600 dark:text-white/70">
+              ¿Eliminar todos los/las <strong className="text-build-main dark:text-white">{TAB_INFO[confirmDeleteUnitsType.tipo].label.toLowerCase()}</strong> del Piso {torres[confirmDeleteUnitsType.tIdx]?.pisos[confirmDeleteUnitsType.pIdx]?.nroPiso} de {torres[confirmDeleteUnitsType.tIdx]?.nombre}?
+            </p>
+            <div className="flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setConfirmDeleteUnitsType(null)}
+                className="rounded-xl px-4 py-2 text-sm font-semibold text-slate-600 transition-colors hover:bg-slate-100"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={() => handleDeleteUnitsByType(confirmDeleteUnitsType.tIdx, confirmDeleteUnitsType.pIdx, confirmDeleteUnitsType.tipo)}
+                className="rounded-xl bg-red-500 px-4 py-2 text-sm font-bold text-white transition-colors hover:bg-red-600"
+              >
+                Eliminar Todos
               </button>
             </div>
           </div>
