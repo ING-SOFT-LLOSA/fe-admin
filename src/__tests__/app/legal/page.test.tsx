@@ -8,6 +8,7 @@ import {
   fetchTodosLosContratos,
 } from "@/lib/api/expedientes";
 import { fetchProyectos, fetchTorresPorProyecto } from "@/lib/api/proyectos";
+import { fetchUsuarios } from "@/lib/api/users";
 
 vi.mock("next/navigation", () => ({
   useRouter: vi.fn(),
@@ -22,6 +23,10 @@ vi.mock("@/lib/api/expedientes", () => ({
   fetchTodosLosContratos: vi.fn(),
   fetchEtapasExpediente: vi.fn(),
   fetchCommercialStepper: vi.fn(),
+}));
+
+vi.mock("@/lib/api/users", () => ({
+  fetchUsuarios: vi.fn(),
 }));
 
 const mockRouterPush = vi.fn();
@@ -60,6 +65,7 @@ describe("LegalOverview", () => {
       etapas: [{ etapa: "CONTRATO", hitos: [{ estado: "COMPLETADO" }, { estado: "EN_PROGRESO" }] }],
     } as never);
     vi.mocked(fetchTorresPorProyecto).mockResolvedValue([{ nombre: "Torre A" }] as never);
+    vi.mocked(fetchUsuarios).mockResolvedValue([] as never);
   });
 
   it("renders without crashing", async () => {
