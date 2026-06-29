@@ -42,9 +42,10 @@ export async function getFreshToken(): Promise<string | null> {
       return null;
     }
 
-    // getIdToken(true) → always hits Firebase to verify / rotate the JWT.
-    // Firebase renews it automatically when it is within 5 min of expiry.
-    const freshToken = await auth.currentUser.getIdToken(true);
+    // getIdToken(false) o sin parámetros → usa el token cacheado en memoria.
+    // Firebase lo renueva automáticamente solo si está por expirar en menos de 5 min,
+    // evitando saturar las cuotas de red del servicio de autenticación.
+    const freshToken = await auth.currentUser.getIdToken(false);
 
     if (freshToken) {
       const stored = getStoredToken();

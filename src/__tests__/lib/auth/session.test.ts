@@ -157,7 +157,7 @@ describe("session", () => {
       mockGetFirebaseAuth.mockReturnValue({ currentUser: mockUser } as any);
       const token = await getFreshToken();
       expect(token).toBe("fresh-token-xyz");
-      expect(mockUser.getIdToken).toHaveBeenCalledWith(true);
+      expect(mockUser.getIdToken).toHaveBeenCalledWith(false);
     });
 
     it("actualiza la cookie si el token cambió", async () => {
