@@ -366,12 +366,14 @@ function ReporteDetail({
   report,
   onBack,
   onDelete,
-  canDelete
+  canDelete,
+  onEdit
 }: Readonly<{
   report: ReporteResponse;
   onBack: () => void;
   onDelete?: () => void;
   canDelete?: boolean;
+  onEdit?: () => void;
 }>) {
   const badge = ESTADO_BADGE.publicado;
   const hasMedia = (report.multimedia?.length ?? 0) > 0;
@@ -390,16 +392,29 @@ function ReporteDetail({
             <span>Volver a reportes</span>
           </button>
           
-          {canDelete && onDelete && (
-            <button
-              type="button"
-              onClick={onDelete}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-50 dark:bg-red-955/20 border border-red-200 dark:border-red-900/40 text-xs font-bold text-red-600 hover:text-red-700 transition-colors"
-            >
-              <span className="material-symbols-outlined text-[16px]">delete</span>
-              <span>Eliminar reporte</span>
-            </button>
-          )}
+          <div className="flex items-center gap-2">
+            {canDelete && onEdit && (
+              <button
+                type="button"
+                onClick={onEdit}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-white/10 text-xs font-bold text-slate-700 dark:text-white/80 hover:bg-slate-100 dark:hover:bg-white/10 transition-colors"
+              >
+                <span className="material-symbols-outlined text-[16px]">edit</span>
+                <span>Editar reporte</span>
+              </button>
+            )}
+
+            {canDelete && onDelete && (
+              <button
+                type="button"
+                onClick={onDelete}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-50 dark:bg-red-955/20 border border-red-200 dark:border-red-900/40 text-xs font-bold text-red-600 hover:text-red-700 transition-colors"
+              >
+                <span className="material-symbols-outlined text-[16px]">delete</span>
+                <span>Eliminar reporte</span>
+              </button>
+            )}
+          </div>
         </div>
         <div className="flex items-start justify-between gap-4 flex-wrap">
           <div>
@@ -839,6 +854,357 @@ function KpiMini({
       <div>
         <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-white/40">{label}</p>
         <p className={`text-xl font-bold tracking-tight ${accent}`}>{value}</p>
+      </div>
+    </div>
+  );
+}
+
+// ─── Edit Report Form ──────────────────────────────────────────────────────────
+
+type EditarReporteFormProps = {
+  readonly report: ReporteResponse;
+  readonly projectId: string;
+  readonly onClose: () => void;
+  readonly onSubmit: (
+    reportId: string,
+    payload: ReporteUpdatePayload,
+    newFiles: File[],
+    deletedMediaIds: string[]
+  ) => Promise<void>;
+};
+
+function EditarReporteForm({ report, projectId, onClose, onSubmit }: EditarReporteFormProps) {
+  const [titulo,      setTitulo]      = useState(report.tituloPeriodo);
+  const [comentarios, setComentarios] = useState(report.descripcion ?? "");
+  const initialDateStr = report.createdAt ? report.createdAt.split("T")[0] : new Date().toISOString().split("T")[0];
+  const [fecha,       setFecha]       = useState(initialDateStr);
+
+  const tituloId = useId();
+  const fechaId = useId();
+  const comentariosId = useId();
+  const filesId = useId();
+
+  useEffect(() => {
+    const d = new Date(fecha + "T12:00:00");
+    const mes = d.toLocaleDateString("es-PE", { month: "long" });
+    const año = d.getFullYear();
+    Promise.resolve().then(() => {
+      setTitulo(`${mes.charAt(0).toUpperCase() + mes.slice(1)} ${año}`);
+    });
+  }, [fecha]);
+
+  const [existingMedia, setExistingMedia] = useState<DocumentoResponse[]>(report.multimedia || []);
+  const [deletedMediaIds, setDeletedMediaIds] = useState<string[]>([]);
+  const [newFiles, setNewFiles] = useState<File[]>([]);
+  
+  const [availableHitos, setAvailableHitos] = useState<HitoResponseDTO[]>([]);
+  const [selectedHitos, setSelectedHitos] = useState<string[]>(report.hitosConsolidados || []);
+  const [loadingHitos, setLoadingHitos] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleHitoToggle = (titulo: string) => {
+    setSelectedHitos((prev) =>
+      prev.includes(titulo) ? prev.filter((x) => x !== titulo) : [...prev, titulo]
+    );
+  };
+
+  useEffect(() => {
+    if (!projectId) return;
+
+    let active = true;
+    const fetchHitos = async () => {
+      setLoadingHitos(true);
+      try {
+        const etapas = await getEtapasByProyecto(projectId);
+        if (!active) return;
+        const hitos = etapas.map((e) => ({
+          id: e.id,
+          titulo: e.nombre,
+          orden: e.orden,
+          tipo: "OBRA",
+          estado: e.estado,
+          fechaCompletado: null,
+        }));
+        setAvailableHitos(hitos);
+      } catch (err) {
+        console.error("Error loading project hitos:", err);
+      } finally {
+        if (active) {
+          setLoadingHitos(false);
+        }
+      }
+    };
+
+    fetchHitos();
+    return () => {
+      active = false;
+    };
+  }, [projectId]);
+
+  const handleRemoveExistingMedia = (mediaId: string) => {
+    setDeletedMediaIds((prev) => [...prev, mediaId]);
+    setExistingMedia((prev) => prev.filter((m) => m.id !== mediaId));
+  };
+
+  const handleSubmit = async () => {
+    if (!titulo.trim()) return;
+    setSubmitting(true);
+    setError(null);
+    try {
+      await onSubmit(
+        report.id,
+        {
+          tituloPeriodo: titulo.trim(),
+          descripcion: comentarios.trim(),
+          fecha,
+          hitosConsolidados: selectedHitos,
+        },
+        newFiles,
+        deletedMediaIds
+      );
+    } catch (err) {
+      console.error("Error submitting report update:", err);
+      setError(err instanceof Error ? err.message : "Error al guardar el reporte.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const renderHitosSection = () => {
+    if (loadingHitos) {
+      return (
+        <div className="flex items-center gap-2 py-3 text-xs text-slate-400 dark:text-white/40">
+          <svg className="animate-spin w-4 h-4 text-build-accent" viewBox="0 0 24 24" fill="none">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+          </svg>
+          <span>Cargando hitos del proyecto...</span>
+        </div>
+      );
+    }
+    if (availableHitos.length === 0) {
+      return (
+        <p className="text-xs text-slate-400 dark:text-white/30 italic py-2 bg-slate-50 dark:bg-white/[0.02] border border-dashed border-slate-200 dark:border-white/10 rounded-xl text-center">
+          No hay hitos registrados para este proyecto.
+        </p>
+      );
+    }
+    return (
+      <div className="grid gap-2 sm:grid-cols-2 bg-white dark:bg-white/5 p-4 rounded-xl border border-slate-200 dark:border-white/10 max-h-48 overflow-y-auto">
+        {availableHitos.map((h) => {
+          const isChecked = selectedHitos.includes(h.titulo);
+          return (
+            <label
+              key={h.id}
+              className="flex items-center gap-2.5 text-xs text-slate-700 dark:text-white/80 cursor-pointer hover:text-build-main dark:hover:text-white transition-colors py-1"
+            >
+              <input
+                type="checkbox"
+                checked={isChecked}
+                onChange={() => handleHitoToggle(h.titulo)}
+                className="rounded text-build-accent border-slate-300 dark:border-white/10 focus:ring-arch-gold/20 focus:ring-1 bg-white dark:bg-transparent"
+              />
+              <span className="font-semibold">{h.titulo}</span>
+              <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${getEstadoBadgeClass(h.estado)}`}>
+                {h.estado}
+              </span>
+            </label>
+          );
+        })}
+      </div>
+    );
+  };
+
+  return (
+    <div className="rounded-xl border border-arch-gold/30 bg-arch-gold/5 dark:bg-arch-gold/10 p-6 shadow-sm space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="text-sm font-bold text-build-main dark:text-white flex items-center gap-2">
+            <span className="material-symbols-outlined text-arch-gold text-[18px]">edit_note</span>
+            <span>Editar reporte de obra</span>
+          </h3>
+          <p className="text-xs text-slate-400 dark:text-white/40 mt-0.5">
+            Modifica los campos del reporte
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={onClose}
+          className="p-1 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-white hover:bg-white/50 dark:hover:bg-white/10 transition-colors"
+        >
+          <span className="material-symbols-outlined text-[18px]">close</span>
+        </button>
+      </div>
+
+      {error && (
+        <div className="rounded-xl border border-red-200 bg-red-50 dark:bg-red-900/20 dark:border-red-900/40 px-4 py-3 text-sm text-red-700 dark:text-red-400">
+          {error}
+        </div>
+      )}
+
+      <div>
+        <label htmlFor={tituloId} className="block text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-white/50 mb-1.5">
+          Título del reporte *
+        </label>
+        <input
+          id={tituloId}
+          type="text"
+          value={titulo}
+          onChange={(e) => setTitulo(e.target.value)}
+          placeholder="Ej. Reporte Junio 2026"
+          className="w-full rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 px-3 py-2.5 text-sm text-build-main dark:text-white outline-none focus:border-arch-gold focus:ring-1 focus:ring-arch-gold/20 transition"
+        />
+      </div>
+
+      <div>
+        <label htmlFor={fechaId} className="block text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-white/50 mb-1.5">
+          Fecha del reporte *
+        </label>
+        <input
+          id={fechaId}
+          type="date"
+          value={fecha}
+          onChange={(e) => setFecha(e.target.value)}
+          className="w-full rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 px-3 py-2.5 text-sm text-build-main dark:text-white outline-none focus:border-arch-gold focus:ring-1 focus:ring-arch-gold/20 transition"
+        />
+      </div>
+
+      <div>
+        <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-white/50 mb-2">
+          Hitos Consolidados en este Período
+        </p>
+        <p className="text-xs text-slate-400 dark:text-white/35 mb-3 leading-relaxed">
+          Selecciona los hitos del proyecto que se han completado o consolidado en este periodo de reporte.
+        </p>
+        
+        {renderHitosSection()}
+      </div>
+
+      <div>
+        <label htmlFor={comentariosId} className="block text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-white/50 mb-1.5">
+          Comentarios del residente / supervisor
+        </label>
+        <textarea
+          id={comentariosId}
+          rows={4}
+          value={comentarios}
+          onChange={(e) => setComentarios(e.target.value)}
+          placeholder="Novedades del período, incidencias, observaciones del avance físico..."
+          className="w-full rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 px-3 py-2.5 text-sm text-build-main dark:text-white outline-none focus:border-arch-gold focus:ring-1 focus:ring-arch-gold/20 transition resize-none"
+        />
+      </div>
+
+      {existingMedia.length > 0 && (
+        <div>
+          <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-white/50 mb-2">
+            Multimedia Existente
+          </label>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-white dark:bg-white/5 p-4 rounded-xl border border-slate-200 dark:border-white/10">
+            {existingMedia.map((media) => {
+              const isImage = media.tipoMime?.startsWith("image/");
+              const iconName = isImage ? "image" : "video_library";
+              return (
+                <div
+                  key={media.id}
+                  className="aspect-video w-full rounded-lg border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 overflow-hidden relative group"
+                >
+                  {isImage && media.urlAcceso ? (
+                    <img src={media.urlAcceso} alt={media.nombreOriginal} className="object-cover w-full h-full" />
+                  ) : (
+                    <div className="w-full h-full flex flex-col items-center justify-center gap-1 p-2">
+                      <span className="material-symbols-outlined text-[24px] text-slate-400 dark:text-white/30">{iconName}</span>
+                      <span className="text-[9px] text-slate-400 dark:text-white/40 truncate w-full text-center">{media.nombreOriginal}</span>
+                    </div>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveExistingMedia(media.id)}
+                    className="absolute top-1.5 right-1.5 p-1 rounded bg-red-600 text-white hover:bg-red-700 transition-colors shadow-md flex items-center justify-center"
+                    title="Eliminar archivo"
+                  >
+                    <span className="material-symbols-outlined text-[14px]">delete</span>
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      <div>
+        <label htmlFor={filesId} className="block text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-white/50 mb-1.5">
+          Adjuntar nuevas fotos y videos del período
+        </label>
+        <div className="flex flex-col gap-3">
+          <input
+            id={filesId}
+            type="file"
+            multiple
+            accept="image/*,video/*"
+            onChange={(e) => {
+              if (e.target.files) {
+                const selectedFiles = Array.from(e.target.files);
+                const MAX_SIZE = 5 * 1024 * 1024; // 5 MB
+                const oversizedFile = selectedFiles.find(f => f.size > MAX_SIZE);
+                if (oversizedFile) {
+                  setError(`El archivo "${oversizedFile.name}" supera el límite de 5 MB. Por favor, selecciona archivos más pequeños.`);
+                  e.target.value = "";
+                  setNewFiles([]);
+                  return;
+                }
+                setError(null);
+                setNewFiles(selectedFiles);
+              }
+            }}
+            className="w-full text-xs text-slate-500 dark:text-white/40
+              file:mr-4 file:py-2 file:px-4
+              file:rounded-xl file:border-0
+              file:text-xs file:font-bold
+              file:bg-build-main/10 file:text-build-main
+              hover:file:bg-build-main/20
+              cursor-pointer"
+          />
+          {newFiles.length > 0 && (
+            <div className="text-xs text-slate-500 dark:text-white/50 bg-slate-50 dark:bg-white/[0.02] p-3 rounded-xl border border-slate-200 dark:border-white/10">
+              <p className="font-semibold mb-1">Nuevos archivos seleccionados:</p>
+              <ul className="list-disc pl-4 space-y-1">
+                {newFiles.map((file) => (
+                  <li key={`${file.name}-${file.size}`} className="truncate">
+                    {file.name} ({(file.size / 1024 / 1024).toFixed(2)} MB)
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="flex justify-end gap-3 pt-2">
+        <button
+          type="button"
+          onClick={onClose}
+          disabled={submitting}
+          className="px-5 py-2.5 rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 text-sm font-bold text-slate-500 dark:text-white/60 hover:bg-slate-50 dark:hover:bg-white/10 transition-colors"
+        >
+          Cancelar
+        </button>
+        <button
+          type="button"
+          onClick={handleSubmit}
+          disabled={!titulo.trim() || submitting}
+          className="inline-flex items-center gap-2 px-6 py-2.5 bg-build-main text-white rounded-xl text-sm font-bold hover:bg-build-main/90 transition-all disabled:opacity-50"
+        >
+          {submitting ? (
+            <svg className="animate-spin w-4 h-4 text-white" viewBox="0 0 24 24" fill="none">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+            </svg>
+          ) : (
+            <span className="material-symbols-outlined text-[18px]">save</span>
+          )}
+          Guardar cambios
+        </button>
       </div>
     </div>
   );
