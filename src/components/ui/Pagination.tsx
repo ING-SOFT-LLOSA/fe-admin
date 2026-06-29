@@ -64,7 +64,7 @@ export default function Pagination({
     // Si solo hay una página pero no hay botones, mostramos al menos el resumen
     return (
       <div className="flex items-center justify-between border-t border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/[0.02] px-6 py-4">
-        <p className="text-xs text-slate-500 dark:text-white/50">
+        <p className="text-[11px] text-slate-500 dark:text-white/50">
           Mostrando <span className="font-semibold text-slate-700 dark:text-white/80">{totalElements > 0 ? 1 : 0}</span> a{" "}
           <span className="font-semibold text-slate-700 dark:text-white/80">{totalElements}</span> de{" "}
           <span className="font-semibold text-slate-700 dark:text-white/80">{totalElements}</span> {itemNamePlural}
@@ -77,14 +77,14 @@ export default function Pagination({
     <div className="flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/[0.02] px-6 py-4 w-full">
       
       {/* Resumen del conteo y tamaño de página opcional */}
-      <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500 dark:text-white/50 w-full sm:w-auto justify-between sm:justify-start">
+      <div className="flex flex-wrap items-center gap-3 text-[11px] text-slate-500 dark:text-white/50 w-full sm:w-auto justify-between sm:justify-start">
         {onPageSizeChange && (
           <div className="flex items-center gap-2">
             <span>Mostrar</span>
             <select
               value={pageSize}
               onChange={(e) => onPageSizeChange(Number(e.target.value))}
-              className="rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 px-2 py-1 text-xs outline-none focus:border-arch-gold text-slate-700 dark:text-white transition-all cursor-pointer"
+              className="rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 px-2 py-1 text-[11px] outline-none focus:border-arch-gold text-slate-700 dark:text-white transition-all cursor-pointer"
             >
               {[10, 15, 25, 50, 100].map((size) => (
                 <option key={size} value={size}>{size}</option>
