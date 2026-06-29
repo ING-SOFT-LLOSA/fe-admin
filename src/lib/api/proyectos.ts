@@ -103,27 +103,32 @@ export function fetchActivosPorProyecto(uuidProyecto: string, estado?: string): 
     : `/api/activos/proyecto/${uuidProyecto}?size=100`;
   return apiFetch<Page<ActivoResponseDTO>>(url);
 }
-export async function fetchAllActivosPorProyecto(uuidProyecto: string): Promise<ActivoResponseDTO[]> {
-  const PAGE_SIZE = 1000;
-  const first = await apiFetch<Page<ActivoResponseDTO>>(
-    `/api/activos/proyecto/${uuidProyecto}?size=${PAGE_SIZE}&page=0`
-  );
-  const all = [...(first.content ?? [])];
-  
-  const realPageSize = first.size ?? PAGE_SIZE;
-  const totalPages = first.totalPages ?? 1;
 
-  if (totalPages > 1) {
-    const remaining = Array.from({ length: totalPages - 1 }, (_, i) => i + 1);
-    await Promise.all(
-      remaining.map(async (page) => {
-        const p = await apiFetch<Page<ActivoResponseDTO>>(
-          `/api/activos/proyecto/${uuidProyecto}?size=${realPageSize}&page=${page}`
-        );
-        all.push(...(p.content ?? []));
-      })
+export async function fetchAllActivosPorProyecto(uuidProyecto: string): Promise<ActivoResponseDTO[]> {
+  const PAGE_SIZE = 500;
+  const all: ActivoResponseDTO[] = [];
+  let page = 0;
+  let hasMore = true;
+
+  while (hasMore) {
+    const response = await apiFetch<Page<ActivoResponseDTO>>(
+      `/api/activos/proyecto/${uuidProyecto}?size=${PAGE_SIZE}&page=${page}`
     );
+    
+    const content = response.content ?? [];
+    all.push(...content);
+    
+    const realSize = response.size ?? PAGE_SIZE;
+    const isLast = response.last ?? (content.length < realSize);
+    const totalPages = response.totalPages ?? 1;
+
+    if (isLast || page >= totalPages - 1 || content.length === 0) {
+      hasMore = false;
+    } else {
+      page++;
+    }
   }
+
   return all;
 }
 export function updateProyecto(uuid: string, data: ProyectoCreateDTO): Promise<Proyecto> {
