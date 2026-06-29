@@ -5,6 +5,7 @@ import { useDeferredValue, useEffect, useMemo, useState } from "react";
 
 import { fetchAllActivosPorProyecto } from "@/modules/inventario/services";
 import type { ActivoResponseDTO } from "@/modules/inventario/types";
+import Pagination from "@/components/ui/Pagination";
 
 type UnitsOverviewViewProps = {
   readonly projectId: string;
@@ -30,12 +31,12 @@ export default function UnitsOverviewView({ projectId }: Readonly<UnitsOverviewV
   const [typeFilter, setTypeFilter] = useState("all");
   const deferredSearch = useDeferredValue(search);
 
-  const [currentPage, setCurrentPage] = useState(1);
+  const [currentPage, setCurrentPage] = useState(0);
   const [pageSize, setPageSize] = useState(15);
   const [towerFilter, setTowerFilter] = useState("all");
 
   useEffect(() => {
-    setCurrentPage(1);
+    setCurrentPage(0);
   }, [deferredSearch, statusFilter, typeFilter, towerFilter]);
 
   useEffect(() => {
@@ -88,7 +89,7 @@ export default function UnitsOverviewView({ projectId }: Readonly<UnitsOverviewV
   }, [deferredSearch, statusFilter, typeFilter, towerFilter, units]);
 
   const paginatedUnits = useMemo(() => {
-    const start = (currentPage - 1) * pageSize;
+    const start = currentPage * pageSize;
     return visibleUnits.slice(start, start + pageSize);
   }, [visibleUnits, currentPage, pageSize]);
 
@@ -242,75 +243,18 @@ export default function UnitsOverviewView({ projectId }: Readonly<UnitsOverviewV
 
         {/* Controles de Paginación */}
         {!isLoading && visibleUnits.length > 0 && (
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-6 py-4 border-t border-slate-100 dark:border-white/5 bg-slate-50/50 dark:bg-white/[0.01]">
-            <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-white/60">
-              <span>Mostrar</span>
-              <select
-                value={pageSize}
-                onChange={(e) => {
-                  setPageSize(Number(e.target.value));
-                  setCurrentPage(1);
-                }}
-                className="rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 px-2 py-1 text-xs outline-none focus:border-arch-gold text-slate-700 dark:text-white"
-              >
-                {[10, 15, 25, 50, 100].map((size) => (
-                  <option key={size} value={size}>{size}</option>
-                ))}
-              </select>
-              <span>registros por página</span>
-              <span className="ml-2 border-l border-slate-200 dark:border-white/10 pl-3">
-                Mostrando {Math.min(visibleUnits.length, (currentPage - 1) * pageSize + 1)}-{Math.min(visibleUnits.length, currentPage * pageSize)} de {visibleUnits.length} unidades
-              </span>
-            </div>
-
-            <div className="flex items-center gap-1">
-              <button
-                type="button"
-                disabled={currentPage === 1}
-                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 text-slate-500 dark:text-white/60 hover:bg-slate-50 dark:hover:bg-white/5 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-              >
-                <span className="material-symbols-outlined text-[18px]">chevron_left</span>
-              </button>
-
-              {/* Páginas numéricas */}
-              {Array.from({ length: totalPages }, (_, i) => i + 1)
-                .filter((page) => {
-                  // Mostrar primera, última, y vecinas de la actual
-                  return page === 1 || page === totalPages || Math.abs(page - currentPage) <= 1;
-                })
-                .map((page, index, arr) => {
-                  const showDotsBefore = page > 1 && arr[index - 1] !== page - 1;
-                  return (
-                    <div key={page} className="flex items-center gap-1">
-                      {showDotsBefore && (
-                        <span className="px-1 text-slate-400 dark:text-white/30 text-xs">...</span>
-                      )}
-                      <button
-                        type="button"
-                        onClick={() => setCurrentPage(page)}
-                        className={`flex h-8 w-8 items-center justify-center rounded-lg text-xs font-bold transition-all ${
-                          currentPage === page
-                            ? "bg-build-main text-white shadow-sm"
-                            : "border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 text-slate-600 dark:text-white/70 hover:bg-slate-50 dark:hover:bg-white/5"
-                        }`}
-                      >
-                        {page}
-                      </button>
-                    </div>
-                  );
-                })}
-
-              <button
-                type="button"
-                disabled={currentPage === totalPages}
-                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 text-slate-500 dark:text-white/60 hover:bg-slate-50 dark:hover:bg-white/5 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-              >
-                <span className="material-symbols-outlined text-[18px]">chevron_right</span>
-              </button>
-            </div>
-          </div>
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalElements={visibleUnits.length}
+            pageSize={pageSize}
+            onPageChange={setCurrentPage}
+            onPageSizeChange={(newSize) => {
+              setPageSize(newSize);
+              setCurrentPage(0);
+            }}
+            itemNamePlural="unidades"
+          />
         )}
       </section>
     </section>

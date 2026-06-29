@@ -203,8 +203,8 @@ describe("UnitsOverviewView", () => {
     });
 
     // Debería mostrar 15 unidades en la primera página (por defecto el tamaño es 15)
-    // El texto "Mostrando 1-15 de 20 unidades" debería estar presente
-    expect(screen.getByText("Mostrando 1-15 de 20 unidades")).toBeDefined();
+    // El texto "Mostrando 1 a 15 de 20 unidades" debería estar presente
+    expect(screen.getByText((_, el) => el?.tagName.toLowerCase() === "p" && /Mostrando 1 a 15 de 20 unidades/.test(el.textContent || ""))).toBeDefined();
 
     // La unidad número 16 (nro 116) NO debería mostrarse en la primera página
     expect(screen.queryByText("116")).toBeNull();
@@ -224,20 +224,20 @@ describe("UnitsOverviewView", () => {
     });
 
     // Hacer clic en Siguiente
-    const nextBtn = screen.getByText("chevron_right").closest("button");
+    const nextBtn = screen.getByTitle("Página siguiente");
     expect(nextBtn).toBeDefined();
-    fireEvent.click(nextBtn!);
+    fireEvent.click(nextBtn);
 
     await waitFor(() => {
       // Ahora debería mostrar la unidad 116 (que pertenece a la segunda página)
       expect(screen.getByText("116")).toBeDefined();
     });
-    // El texto debería actualizarse a "Mostrando 16-20 de 20 unidades"
-    expect(screen.getByText("Mostrando 16-20 de 20 unidades")).toBeDefined();
+    // El texto debería actualizarse a "Mostrando 16 a 20 de 20 unidades"
+    expect(screen.getByText((_, el) => el?.tagName.toLowerCase() === "p" && /Mostrando 16 a 20 de 20 unidades/.test(el.textContent || ""))).toBeDefined();
 
     // Hacer clic en Anterior
-    const prevBtn = screen.getByText("chevron_left").closest("button");
-    fireEvent.click(prevBtn!);
+    const prevBtn = screen.getByTitle("Página anterior");
+    fireEvent.click(prevBtn);
 
     await waitFor(() => {
       // Vuelve a mostrar 101 y oculta 116
@@ -260,8 +260,8 @@ describe("UnitsOverviewView", () => {
     });
 
     // Ir a la página 2
-    const nextBtn = screen.getByText("chevron_right").closest("button");
-    fireEvent.click(nextBtn!);
+    const nextBtn = screen.getByTitle("Página siguiente");
+    fireEvent.click(nextBtn);
 
     await waitFor(() => {
       expect(screen.getByText("116")).toBeDefined();
@@ -273,8 +273,8 @@ describe("UnitsOverviewView", () => {
 
     await waitFor(() => {
       // Al filtrar, la página debe reiniciarse a 1, y como el único que coincide es 116,
-      // ahora debe mostrar "Mostrando 1-1 de 1 unidades"
-      expect(screen.getByText("Mostrando 1-1 de 1 unidades")).toBeDefined();
+      // ahora debe mostrar "Mostrando 1 a 1 de 1 unidades"
+      expect(screen.getByText((_, el) => el?.tagName.toLowerCase() === "p" && /Mostrando 1 a 1 de 1 unidades/.test(el.textContent || ""))).toBeDefined();
     });
   });
 

@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
+import Pagination from "@/components/ui/Pagination";
 import {
   fetchProyectos,
   fetchTorresPorProyecto,
@@ -751,69 +752,14 @@ export default function LegalOverview() {
         </table>
 
         {/* Pagination Controls */}
-        {totalPages > 1 && (
-          <div className="flex items-center justify-between border-t border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/[0.03] px-4 py-3">
-            <div className="flex flex-1 justify-between sm:hidden">
-              <button
-                onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 0))}
-                disabled={currentPage === 0}
-                className="relative inline-flex items-center rounded-md border border-slate-300 dark:border-white/10 bg-white dark:bg-white/5 px-4 py-2 text-xs font-medium text-slate-700 dark:text-white/70 hover:bg-slate-50 dark:hover:bg-white/10 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-              >
-                Anterior
-              </button>
-              <button
-                onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages - 1))}
-                disabled={currentPage === totalPages - 1}
-                className="relative ml-3 inline-flex items-center rounded-md border border-slate-300 dark:border-white/10 bg-white dark:bg-white/5 px-4 py-2 text-xs font-medium text-slate-700 dark:text-white/70 hover:bg-slate-50 dark:hover:bg-white/10 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-              >
-                Siguiente
-              </button>
-            </div>
-            <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
-              <div>
-                <p className="text-xs text-slate-500 dark:text-white/50">
-                  Mostrando <span className="font-semibold text-slate-700 dark:text-white/80">{startIndex + 1}</span> a{" "}
-                  <span className="font-semibold text-slate-700 dark:text-white/80">{Math.min(endIndex, filtered.length)}</span> de{" "}
-                  <span className="font-semibold text-slate-700 dark:text-white/80">{filtered.length}</span> expedientes
-                </p>
-              </div>
-              <div>
-                <nav className="isolate inline-flex -space-x-px rounded-md shadow-sm" aria-label="Pagination">
-                  <button
-                    onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 0))}
-                    disabled={currentPage === 0}
-                    className="relative inline-flex items-center rounded-l-md border border-slate-300 dark:border-white/10 bg-white dark:bg-white/5 px-2 py-2 text-slate-400 dark:text-white/30 hover:bg-slate-50 dark:hover:bg-white/10 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                  >
-                    <span className="sr-only">Anterior</span>
-                    <span className="material-symbols-outlined text-[16px]">chevron_left</span>
-                  </button>
-                  {pageNumbers.map((pageNum) => (
-                    <button
-                      key={pageNum}
-                      onClick={() => setCurrentPage(pageNum - 1)}
-                      aria-current={currentPage === pageNum - 1 ? "page" : undefined}
-                      className={`relative inline-flex items-center px-3 py-2 text-xs font-semibold focus:z-20 transition-colors ${
-                        currentPage === pageNum - 1
-                          ? "z-10 bg-arch-gold text-white"
-                          : "text-slate-900 dark:text-white/70 bg-white dark:bg-white/5 border border-slate-300 dark:border-white/10 hover:bg-slate-50 dark:hover:bg-white/10"
-                      }`}
-                    >
-                      {pageNum}
-                    </button>
-                  ))}
-                  <button
-                    onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages - 1))}
-                    disabled={currentPage === totalPages - 1}
-                    className="relative inline-flex items-center rounded-r-md border border-slate-300 dark:border-white/10 bg-white dark:bg-white/5 px-2 py-2 text-slate-400 dark:text-white/30 hover:bg-slate-50 dark:hover:bg-white/10 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                  >
-                    <span className="sr-only">Siguiente</span>
-                    <span className="material-symbols-outlined text-[16px]">chevron_right</span>
-                  </button>
-                </nav>
-              </div>
-            </div>
-          </div>
-        )}
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          totalElements={filtered.length}
+          pageSize={itemsPerPage}
+          onPageChange={setCurrentPage}
+          itemNamePlural="expedientes"
+        />
       </div>
 
       {/* ── Assign Asesor Modal ── */}

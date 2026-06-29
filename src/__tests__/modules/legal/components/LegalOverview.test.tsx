@@ -376,8 +376,8 @@ describe("LegalOverview", () => {
 
     await screen.findByText("EXP-UA-1");
     await waitFor(() => {
-      expect(screen.getAllByText("Siguiente").length).toBeGreaterThan(0);
-      expect(screen.getAllByText("Anterior").length).toBeGreaterThan(0);
+      expect(screen.getAllByTitle("Página siguiente").length).toBeGreaterThan(0);
+      expect(screen.getAllByTitle("Página anterior").length).toBeGreaterThan(0);
     });
   });
 
@@ -390,8 +390,8 @@ describe("LegalOverview", () => {
     await screen.findByText("EXP-UA-1");
     expect(screen.getByText("EXP-UA-10")).toBeDefined();
 
-    const nextButtons = screen.getAllByText("Siguiente");
-    fireEvent.click(nextButtons[nextButtons.length - 1]);
+    const nextBtn = screen.getByTitle("Página siguiente");
+    fireEvent.click(nextBtn);
 
     expect(screen.getByText("EXP-UA-11")).toBeDefined();
     expect(screen.getByText("EXP-UA-15")).toBeDefined();
@@ -404,11 +404,11 @@ describe("LegalOverview", () => {
     render(<LegalOverview />);
 
     await screen.findByText("EXP-UA-1");
-    const nextButtons = screen.getAllByText("Siguiente");
-    fireEvent.click(nextButtons[nextButtons.length - 1]);
+    const nextBtn = screen.getByTitle("Página siguiente");
+    fireEvent.click(nextBtn);
 
-    const prevButtons = screen.getAllByText("Anterior");
-    fireEvent.click(prevButtons[prevButtons.length - 1]);
+    const prevBtn = screen.getByTitle("Página anterior");
+    fireEvent.click(prevBtn);
 
     expect(screen.getByText("EXP-UA-1")).toBeDefined();
   });
@@ -421,7 +421,7 @@ describe("LegalOverview", () => {
 
     await screen.findByText("EXP-UA-1");
 
-    const prevButtons = screen.getAllByRole("button", { name: /anterior/i });
+    const prevButtons = screen.getAllByTitle("Página anterior");
     prevButtons.forEach((btn) => {
       expect((btn as HTMLButtonElement).disabled).toBe(true);
     });
@@ -433,7 +433,7 @@ describe("LegalOverview", () => {
 
     render(<LegalOverview />);
 
-    const paginationText = await screen.findByText(/Mostrando .+ expediente/);
+    const paginationText = await screen.findByText(/Mostrando .+ expedientes/);
     expect(paginationText.textContent).toMatch(/1 a 10 de 12/);
   });
 
@@ -441,14 +441,14 @@ describe("LegalOverview", () => {
     mockFetchContratos.mockResolvedValue([makeContrato("ua-1")]);
     render(<LegalOverview />);
 
-    expect(await screen.findByText("1 expediente")).toBeDefined();
+    expect(await screen.findByText((_, el) => el?.tagName.toLowerCase() === "p" && /Mostrando 1 a 1 de 1 expedientes/.test(el.textContent || ""))).toBeDefined();
   });
 
   it("paginación: muestra el número de expedientes plural", async () => {
     mockFetchContratos.mockResolvedValue([makeContrato("ua-1"), makeContrato("ua-2")]);
     render(<LegalOverview />);
 
-    expect(await screen.findByText("2 expedientes")).toBeDefined();
+    expect(await screen.findByText((_, el) => el?.tagName.toLowerCase() === "p" && /Mostrando 1 a 2 de 2 expedientes/.test(el.textContent || ""))).toBeDefined();
   });
 
   it("muestra MiniStepper 'Por iniciar' cuando no hay stages disponibles", async () => {

@@ -234,14 +234,14 @@ describe("ClientsPage", () => {
     render(<ClientsPage />);
     await screen.findByText("Cliente1 Test");
 
-    expect(screen.getByText(/Página 1 de/)).toBeDefined();
-    const nextBtn = screen.getByRole("button", { name: /^Siguiente$/ });
+    expect(screen.getByText((_, el) => el?.tagName.toLowerCase() === "p" && /Mostrando 1 a 10 de 15 clientes/.test(el.textContent || ""))).toBeDefined();
+    const nextBtn = screen.getByTitle("Página siguiente");
     expect((nextBtn as HTMLButtonElement).disabled).toBe(false);
 
     fireEvent.click(nextBtn);
 
     await waitFor(() => {
-      expect(screen.getByText(/Página 2 de/)).toBeDefined();
+      expect(screen.getByText((_, el) => el?.tagName.toLowerCase() === "p" && /Mostrando 11 a 15 de 15 clientes/.test(el.textContent || ""))).toBeDefined();
     });
   });
 });

@@ -5,6 +5,7 @@ import AssignPropertyWizard from "@/modules/asignaciones/components/AssignProper
 import { fetchUsuarios, mapUsuarioToClienteRow } from "@/lib/api/users";
 import type { ClienteRow } from "@/types/user";
 import { useRouter } from "next/navigation";
+import Pagination from "@/components/ui/Pagination";
 
 export default function ClientsPage() {
   const [clients, setClients] = useState<ClienteRow[]>([]);
@@ -20,6 +21,7 @@ export default function ClientsPage() {
   const [search, setSearch] = useState("");
   const [searchInput, setSearchInput] = useState("");
   const [totalPages, setTotalPages] = useState(1);
+  const [totalElements, setTotalElements] = useState(0);
 
   const router = useRouter();
     
@@ -51,6 +53,7 @@ export default function ClientsPage() {
       const paginated = filtered.slice(start, start + s);
 
       setClients(paginated.map(mapUsuarioToClienteRow));
+      setTotalElements(filtered.length);
       setTotalPages(Math.ceil(filtered.length / s) || 1);
     } catch (err) {
       setListError(err instanceof Error ? err.message : "No se pudieron cargar los clientes.");
@@ -196,25 +199,14 @@ export default function ClientsPage() {
           </table>
         </div>
         {/* Pagination Controls */}
-        <div className="p-4 border-t border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 flex items-center justify-between">
-          <button
-            onClick={() => setPage(p => Math.max(0, p - 1))}
-            disabled={page === 0 || listLoading}
-            className="px-4 py-2 bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-lg text-sm font-bold text-build-main dark:text-white hover:bg-slate-50 dark:bg-white/5 disabled:opacity-50 transition-colors"
-          >
-            Anterior
-          </button>
-          <span className="text-sm font-medium text-slate-500 dark:text-white/60">
-            Página {page + 1} de {totalPages || 1}
-          </span>
-          <button
-            onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))}
-            disabled={page >= totalPages - 1 || listLoading}
-            className="px-4 py-2 bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-lg text-sm font-bold text-build-main dark:text-white hover:bg-slate-50 dark:bg-white/5 disabled:opacity-50 transition-colors"
-          >
-            Siguiente
-          </button>
-        </div>
+        <Pagination
+          currentPage={page}
+          totalPages={totalPages}
+          totalElements={totalElements}
+          pageSize={size}
+          onPageChange={setPage}
+          itemNamePlural="clientes"
+        />
       </div>
 
       <CreateClienteModal
