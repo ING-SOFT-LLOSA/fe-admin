@@ -37,6 +37,7 @@ export default function ProjectDetailView({ projectId }: Readonly<ProjectDetailV
     confirmText?: string;
     cancelText?: string;
     onConfirm?: () => void;
+    onClose?: () => void;
   }>({
     isOpen: false,
     title: "",
@@ -137,7 +138,7 @@ export default function ProjectDetailView({ projectId }: Readonly<ProjectDetailV
             message: "Proyecto eliminado correctamente.",
             type: "success",
             confirmText: "Aceptar",
-            onConfirm: () => {
+            onClose: () => {
               router.push("/proyectos");
             },
           });
@@ -206,7 +207,7 @@ export default function ProjectDetailView({ projectId }: Readonly<ProjectDetailV
         confirmText={dialog.confirmText}
         cancelText={dialog.cancelText}
         onConfirm={dialog.onConfirm}
-        onClose={() => setDialog((prev) => ({ ...prev, isOpen: false }))}
+        onClose={dialog.onClose || (() => setDialog((prev) => ({ ...prev, isOpen: false })))}
       />
     </section>
   );
