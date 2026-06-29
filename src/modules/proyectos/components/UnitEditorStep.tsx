@@ -255,6 +255,34 @@ export default function UnitEditorStep({ torres: initialTorres, onBack, onSubmit
     setTorres((prev) => {
       const next = structuredClone(prev);
       next[tIdx].pisos.splice(pIdx, 1);
+
+      // Re-enumerar los pisos restantes consecutivamente (Piso 1, Piso 2, etc.)
+      next[tIdx].pisos.forEach((piso, index) => {
+        const antiguoPisoNro = piso.nroPiso;
+        const nuevoPisoNro = index + 1;
+
+        if (antiguoPisoNro !== nuevoPisoNro) {
+          piso.nroPiso = nuevoPisoNro;
+
+          // Re-enumerar las unidades de este piso para evitar inconsistencias (ej: 201 -> 101)
+          piso.activos.forEach((activo) => {
+            const antPisoStr = antiguoPisoNro.toString();
+            const nuePisoStr = nuevoPisoNro.toString();
+
+            if (activo.nro.startsWith(antPisoStr)) {
+              activo.nro = nuePisoStr + activo.nro.slice(antPisoStr.length);
+            } else if (activo.nro.startsWith(`E-${antPisoStr}`)) {
+              activo.nro = `E-${nuePisoStr}` + activo.nro.slice(`E-${antPisoStr}`.length);
+            } else if (activo.nro.startsWith(`D-${antPisoStr}`)) {
+              activo.nro = `D-${nuePisoStr}` + activo.nro.slice(`D-${antPisoStr}`.length);
+            }
+
+            // Actualizar el número de piso en la descripción
+            activo.descripcion = activo.descripcion.replace(`Piso ${antiguoPisoNro}`, `Piso ${nuevoPisoNro}`);
+          });
+        }
+      });
+
       return next;
     });
     setConfirmDeletePiso(null);
