@@ -7,11 +7,14 @@ import {
   fetchReportesProyecto,
   createReporte,
   deleteReporte,
+  updateReporte,
   type ReporteResponse,
-  type ReporteCreatePayload
+  type ReporteCreatePayload,
+  type ReporteUpdatePayload
 } from "@/lib/api/reportes";
 import DialogModal from "@/components/ui/DialogModal";
 import { getEtapasByProyecto, type HitoResponseDTO } from "@/lib/api/obra";
+import { uploadDocument, deleteDocumento, type DocumentoResponse } from "@/lib/api/documents";
  
 // ─── Types ────────────────────────────────────────────────────────────────────
  
