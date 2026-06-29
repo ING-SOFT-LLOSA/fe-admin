@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
-import { fetchActivosPorProyecto, updateActivo, deleteActivo } from "@/modules/inventario/services";
+import { fetchAllActivosPorProyecto, updateActivo, deleteActivo } from "@/modules/inventario/services";
 import DialogModal from "@/components/ui/DialogModal";
 import type { ActivoRequestDTO, ActivoResponseDTO } from "@/modules/inventario/types";
 
@@ -56,9 +56,9 @@ export default function UnitDetailView({ projectId, unitId }: Readonly<UnitDetai
       setIsLoading(true);
       setError("");
       try {
-        const activosPage = await fetchActivosPorProyecto(projectId);
+        const allActivos = await fetchAllActivosPorProyecto(projectId);
         if (!mounted) return;
-        const selectedUnit = activosPage.content?.find((entry) => entry.id === unitId) ?? null;
+        const selectedUnit = allActivos.find((entry) => entry.id === unitId) ?? null;
         setUnit(selectedUnit);
         if (selectedUnit) {
           setForm({

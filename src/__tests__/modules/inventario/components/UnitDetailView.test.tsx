@@ -9,7 +9,7 @@ vi.mock("next/navigation", () => ({
 }));
 
 vi.mock("@/modules/inventario/services", () => ({
-  fetchActivosPorProyecto: vi.fn(),
+  fetchAllActivosPorProyecto: vi.fn(),
   updateActivo: vi.fn(),
   deleteActivo: vi.fn(),
 }));
@@ -20,10 +20,10 @@ vi.mock("next/link", () => ({
   ),
 }));
 
-import { fetchActivosPorProyecto, updateActivo, deleteActivo } from "@/modules/inventario/services";
+import { fetchAllActivosPorProyecto, updateActivo, deleteActivo } from "@/modules/inventario/services";
 import UnitDetailView from '@/modules/inventario/components/UnitDetailView';
 
-const mockFetchActivosPorProyecto = vi.mocked(fetchActivosPorProyecto);
+const mockFetchAllActivosPorProyecto = vi.mocked(fetchAllActivosPorProyecto);
 const mockUpdateActivo = vi.mocked(updateActivo);
 const mockDeleteActivo = vi.mocked(deleteActivo);
 
@@ -46,17 +46,13 @@ describe("UnitDetailView", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockPush.mockClear();
-    mockFetchActivosPorProyecto.mockResolvedValue({
-      content: [sampleUnit],
-      totalElements: 1,
-      totalPages: 1,
-    } as any);
+    mockFetchAllActivosPorProyecto.mockResolvedValue([sampleUnit] as any);
     mockUpdateActivo.mockResolvedValue(sampleUnit as any);
     mockDeleteActivo.mockResolvedValue(undefined as any);
   });
 
   it("shows loading skeleton initially", () => {
-    mockFetchActivosPorProyecto.mockReturnValue(new Promise(() => {}));
+    mockFetchAllActivosPorProyecto.mockReturnValue(new Promise(() => {}));
     render(<UnitDetailView projectId="proj-1" unitId="unit-1" />);
     expect(document.querySelector(".skeleton")).toBeTruthy();
   });
@@ -69,24 +65,20 @@ describe("UnitDetailView", () => {
   });
 
   it("shows 'Unidad no encontrada' when unit doesn't exist", async () => {
-    mockFetchActivosPorProyecto.mockResolvedValue({
-      content: [],
-      totalElements: 0,
-      totalPages: 0,
-    } as any);
+    mockFetchAllActivosPorProyecto.mockResolvedValue([] as any);
     render(<UnitDetailView projectId="proj-1" unitId="unit-999" />);
     expect(await screen.findByText("Unidad no encontrada")).toBeDefined();
   });
 
   it("shows error message when fetch fails", async () => {
-    mockFetchActivosPorProyecto.mockRejectedValue(new Error("Load error"));
+    mockFetchAllActivosPorProyecto.mockRejectedValue(new Error("Load error"));
     render(<UnitDetailView projectId="proj-1" unitId="unit-999" />);
     expect(await screen.findByText("Unidad no encontrada")).toBeDefined();
     expect(screen.getByText("Load error")).toBeDefined();
   });
 
   it("shows generic error when non-Error thrown", async () => {
-    mockFetchActivosPorProyecto.mockRejectedValue("fail");
+    mockFetchAllActivosPorProyecto.mockRejectedValue("fail");
     render(<UnitDetailView projectId="proj-1" unitId="unit-1" />);
     expect(await screen.findByText("Unidad no encontrada")).toBeDefined();
     expect(screen.getByText("No se pudo cargar la unidad.")).toBeDefined();
