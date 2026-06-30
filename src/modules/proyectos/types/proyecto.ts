@@ -5,8 +5,6 @@ export interface Proyecto {
   fechaInicio: string;
   /** Campo real del backend (ProyectoResponseDTO.fechaFin) */
   fechaFin: string;
-  /** @deprecated alias de fechaFin para compatibilidad con componentes existentes */
-  fechaFinEstimada?: string;
   descripcion?: string;
   precertificacionEdgeLeed?: boolean;
   departamento?: string;

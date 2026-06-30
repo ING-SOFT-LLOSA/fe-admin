@@ -761,7 +761,8 @@ export default function AgendaView() {
             {calDays.map((cell, idx) => (
               <div
                 key={`${cell.grey ? "g" : "m"}-${cell.day}-${idx}`}
-                role="gridcell"
+                role="button"
+                aria-label={cell.grey ? undefined : `Día ${cell.day}`}
                 tabIndex={cell.grey ? -1 : 0}
                 onClick={() => handleCellClick(cell)}
                 onKeyDown={(e) => { if (!cell.grey && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); handleCellClick(cell); } }}

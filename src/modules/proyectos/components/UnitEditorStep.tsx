@@ -17,6 +17,26 @@ const TAB_INFO: Record<TabType, { label: string; icon: string }> = {
   DEPOSITO: { label: "Depósitos", icon: "inventory_2" },
 };
 
+function renumberPisoUnits(piso: PisoData, antiguoPisoNro: number, nuevoPisoNro: number) {
+  piso.nroPiso = nuevoPisoNro;
+  
+  const antPisoStr = antiguoPisoNro.toString();
+  const nuePisoStr = nuevoPisoNro.toString();
+
+  piso.activos.forEach((activo) => {
+    if (activo.nro.startsWith(antPisoStr)) {
+      activo.nro = nuePisoStr + activo.nro.slice(antPisoStr.length);
+    } else if (activo.nro.startsWith(`E-${antPisoStr}`)) {
+      activo.nro = `E-${nuePisoStr}` + activo.nro.slice(`E-${antPisoStr}`.length);
+    } else if (activo.nro.startsWith(`D-${antPisoStr}`)) {
+      activo.nro = `D-${nuePisoStr}` + activo.nro.slice(`D-${antPisoStr}`.length);
+    }
+
+    // Actualizar el número de piso en la descripción
+    activo.descripcion = activo.descripcion.replace(`Piso ${antiguoPisoNro}`, `Piso ${nuevoPisoNro}`);
+  });
+}
+
 function UnitCard({
   activo,
   onEdit,
@@ -153,12 +173,13 @@ function PisoSection({
       <summary className="flex cursor-pointer items-center gap-1.5 bg-slate-50/50 dark:bg-white/[0.02] px-6 py-2 text-xs font-semibold text-slate-600 dark:text-white/70">
         <span className="material-symbols-outlined text-[15px] text-slate-400">layers</span>
         Piso {piso.nroPiso}
-        <div className="ml-auto flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+        <div className="ml-auto flex items-center gap-2">
           <span className="text-[10px] text-slate-400">{piso.activos.length} uds.</span>
           <button
             type="button"
             onClick={(e) => {
               e.preventDefault();
+              e.stopPropagation();
               onDeletePisoClick(tIdx, pIdx);
             }}
             className="rounded p-1 text-slate-400 hover:bg-red-50 hover:text-red-500 transition-colors"
@@ -262,24 +283,7 @@ export default function UnitEditorStep({ torres: initialTorres, onBack, onSubmit
         const nuevoPisoNro = index + 1;
 
         if (antiguoPisoNro !== nuevoPisoNro) {
-          piso.nroPiso = nuevoPisoNro;
-
-          // Re-enumerar las unidades de este piso para evitar inconsistencias (ej: 201 -> 101)
-          piso.activos.forEach((activo) => {
-            const antPisoStr = antiguoPisoNro.toString();
-            const nuePisoStr = nuevoPisoNro.toString();
-
-            if (activo.nro.startsWith(antPisoStr)) {
-              activo.nro = nuePisoStr + activo.nro.slice(antPisoStr.length);
-            } else if (activo.nro.startsWith(`E-${antPisoStr}`)) {
-              activo.nro = `E-${nuePisoStr}` + activo.nro.slice(`E-${antPisoStr}`.length);
-            } else if (activo.nro.startsWith(`D-${antPisoStr}`)) {
-              activo.nro = `D-${nuePisoStr}` + activo.nro.slice(`D-${antPisoStr}`.length);
-            }
-
-            // Actualizar el número de piso en la descripción
-            activo.descripcion = activo.descripcion.replace(`Piso ${antiguoPisoNro}`, `Piso ${nuevoPisoNro}`);
-          });
+          renumberPisoUnits(piso, antiguoPisoNro, nuevoPisoNro);
         }
       });
 

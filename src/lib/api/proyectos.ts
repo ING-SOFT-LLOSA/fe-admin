@@ -12,8 +12,6 @@ export interface Proyecto {
   fechaInicio: string;
   /** Fecha fin del proyecto (campo real que devuelve el backend) */
   fechaFin: string;
-  /** @deprecated Alias de fechaFin — mantenido por compatibilidad con componentes existentes */
-  fechaFinEstimada?: string;
   createdAt?: string;
 }
 
@@ -86,12 +84,7 @@ export interface PisoResponseDTO {
  */
 export function fetchProyectos(): Promise<Proyecto[]> {
   return apiFetch<{ content?: Proyecto[] } | Proyecto[]>("/api/proyectos?size=200").then((res) => {
-    const list: Proyecto[] = Array.isArray(res) ? res : (res as { content?: Proyecto[] }).content ?? [];
-    return list.map((p) => ({
-      ...p,
-      // alias para componentes que aún leen fechaFinEstimada
-      fechaFinEstimada: p.fechaFinEstimada ?? p.fechaFin,
-    }));
+    return Array.isArray(res) ? res : (res as { content?: Proyecto[] }).content ?? [];
   });
 }
 

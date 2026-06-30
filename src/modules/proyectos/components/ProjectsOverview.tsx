@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import Link from "next/link";
 import ProjectCard from "./ProjectCard";
 import { apiFetch } from "@/lib/api/http";
@@ -69,6 +69,16 @@ export default function ProjectsOverview() {
   const [error, setError]         = useState("");
   const [search, setSearch]       = useState("");
 
+  const loadProjectDetails = useCallback((projectId: string, mounted: boolean) => {
+    fetchProjectDetails(projectId)
+      .then((details) => {
+        if (!mounted) return;
+        setDptosCountMap((prev) => ({ ...prev, [projectId]: details.dptosCount }));
+        setAvanceMap((prev) => ({ ...prev, [projectId]: details.porcentajeAvance }));
+      })
+      .catch((err) => console.error(`Error loading details for project ${projectId}:`, err));
+  }, []);
+
   useEffect(() => {
     let mounted = true;
     async function loadData() {
@@ -96,13 +106,7 @@ export default function ProjectsOverview() {
         // 2. Cargar detalles (Dptos y avance) por proyecto de forma diferida y paralela
         if (projData && projData.length > 0) {
           projData.forEach((p) => {
-            fetchProjectDetails(p.id)
-              .then((details) => {
-                if (!mounted) return;
-                setDptosCountMap((prev) => ({ ...prev, [p.id]: details.dptosCount }));
-                setAvanceMap((prev) => ({ ...prev, [p.id]: details.porcentajeAvance }));
-              })
-              .catch((err) => console.error(`Error loading details for project ${p.id}:`, err));
+            loadProjectDetails(p.id, mounted);
           });
         }
       } catch (err) {
@@ -114,7 +118,7 @@ export default function ProjectsOverview() {
     }
     void loadData();
     return () => { mounted = false; };
-  }, []);
+  }, [loadProjectDetails]);
 
   // ── Filtered list ─────────────────────────────────────────────────────────────
 const filtered = useMemo(() => {
@@ -164,7 +168,7 @@ const filtered = useMemo(() => {
       <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
         {filtered.map((project) => {
           const dptosCount = dptosCountMap[project.id];
-          const clientesCount = contracts !== null ? getClientCountForProject(project.nombre, contracts) : undefined;
+          const clientesCount = contracts === null ? undefined : getClientCountForProject(project.nombre, contracts);
           const avance = avanceMap[project.id];
 
           return (

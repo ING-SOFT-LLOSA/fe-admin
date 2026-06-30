@@ -563,7 +563,7 @@ function StepSelectUnits({
   const uniqueTowers = React.useMemo(() => {
     return Array.from(
       new Set(units.map(u => u.torreNombre).filter(Boolean))
-    ).sort() as string[];
+    ).sort((a, b) => a.localeCompare(b)) as string[];
   }, [units]);
 
   const filteredUnits = React.useMemo(() => {

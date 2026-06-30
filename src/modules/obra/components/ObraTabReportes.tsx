@@ -7,14 +7,13 @@ import {
   fetchReportesProyecto,
   createReporte,
   deleteReporte,
-  updateReporte,
   type ReporteResponse,
   type ReporteCreatePayload,
   type ReporteUpdatePayload
 } from "@/lib/api/reportes";
 import DialogModal from "@/components/ui/DialogModal";
 import { getEtapasByProyecto, type HitoResponseDTO } from "@/lib/api/obra";
-import { uploadDocument, deleteDocumento, type DocumentoResponse } from "@/lib/api/documents";
+import { type DocumentoResponse } from "@/lib/api/documents";
  
 // ─── Types ────────────────────────────────────────────────────────────────────
  
@@ -186,7 +185,7 @@ export default function ObraTabReportes({ projectId, avance, project }: ObraTabR
               Página <span className="font-semibold">{currentPage + 1}</span> de{" "}
               <span className="font-semibold">{totalPages}</span>
               {" "}·{" "}
-              <span className="font-semibold">{totalItems}</span> reporte{totalItems !== 1 ? "s" : ""}
+              <span className="font-semibold">{totalItems}</span> reporte{totalItems === 1 ? "" : "s"}
             </p>
             <div className="flex items-center gap-1">
               <button
@@ -545,40 +544,69 @@ const getEstadoBadgeClass = (estado: string) => {
   }
   return "bg-slate-100 text-slate-500 dark:bg-white/10 dark:text-white/40";
 };
- 
-function NuevoReporteForm({ projectId, onClose, onSubmit }: NuevoReporteFormProps) {
-  const [titulo,      setTitulo]      = useState("");
-  const [comentarios, setComentarios] = useState("");
-  const [fecha,       setFecha]       = useState(new Date().toISOString().split("T")[0]);
 
-  const tituloId = useId();
-  const fechaId = useId();
-  const comentariosId = useId();
-  const filesId = useId();
- 
-  useEffect(() => {
-    const d = new Date(fecha + "T12:00:00");
-    const mes = d.toLocaleDateString("es-PE", { month: "long" });
-    const año = d.getFullYear();
-    Promise.resolve().then(() => {
-      setTitulo(`${mes.charAt(0).toUpperCase() + mes.slice(1)} ${año}`);
-    });
-  }, [fecha]);
-  const [files,       setFiles]       = useState<File[]>([]);
-  
-  const [availableHitos, setAvailableHitos] = useState<HitoResponseDTO[]>([]);
-  const [selectedHitos, setSelectedHitos] = useState<string[]>([]);
-  const [loadingHitos, setLoadingHitos] = useState(false);
- 
-  const handleHitoToggle = (titulo: string) => {
-    setSelectedHitos((prev) =>
-      prev.includes(titulo) ? prev.filter((x) => x !== titulo) : [...prev, titulo]
+interface HitosSelectorProps {
+  readonly loadingHitos: boolean;
+  readonly availableHitos: readonly HitoResponseDTO[];
+  readonly selectedHitos: readonly string[];
+  readonly handleHitoToggle: (titulo: string) => void;
+}
+
+function HitosSelector({
+  loadingHitos,
+  availableHitos,
+  selectedHitos,
+  handleHitoToggle,
+}: HitosSelectorProps) {
+  if (loadingHitos) {
+    return (
+      <div className="flex items-center gap-2 py-3 text-xs text-slate-400 dark:text-white/40">
+        <svg className="animate-spin w-4 h-4 text-build-accent" viewBox="0 0 24 24" fill="none">
+          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+        </svg>
+        <span>Cargando hitos del proyecto...</span>
+      </div>
     );
-  };
- 
-  const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
- 
+  }
+  if (availableHitos.length === 0) {
+    return (
+      <p className="text-xs text-slate-400 dark:text-white/30 italic py-2 bg-slate-50 dark:bg-white/[0.02] border border-dashed border-slate-200 dark:border-white/10 rounded-xl text-center">
+        No hay hitos registrados para este proyecto.
+      </p>
+    );
+  }
+  return (
+    <div className="grid gap-2 sm:grid-cols-2 bg-white dark:bg-white/5 p-4 rounded-xl border border-slate-200 dark:border-white/10 max-h-48 overflow-y-auto">
+      {availableHitos.map((h) => {
+        const isChecked = selectedHitos.includes(h.titulo);
+        return (
+          <label
+            key={h.id}
+            className="flex items-center gap-2.5 text-xs text-slate-700 dark:text-white/80 cursor-pointer hover:text-build-main dark:hover:text-white transition-colors py-1"
+          >
+            <input
+              type="checkbox"
+              checked={isChecked}
+              onChange={() => handleHitoToggle(h.titulo)}
+              className="rounded text-build-accent border-slate-300 dark:border-white/10 focus:ring-arch-gold/20 focus:ring-1 bg-white dark:bg-transparent"
+            />
+            <span className="font-semibold">{h.titulo}</span>
+            <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${getEstadoBadgeClass(h.estado)}`}>
+              {h.estado}
+            </span>
+          </label>
+        );
+      })}
+    </div>
+  );
+}
+
+function useProjectHitos(projectId: string, initialSelected: string[] = []) {
+  const [availableHitos, setAvailableHitos] = useState<HitoResponseDTO[]>([]);
+  const [selectedHitos, setSelectedHitos] = useState<string[]>(initialSelected);
+  const [loadingHitos, setLoadingHitos] = useState(false);
+
   useEffect(() => {
     if (!projectId) return;
 
@@ -611,7 +639,51 @@ function NuevoReporteForm({ projectId, onClose, onSubmit }: NuevoReporteFormProp
       active = false;
     };
   }, [projectId]);
+
+  const handleHitoToggle = useCallback((titulo: string) => {
+    setSelectedHitos((prev) =>
+      prev.includes(titulo) ? prev.filter((x) => x !== titulo) : [...prev, titulo]
+    );
+  }, []);
+
+  return {
+    availableHitos,
+    selectedHitos,
+    setSelectedHitos,
+    loadingHitos,
+    handleHitoToggle,
+  };
+}
  
+function NuevoReporteForm({ projectId, onClose, onSubmit }: NuevoReporteFormProps) {
+  const [titulo,      setTitulo]      = useState("");
+  const [comentarios, setComentarios] = useState("");
+  const [fecha,       setFecha]       = useState(new Date().toISOString().split("T")[0]);
+
+  const tituloId = useId();
+  const fechaId = useId();
+  const comentariosId = useId();
+  const filesId = useId();
+ 
+  useEffect(() => {
+    const d = new Date(fecha + "T12:00:00");
+    const mes = d.toLocaleDateString("es-PE", { month: "long" });
+    const año = d.getFullYear();
+    Promise.resolve().then(() => {
+      setTitulo(`${mes.charAt(0).toUpperCase() + mes.slice(1)} ${año}`);
+    });
+  }, [fecha]);
+  const [files,       setFiles]       = useState<File[]>([]);
+  const [submitting,  setSubmitting]  = useState(false);
+  const [error,       setError]       = useState<string | null>(null);
+
+  const {
+    availableHitos,
+    selectedHitos,
+    loadingHitos,
+    handleHitoToggle,
+  } = useProjectHitos(projectId, []);
+
   const handleSubmit = async () => {
     if (!titulo.trim()) return;
     setSubmitting(true);
@@ -630,51 +702,6 @@ function NuevoReporteForm({ projectId, onClose, onSubmit }: NuevoReporteFormProp
     } finally {
       setSubmitting(false);
     }
-  };
-
-  const renderHitosSection = () => {
-    if (loadingHitos) {
-      return (
-        <div className="flex items-center gap-2 py-3 text-xs text-slate-400 dark:text-white/40">
-          <svg className="animate-spin w-4 h-4 text-build-accent" viewBox="0 0 24 24" fill="none">
-            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
-          </svg>
-          <span>Cargando hitos del proyecto...</span>
-        </div>
-      );
-    }
-    if (availableHitos.length === 0) {
-      return (
-        <p className="text-xs text-slate-400 dark:text-white/30 italic py-2 bg-slate-50 dark:bg-white/[0.02] border border-dashed border-slate-200 dark:border-white/10 rounded-xl text-center">
-          No hay hitos registrados para este proyecto.
-        </p>
-      );
-    }
-    return (
-      <div className="grid gap-2 sm:grid-cols-2 bg-white dark:bg-white/5 p-4 rounded-xl border border-slate-200 dark:border-white/10 max-h-48 overflow-y-auto">
-        {availableHitos.map((h) => {
-          const isChecked = selectedHitos.includes(h.titulo);
-          return (
-            <label
-              key={h.id}
-              className="flex items-center gap-2.5 text-xs text-slate-700 dark:text-white/80 cursor-pointer hover:text-build-main dark:hover:text-white transition-colors py-1"
-            >
-              <input
-                type="checkbox"
-                checked={isChecked}
-                onChange={() => handleHitoToggle(h.titulo)}
-                className="rounded text-build-accent border-slate-300 dark:border-white/10 focus:ring-arch-gold/20 focus:ring-1 bg-white dark:bg-transparent"
-              />
-              <span className="font-semibold">{h.titulo}</span>
-              <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${getEstadoBadgeClass(h.estado)}`}>
-                {h.estado}
-              </span>
-            </label>
-          );
-        })}
-      </div>
-    );
   };
  
   return (
@@ -742,8 +769,12 @@ function NuevoReporteForm({ projectId, onClose, onSubmit }: NuevoReporteFormProp
         <p className="text-xs text-slate-400 dark:text-white/35 mb-3 leading-relaxed">
           Selecciona los hitos del proyecto que se han completado o consolidado en este periodo de reporte.
         </p>
-        
-        {renderHitosSection()}
+        <HitosSelector
+          loadingHitos={loadingHitos}
+          availableHitos={availableHitos}
+          selectedHitos={selectedHitos}
+          handleHitoToggle={handleHitoToggle}
+        />
       </div>
  
       {/* Comentarios */}
@@ -900,50 +931,15 @@ function EditarReporteForm({ report, projectId, onClose, onSubmit }: EditarRepor
   const [deletedMediaIds, setDeletedMediaIds] = useState<string[]>([]);
   const [newFiles, setNewFiles] = useState<File[]>([]);
   
-  const [availableHitos, setAvailableHitos] = useState<HitoResponseDTO[]>([]);
-  const [selectedHitos, setSelectedHitos] = useState<string[]>(report.hitosConsolidados || []);
-  const [loadingHitos, setLoadingHitos] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const handleHitoToggle = (titulo: string) => {
-    setSelectedHitos((prev) =>
-      prev.includes(titulo) ? prev.filter((x) => x !== titulo) : [...prev, titulo]
-    );
-  };
-
-  useEffect(() => {
-    if (!projectId) return;
-
-    let active = true;
-    const fetchHitos = async () => {
-      setLoadingHitos(true);
-      try {
-        const etapas = await getEtapasByProyecto(projectId);
-        if (!active) return;
-        const hitos = etapas.map((e) => ({
-          id: e.id,
-          titulo: e.nombre,
-          orden: e.orden,
-          tipo: "OBRA",
-          estado: e.estado,
-          fechaCompletado: null,
-        }));
-        setAvailableHitos(hitos);
-      } catch (err) {
-        console.error("Error loading project hitos:", err);
-      } finally {
-        if (active) {
-          setLoadingHitos(false);
-        }
-      }
-    };
-
-    fetchHitos();
-    return () => {
-      active = false;
-    };
-  }, [projectId]);
+  const {
+    availableHitos,
+    selectedHitos,
+    loadingHitos,
+    handleHitoToggle,
+  } = useProjectHitos(projectId, report.hitosConsolidados || []);
 
   const handleRemoveExistingMedia = (mediaId: string) => {
     setDeletedMediaIds((prev) => [...prev, mediaId]);
@@ -972,51 +968,6 @@ function EditarReporteForm({ report, projectId, onClose, onSubmit }: EditarRepor
     } finally {
       setSubmitting(false);
     }
-  };
-
-  const renderHitosSection = () => {
-    if (loadingHitos) {
-      return (
-        <div className="flex items-center gap-2 py-3 text-xs text-slate-400 dark:text-white/40">
-          <svg className="animate-spin w-4 h-4 text-build-accent" viewBox="0 0 24 24" fill="none">
-            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
-          </svg>
-          <span>Cargando hitos del proyecto...</span>
-        </div>
-      );
-    }
-    if (availableHitos.length === 0) {
-      return (
-        <p className="text-xs text-slate-400 dark:text-white/30 italic py-2 bg-slate-50 dark:bg-white/[0.02] border border-dashed border-slate-200 dark:border-white/10 rounded-xl text-center">
-          No hay hitos registrados para este proyecto.
-        </p>
-      );
-    }
-    return (
-      <div className="grid gap-2 sm:grid-cols-2 bg-white dark:bg-white/5 p-4 rounded-xl border border-slate-200 dark:border-white/10 max-h-48 overflow-y-auto">
-        {availableHitos.map((h) => {
-          const isChecked = selectedHitos.includes(h.titulo);
-          return (
-            <label
-              key={h.id}
-              className="flex items-center gap-2.5 text-xs text-slate-700 dark:text-white/80 cursor-pointer hover:text-build-main dark:hover:text-white transition-colors py-1"
-            >
-              <input
-                type="checkbox"
-                checked={isChecked}
-                onChange={() => handleHitoToggle(h.titulo)}
-                className="rounded text-build-accent border-slate-300 dark:border-white/10 focus:ring-arch-gold/20 focus:ring-1 bg-white dark:bg-transparent"
-              />
-              <span className="font-semibold">{h.titulo}</span>
-              <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${getEstadoBadgeClass(h.estado)}`}>
-                {h.estado}
-              </span>
-            </label>
-          );
-        })}
-      </div>
-    );
   };
 
   return (
@@ -1080,8 +1031,12 @@ function EditarReporteForm({ report, projectId, onClose, onSubmit }: EditarRepor
         <p className="text-xs text-slate-400 dark:text-white/35 mb-3 leading-relaxed">
           Selecciona los hitos del proyecto que se han completado o consolidado en este periodo de reporte.
         </p>
-        
-        {renderHitosSection()}
+        <HitosSelector
+          loadingHitos={loadingHitos}
+          availableHitos={availableHitos}
+          selectedHitos={selectedHitos}
+          handleHitoToggle={handleHitoToggle}
+        />
       </div>
 
       <div>
@@ -1100,9 +1055,9 @@ function EditarReporteForm({ report, projectId, onClose, onSubmit }: EditarRepor
 
       {existingMedia.length > 0 && (
         <div>
-          <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-white/50 mb-2">
+          <span className="block text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-white/50 mb-2">
             Multimedia Existente
-          </label>
+          </span>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-white dark:bg-white/5 p-4 rounded-xl border border-slate-200 dark:border-white/10">
             {existingMedia.map((media) => {
               const isImage = media.tipoMime?.startsWith("image/");

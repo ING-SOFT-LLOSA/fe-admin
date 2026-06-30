@@ -516,12 +516,7 @@ export default function LegalOverview() {
     return filtered.slice(start, start + itemsPerPage);
   }, [filtered, currentPage]);
 
-  const startIndex = currentPage * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-
   const hasActiveFilters = !!(selectedProyecto || selectedTorre || selectedEstado || selectedEtapa || search || !ocultarDesistidos);
-
-  const pageNumbers = useMemo(() => Array.from({ length: totalPages }, (_, i) => i + 1), [totalPages]);
 
   // ── Asesor handlers ─────────────────────────────────────────────────────────
 
