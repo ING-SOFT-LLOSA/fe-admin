@@ -179,9 +179,7 @@ export default function ObraTabReportes({ projectId, avance, project }: ObraTabR
     setSelectedReport(freshReport);
     setIsEditing(false);
   };
- 
-  const totalPublicados = reports.length;
-  const totalBorradores = 0;
+
 
   const renderContent = () => {
     if (loading && reports.length === 0) {
