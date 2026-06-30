@@ -67,6 +67,20 @@ function formatRelativeDate(dateStr: string): string {
   return `Hace ${years} ${years === 1 ? "año" : "años"}`;
 }
 
+function formatLocalTimestamp(dateStr: string): string {
+  const d = new Date(dateStr);
+  if (Number.isNaN(d.getTime())) return dateStr;
+  
+  // Determinar si la cadena de fecha contiene información de hora
+  const hasTime = dateStr.includes("T") || dateStr.includes(":") || dateStr.length > 10;
+  
+  if (!hasTime) {
+    return d.toLocaleDateString("es-PE");
+  }
+
+  return `${d.toLocaleDateString("es-PE")} ${d.toLocaleTimeString("es-PE", { hour: "2-digit", minute: "2-digit" })}`;
+}
+
 export default function ClientActivity({ assignments, clientCreatedAt }: Readonly<ClientActivityProps>) {
   const timeline = buildTimeline(assignments, clientCreatedAt);
 
@@ -97,7 +111,7 @@ export default function ClientActivity({ assignments, clientCreatedAt }: Readonl
                     <p className="text-sm font-semibold text-build-main dark:text-white">{event.label}</p>
                   </div>
                   <p className="text-[11px] text-slate-400 dark:text-white/40 mt-1">
-                    {formatRelativeDate(event.date)} · {event.date}
+                    {formatRelativeDate(event.date)} · {formatLocalTimestamp(event.date)}
                   </p>
                 </div>
               </div>
