@@ -561,9 +561,10 @@ function StepSelectUnits({
   }, [selectedProjectId]);
 
   const uniqueTowers = React.useMemo(() => {
-    return Array.from(
+    const towers = Array.from(
       new Set(units.map(u => u.torreNombre).filter(Boolean))
-    ).sort((a, b) => a.localeCompare(b)) as string[];
+    ) as string[];
+    return towers.sort((a, b) => a.localeCompare(b));
   }, [units]);
 
   const filteredUnits = React.useMemo(() => {
