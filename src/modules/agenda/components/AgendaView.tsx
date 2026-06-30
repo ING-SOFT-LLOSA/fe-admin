@@ -32,6 +32,7 @@ type CalDay = {
   grey?: boolean;
   today?: boolean;
   events: CalEvent[];
+  dateKey: string;
 };
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -68,10 +69,43 @@ function generateCalendarGrid(currentDate: Date): CalDay[] {
   const isCurrentMonth = today.getFullYear() === year && today.getMonth() === month;
 
   const grid: CalDay[] = [];
-  for (let i = startDayOfWeek - 1; i >= 0; i--) grid.push({ day: prevMonthTotalDays - i, grey: true, events: [] });
-  for (let day = 1; day <= totalDays; day++) grid.push({ day, today: isCurrentMonth && today.getDate() === day, events: [] });
+  
+  // Previous month
+  let pmY = year, pmM = month - 1;
+  if (pmM < 0) { pmM = 11; pmY--; }
+  for (let i = startDayOfWeek - 1; i >= 0; i--) {
+    const d = prevMonthTotalDays - i;
+    grid.push({
+      day: d,
+      grey: true,
+      events: [],
+      dateKey: `${pmY}-${String(pmM + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`
+    });
+  }
+
+  // Current month
+  for (let day = 1; day <= totalDays; day++) {
+    grid.push({
+      day,
+      today: isCurrentMonth && today.getDate() === day,
+      events: [],
+      dateKey: `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`
+    });
+  }
+
+  // Next month
+  let nmY = year, nmM = month + 1;
+  if (nmM > 11) { nmM = 0; nmY++; }
   const remaining = grid.length % 7 === 0 ? 0 : 7 - (grid.length % 7);
-  for (let day = 1; day <= remaining; day++) grid.push({ day, grey: true, events: [] });
+  for (let day = 1; day <= remaining; day++) {
+    grid.push({
+      day,
+      grey: true,
+      events: [],
+      dateKey: `${nmY}-${String(nmM + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`
+    });
+  }
+
   return grid;
 }
 
@@ -159,6 +193,57 @@ function getTipoLabel(tipo: string) {
 function mapExpedientesToUnits(exps: UsuarioActivoResponseDTO[]): { id: string; name: string }[] {
   return exps.flatMap((exp) =>
     (exp.activos || []).map((a) => ({ id: String(a.id), name: `${getTipoLabel(a.tipo)} ${a.nro}` }))
+  );
+}
+
+interface CalendarCellProps {
+  readonly cell: CalDay;
+  readonly onCellClick: (cell: CalDay) => void;
+  readonly onEventClick: (eventId: string) => void;
+}
+
+function CalendarCell({ cell, onCellClick, onEventClick }: CalendarCellProps) {
+  return (
+    <td
+      tabIndex={cell.grey ? -1 : 0}
+      onClick={() => onCellClick(cell)}
+      onKeyDown={(e) => { if (!cell.grey && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); onCellClick(cell); } }}
+      className={[
+        "border-b border-r border-slate-100 dark:border-white/5 p-0 align-top",
+        cell.grey
+          ? "bg-slate-50/60 dark:bg-white/1"
+          : "cursor-pointer hover:bg-slate-50 dark:hover:bg-white/3 transition-colors",
+      ].join(" ")}
+    >
+      <div className="min-h-27.5 p-1.5 flex flex-col gap-1 w-full h-full">
+        {/* Day number */}
+        <span className={[
+          "text-xs w-6 h-6 flex items-center justify-center rounded-full mb-0.5 font-semibold",
+          dayNumberClass(cell.today, cell.grey),
+        ].join(" ")}>
+          {cell.day}
+        </span>
+
+        {/* Events */}
+        {cell.events.slice(0, 3).map((ev) => (
+          <button
+            key={ev.id}
+            type="button"
+            onClick={(e) => { e.stopPropagation(); onEventClick(ev.id); }}
+            className={`w-full text-left rounded-md px-1.5 py-1 flex items-center gap-1 hover:brightness-95 transition-all group/ev ${ev.bg}`}
+          >
+            <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${ev.dot}`} />
+            <span className="text-[10px] font-semibold truncate flex-1">{ev.label}</span>
+            {ev.time && <span className="text-[9px] opacity-60 shrink-0">{ev.time}</span>}
+          </button>
+        ))}
+        {cell.events.length > 3 && (
+          <span className="text-[9px] text-slate-400 dark:text-white/30 pl-1">
+            +{cell.events.length - 3} más
+          </span>
+        )}
+      </div>
+    </td>
   );
 }
 
@@ -769,52 +854,14 @@ export default function AgendaView() {
             <tbody>
               {weeks.map((week, wIdx) => (
                 <tr key={wIdx}>
-                  {week.map((cell, idx) => {
-                    const globalIdx = wIdx * 7 + idx;
-                    return (
-                      <td
-                        key={`${cell.grey ? "g" : "m"}-${cell.day}-${globalIdx}`}
-                        tabIndex={cell.grey ? -1 : 0}
-                        onClick={() => handleCellClick(cell)}
-                        onKeyDown={(e) => { if (!cell.grey && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); handleCellClick(cell); } }}
-                        className={[
-                          "border-b border-r border-slate-100 dark:border-white/5 p-0 align-top",
-                          cell.grey
-                            ? "bg-slate-50/60 dark:bg-white/1"
-                            : "cursor-pointer hover:bg-slate-50 dark:hover:bg-white/3 transition-colors",
-                        ].join(" ")}
-                      >
-                        <div className="min-h-27.5 p-1.5 flex flex-col gap-1 w-full h-full">
-                          {/* Day number */}
-                          <span className={[
-                            "text-xs w-6 h-6 flex items-center justify-center rounded-full mb-0.5 font-semibold",
-                            dayNumberClass(cell.today, cell.grey),
-                          ].join(" ")}>
-                            {cell.day}
-                          </span>
-
-                          {/* Events */}
-                          {cell.events.slice(0, 3).map((ev) => (
-                            <button
-                              key={ev.id}
-                              type="button"
-                              onClick={(e) => { e.stopPropagation(); handleEventClick(ev.id); }}
-                              className={`w-full text-left rounded-md px-1.5 py-1 flex items-center gap-1 hover:brightness-95 transition-all group/ev ${ev.bg}`}
-                            >
-                              <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${ev.dot}`} />
-                              <span className="text-[10px] font-semibold truncate flex-1">{ev.label}</span>
-                              {ev.time && <span className="text-[9px] opacity-60 shrink-0">{ev.time}</span>}
-                            </button>
-                          ))}
-                          {cell.events.length > 3 && (
-                            <span className="text-[9px] text-slate-400 dark:text-white/30 pl-1">
-                              +{cell.events.length - 3} más
-                            </span>
-                          )}
-                        </div>
-                      </td>
-                    );
-                  })}
+                  {week.map((cell) => (
+                    <CalendarCell
+                      key={cell.dateKey}
+                      cell={cell}
+                      onCellClick={handleCellClick}
+                      onEventClick={handleEventClick}
+                    />
+                  ))}
                 </tr>
               ))}
             </tbody>
