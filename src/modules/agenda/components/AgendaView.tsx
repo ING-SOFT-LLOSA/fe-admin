@@ -852,8 +852,8 @@ export default function AgendaView() {
               </tr>
             </thead>
             <tbody>
-              {weeks.map((week, wIdx) => (
-                <tr key={wIdx}>
+              {weeks.map((week) => (
+                <tr key={week[0].dateKey}>
                   {week.map((cell) => (
                     <CalendarCell
                       key={cell.dateKey}
