@@ -159,7 +159,7 @@ export default function ObraTabReportes({ projectId, avance, project }: ObraTabR
     }
 
     if (newFiles.length > 0) {
-      const { uploadDocumentExplicito } = await import("@/lib/api/documents");
+      const { uploadDocument } = await import("@/lib/api/documents");
       await Promise.all(
         newFiles.map((file) => {
           let tipoDoc: "FOTO_OBRA" | "VIDEO_OBRA" | "PDF_LEGAL" = "FOTO_OBRA";
@@ -168,7 +168,7 @@ export default function ObraTabReportes({ projectId, avance, project }: ObraTabR
           } else if (file.type === "application/pdf") {
             tipoDoc = "PDF_LEGAL";
           }
-          return uploadDocumentExplicito(reportId, file, tipoDoc, "REPORTE");
+          return uploadDocument(reportId, file, tipoDoc);
         })
       );
     }
