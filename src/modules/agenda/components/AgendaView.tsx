@@ -574,6 +574,14 @@ export default function AgendaView() {
 
   const monthLabel = currentDate.toLocaleString("es-ES", { month: "long", year: "numeric" });
 
+  const weeks = useMemo(() => {
+    const w: CalDay[][] = [];
+    for (let i = 0; i < calDays.length; i += 7) {
+      w.push(calDays.slice(i, i + 7));
+    }
+    return w;
+  }, [calDays]);
+
   return (
     <>
       {/* ── Header ── */}
@@ -747,61 +755,70 @@ export default function AgendaView() {
             </div>
           </div>
 
-          {/* Days header */}
-          <div role="grid" className="grid grid-cols-7 border-b border-slate-100 dark:border-white/5">
-            {["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"].map((d) => (
-              <div key={d} className="py-2.5 text-center">
-                <span className="text-[10px] font-bold text-slate-400 dark:text-white/30 uppercase tracking-wider">{d}</span>
-              </div>
-            ))}
-          </div>
-
-          {/* Cells */}
-          <div className="grid grid-cols-7 border-l border-slate-100 dark:border-white/5">
-            {calDays.map((cell, idx) => (
-              <div
-                key={`${cell.grey ? "g" : "m"}-${cell.day}-${idx}`}
-                role="button"
-                aria-label={cell.grey ? undefined : `Día ${cell.day}`}
-                tabIndex={cell.grey ? -1 : 0}
-                onClick={() => handleCellClick(cell)}
-                onKeyDown={(e) => { if (!cell.grey && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); handleCellClick(cell); } }}
-                className={[
-                  "min-h-27.5 border-b border-r border-slate-100 dark:border-white/5 p-1.5 flex flex-col gap-1",
-                  cell.grey
-                    ? "bg-slate-50/60 dark:bg-white/1"
-                    : "cursor-pointer hover:bg-slate-50 dark:hover:bg-white/3 transition-colors",
-                ].join(" ")}
-              >
-                {/* Day number */}
-                <span className={[
-                  "text-xs w-6 h-6 flex items-center justify-center rounded-full mb-0.5 font-semibold",
-                  dayNumberClass(cell.today, cell.grey),
-                ].join(" ")}>
-                  {cell.day}
-                </span>
-
-                {/* Events */}
-                {cell.events.slice(0, 3).map((ev) => (
-                  <button
-                    key={ev.id}
-                    type="button"
-                    onClick={(e) => { e.stopPropagation(); handleEventClick(ev.id); }}
-                    className={`w-full text-left rounded-md px-1.5 py-1 flex items-center gap-1 hover:brightness-95 transition-all group/ev ${ev.bg}`}
-                  >
-                    <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${ev.dot}`} />
-                    <span className="text-[10px] font-semibold truncate flex-1">{ev.label}</span>
-                    {ev.time && <span className="text-[9px] opacity-60 shrink-0">{ev.time}</span>}
-                  </button>
+          {/* Calendar table */}
+          <table className="w-full border-collapse table-fixed border-l border-slate-100 dark:border-white/5">
+            <thead>
+              <tr className="border-b border-slate-100 dark:border-white/5">
+                {["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"].map((d) => (
+                  <th key={d} className="py-2.5 text-center font-normal">
+                    <span className="text-[10px] font-bold text-slate-400 dark:text-white/30 uppercase tracking-wider">{d}</span>
+                  </th>
                 ))}
-                {cell.events.length > 3 && (
-                  <span className="text-[9px] text-slate-400 dark:text-white/30 pl-1">
-                    +{cell.events.length - 3} más
-                  </span>
-                )}
-              </div>
-            ))}
-          </div>
+              </tr>
+            </thead>
+            <tbody>
+              {weeks.map((week, wIdx) => (
+                <tr key={wIdx}>
+                  {week.map((cell, idx) => {
+                    const globalIdx = wIdx * 7 + idx;
+                    return (
+                      <td
+                        key={`${cell.grey ? "g" : "m"}-${cell.day}-${globalIdx}`}
+                        tabIndex={cell.grey ? -1 : 0}
+                        onClick={() => handleCellClick(cell)}
+                        onKeyDown={(e) => { if (!cell.grey && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); handleCellClick(cell); } }}
+                        className={[
+                          "border-b border-r border-slate-100 dark:border-white/5 p-0 align-top",
+                          cell.grey
+                            ? "bg-slate-50/60 dark:bg-white/1"
+                            : "cursor-pointer hover:bg-slate-50 dark:hover:bg-white/3 transition-colors",
+                        ].join(" ")}
+                      >
+                        <div className="min-h-27.5 p-1.5 flex flex-col gap-1 w-full h-full">
+                          {/* Day number */}
+                          <span className={[
+                            "text-xs w-6 h-6 flex items-center justify-center rounded-full mb-0.5 font-semibold",
+                            dayNumberClass(cell.today, cell.grey),
+                          ].join(" ")}>
+                            {cell.day}
+                          </span>
+
+                          {/* Events */}
+                          {cell.events.slice(0, 3).map((ev) => (
+                            <button
+                              key={ev.id}
+                              type="button"
+                              onClick={(e) => { e.stopPropagation(); handleEventClick(ev.id); }}
+                              className={`w-full text-left rounded-md px-1.5 py-1 flex items-center gap-1 hover:brightness-95 transition-all group/ev ${ev.bg}`}
+                            >
+                              <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${ev.dot}`} />
+                              <span className="text-[10px] font-semibold truncate flex-1">{ev.label}</span>
+                              {ev.time && <span className="text-[9px] opacity-60 shrink-0">{ev.time}</span>}
+                            </button>
+                          ))}
+                          {cell.events.length > 3 && (
+                            <span className="text-[9px] text-slate-400 dark:text-white/30 pl-1">
+                              +{cell.events.length - 3} más
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                    );
+                  })}
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </div>
 
