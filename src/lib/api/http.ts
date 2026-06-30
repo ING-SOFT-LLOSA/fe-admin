@@ -24,12 +24,21 @@ export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> 
 
 
 
+  const isMultipart = init?.body instanceof FormData;
+
+  const defaultHeaders: Record<string, string> = {
+    Accept: "application/json",
+    Authorization: `Bearer ${token}`,
+  };
+
+  if (!isMultipart) {
+    defaultHeaders["Content-Type"] = "application/json";
+  }
+
   const res = await fetch(`${API_URL}${path}`, {
     ...init,
     headers: {
-      Accept: "application/json",
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
+      ...defaultHeaders,
       ...init?.headers,
     },
     cache: "no-store",
