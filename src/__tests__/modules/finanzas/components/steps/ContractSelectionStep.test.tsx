@@ -153,9 +153,8 @@ describe("ContractSelectionStep", () => {
     } as any]);
     render(<ContractSelectionStep client={sampleClient as any} onSelectContract={vi.fn()} onBack={vi.fn()} />);
     await waitFor(() => {
-      expect(mockFetchExpedientesPorUsuario).toHaveBeenCalled();
+      expect(screen.getByText(/350[,.]?000/)).toBeDefined();
     });
-    expect(screen.getByText(/350[,.]?000/)).toBeDefined();
   });
 
   it("handles expedientes with multiple activos", async () => {
