@@ -802,14 +802,14 @@ function NuevoReporteForm({ projectId, onClose, onSubmit }: NuevoReporteFormProp
             id={filesId}
             type="file"
             multiple
-            accept="image/*,video/*"
+            accept="image/*,video/*,application/pdf"
             onChange={(e) => {
               if (e.target.files) {
                 const selectedFiles = Array.from(e.target.files);
-                const MAX_SIZE = 5 * 1024 * 1024; // 5 MB
+                const MAX_SIZE = 10 * 1024 * 1024; // 10 MB
                 const oversizedFile = selectedFiles.find(f => f.size > MAX_SIZE);
                 if (oversizedFile) {
-                  setError(`El archivo "${oversizedFile.name}" supera el límite de 5 MB. Por favor, selecciona archivos más pequeños.`);
+                  setError(`El archivo "${oversizedFile.name}" supera el límite de 10 MB. Por favor, selecciona archivos más pequeños.`);
                   e.target.value = ""; // Clear file input
                   setFiles([]);
                   return;
@@ -1099,14 +1099,14 @@ function EditarReporteForm({ report, projectId, onClose, onSubmit }: EditarRepor
             id={filesId}
             type="file"
             multiple
-            accept="image/*,video/*"
+            accept="image/*,video/*,application/pdf"
             onChange={(e) => {
               if (e.target.files) {
                 const selectedFiles = Array.from(e.target.files);
-                const MAX_SIZE = 5 * 1024 * 1024; // 5 MB
+                const MAX_SIZE = 10 * 1024 * 1024; // 10 MB
                 const oversizedFile = selectedFiles.find(f => f.size > MAX_SIZE);
                 if (oversizedFile) {
-                  setError(`El archivo "${oversizedFile.name}" supera el límite de 5 MB. Por favor, selecciona archivos más pequeños.`);
+                  setError(`El archivo "${oversizedFile.name}" supera el límite de 10 MB. Por favor, selecciona archivos más pequeños.`);
                   e.target.value = "";
                   setNewFiles([]);
                   return;

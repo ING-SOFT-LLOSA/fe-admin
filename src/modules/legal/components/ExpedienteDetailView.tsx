@@ -1361,12 +1361,12 @@ function DocumentosTab({
       const file = (e.target as HTMLInputElement).files?.[0];
       if (!file) return;
 
-      const MAX_SIZE = 5 * 1024 * 1024; // 5 MB
+      const MAX_SIZE = 10 * 1024 * 1024; // 10 MB
       if (file.size > MAX_SIZE) {
         setDialog({
           isOpen: true,
           title: "Archivo demasiado grande",
-          message: `El archivo "${file.name}" supera el límite de 5 MB. Por favor, sube un archivo más pequeño.`,
+          message: `El archivo "${file.name}" supera el límite de 10 MB. Por favor, sube un archivo más pequeño.`,
           type: "danger",
           confirmText: "Aceptar",
         });
