@@ -60,9 +60,12 @@ const mockHitos = [
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 async function mockProyectosEndpoint(page: Page, proyectos = mockProyectos) {
-  await page.route('**/api/proyectos', async (route) => {
-    await route.fulfill({ status: 200, json: proyectos })
-  })
+  await page.route(
+    (url) => url.pathname === '/api/proyectos',
+    async (route) => {
+      await route.fulfill({ status: 200, json: proyectos })
+    }
+  )
 }
 
 // ─── Listar proyectos ─────────────────────────────────────────────────────────

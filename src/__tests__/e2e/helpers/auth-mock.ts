@@ -134,6 +134,9 @@ export async function injectSession(
   await page.fill('input[type="password"]', 'Test123456')
   await page.click('button[type="submit"]')
   await page
-    .waitForFunction(() => document.cookie.includes('llosa_id_token='), { timeout: 12_000 })
+    // 2nd param is `arg` (passed into the predicate), not `options` — must be
+    // explicit `undefined` or the { timeout } object is silently swallowed as
+    // `arg` and this waits with NO timeout (hangs until the test's own timeout).
+    .waitForFunction(() => document.cookie.includes('llosa_id_token='), undefined, { timeout: 12_000 })
     .catch(() => { /* negative case — test verifies expected behavior */ })
 }

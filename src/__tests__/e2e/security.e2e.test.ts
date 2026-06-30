@@ -134,7 +134,7 @@ test.describe('[VULN] Token JWT accesible en localStorage', () => {
   })
 
   test('El perfil completo con rol y funciones es modificable desde JavaScript', async ({ page }) => {
-    await page.goto('/login')
+    await page.goto('/login', { waitUntil: 'networkidle' })
     await page.evaluate(() => {
       localStorage.setItem('llosa_id_token', 'token-de-empleado')
       localStorage.setItem('llosa_perfil', JSON.stringify({
