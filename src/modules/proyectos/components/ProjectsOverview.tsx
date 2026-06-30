@@ -9,16 +9,21 @@ import { Proyecto } from "../types/proyecto";
 
 async function fetchProjectDetails(projectId: string) {
   try {
-    const assetsPage = await apiFetch<{ content?: { tipo: string }[] }>(`/api/activos/proyecto/${projectId}?size=9999`);
+    const [assetsPage, progressData] = await Promise.all([
+      apiFetch<{ content?: { tipo: string }[] }>(`/api/activos/proyecto/${projectId}?size=9999`),
+      apiFetch<{ porcentajeAvance?: number }>(`/api/proyectos/${projectId}/avance-general`).catch(() => null),
+    ]);
     const content = assetsPage?.content || [];
     const dptosCount = content.filter((a) => a.tipo === "DEPARTAMENTO").length;
     return {
       dptosCount,
+      porcentajeAvance: progressData?.porcentajeAvance ?? 0,
     };
   } catch (err) {
     console.error(`Error loading details for project ${projectId}:`, err);
     return {
       dptosCount: 0,
+      porcentajeAvance: 0,
     };
   }
 }
@@ -59,14 +64,17 @@ export default function ProjectsOverview() {
   const [projects, setProjects]   = useState<Proyecto[]>([]);
   const [contracts, setContracts] = useState<ContractOverview[] | null>(null);
   const [dptosCountMap, setDptosCountMap] = useState<Record<string, number>>({});
+  const [avanceMap, setAvanceMap] = useState<Record<string, number>>({});
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError]         = useState("");
   const [search, setSearch]       = useState("");
+
   const loadProjectDetails = useCallback((projectId: string, mounted: boolean) => {
     fetchProjectDetails(projectId)
       .then((details) => {
         if (!mounted) return;
         setDptosCountMap((prev) => ({ ...prev, [projectId]: details.dptosCount }));
+        setAvanceMap((prev) => ({ ...prev, [projectId]: details.porcentajeAvance }));
       })
       .catch((err) => console.error(`Error loading details for project ${projectId}:`, err));
   }, []);
@@ -161,6 +169,7 @@ const filtered = useMemo(() => {
         {filtered.map((project) => {
           const dptosCount = dptosCountMap[project.id];
           const clientesCount = contracts === null ? undefined : getClientCountForProject(project.nombre, contracts);
+          const avance = avanceMap[project.id];
 
           return (
             <ProjectCard
@@ -168,12 +177,13 @@ const filtered = useMemo(() => {
               project={project}
               clientesCount={clientesCount}
               dptosCount={dptosCount}
+              avance={avance}
             />
           );
         })}
       </div>
     );
-  }, [isLoading, filtered, hasFilters, dptosCountMap, contracts]);
+  }, [isLoading, filtered, hasFilters, dptosCountMap, contracts, avanceMap]);
 
   return (
     <section className="space-y-5">

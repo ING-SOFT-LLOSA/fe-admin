@@ -158,7 +158,6 @@ describe("ObraTabReportes", () => {
       fireEvent.click(row);
     });
 
-    expect(screen.getByText("Avance general del proyecto")).toBeDefined();
     expect(screen.getByText("Volver a reportes")).toBeDefined();
 
     fireEvent.click(screen.getByText("Volver a reportes"));

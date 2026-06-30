@@ -476,21 +476,7 @@ function ReporteDetail({
         </div>
       </div>
  
-      {/* Avance general */}
-      <div className="rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 p-6 shadow-sm">
-        <h3 className="text-sm font-bold text-build-main dark:text-white mb-4">Avance general del proyecto</h3>
-        <div className="flex items-center gap-4">
-          <div className="h-3 flex-1 rounded-full bg-slate-100 dark:bg-white/10">
-            <div
-              className="h-3 rounded-full bg-arch-gold transition-all"
-              style={{ width: `${Math.min(report.porcentajeAvance, 100)}%` }}
-            />
-          </div>
-          <span className="text-2xl font-bold text-build-main dark:text-white w-16 text-right">
-            {report.porcentajeAvance}%
-          </span>
-        </div>
-      </div>
+
  
       {/* Hitos consolidados */}
       {report.hitosConsolidados && report.hitosConsolidados.length > 0 && (
