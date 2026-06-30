@@ -78,12 +78,8 @@ describe("ObraTabReportes", () => {
     mockGetEtapas.mockResolvedValue([]);
   });
 
-  it("muestra KPIs y el título del panel", async () => {
+  it("muestra el título del panel", async () => {
     render(<ObraTabReportes projectId="p-1" avance={50} project={null} />);
-    expect(screen.getByText("Total reportes")).toBeDefined();
-    expect(screen.getByText("Publicados")).toBeDefined();
-    expect(screen.getByText("Borradores")).toBeDefined();
-    expect(screen.getByText("Avance actual")).toBeDefined();
     expect(await screen.findByText("Reportes de avance")).toBeDefined();
   });
 

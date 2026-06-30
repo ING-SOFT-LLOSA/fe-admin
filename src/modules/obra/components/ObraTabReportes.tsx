@@ -7,6 +7,7 @@ import {
   fetchReportesProyecto,
   createReporte,
   deleteReporte,
+  updateReporte,
   type ReporteResponse,
   type ReporteCreatePayload,
   type ReporteUpdatePayload
@@ -137,6 +138,47 @@ export default function ObraTabReportes({ projectId, avance, project }: ObraTabR
       },
     });
   };
+
+  const [isEditing, setIsEditing] = useState(false);
+
+  const handleUpdateReport = async (
+    reportId: string,
+    payload: ReporteUpdatePayload,
+    newFiles: File[],
+    deletedMediaIds: string[]
+  ) => {
+    await updateReporte(reportId, payload);
+
+    if (deletedMediaIds.length > 0) {
+      const { deleteDocumento } = await import("@/lib/api/documents");
+      await Promise.all(
+        deletedMediaIds.map((mediaId) =>
+          deleteDocumento(mediaId).catch((err) => console.error("Error deleting media:", err))
+        )
+      );
+    }
+
+    if (newFiles.length > 0) {
+      const { uploadDocumentExplicito } = await import("@/lib/api/documents");
+      await Promise.all(
+        newFiles.map((file) => {
+          let tipoDoc: "FOTO_OBRA" | "VIDEO_OBRA" | "PDF_LEGAL" = "FOTO_OBRA";
+          if (file.type.startsWith("video/")) {
+            tipoDoc = "VIDEO_OBRA";
+          } else if (file.type === "application/pdf") {
+            tipoDoc = "PDF_LEGAL";
+          }
+          return uploadDocumentExplicito(reportId, file, tipoDoc, "REPORTE");
+        })
+      );
+    }
+
+    await loadReports(currentPage);
+    const { apiFetch } = await import("@/lib/api/http");
+    const freshReport = await apiFetch<ReporteResponse>(`/api/reportes/${reportId}`);
+    setSelectedReport(freshReport);
+    setIsEditing(false);
+  };
  
   const totalPublicados = reports.length;
   const totalBorradores = 0;
@@ -215,6 +257,16 @@ export default function ObraTabReportes({ projectId, avance, project }: ObraTabR
  
   // If a report is selected, show detail view
   if (selectedReport) {
+    if (isEditing) {
+      return (
+        <EditarReporteForm
+          report={selectedReport}
+          projectId={projectId}
+          onClose={() => setIsEditing(false)}
+          onSubmit={handleUpdateReport}
+        />
+      );
+    }
     return (
       <>
         <ReporteDetail
@@ -222,6 +274,7 @@ export default function ObraTabReportes({ projectId, avance, project }: ObraTabR
           onBack={() => setSelectedReport(null)}
           onDelete={() => handleDeleteReport(selectedReport.id)}
           canDelete={canEdit}
+          onEdit={() => setIsEditing(true)}
         />
         <DialogModal
           isOpen={dialog.isOpen}
@@ -245,13 +298,7 @@ export default function ObraTabReportes({ projectId, avance, project }: ObraTabR
         </div>
       )}
  
-      {/* KPI row */}
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <KpiMini icon="description"  label="Total reportes" value={String(reports.length)} />
-        <KpiMini icon="check_circle" label="Publicados"     value={String(totalPublicados)} accent="text-emerald-500" />
-        <KpiMini icon="edit_note"    label="Borradores"     value={String(totalBorradores)} accent="text-amber-500"   />
-        <KpiMini icon="construction" label="Avance actual"  value={`${avance}%`}            accent="text-arch-gold" />
-      </div>
+
  
       {/* Controls row */}
       {canEdit && (

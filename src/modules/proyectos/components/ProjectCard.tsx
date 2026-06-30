@@ -6,10 +6,9 @@ type Props = {
   readonly project: Proyecto;
   readonly clientesCount?: number;
   readonly dptosCount?: number;
-  readonly avance?: number;
 };
 
-export default function ProjectCard({ project, clientesCount, dptosCount, avance }: Readonly<Props>) {
+export default function ProjectCard({ project, clientesCount, dptosCount }: Readonly<Props>) {
   const showInicio = !!project.fechaInicio;
   const showLocation = !!(project.distrito || project.departamento);
 
@@ -47,23 +46,7 @@ export default function ProjectCard({ project, clientesCount, dptosCount, avance
         </div>
       </div>
 
-      {/* Avance Físico de Obra */}
-      <div className="mt-4 border-t border-slate-100 dark:border-white/5 pt-4">
-        <div className="flex justify-between text-[11px] font-semibold mb-1.5">
-          <span className="text-slate-500 uppercase">Avance de Obra</span>
-          {avance === undefined ? (
-            <div className="h-3.5 w-8 animate-pulse rounded bg-slate-100 dark:bg-white/10" />
-          ) : (
-            <span className="text-arch-gold font-bold">{avance.toFixed(0)}%</span>
-          )}
-        </div>
-        <div className="w-full bg-slate-100 dark:bg-white/10 rounded-full h-1.5 overflow-hidden">
-          <div
-            className="bg-arch-gold h-1.5 rounded-full transition-all duration-500"
-            style={{ width: `${Math.min(100, Math.max(0, avance ?? 0))}%` }}
-          />
-        </div>
-      </div>
+
 
       <div className={`mt-4 grid ${showInicio ? "grid-cols-3" : "grid-cols-2"} gap-3`}>
         {showInicio && (
