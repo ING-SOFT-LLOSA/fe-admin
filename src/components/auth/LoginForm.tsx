@@ -73,6 +73,7 @@ function useLoginFormLogic(redirectTo: string) {
           setError("El acceso para clientes ha sido movido a un portal especializado.");
         });
       } else {
+        router.refresh();
         router.replace(redirectTo);
       }
     }

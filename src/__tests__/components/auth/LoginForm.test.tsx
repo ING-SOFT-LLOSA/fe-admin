@@ -32,7 +32,7 @@ describe("LoginForm", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.mocked(useRouter).mockReturnValue({ replace: mockReplace } as any);
+    vi.mocked(useRouter).mockReturnValue({ replace: mockReplace, refresh: vi.fn() } as any);
     vi.mocked(useAuth).mockReturnValue(defaultAuth as any);
   });
 
