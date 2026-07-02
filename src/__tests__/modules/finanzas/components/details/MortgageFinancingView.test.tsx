@@ -20,7 +20,6 @@ vi.mock("@/lib/api/expedientes", () => ({
   updateCommercialHitoEstado: vi.fn(),
   createCommercialHito: vi.fn(),
   deleteCommercialHito: vi.fn(),
-  updateCommercialHito: vi.fn(),
   fetchEtapasExpediente: vi.fn(),
 }));
 
@@ -46,7 +45,7 @@ import {
   uploadPagoComprobante,
 } from "@/lib/api/finanzas";
 import { fetchSignedUrl } from "@/lib/api/documents";
-import { updateCommercialHitoEstado, createCommercialHito, deleteCommercialHito, updateCommercialHito, fetchEtapasExpediente } from "@/lib/api/expedientes";
+import { updateCommercialHitoEstado, createCommercialHito, deleteCommercialHito, fetchEtapasExpediente } from "@/lib/api/expedientes";
 import { linkComprobanteToLegal } from "@/modules/finanzas/utils/linkComprobanteToLegal";
 import MortgageFinancingView from '@/modules/finanzas/components/details/MortgageFinancingView';
 
@@ -61,7 +60,6 @@ const mockFetchSignedUrl = vi.mocked(fetchSignedUrl);
 const mockUpdateHitoEstado = vi.mocked(updateCommercialHitoEstado);
 const mockCreateHito = vi.mocked(createCommercialHito);
 const mockDeleteHito = vi.mocked(deleteCommercialHito);
-const mockUpdateHito = vi.mocked(updateCommercialHito);
 const mockFetchEtapasExpediente = vi.mocked(fetchEtapasExpediente);
 const mockLinkToLegal = vi.mocked(linkComprobanteToLegal);
 
@@ -177,7 +175,6 @@ describe("MortgageFinancingView", () => {
     mockUpdateHitoEstado.mockResolvedValue({} as any);
     mockCreateHito.mockResolvedValue({} as any);
     mockDeleteHito.mockResolvedValue({} as any);
-    mockUpdateHito.mockResolvedValue({} as any);
     mockFetchEtapasExpediente.mockResolvedValue([{ etapaProceso: "PAGO", uuidEtapaExpediente: "pago-stage-123" }] as any);
     mockLinkToLegal.mockResolvedValue(undefined);
     vi.spyOn(window, "open").mockImplementation(() => null);
