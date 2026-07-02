@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import type { PagoResponse, CronogramaPagoResponse, CronogramaResumenResponse, CreditoHipotecarioResumen } from "@/modules/finanzas/types";
 import { createCronograma, updateCronograma, addPago, deletePago, uploadPagoComprobante, updatePago, updatePagoEstado } from "@/lib/api/finanzas";
 import { fetchSignedUrl } from "@/lib/api/documents";
-import { updateCommercialHitoEstado, createCommercialHito, deleteCommercialHito, updateCommercialHito } from "@/lib/api/expedientes";
+import { updateCommercialHitoEstado, createCommercialHito, deleteCommercialHito, updateCommercialHito, fetchEtapasExpediente } from "@/lib/api/expedientes";
 import type { UsuarioActivoResponseDTO, HitoComercialResponseDTO } from "@/lib/api/expedientes";
 import { linkComprobanteToLegal } from "@/modules/finanzas/utils/linkComprobanteToLegal";
 import DialogModal from "@/components/ui/DialogModal";
@@ -779,11 +779,10 @@ interface HitoRowProps {
     readonly idx: number;
     readonly isUpdating: string | null;
     readonly handleHitoToggle: (uuidHito: string, currentEstado: string) => Promise<void>;
-    readonly startEditingHito: (hito: HitoComercialResponseDTO) => void;
     readonly handleDeleteHito: (uuidHito: string) => Promise<void>;
 }
 
-function HitoRow({ item, idx, isUpdating, handleHitoToggle, startEditingHito, handleDeleteHito }: Readonly<HitoRowProps>) {
+function HitoRow({ item, idx, isUpdating, handleHitoToggle, handleDeleteHito }: Readonly<HitoRowProps>) {
     const isCompleted = item.estado === "COMPLETADO";
     const canChangeEstado = Boolean(item.uuidHitoComercial);
     const isUpdatingThis = isUpdating === item.uuidHitoComercial;
@@ -848,26 +847,6 @@ function HitoRow({ item, idx, isUpdating, handleHitoToggle, startEditingHito, ha
                         {item.uuidHitoComercial && (
                             <div className="flex items-center gap-1">
                                 <button
-                                    onClick={() => {
-                                        const h: HitoComercialResponseDTO = {
-                                            uuidHitoComercial: item.uuidHitoComercial!,
-                                            uuidEtapaExpediente: "",
-                                            etapaProceso: "PAGO",
-                                            nombreHito: item.nombre,
-                                            descripcion: "",
-                                            orden: idx,
-                                            estado: item.estado as HitoComercialResponseDTO["estado"],
-                                            fechaCompletado: item.fecha ?? null,
-                                            createdAt: "",
-                                        };
-                                        startEditingHito(h);
-                                    }}
-                                    className="text-[9px] text-slate-400 hover:text-build-accent"
-                                    title="Editar nombre"
-                                >
-                                    <span className="material-symbols-outlined text-[12px]">edit</span>
-                                </button>
-                                <button
                                     onClick={() => handleDeleteHito(item.uuidHitoComercial!)}
                                     className="text-[9px] text-slate-400 hover:text-red-500"
                                     title="Eliminar hito"
@@ -893,16 +872,10 @@ function HitosDesembolsoSection({ creditoHipotecario, expediente, onUpdate }: Re
     const [showHitoForm, setShowHitoForm] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
     const [isUpdating, setIsUpdating] = useState<string | null>(null);
-    const [editingHito, setEditingHito] = useState<string | null>(null);
     const [hitoFormData, setHitoFormData] = useState({ nombre: "" });
 
     const paymentHitos = creditoHipotecario?.items ?? [];
-    const getSaveButtonLabel = () => {
-        if (isSaving) return "…";
-        if (editingHito) return "Actualizar";
-        return "Agregar";
-    };
-    const saveButtonText = getSaveButtonLabel();
+    const saveButtonText = isSaving ? "…" : "Agregar";
 
     const handleHitoToggle = async (uuidHito: string, currentEstado: string) => {
         let newEstado: "PENDIENTE" | "EN_PROGRESO" | "COMPLETADO";
@@ -929,21 +902,17 @@ function HitosDesembolsoSection({ creditoHipotecario, expediente, onUpdate }: Re
         if (!hitoFormData.nombre || isSaving) return;
         setIsSaving(true);
         try {
-            if (editingHito) {
-                await updateCommercialHito(editingHito, {
-                    nombreHito: hitoFormData.nombre,
-                    descripcion: "",
-                });
-                setEditingHito(null);
-            } else {
-                await createCommercialHito({
-                    uuidUsuarioActivo: expediente.uuidUsuarioActivo,
-                    etapaProceso: "PAGO",
-                    nombreHito: hitoFormData.nombre,
-                    descripcion: "",
-                    orden: (paymentHitos.length ?? 0) + 1,
-                });
+            const stages = await fetchEtapasExpediente(expediente.uuidUsuarioActivo);
+            const pagoStage = stages.find((s) => s.etapaProceso === "PAGO");
+            if (!pagoStage) {
+                throw new Error("No se encontró la etapa PAGO para este expediente.");
             }
+            await createCommercialHito({
+                uuidEstapaExpediente: pagoStage.uuidEtapaExpediente,
+                nombreHito: hitoFormData.nombre,
+                descripcion: "",
+                orden: (paymentHitos.length ?? 0) + 1,
+            });
             setHitoFormData({ nombre: "" });
             setShowHitoForm(false);
             onUpdate();
@@ -967,12 +936,6 @@ function HitosDesembolsoSection({ creditoHipotecario, expediente, onUpdate }: Re
         }
     };
 
-    const startEditingHito = (hito: HitoComercialResponseDTO) => {
-        setEditingHito(hito.uuidHitoComercial);
-        setHitoFormData({ nombre: hito.nombreHito });
-        setShowHitoForm(true);
-    };
-
     return (
         <section className="rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 p-6 shadow-sm">
             <div className="flex items-center justify-between mb-6">
@@ -987,7 +950,6 @@ function HitosDesembolsoSection({ creditoHipotecario, expediente, onUpdate }: Re
                 </div>
                 <button
                     onClick={() => {
-                        setEditingHito(null);
                         setHitoFormData({ nombre: "" });
                         setShowHitoForm(true);
                     }}
@@ -1017,7 +979,7 @@ function HitosDesembolsoSection({ creditoHipotecario, expediente, onUpdate }: Re
                             {saveButtonText}
                         </button>
                         <button
-                            onClick={() => { setShowHitoForm(false); setEditingHito(null); }}
+                            onClick={() => { setShowHitoForm(false); }}
                             className="text-slate-400 hover:text-build-main dark:hover:text-white text-xs px-2"
                         >
                             ✕
@@ -1043,7 +1005,6 @@ function HitosDesembolsoSection({ creditoHipotecario, expediente, onUpdate }: Re
                         idx={idx}
                         isUpdating={isUpdating}
                         handleHitoToggle={handleHitoToggle}
-                        startEditingHito={startEditingHito}
                         handleDeleteHito={handleDeleteHito}
                     />
                 ))}

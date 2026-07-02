@@ -21,6 +21,7 @@ vi.mock("@/lib/api/expedientes", () => ({
   createCommercialHito: vi.fn(),
   deleteCommercialHito: vi.fn(),
   updateCommercialHito: vi.fn(),
+  fetchEtapasExpediente: vi.fn(),
 }));
 
 vi.mock("@/modules/finanzas/utils/linkComprobanteToLegal", () => ({
@@ -45,7 +46,7 @@ import {
   uploadPagoComprobante,
 } from "@/lib/api/finanzas";
 import { fetchSignedUrl } from "@/lib/api/documents";
-import { updateCommercialHitoEstado, createCommercialHito, deleteCommercialHito, updateCommercialHito } from "@/lib/api/expedientes";
+import { updateCommercialHitoEstado, createCommercialHito, deleteCommercialHito, updateCommercialHito, fetchEtapasExpediente } from "@/lib/api/expedientes";
 import { linkComprobanteToLegal } from "@/modules/finanzas/utils/linkComprobanteToLegal";
 import MortgageFinancingView from '@/modules/finanzas/components/details/MortgageFinancingView';
 
@@ -61,6 +62,7 @@ const mockUpdateHitoEstado = vi.mocked(updateCommercialHitoEstado);
 const mockCreateHito = vi.mocked(createCommercialHito);
 const mockDeleteHito = vi.mocked(deleteCommercialHito);
 const mockUpdateHito = vi.mocked(updateCommercialHito);
+const mockFetchEtapasExpediente = vi.mocked(fetchEtapasExpediente);
 const mockLinkToLegal = vi.mocked(linkComprobanteToLegal);
 
 const sampleExpediente = {
@@ -176,6 +178,7 @@ describe("MortgageFinancingView", () => {
     mockCreateHito.mockResolvedValue({} as any);
     mockDeleteHito.mockResolvedValue({} as any);
     mockUpdateHito.mockResolvedValue({} as any);
+    mockFetchEtapasExpediente.mockResolvedValue([{ etapaProceso: "PAGO", uuidEtapaExpediente: "pago-stage-123" }] as any);
     mockLinkToLegal.mockResolvedValue(undefined);
     vi.spyOn(window, "open").mockImplementation(() => null);
     vi.spyOn(window, "alert").mockImplementation(() => {});
@@ -1161,34 +1164,7 @@ describe("MortgageFinancingView", () => {
     });
   });
 
-  // ═══════════════════════════════════════════════════════════════════════════
-  // HitosDesembolsoSection - Edit hito
-  // ═══════════════════════════════════════════════════════════════════════════
-
-  it("enters edit hito mode", async () => {
-    render(<MortgageFinancingView expediente={sampleExpediente as any} cronograma={null} pagos={[]} resumen={null} creditoHipotecario={sampleCreditoHipotecario as any} onUpdate={vi.fn()} />);
-    const editButtons = screen.getAllByTitle("Editar nombre");
-    fireEvent.click(editButtons[0]);
-    await waitFor(() => {
-      expect(screen.getByText("Actualizar")).toBeDefined();
-    });
-  });
-
-  it("updates a hito", async () => {
-    const onUpdate = vi.fn();
-    render(<MortgageFinancingView expediente={sampleExpediente as any} cronograma={null} pagos={[]} resumen={null} creditoHipotecario={sampleCreditoHipotecario as any} onUpdate={onUpdate} />);
-    const editButtons = screen.getAllByTitle("Editar nombre");
-    fireEvent.click(editButtons[0]);
-    await waitFor(() => {
-      expect(screen.getByText("Actualizar")).toBeDefined();
-    });
-    fireEvent.change(screen.getByPlaceholderText("Nombre del hito…"), { target: { value: "Renamed" } });
-    fireEvent.click(screen.getByText("Actualizar"));
-    await waitFor(() => {
-      expect(mockUpdateHito).toHaveBeenCalledWith("hito-1", expect.objectContaining({ nombreHito: "Renamed" }));
-      expect(onUpdate).toHaveBeenCalled();
-    });
-  });
+  // (Edit hito mode was removed because it is not supported by the backend)
 
   // ═══════════════════════════════════════════════════════════════════════════
   // HitosDesembolsoSection - Delete hito
