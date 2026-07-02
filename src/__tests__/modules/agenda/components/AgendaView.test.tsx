@@ -42,13 +42,15 @@ const sampleClient = {
   activo: true,
 };
 
+const todayStr = new Date().toISOString().split("T")[0]; // "YYYY-MM-DD"
+
 const sampleCita = {
   id: "cita-1",
   titulo: "Firma de minuta",
   descripcion: "Firma de minuta con el cliente",
   tipoEvento: "FIRMA_MINUTA",
-  fechaInicio: "2026-06-20T10:00:00",
-  fechaFin: "2026-06-20T11:00:00",
+  fechaInicio: `${todayStr}T10:00:00`,
+  fechaFin: `${todayStr}T11:00:00`,
   estadoCita: "PROGRAMADA" as const,
   estadoSincronizacion: "PENDIENTE" as const,
   clienteNombre: "Ana García",
@@ -152,7 +154,11 @@ describe("AgendaView", () => {
     render(<AgendaView />);
     await screen.findByText("Agenda y Citas");
     fireEvent.click(screen.getByText("Nueva cita"));
-    expect(await screen.findByText("Ana García")).toBeDefined();
+    const select = (await screen.findByDisplayValue("Seleccionar cliente…")) as HTMLSelectElement;
+    await waitFor(() => {
+      expect(select.options.length).toBeGreaterThan(1);
+    });
+    expect(select.options[1].text).toBe("Ana García");
   });
 
   it("shows unit select when a client is selected in modal", async () => {
@@ -393,13 +399,9 @@ describe("AgendaView", () => {
     await waitFor(() => {
       expect(mockFetchCitas).toHaveBeenCalled();
     });
-    // Click on day number (non-grey cell) in the grid — any number in 1-30
-    const dayCells = screen.getAllByText(/^\d+$/).filter(el => {
-      const day = parseInt(el.textContent || "", 10);
-      return day >= 1 && day <= 31 && !el.textContent?.includes(":");
-    });
-    expect(dayCells.length).toBeGreaterThan(0);
-    fireEvent.click(dayCells[0]);
+    const clickableCells = document.querySelectorAll("td.cursor-pointer");
+    expect(clickableCells.length).toBeGreaterThan(0);
+    fireEvent.click(clickableCells[0]);
     expect(await screen.findByDisplayValue("Seleccionar cliente…")).toBeDefined();
   });
 

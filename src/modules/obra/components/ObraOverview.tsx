@@ -179,7 +179,7 @@ export default function ObraOverview() {
       {!isLoading && filtered.length > 0 && (
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {filtered.map((project) => {
-            const pct  = Math.min(project.porcentajeAvance ?? 0, 100);
+            const pct  = Math.round(Math.min(project.porcentajeAvance ?? 0, 100));
             const meta = getProgressMeta(pct);
 
             return (
