@@ -394,7 +394,7 @@ describe("AgendaView", () => {
   });
 
   it("opens create modal when clicking a calendar cell", async () => {
-    render(<AgendaView />);
+    const { container } = render(<AgendaView />);
     await screen.findByText("Agenda y Citas");
     await waitFor(() => {
       expect(mockFetchCitas).toHaveBeenCalled();
