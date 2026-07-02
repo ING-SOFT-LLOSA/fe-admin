@@ -45,9 +45,6 @@ const mockFetchExpedientes = vi.mocked(fetchExpedientesPorUsuario);
 const mockFetchProyectos = vi.mocked(fetchProyectos);
 const mockUseRouter = vi.mocked(useRouter);
 
-// ─── Fixtures ──────────────────────────────────────────────────────────────────
-// El componente trabaja sobre contratos (UsuarioActivoResponseDTO) que ya traen
-// la lista de activos[] embebida.
 
 const activoDepto = {
   id: "act-1",

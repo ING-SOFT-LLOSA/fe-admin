@@ -124,7 +124,6 @@ describe("ObraTabHitos", () => {
       />,
     );
 
-    // El botón no se muestra cuando hay etapas (estado vacío no se renderiza)
     expect(screen.queryByText("Cargar hitos estándar")).toBeNull();
   });
 
@@ -293,7 +292,6 @@ describe("ObraTabHitos", () => {
     ] as any);
     const onRefresh = vi.fn().mockResolvedValue(undefined);
 
-    // solo 1 etapa PENDIENTE para que solo haya un botón "Iniciar"
     const etapas = [
       { id: 3, nombre: "Acabados", orden: 3, estado: "PENDIENTE", hitos: [] },
     ];

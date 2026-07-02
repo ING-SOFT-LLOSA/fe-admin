@@ -99,7 +99,6 @@ describe("ClientExpedienteView", () => {
     mockUseStageDocuments.mockReturnValue(defaultDocs);
   });
 
-  // ── Loading ───────────────────────────────────────────────────────────────
 
   it("muestra loading spinner al cargar datos", () => {
     mockFetchUsuarios.mockReturnValue(new Promise(() => {}));
@@ -108,7 +107,6 @@ describe("ClientExpedienteView", () => {
     expect(screen.getByText("Cargando expediente...")).toBeDefined();
   });
 
-  // ── Error ─────────────────────────────────────────────────────────────────
 
   it("muestra mensaje de error si la carga falla", async () => {
     mockFetchUsuarios.mockRejectedValue(new Error("Error de red"));
@@ -126,7 +124,6 @@ describe("ClientExpedienteView", () => {
     ).toBeDefined();
   });
 
-  // ── Empty expedientes ─────────────────────────────────────────────────────
 
   it("muestra aviso cuando el cliente no tiene unidades", async () => {
     mockFetchUsuarios.mockResolvedValue([makeUser()]);
@@ -139,7 +136,6 @@ describe("ClientExpedienteView", () => {
     ).toBeDefined();
   });
 
-  // ── Header ────────────────────────────────────────────────────────────────
 
   it("muestra header con título y descripción", async () => {
     mockFetchUsuarios.mockResolvedValue([makeUser()]);
@@ -160,7 +156,6 @@ describe("ClientExpedienteView", () => {
     expect(link.closest("a")?.getAttribute("href")).toBe("/legal");
   });
 
-  // ── Unit selector ─────────────────────────────────────────────────────────
 
   it("muestra selector de unidad con proyecto y tipo/nro", async () => {
     mockFetchUsuarios.mockResolvedValue([makeUser()]);
@@ -234,7 +229,6 @@ describe("ClientExpedienteView", () => {
     expect(await screen.findByText("Proyecto — Dpto 302")).toBeDefined();
   });
 
-  // ── Client card ───────────────────────────────────────────────────────────
 
   it("muestra nombre, iniciales y email del cliente", async () => {
     mockFetchUsuarios.mockResolvedValue([makeUser()]);
@@ -322,7 +316,6 @@ describe("ClientExpedienteView", () => {
     expect(await screen.findByText("Vigente")).toBeDefined();
   });
 
-  // ── Name resolution ───────────────────────────────────────────────────────
 
   it("usa datos del clienteDTO cuando existe coincidencia por id", async () => {
     const exp = makeExpediente({
@@ -467,7 +460,6 @@ describe("ClientExpedienteView", () => {
     expect(screen.getByText("CN")).toBeDefined();
   });
 
-  // ── Tabs ──────────────────────────────────────────────────────────────────
 
   it("muestra las 3 pestañas de navegación", async () => {
     mockFetchUsuarios.mockResolvedValue([makeUser()]);
@@ -528,7 +520,6 @@ describe("ClientExpedienteView", () => {
     ).toContain("border-arch-gold");
   });
 
-  // ── Permissions ───────────────────────────────────────────────────────────
 
   it("computa permisos para ADMIN", async () => {
     mockUseAuth.mockReturnValue({
@@ -581,7 +572,6 @@ describe("ClientExpedienteView", () => {
     ).toBeDefined();
   });
 
-  // ── StepperError ──────────────────────────────────────────────────────────
 
   it("muestra ErrorBanner cuando hay stepperError", async () => {
     mockUseCommercialStepper.mockReturnValue({
@@ -596,7 +586,6 @@ describe("ClientExpedienteView", () => {
     ).toBeDefined();
   });
 
-  // ── Tab content ───────────────────────────────────────────────────────────
 
   it("renderiza TabResumen en el tab activo por defecto", async () => {
     mockFetchUsuarios.mockResolvedValue([makeUser()]);
@@ -629,7 +618,6 @@ describe("ClientExpedienteView", () => {
     expect(screen.queryByText("Financiamiento")).toBeNull();
   });
 
-  // ── Unmount ───────────────────────────────────────────────────────────────
 
   it("no crashea al desmontar durante la carga", () => {
     mockFetchUsuarios.mockReturnValue(new Promise(() => {}));
@@ -664,7 +652,6 @@ describe("ClientExpedienteView", () => {
     expect(mockFetchUsuarios).toHaveBeenCalled();
   });
 
-  // ── Edge: stepperError is empty string (no banner) ────────────────────────
 
   it("no muestra ErrorBanner cuando stepperError es vacío", async () => {
     mockUseCommercialStepper.mockReturnValue({
@@ -680,7 +667,6 @@ describe("ClientExpedienteView", () => {
     ).toBeNull();
   });
 
-  // ── Edge: nombre con el mismo clienteDTO y client, prioriza clienteDTO ───
 
   it("prioriza email del clienteDTO sobre el de client", async () => {
     mockFetchUsuarios.mockResolvedValue([
@@ -695,7 +681,6 @@ describe("ClientExpedienteView", () => {
     expect(screen.getByText("juan@test.com")).toBeDefined();
   });
 
-  // ── Edge: fetchExpedientesPorUsuario devuelve múltiples expedientes ───────
 
   it("selecciona automáticamente el primer expediente", async () => {
     mockFetchUsuarios.mockResolvedValue([makeUser()]);
@@ -709,7 +694,6 @@ describe("ClientExpedienteView", () => {
     expect(select.value).toBe("uuid-aaa");
   });
 
-  // ── Edge: useCommercialStepper loading state ──────────────────────────────
 
   it("pasa loadingStepper a TabResumen", async () => {
     mockUseCommercialStepper.mockReturnValue({
@@ -723,7 +707,6 @@ describe("ClientExpedienteView", () => {
     expect(screen.getByText("Progreso del proceso legal")).toBeDefined();
   });
 
-  // ── Edge: useStageDocuments error state ───────────────────────────────────
 
   it("pasa docsError a TabDocumentos", async () => {
     mockUseStageDocuments.mockReturnValue({
@@ -738,7 +721,6 @@ describe("ClientExpedienteView", () => {
     expect(screen.queryByText("Resumen")).toBeDefined();
   });
 
-  // ── Edge: renderiza cuando un solo fetch falla y el otro tiene éxito ─────
 
   it("muestra error cuando fetchUsuarios falla", async () => {
     mockFetchUsuarios.mockRejectedValue(new Error("Fallo usuarios"));

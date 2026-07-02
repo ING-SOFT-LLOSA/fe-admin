@@ -1,15 +1,3 @@
-/**
- * Pruebas E2E — RBAC y Gestión de Usuarios (CP06–CP08)
- *
- * NOTA: estos tests usan page.route() para mockear Firebase Auth y el backend.
- * No requieren el Firebase Auth Emulator para funcionar (compatible con CI).
- *
- * El flujo de "inyección de sesión" simula un login exitoso:
- *  1. Se mockea Firebase identitytoolkit para devolver un token fake
- *  2. Se mockea /api/auth/me para devolver el perfil deseado
- *  3. Se navega a /login y se hace submit del formulario
- *  4. AuthContext recibe el token mock, llama a fetchPerfil (mockeado) y establece estado
- */
 
 import { test, expect, type Page } from '@playwright/test'
 import { injectSession, FAKE_JWT } from './helpers/auth-mock'
@@ -72,7 +60,6 @@ async function mockUsersApi(page: Page) {
   })
 }
 
-// ─── CP06: Admin crea usuario con rol base ────────────────────────────────────
 
 test.describe('CP06 — Admin puede acceder al módulo de gestión de usuarios', () => {
   test('ADMIN accede a /configuracion sin ser bloqueado', async ({ page }) => {
@@ -92,7 +79,6 @@ test.describe('CP06 — Admin puede acceder al módulo de gestión de usuarios',
 
     // No debe redirigir al login
     await expect(page).not.toHaveURL(/login/, { timeout: 5_000 })
-    // Debe mostrar contenido de gestión de usuarios
     await expect(page.locator('text=/usuarios|gestión|crear/i').first()).toBeVisible({ timeout: 5_000 })
   })
 
@@ -127,7 +113,6 @@ test.describe('CP06 — Admin puede acceder al módulo de gestión de usuarios',
     await injectSession(page, perfilTecnico)
     await page.goto('/configuracion')
 
-    // Debe ser bloqueado (redirect o mensaje de acceso denegado)
     await assertAccessBlocked(page)
   })
 
@@ -149,7 +134,6 @@ test.describe('CP06 — Admin puede acceder al módulo de gestión de usuarios',
   })
 })
 
-// ─── CP07: Permisos granulares ────────────────────────────────────────────────
 // BUG DOCUMENTADO (CP07): Los checkboxes de permisos son readOnly en la UI
 // de asignación granular de funciones. No existe un botón "Guardar permisos"
 // individual — los permisos se asignan únicamente a través del rol base.
@@ -172,7 +156,6 @@ test.describe('CP07 — Asignación granular de permisos por módulo', () => {
     await injectSession(page, perfilAdmin)
     await page.goto('/configuracion')
 
-    // Abrir modal "Crear usuario" si existe
     await page.locator('button:has-text("Crear"), button:has-text("usuario")').first()
       .click({ timeout: 5_000 }).catch(() => {})
     await page.waitForTimeout(500)
@@ -186,7 +169,6 @@ test.describe('CP07 — Asignación granular de permisos por módulo', () => {
       description: `CP07: Los checkboxes de permisos son readOnly (count interactivo: ${interactiveCount}). ` +
         'No se puede modificar permisos granulares desde la UI actual.',
     })
-    // El test documenta el bug sin fallar
     expect(interactiveCount).toBeGreaterThanOrEqual(0)
   })
 
@@ -231,10 +213,8 @@ test.describe('CP07 — Asignación granular de permisos por módulo', () => {
   })
 })
 
-// ─── CP08: Desactivación de usuario invalida sesión ──────────────────────────
 // BUG DOCUMENTADO (CP08): AuthGuard no comprueba el campo `activo` del perfil.
 // Un usuario con activo=false pero token válido sigue teniendo acceso al frontend.
-// El bloqueo solo ocurre cuando el backend devuelve 401/403.
 
 test.describe('CP08 — Desactivar usuario invalida su acceso activo', () => {
   test('Usuario con activo=false pero token válido debería perder acceso', async ({ page }) => {
@@ -308,7 +288,6 @@ test.describe('CP08 — Desactivar usuario invalida su acceso activo', () => {
   })
 })
 
-// ─── SEGURIDAD: Escalación de privilegios via localStorage ───────────────────
 
 test.describe('Seguridad — Escalación de privilegios via manipulación de localStorage', () => {
   test('Empleado puede modificar localStorage para simular ser ADMIN', async ({ page }) => {
@@ -321,7 +300,6 @@ test.describe('Seguridad — Escalación de privilegios via manipulación de loc
       funciones: [],
     }
 
-    // El backend responde con el perfil real (técnico sin permisos)
     await injectSession(page, perfilReal)
 
     // Simula manipulación via DevTools:

@@ -1,19 +1,7 @@
-/**
- * Pruebas E2E — Seguridad Frontend
- *
- * Metodología:
- *   - Los tests que PASAN confirman que la vulnerabilidad EXISTE (sistema no la detecta)
- *   - Los tests que FALLAN significan que el sistema sí protege contra esa vulnerabilidad
- *   - Los tests marcados [VULN] documentan el riesgo; no implican que el bug esté corregido
- *
- * Todos los tests usan page.route() para mockear Firebase Auth y el backend.
- * No se requiere Firebase Emulator ni backend real (compatible con CI).
- */
 
 import { test, expect, type Page } from '@playwright/test'
 import { injectSession } from './helpers/auth-mock'
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
 
 async function mockUsersApi(page: Page) {
   await page.route('**/api/users**', async (route) => {
@@ -64,7 +52,6 @@ test.describe('Escalación de privilegios via manipulación de localStorage', ()
     await page.goto('/configuracion')
     // AuthContext usa el perfil desde /api/auth/me (perfilRealTecnico), no desde localStorage.
     // PermissionGuard detecta falta de USER_GESTIONAR y redirige a /proyectos (fallbackUrl).
-    // La manipulación de localStorage NO otorga acceso — vulnerabilidad mitigada.
     await expect(page).toHaveURL(/login|proyectos/, { timeout: 5_000 })
   })
 
@@ -105,7 +92,6 @@ test.describe('Escalación de privilegios via manipulación de localStorage', ()
 
     await page.goto('/finanzas')
     // BUG DOCUMENTADO: /finanzas no tiene PermissionGuard.
-    // El usuario accede aunque tenga funciones falsas en localStorage;
     // AuthContext usa el perfil real (sin FINANZAS_VER) desde /api/auth/me,
     // pero sin PermissionGuard en la ruta, el acceso no se bloquea.
     test.info().annotations.push({
@@ -113,7 +99,6 @@ test.describe('Escalación de privilegios via manipulación de localStorage', ()
       description: '[VULN] /finanzas no tiene PermissionGuard → manipular funciones en localStorage ' +
         'no es necesario para acceder, cualquier usuario autenticado puede hacerlo.',
     })
-    // El usuario permanece en /finanzas (no hay guard que lo bloquee)
     await expect(page).toHaveURL(/finanzas/, { timeout: 5_000 })
   })
 })
@@ -127,7 +112,6 @@ test.describe('[VULN] Token JWT accesible en localStorage', () => {
       localStorage.setItem('llosa_id_token', 'jwt-sensible-a-xss')
     })
 
-    // El mismo script puede leerlo de vuelta — vulnerabilidad XSS documentada
     // No navegamos a otra ruta para evitar que clearSession() limpie el token
     const tokenLeido = await page.evaluate(() => localStorage.getItem('llosa_id_token'))
     expect(tokenLeido).toBe('jwt-sensible-a-xss')
@@ -165,7 +149,6 @@ test.describe('[VULN] Token JWT accesible en localStorage', () => {
   })
 })
 
-// ─── Autenticación: comportamiento ante tokens inválidos ─────────────────────
 
 test.describe('Seguridad — Validación de tokens', () => {
   test('token expirado detectado por backend (401) limpia sesión correctamente', async ({ page }) => {
@@ -183,7 +166,6 @@ test.describe('Seguridad — Validación de tokens', () => {
 
     await page.goto('/clientes')
 
-    // Debe redirigir al login
     await expect(page).toHaveURL(/login/, { timeout: 8_000 })
 
     // clearSession() is async (triggered by onAuthStateChanged); wait for it to complete
@@ -192,13 +174,11 @@ test.describe('Seguridad — Validación de tokens', () => {
       { timeout: 5_000 }
     ).catch(() => { /* clearSession may not fire if no Firebase session exists */ })
 
-    // El token debe haber sido eliminado de localStorage
     const tokenDespues = await page.evaluate(() => localStorage.getItem('llosa_id_token'))
     expect(tokenDespues).toBeNull()
   })
 
   test('token faltante (sin sesión) redirige al login sin error', async ({ page }) => {
-    // Sin inyectar sesión, navegar directo a ruta protegida
     await page.goto('/clientes')
 
     await expect(page).toHaveURL(/login/, { timeout: 8_000 })
@@ -219,7 +199,6 @@ test.describe('Seguridad — Validación de tokens', () => {
   })
 })
 
-// ─── RBAC: límites de acceso por rol ─────────────────────────────────────────
 
 test.describe('Seguridad — Límites de acceso por rol', () => {
   test('empleado sin permisos no puede acceder a /configuracion', async ({ page }) => {

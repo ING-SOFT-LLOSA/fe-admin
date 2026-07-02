@@ -1,17 +1,7 @@
-/**
- * Pruebas E2E — Módulo de Agenda (CP34, CP36)
- *
- * CP34: Agendar cita con fecha futura válida
- * CP36: Rechazar cita con fecha pasada
- *
- * Todos los tests usan page.route() para mockear Firebase Auth y el backend.
- * No se requiere Firebase Emulator ni backend real (compatible con CI).
- */
 
 import { test, expect, type Page } from '@playwright/test'
 import { injectSession } from './helpers/auth-mock'
 
-// ─── Fixtures ────────────────────────────────────────────────────────────────
 
 const perfilAdmin = {
   id: 1,
@@ -47,7 +37,6 @@ const mockCitas = [
   },
 ]
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
 
 async function mockAgendaEndpoints(page: Page) {
   await page.route('**/api/agenda**', async (route) => {
@@ -72,7 +61,6 @@ async function mockAgendaEndpoints(page: Page) {
   })
 }
 
-// ─── Acceso al módulo ─────────────────────────────────────────────────────────
 
 test.describe('Agenda — Acceso y listado', () => {
   test('admin accede a /agenda y ve las citas programadas', async ({ page }) => {
@@ -108,7 +96,6 @@ test.describe('Agenda — Acceso y listado', () => {
   })
 })
 
-// ─── CP34: Agendar cita con fecha futura válida ───────────────────────────────
 
 test.describe('CP34 — Agendar cita con fecha futura válida', () => {
   test('se puede crear una cita con fecha futura (mañana)', async ({ page }) => {
@@ -156,7 +143,6 @@ test.describe('CP34 — Agendar cita con fecha futura válida', () => {
       page.locator('text=/agenda|cita|calendario/i').first()
     ).toBeVisible({ timeout: 8_000 })
 
-    // Abrir formulario de nueva cita
     const crearBtn = page.locator(
       'button:has-text("Nueva cita"), button:has-text("Crear cita"), button:has-text("Agendar"), button:has-text("Nueva"), a:has-text("Nueva")'
     )
@@ -189,21 +175,18 @@ test.describe('CP34 — Agendar cita con fecha futura válida', () => {
         await tituloInput.first().fill('Reunión de presentación')
       }
 
-      // Enviar
       const submitBtn = page.locator('button[type="submit"], button:has-text("Guardar"), button:has-text("Crear")')
       if (await submitBtn.count() > 0) {
         await submitBtn.first().click()
         await page.waitForTimeout(1_500)
       }
 
-      // Verificar éxito
       if (postCalled) {
         // Si el POST fue llamado, verificar que la fecha en el body es futura
         if (requestBody && requestBody.fecha) {
           expect(new Date(requestBody.fecha as string) > new Date()).toBeTruthy()
         }
       } else {
-        // El form puede ser un wizard o la ruta del endpoint puede diferir
         const success = page.locator('text=/creada|agendada|guardada|éxito/i')
         if (await success.count() === 0) {
           test.info().annotations.push({
@@ -247,7 +230,6 @@ test.describe('CP34 — Agendar cita con fecha futura válida', () => {
       page.locator('text=/agenda|cita|calendario/i').first()
     ).toBeVisible({ timeout: 8_000 })
 
-    // La cita nueva debe aparecer en el listado
     const citaVisible = page.locator('text=Visita a obra Edificio Aurora')
     if (await citaVisible.count() > 0) {
       await expect(citaVisible).toBeVisible()
@@ -260,7 +242,6 @@ test.describe('CP34 — Agendar cita con fecha futura válida', () => {
   })
 })
 
-// ─── CP36: Rechazar cita con fecha pasada ─────────────────────────────────────
 
 test.describe('CP36 — Rechazar cita con fecha en el pasado', () => {
   test('validación client-side: no se puede seleccionar fecha pasada en el datepicker', async ({ page }) => {
@@ -294,14 +275,12 @@ test.describe('CP36 — Rechazar cita con fecha en el pasado', () => {
           await submitBtn.first().click()
           await page.waitForTimeout(1_000)
 
-          // Debe aparecer validación de fecha pasada
           const validationMsg = page.locator(
             'text=/fecha.*pasada|fecha.*inválida|debe.*futura|pasado/i'
           )
           if (await validationMsg.count() > 0) {
             await expect(validationMsg.first()).toBeVisible({ timeout: 3_000 })
           } else {
-            // Verificar que el atributo min del input bloquea fechas pasadas
             const minAttr = await fechaInput.first().getAttribute('min')
             if (minAttr) {
               expect(new Date(minAttr) >= yesterday).toBeTruthy()
@@ -390,7 +369,6 @@ test.describe('CP36 — Rechazar cita con fecha en el pasado', () => {
         await page.waitForTimeout(1_500)
 
         if (postAttempted) {
-          // El backend rechazó — la UI debe mostrar el error
           await expect(
             page.locator('text=/pasada|inválida|error/i').first()
           ).toBeVisible({ timeout: 5_000 })
@@ -423,14 +401,11 @@ test.describe('CP36 — Rechazar cita con fecha en el pasado', () => {
 
         if (minAttr) {
           // CP36: min debe ser ESTRICTAMENTE mayor a hoy (mañana o posterior)
-          // Las citas para el mismo día no están permitidas según la lógica de negocio
           expect(
             minAttr > today,
             `CP36: min="${minAttr}" no es estrictamente mayor a hoy (${today}). Debe apuntar a mañana o una fecha futura.`
           ).toBeTruthy()
         } else {
-          // El input no tiene atributo min: se documenta como hallazgo UX.
-          // El sistema sí valida en JS (validateAppointmentForm), pero no a nivel HTML.
           test.info().annotations.push({
             type: 'bug',
             description: 'CP36: El input de fecha no tiene atributo "min". No se previene la selección de fechas pasadas a nivel HTML, solo a nivel JS al enviar el formulario.',

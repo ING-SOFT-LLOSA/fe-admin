@@ -34,7 +34,6 @@ describe("proyectos API", () => {
 
     it("retorna la lista de proyectos", async () => {
       const proyectos = [{ id: "p1", nombre: "Edificio Norte", fechaFin: "2027-01-01" }];
-      // El backend devuelve Page<ProyectoResponseDTO> — simulamos el shape real
       mockApiFetch.mockResolvedValue({ content: proyectos, totalElements: 1 });
       const result = await fetchProyectos();
       expect(result[0]).toMatchObject({ id: "p1", nombre: "Edificio Norte" });

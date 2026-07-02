@@ -529,7 +529,6 @@ describe("ConstructionProgressView", () => {
     mockFetchActivos.mockResolvedValue({
       content: [makeActivo("a-1", 10)],
     } as any);
-    // El avance devuelto tiene hitoOrden 99 → no coincide → undefined → "PENDIENTE"
     mockGetAvances.mockResolvedValue([
       { hitoOrden: 99, estado: "COMPLETADO" },
     ] as any);

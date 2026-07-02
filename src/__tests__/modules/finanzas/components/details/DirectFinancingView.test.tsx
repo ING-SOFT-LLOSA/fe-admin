@@ -130,7 +130,6 @@ describe("DirectFinancingView", () => {
     vi.spyOn(window, "alert").mockImplementation(() => {});
   });
 
-  // ─── Cronograma Form ──────────────────────────────────────
 
   it("shows cronograma creation form when no cronograma provided", () => {
     render(<DirectFinancingView expediente={sampleExpediente as any} cronograma={null} pagos={[]} resumen={null} onUpdate={vi.fn()} />);
@@ -182,14 +181,12 @@ describe("DirectFinancingView", () => {
     expect(screen.getByTestId("dialog-message").textContent).toBe("Save fail");
   });
 
-  // ─── Cronograma Summary ───────────────────────────────────
 
   it("shows cronograma summary when available", () => {
     render(<DirectFinancingView expediente={sampleExpediente as any} cronograma={sampleCronograma as any} pagos={[]} resumen={sampleResumen as any} onUpdate={vi.fn()} />);
     expect(screen.getByText("Cronograma Activo")).toBeDefined();
   });
 
-  // ─── Resumen de Saldos ────────────────────────────────────
 
   it("shows resumen de saldos when available", () => {
     render(<DirectFinancingView expediente={sampleExpediente as any} cronograma={sampleCronograma as any} pagos={[]} resumen={sampleResumen as any} onUpdate={vi.fn()} />);
@@ -202,7 +199,6 @@ describe("DirectFinancingView", () => {
     expect(screen.getByText("En mora")).toBeDefined();
   });
 
-  // ─── Cuotas Table ─────────────────────────────────────────
 
   it("shows cuotas table with header when cronograma exists", () => {
     render(<DirectFinancingView expediente={sampleExpediente as any} cronograma={sampleCronograma as any} pagos={[]} resumen={null} onUpdate={vi.fn()} />);
@@ -254,7 +250,6 @@ describe("DirectFinancingView", () => {
     });
   });
 
-  // ─── Add Pago Form ────────────────────────────────────────
 
   it("shows add pago form when clicking Agregar Cuota", async () => {
     const { container } = render(<DirectFinancingView expediente={sampleExpediente as any} cronograma={sampleCronograma as any} pagos={[]} resumen={null} onUpdate={vi.fn()} />);
@@ -295,7 +290,6 @@ describe("DirectFinancingView", () => {
     alertSpy.mockRestore();
   });
 
-  // ─── Delete Pago ──────────────────────────────────────────
 
   it("opens delete confirmation dialog", async () => {
     render(<DirectFinancingView expediente={sampleExpediente as any} cronograma={sampleCronograma as any} pagos={[makePago() as any]} resumen={null} onUpdate={vi.fn()} />);
@@ -318,7 +312,6 @@ describe("DirectFinancingView", () => {
     });
   });
 
-  // ─── Edit Pago ────────────────────────────────────────────
 
   it("enters edit mode", async () => {
     render(<DirectFinancingView expediente={sampleExpediente as any} cronograma={sampleCronograma as any} pagos={[makePago() as any]} resumen={null} onUpdate={vi.fn()} />);
@@ -356,7 +349,6 @@ describe("DirectFinancingView", () => {
     });
   });
 
-  // ─── Special concepto ──────────────────────────────────────
 
   it("shows special conceptos correctly (SEPARACION)", () => {
     const pago = makePago({ nroCuota: -1, concepto: "SEPARACION" });
@@ -376,7 +368,6 @@ describe("DirectFinancingView", () => {
     expect(screen.getByText("CUOTA")).toBeDefined();
   });
 
-  // ─── PAGADO pago status toggle ────────────────────────────
 
   it("toggles from PAGADO to PENDIENTE", async () => {
     const pago = makePago({ estado: "PAGADO" });
@@ -389,7 +380,6 @@ describe("DirectFinancingView", () => {
     });
   });
 
-  // ─── Vence hoy pago ────────────────────────────────────────
 
   it("shows status text for pago", () => {
     const pago = makePago({ fechaVencimiento: "2030-01-01" });

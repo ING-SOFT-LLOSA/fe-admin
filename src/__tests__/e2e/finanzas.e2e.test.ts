@@ -1,17 +1,7 @@
-/**
- * Pruebas E2E — Módulo de Finanzas (CP29, CP32)
- *
- * CP29: Crear cronograma de pago directo (crédito directo)
- * CP32: Bloquear edición de cronograma histórico
- *
- * Todos los tests usan page.route() para mockear Firebase Auth y el backend.
- * No se requiere Firebase Emulator ni backend real (compatible con CI).
- */
 
 import { test, expect, type Page } from '@playwright/test'
 import { injectSession } from './helpers/auth-mock'
 
-// ─── Fixtures ────────────────────────────────────────────────────────────────
 
 const perfilAdmin = {
   id: 1,
@@ -48,7 +38,6 @@ const mockCronogramaHistorico = {
   cuotas: mockCronograma.cuotas.map(c => ({ ...c, pagado: true, fechaPago: '2024-02-01' })),
 }
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
 
 async function mockFinanzasEndpoints(page: Page) {
   await page.route('**/api/finanzas**', async (route) => {
@@ -76,7 +65,6 @@ async function mockFinanzasEndpoints(page: Page) {
   })
 }
 
-// ─── CP29: Crear cronograma de crédito directo ────────────────────────────────
 
 test.describe('CP29 — Crear cronograma de pago en crédito directo', () => {
   test('admin accede al módulo de finanzas', async ({ page }) => {
@@ -142,7 +130,6 @@ test.describe('CP29 — Crear cronograma de pago en crédito directo', () => {
       await crearBtn.first().click()
       await page.waitForTimeout(500)
 
-      // El formulario debe tener algún selector de tipo de financiamiento
       const tipoSelect = page.locator(
         'select[name*="tipo"], select[name*="financiamiento"], input[name*="tipo"]'
       )
@@ -212,7 +199,6 @@ test.describe('CP29 — Crear cronograma de pago en crédito directo', () => {
         await page.waitForTimeout(1_500)
       }
 
-      // Verificar que el POST fue llamado o que hay un mensaje de éxito
       const success = page.locator('text=/creado|guardado|éxito/i')
       if (!postCalled && await success.count() === 0) {
         test.info().annotations.push({
@@ -248,7 +234,6 @@ test.describe('CP29 — Crear cronograma de pago en crédito directo', () => {
   })
 })
 
-// ─── CP32: Bloquear edición de cronograma histórico ──────────────────────────
 
 test.describe('CP32 — Bloquear edición de cronograma con estado histórico (CERRADO)', () => {
   test('cronograma con estado CERRADO no permite edición de cuotas', async ({ page }) => {
@@ -279,10 +264,8 @@ test.describe('CP32 — Bloquear edición de cronograma con estado histórico (C
     // Navegar al cronograma histórico
     await page.goto('/finanzas/1002')
 
-    // Esperar que cargue
     await page.waitForTimeout(1_500)
 
-    // Verificar que los botones de edición de cuotas están deshabilitados o ausentes
     const editCuotaBtn = page.locator(
       'button:has-text("Editar cuota"), button:has-text("Modificar"), input[name*="cuota"]:not([disabled]):not([readonly])'
     )
@@ -295,7 +278,6 @@ test.describe('CP32 — Bloquear edición de cronograma con estado histórico (C
         description: `CP32: Se encontraron ${editableCount} control(es) editables en un cronograma con estado CERRADO. Los cronogramas históricos deben ser de solo lectura.`,
       })
     }
-    // El test espera que no haya controles editables
     expect(editableCount).toBe(0)
   })
 
@@ -318,7 +300,6 @@ test.describe('CP32 — Bloquear edición de cronograma con estado histórico (C
 
     await page.waitForTimeout(1_500)
 
-    // Debe mostrar algún indicador de que el cronograma es histórico/cerrado
     const estadoIndicador = page.locator('text=/cerrado|histórico|finalizado|completado/i')
     if (await estadoIndicador.count() === 0) {
       test.info().annotations.push({
@@ -359,7 +340,6 @@ test.describe('CP32 — Bloquear edición de cronograma con estado histórico (C
 
     await page.waitForTimeout(1_500)
 
-    // Buscar botón para registrar pago en la cuota pendiente
     const pagarBtn = page.locator(
       'button:has-text("Pagar"), button:has-text("Registrar pago"), button:has-text("Marcar pagado")'
     )

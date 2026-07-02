@@ -229,7 +229,6 @@ describe("ObraTabReportes", () => {
 
     expect(screen.getByText("Nuevo reporte de obra")).toBeDefined();
 
-    // Esperar a que el useEffect del título haya corrido
     await waitFor(() => {
       const titleInput = screen.getByPlaceholderText(
         "Ej. Reporte Junio 2026",
@@ -251,7 +250,6 @@ describe("ObraTabReportes", () => {
     render(<ObraTabReportes projectId="p-1" avance={0} project={null} />);
     fireEvent.click(await screen.findByText("Nuevo reporte"));
 
-    // el formulario tiene su propio botón "Cancelar"
     const cancelBtns = screen.getAllByText("Cancelar");
     const formCancelBtn = cancelBtns.find((b) =>
       b.className.includes("px-5 py-2.5"),
@@ -276,7 +274,6 @@ describe("ObraTabReportes", () => {
     Object.defineProperty(fileInput, "files", { value: [file1, file2] });
     fireEvent.change(fileInput);
 
-    // Esperar a que el useEffect del título haya corrido
     await waitFor(() => {
       const titleInput = screen.getByPlaceholderText(
         "Ej. Reporte Junio 2026",
@@ -293,7 +290,6 @@ describe("ObraTabReportes", () => {
       expect(mockCreateReporte).toHaveBeenCalled();
     });
 
-    // Verify createReporte was called with the files array (new multipart behavior)
     const [, filesArg] = mockCreateReporte.mock.calls[0];
     expect(filesArg).toHaveLength(2);
     expect(filesArg[0].name).toBe("foto1.jpg");

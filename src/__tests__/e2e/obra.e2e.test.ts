@@ -1,14 +1,3 @@
-/**
- * Pruebas E2E — Tracker de Avance de Obra y Multimedia (CP21–CP24)
- *
- * CP21: Actualizar hito constructivo con multimedia válida (foto + video).
- * CP22: Bloquear actualización por violación de precedencia de hitos.
- * CP23: Actualización masiva de un hito por bloque (Torre completa).
- * CP24: Rechazar archivos con formato no permitido o peso excedido.
- *
- * Todos los tests usan page.route() para mockear Firebase Auth y el backend.
- * No se requiere Firebase Emulator ni backend real (compatible con CI).
- */
 
 import { test, expect, type Page } from '@playwright/test'
 import path from 'path'
@@ -16,7 +5,6 @@ import fs from 'fs'
 import os from 'os'
 import { injectSession } from './helpers/auth-mock'
 
-// ─── Fixtures ────────────────────────────────────────────────────────────────
 
 const perfilAdmin = {
   id: 1,
@@ -90,7 +78,6 @@ const mockActivos = [
   { id: 'activo-002', codigoActivo: 'DPTO-102', estado: 'DISPONIBLE', torreId: 1, piso: 1 },
 ]
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
 
 function createTempFile(name: string, sizeBytes: number, content = 'fake'): string {
   const tmpDir = os.tmpdir()
@@ -145,7 +132,6 @@ async function mockObraEndpoints(page: Page) {
   })
 }
 
-// ─── CP21: Actualizar hito con multimedia válida ──────────────────────────────
 
 test.describe('CP21 — Actualizar hito constructivo con carga multimedia válida', () => {
   test('admin accede a /obra y ve los proyectos con hitos', async ({ page }) => {
@@ -186,7 +172,6 @@ test.describe('CP21 — Actualizar hito constructivo con carga multimedia válid
 
     await page.waitForTimeout(1_500)
 
-    // Buscar selector de estado en la tabla/lista de hitos
     const estadoSelector = page.locator(
       'select[name*="estado"], button:has-text("Completado"), button:has-text("Completar")'
     )
@@ -215,7 +200,6 @@ test.describe('CP21 — Actualizar hito constructivo con carga multimedia válid
         description: 'CP21: No se encontró selector de estado en la vista del tracker de obra. El flujo puede estar en una sub-ruta.',
       })
     }
-    // El test documenta el comportamiento sin forzar fallo si el botón no aparece
     expect(true).toBe(true)
   })
 
@@ -226,7 +210,6 @@ test.describe('CP21 — Actualizar hito constructivo con carga multimedia válid
 
     await page.waitForTimeout(1_500)
 
-    // Debe mostrar algún indicador de progreso (%) o barra de avance
     const progreso = page.locator('text=/\\d+\\s*%|avance|progreso/i')
     if (await progreso.count() > 0) {
       await expect(progreso.first()).toBeVisible({ timeout: 5_000 })
@@ -239,7 +222,6 @@ test.describe('CP21 — Actualizar hito constructivo con carga multimedia válid
   })
 })
 
-// ─── CP22: Bloquear por violación de precedencia ─────────────────────────────
 
 test.describe('CP22 — Bloquear actualización de hito por violación de precedencia', () => {
   test('CP22: backend rechaza marcar hito PENDIENTE si su predecesor no está COMPLETADO', async ({ page }) => {
@@ -288,7 +270,6 @@ test.describe('CP22 — Bloquear actualización de hito por violación de preced
         await page.waitForTimeout(1_000)
 
         if (patchAttempted) {
-          // El backend rechazó — la UI debe mostrar el error
           const errorMsg = page.locator('text=/precedencia|predecesor|no.*completad|bloque/i')
           if (await errorMsg.count() > 0) {
             await expect(errorMsg.first()).toBeVisible({ timeout: 5_000 })
@@ -312,7 +293,6 @@ test.describe('CP22 — Bloquear actualización de hito por violación de preced
 
     await page.waitForTimeout(1_500)
 
-    // Verificar que hitos PENDIENTE con predecesor no completado aparecen deshabilitados o bloqueados
     const hitosPendientes = page.locator('text=/PENDIENTE|pendiente/i')
     if (await hitosPendientes.count() > 0) {
       test.info().annotations.push({
@@ -324,7 +304,6 @@ test.describe('CP22 — Bloquear actualización de hito por violación de preced
   })
 })
 
-// ─── CP23: Actualización masiva por bloque (Torre completa) ───────────────────
 
 test.describe('CP23 — Actualización masiva de hito para toda una Torre', () => {
   test('CP23: existe opción para seleccionar nivel de actualización (proyecto vs piso)', async ({ page }) => {
@@ -334,7 +313,6 @@ test.describe('CP23 — Actualización masiva de hito para toda una Torre', () =
 
     await page.waitForTimeout(1_500)
 
-    // La UI tiene tabs "Por proyecto" / "Por piso" en ObraTabHitos
     const tabProyecto = page.locator('button:has-text("Por proyecto")').or(page.getByText(/por.*proyecto|proyecto/i))
     const tabPiso = page.locator('button:has-text("Por piso")').or(page.getByText(/por.*piso|piso/i))
 
@@ -381,7 +359,6 @@ test.describe('CP23 — Actualización masiva de hito para toda una Torre', () =
       await tabPiso.first().click()
       await page.waitForTimeout(500)
 
-      // Buscar opción de actualización masiva
       const masivaBt = page.locator(
         'button:has-text("Actualizar todo"), button:has-text("Marcar todos"), button:has-text("Masivo")'
       )
@@ -406,7 +383,6 @@ test.describe('CP23 — Actualización masiva de hito para toda una Torre', () =
   })
 })
 
-// ─── CP24: Rechazar archivos con formato o peso inválido ─────────────────────
 
 test.describe('CP24 — Rechazar archivos con formato no permitido o peso excedido', () => {
   test('CP24: rechaza documento PDF (no multimedia) en el tracker de obra', async ({ page }) => {

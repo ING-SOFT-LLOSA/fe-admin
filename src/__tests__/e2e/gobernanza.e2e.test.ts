@@ -1,17 +1,3 @@
-/**
- * Pruebas E2E — Gestión Comercial y Gobernanza (CP51–CP54, CP57–CP59)
- *
- * CP51: Gestión de etapas del proceso comercial (SEPARACION → SANEAMIENTO).
- * CP52: Gestión de hitos de compra con validación de precedencia.
- * CP53: Gestión de requisitos documentales por etapa comercial (CRUD + archivos).
- * CP54: Stepper (visor secuencial) del proceso comercial accesible a cliente y personal.
- * CP57: Sistema impide auto-desactivación o auto-cambio de rol del Admin.
- * CP58: Asignación y desasignación de asesores comerciales a contratos.
- * CP59: Registro de co-titulares en una unidad.
- *
- * Todos los tests usan page.route() para mockear Firebase Auth y el backend.
- * No se requiere Firebase Emulator ni backend real (compatible con CI).
- */
 
 import { test, expect, type Page } from '@playwright/test'
 import path from 'path'
@@ -19,7 +5,6 @@ import fs from 'fs'
 import os from 'os'
 import { injectSession } from './helpers/auth-mock'
 
-// ─── Fixtures ────────────────────────────────────────────────────────────────
 
 const perfilAdmin = {
   id: 1,
@@ -52,7 +37,6 @@ const mockUsuarios = [
   { id: 11, nombre: 'María', apellidos: 'López', email: 'maria@llosaedificaciones.com', rol: 'ASESOR', activo: true },
 ]
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
 
 // Shape the mock to match UsuarioActivoResponseDTO so useExpediente can resolve.
 const mockContrato = {
@@ -157,7 +141,6 @@ async function mockExpedienteBase(page: Page) {
   })
 }
 
-// ─── CP51: Etapas del proceso comercial ──────────────────────────────────────
 
 test.describe('CP51 — Gestión de etapas del proceso comercial', () => {
   test('CP51: expediente inicia en etapa SEPARACION', async ({ page }) => {
@@ -219,7 +202,6 @@ test.describe('CP51 — Gestión de etapas del proceso comercial', () => {
   })
 })
 
-// ─── CP52: Hitos de compra con precedencia ────────────────────────────────────
 
 test.describe('CP52 — Gestión de hitos de compra con validación de precedencia', () => {
   test('CP52: marcar hito EN_PROGRESO cuando predecesor está COMPLETADO', async ({ page }) => {
@@ -286,7 +268,6 @@ test.describe('CP52 — Gestión de hitos de compra con validación de precedenc
   })
 })
 
-// ─── CP53: Requisitos documentales ───────────────────────────────────────────
 
 test.describe('CP53 — Gestión de requisitos documentales por etapa (CRUD + archivos)', () => {
   test('CP53: lista de requisitos documentales visible en el expediente', async ({ page }) => {
@@ -377,7 +358,6 @@ test.describe('CP53 — Gestión de requisitos documentales por etapa (CRUD + ar
 
     await page.waitForTimeout(1_500)
 
-    // Buscar selector de estado del requisito
     const estadoSelect = page.locator('select[name*="estado"], button:has-text("En revisión"), button:has-text("Revisar")')
     if (await estadoSelect.count() > 0) {
       const tag = await estadoSelect.first().evaluate(el => el.tagName.toLowerCase())
@@ -394,7 +374,6 @@ test.describe('CP53 — Gestión de requisitos documentales por etapa (CRUD + ar
   })
 })
 
-// ─── CP54: Stepper del proceso comercial ──────────────────────────────────────
 
 test.describe('CP54 — Stepper visor secuencial del proceso comercial', () => {
   test('CP54: la vista del expediente muestra stepper con 5 etapas', async ({ page }) => {
@@ -404,7 +383,6 @@ test.describe('CP54 — Stepper visor secuencial del proceso comercial', () => {
 
     await page.waitForTimeout(1_500)
 
-    // Buscar indicadores de las 5 etapas
     const etapas = ['SEPARACION', 'CONTRATO', 'PAGO', 'ENTREGA', 'SANEAMIENTO']
     const etapasEncontradas: string[] = []
 
@@ -455,7 +433,6 @@ test.describe('CP54 — Stepper visor secuencial del proceso comercial', () => {
   })
 })
 
-// ─── CP57: Gobernanza — Admin no puede desactivarse a sí mismo ───────────────
 
 test.describe('CP57 — Sistema impide auto-desactivación o auto-cambio de rol del Admin', () => {
   test('CP57: backend devuelve 403 si Admin intenta desactivarse a sí mismo', async ({ page }) => {
@@ -500,7 +477,6 @@ test.describe('CP57 — Sistema impide auto-desactivación o auto-cambio de rol 
 
     await page.waitForTimeout(1_500)
 
-    // Buscar el admin propio en la lista y su botón de desactivar
     const desactivarPropio = page.locator(
       'tr:has-text("admin@llosaedificaciones.com") button:has-text("Desactivar"), ' +
       '[data-email="admin@llosaedificaciones.com"] button:has-text("Desactivar")'
@@ -572,7 +548,6 @@ test.describe('CP57 — Sistema impide auto-desactivación o auto-cambio de rol 
   })
 })
 
-// ─── CP58: Asesores comerciales ───────────────────────────────────────────────
 
 test.describe('CP58 — Asignación y desasignación de asesores comerciales a contratos', () => {
   test('CP58: asignar asesor a contrato registra POST en el backend', async ({ page }) => {
@@ -657,7 +632,6 @@ test.describe('CP58 — Asignación y desasignación de asesores comerciales a c
   })
 })
 
-// ─── CP59: Co-titulares ───────────────────────────────────────────────────────
 
 test.describe('CP59 — Registro de co-titulares en una unidad', () => {
   test('CP59: agregar segundo co-titular al contrato dispara POST al backend', async ({ page }) => {

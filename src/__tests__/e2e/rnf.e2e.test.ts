@@ -1,19 +1,7 @@
-/**
- * Pruebas E2E — Requerimientos No Funcionales (CP45–CP48)
- *
- * CP45: Cierre automático de sesión tras 30 min de inactividad.
- * CP46: Tiempos de respuesta del Dashboard y consultas al backend (< 3s / < 2s).
- * CP47: Adaptabilidad responsive en múltiples dispositivos.
- * CP48: Registro en Audit Log de acciones críticas.
- *
- * Todos los tests usan page.route() para mockear Firebase Auth y el backend.
- * No se requiere Firebase Emulator ni backend real (compatible con CI).
- */
 
 import { test, expect, type Page } from '@playwright/test'
 import { injectSession } from './helpers/auth-mock'
 
-// ─── Fixtures ────────────────────────────────────────────────────────────────
 
 const perfilAdmin = {
   id: 1,
@@ -25,7 +13,6 @@ const perfilAdmin = {
   funciones: [],
 }
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
 
 async function mockDashboardEndpoints(page: Page) {
   await page.route('**/api/proyectos**', async (route) => {
@@ -48,7 +35,6 @@ async function mockDashboardEndpoints(page: Page) {
   })
 }
 
-// ─── CP45: Cierre automático de sesión por inactividad ───────────────────────
 
 test.describe('CP45 — Cierre automático de sesión tras 30 minutos de inactividad', () => {
   test('CP45: la aplicación tiene mecanismo de detección de inactividad', async ({ page }) => {
@@ -58,7 +44,6 @@ test.describe('CP45 — Cierre automático de sesión tras 30 minutos de inactiv
 
     await page.waitForTimeout(1_000)
 
-    // Verificar que existe algún mecanismo de sesión en la app
     // (cookie, sessionStorage o localStorage con timeout)
     const sessionCookie = await page.evaluate(() => document.cookie.includes('llosa_id_token'))
     const sessionStorage = await page.evaluate(() => !!sessionStorage.getItem('llosa_id_token'))
@@ -116,7 +101,6 @@ test.describe('CP45 — Cierre automático de sesión tras 30 minutos de inactiv
     // Acceso directo sin sesión activa
     await page.goto('/proyectos')
 
-    // El middleware debe redirigir al login
     await expect(page).toHaveURL(/login/, { timeout: 8_000 })
     test.info().annotations.push({
       type: 'info',
@@ -125,7 +109,6 @@ test.describe('CP45 — Cierre automático de sesión tras 30 minutos de inactiv
   })
 })
 
-// ─── CP46: Tiempos de respuesta del Dashboard ────────────────────────────────
 
 test.describe('CP46 — Tiempos de respuesta del Dashboard y consultas al backend', () => {
   test('CP46: el Dashboard inicial se renderiza en menos de 3 segundos', async ({ page }) => {
@@ -135,7 +118,6 @@ test.describe('CP46 — Tiempos de respuesta del Dashboard y consultas al backen
     const startTime = Date.now()
     await page.goto('/proyectos')
 
-    // Esperar a que el contenido principal sea visible
     await expect(
       page.locator('text=/proyecto|dashboard|obra|finanzas/i').first()
     ).toBeVisible({ timeout: 8_000 })
@@ -226,7 +208,6 @@ test.describe('CP46 — Tiempos de respuesta del Dashboard y consultas al backen
   })
 })
 
-// ─── CP47: Adaptabilidad Responsive ──────────────────────────────────────────
 
 test.describe('CP47 — Verificar adaptabilidad responsive en múltiples dispositivos', () => {
   const viewports = [
@@ -240,7 +221,6 @@ test.describe('CP47 — Verificar adaptabilidad responsive en múltiples disposi
       await page.setViewportSize({ width: viewport.width, height: viewport.height })
       await page.goto('/login')
 
-      // El formulario de login debe ser visible y operable
       await expect(page.locator('input[type="email"]')).toBeVisible({ timeout: 5_000 })
       await expect(page.locator('input[type="password"]')).toBeVisible({ timeout: 5_000 })
       await expect(page.locator('button[type="submit"]')).toBeVisible({ timeout: 5_000 })
@@ -306,7 +286,6 @@ test.describe('CP47 — Verificar adaptabilidad responsive en múltiples disposi
   })
 })
 
-// ─── CP48: Audit Log de acciones críticas ────────────────────────────────────
 
 test.describe('CP48 — Registro en Audit Log de acciones críticas', () => {
   test('CP48: actualizar hito legal registra acción en el backend (Audit Log implícito)', async ({ page }) => {
@@ -354,7 +333,6 @@ test.describe('CP48 — Registro en Audit Log de acciones críticas', () => {
 
     await page.waitForTimeout(1_500)
 
-    // Buscar acción de completar hito
     const completarBtn = page.locator(
       'button:has-text("Completar"), button:has-text("Actualizar hito"), input[type="checkbox"]:not([disabled])'
     )
@@ -420,7 +398,6 @@ test.describe('CP48 — Registro en Audit Log de acciones críticas', () => {
 
     await page.waitForTimeout(1_500)
 
-    // Buscar botón de desactivar usuario
     const desactivarBtn = page.locator(
       'button:has-text("Desactivar"), button:has-text("Deshabilitar"), button:has-text("Inactivar")'
     )

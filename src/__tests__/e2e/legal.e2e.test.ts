@@ -1,12 +1,3 @@
-/**
- * Pruebas E2E — Módulo Legal (CP25, CP26)
- *
- * CP25: Actualizar hito legal con documento PDF válido
- * CP26: Rechazar documento que no es PDF o supera 20MB
- *
- * Todos los tests usan page.route() para mockear Firebase Auth y el backend.
- * No se requiere Firebase Emulator ni backend real (compatible con CI).
- */
 
 import { test, expect, type Page } from '@playwright/test'
 import path from 'path'
@@ -14,7 +5,6 @@ import fs from 'fs'
 import os from 'os'
 import { injectSession } from './helpers/auth-mock'
 
-// ─── Fixtures ────────────────────────────────────────────────────────────────
 
 const perfilAdmin = {
   id: 1,
@@ -53,7 +43,6 @@ const mockExpediente = {
 
 const mockExpedientes = [mockExpediente]
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
 
 async function mockLegalEndpoints(page: Page) {
   await page.route('**/api/expedientes**', async (route) => {
@@ -103,7 +92,6 @@ function createTempFile(name: string, sizeBytes: number, content = 'fake content
   return filePath
 }
 
-// ─── Acceso al módulo legal ───────────────────────────────────────────────────
 
 test.describe('Legal — Acceso y listado de expedientes', () => {
   test('admin accede a /legal y ve los expedientes', async ({ page }) => {
@@ -131,7 +119,6 @@ test.describe('Legal — Acceso y listado de expedientes', () => {
   })
 })
 
-// ─── CP25: Actualizar hito legal con PDF ──────────────────────────────────────
 
 test.describe('CP25 — Actualizar hito legal cargando un documento PDF válido', () => {
   test('admin puede subir PDF a un hito pendiente del expediente', async ({ page }) => {
@@ -178,7 +165,6 @@ test.describe('CP25 — Actualizar hito legal cargando un documento PDF válido'
       }
     })
 
-    // Crear archivo PDF temporal de prueba
     const pdfPath = createTempFile('contrato-test.pdf', 1024, '%PDF-1.4 fake pdf content')
 
     await injectSession(page, perfilAdmin)
@@ -199,7 +185,6 @@ test.describe('CP25 — Actualizar hito legal cargando un documento PDF válido'
 
     await page.waitForTimeout(1_000)
 
-    // Buscar el hito pendiente y el control para subir documento
     const fileInput = page.locator('input[type="file"][accept*="pdf"], input[type="file"]')
     if (await fileInput.count() > 0) {
       // Subir el PDF
@@ -213,7 +198,6 @@ test.describe('CP25 — Actualizar hito legal cargando un documento PDF válido'
       }
 
       if (uploadCalled) {
-        // Verificar que el hito muestra como completado
         const hitoCompletado = page.locator('text=/completado|✓|aprobado/i')
         if (await hitoCompletado.count() > 0) {
           await expect(hitoCompletado.first()).toBeVisible({ timeout: 5_000 })
@@ -267,7 +251,6 @@ test.describe('CP25 — Actualizar hito legal cargando un documento PDF válido'
         await submitBtn.first().click()
         await page.waitForTimeout(1_500)
 
-        // Debe mostrarse alguna confirmación
         const success = page.locator('text=/subido|guardado|éxito|actualizado/i')
         if (await success.count() > 0) {
           await expect(success.first()).toBeVisible({ timeout: 5_000 })
@@ -279,7 +262,6 @@ test.describe('CP25 — Actualizar hito legal cargando un documento PDF válido'
   })
 })
 
-// ─── CP26: Rechazar documento no-PDF o mayor a 20MB ──────────────────────────
 
 test.describe('CP26 — Rechazar documento que no es PDF o excede 20MB', () => {
   test('rechaza archivo con extensión no permitida (JPG)', async ({ page }) => {
@@ -288,7 +270,6 @@ test.describe('CP26 — Rechazar documento que no es PDF o excede 20MB', () => {
       await route.fulfill({ status: 200, json: mockExpediente })
     })
 
-    // Crear archivo JPG temporal de prueba
     const jpgPath = createTempFile('foto-test.jpg', 2048, '\xFF\xD8\xFF fake jpg')
 
     await injectSession(page, perfilAdmin)
@@ -298,11 +279,9 @@ test.describe('CP26 — Rechazar documento que no es PDF o excede 20MB', () => {
 
     const fileInput = page.locator('input[type="file"]')
     if (await fileInput.count() > 0) {
-      // Verificar que el input tiene accept="application/pdf" o ".pdf"
       const acceptAttr = await fileInput.first().getAttribute('accept')
 
       if (acceptAttr && (acceptAttr.includes('pdf') || acceptAttr.includes('application/pdf'))) {
-        // El HTML restringe tipos — el rechazo ocurre antes de la subida
         expect(acceptAttr).toMatch(/pdf/)
       } else {
         // Intentar subir el JPG
@@ -314,7 +293,6 @@ test.describe('CP26 — Rechazar documento que no es PDF o excede 20MB', () => {
           await submitBtn.first().click()
           await page.waitForTimeout(1_000)
 
-          // Debe mostrar error de tipo de archivo
           const errorMsg = page.locator('text=/solo.*pdf|formato.*inválido|tipo.*no.*permitido|debe.*pdf/i')
           if (await errorMsg.count() > 0) {
             await expect(errorMsg.first()).toBeVisible({ timeout: 3_000 })
@@ -350,7 +328,6 @@ test.describe('CP26 — Rechazar documento que no es PDF o excede 20MB', () => {
       })
     })
 
-    // Crear archivo "grande" temporal (simulado con metadatos — no real 20MB para no saturar disco)
     // En un entorno real se usaría un archivo de 21MB; aquí simulamos el mock del backend.
     const largePdfPath = createTempFile('documento-grande.pdf', 1024, '%PDF-1.4 large file simulation')
 
@@ -364,13 +341,11 @@ test.describe('CP26 — Rechazar documento que no es PDF o excede 20MB', () => {
       await fileInput.first().setInputFiles(largePdfPath)
       await page.waitForTimeout(300)
 
-      // Verificar validación client-side de tamaño
       const submitBtn = page.locator('button:has-text("Subir"), button:has-text("Guardar"), button[type="submit"]')
       if (await submitBtn.count() > 0) {
         await submitBtn.first().click()
         await page.waitForTimeout(1_500)
 
-        // Verificar si hay validación client-side o error del backend
         const sizeError = page.locator('text=/20.*mb|tamaño.*máximo|archivo.*grande|supera/i')
         if (await sizeError.count() > 0) {
           await expect(sizeError.first()).toBeVisible({ timeout: 3_000 })
@@ -468,7 +443,6 @@ test.describe('CP26 — Rechazar documento que no es PDF o excede 20MB', () => {
         await page.waitForTimeout(1_500)
 
         if (uploadAttempted) {
-          // El frontend debe mostrar el error del backend
           await expect(
             page.locator('text=/pdf|formato|tipo|error/i').first()
           ).toBeVisible({ timeout: 5_000 })

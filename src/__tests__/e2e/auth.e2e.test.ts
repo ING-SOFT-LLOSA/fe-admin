@@ -1,11 +1,6 @@
-/**
- * Pruebas E2E — Módulo de Autenticación (CP01–CP04, CP09–CP11)
- */
-
 import { test, expect, type Page } from '@playwright/test'
 import { mockFirebaseSuccess, mockFirebaseError, mockAuthMe } from './helpers/auth-mock'
 
-// ─── CP01: Login corporativo exitoso ─────────────────────────────────────────
 
 test.describe('CP01 — Login corporativo exitoso con dominio @llosaedificaciones.com', () => {
   test('admin@llosaedificaciones.com accede al backoffice tras login exitoso', async ({ page }) => {
@@ -27,7 +22,6 @@ test.describe('CP01 — Login corporativo exitoso con dominio @llosaedificacione
     await page.fill('input[type="password"]', 'ValidPassword123!')
     await page.click('button[type="submit"]')
 
-    // Debe redirigir al dashboard de admin (proyectos según redirectTo="/proyectos")
     await expect(page).toHaveURL(/\/(proyectos|dashboard)/, { timeout: 8_000 })
   })
 
@@ -51,13 +45,11 @@ test.describe('CP01 — Login corporativo exitoso con dominio @llosaedificacione
     await page.click('button[type="submit"]')
 
     // No debe aparecer ningún alert de ERROR (filtramos por texto no vacío;
-    // el DOM puede tener contenedores role="alert" vacíos de aria-live)
     const errorAlert = page.locator('[role="alert"]').filter({ hasText: /\S/ })
     await expect(errorAlert).toHaveCount(0)
   })
 })
 
-// ─── CP02: Dominio externo (no hay bloqueo client-side) ──────────────────────
 // NOTA: el LoginForm actual NO valida el dominio del correo en el cliente.
 // Cualquier email se envía a Firebase; el rechazo ocurre en el backend/Firebase.
 
@@ -95,8 +87,6 @@ test.describe('CP02 — Login con dominio externo (@gmail.com)', () => {
   })
 })
 
-// ─── CP03: Recuperación de contraseña SÍ existe en el backoffice ─────────────
-// El LoginForm actual incluye el flujo "¿Olvidaste tu contraseña?".
 
 test.describe('CP03 — La opción de recuperar contraseña existe en el backoffice', () => {
 
@@ -107,7 +97,6 @@ test.describe('CP03 — La opción de recuperar contraseña existe en el backoff
   })
 })
 
-// ─── CP04: Contraseña incorrecta ─────────────────────────────────────────────
 
 test.describe('CP04 — Rechazo de credenciales inválidas', () => {
   test('muestra "Correo o contraseña inválido." con auth/invalid-credential', async ({ page }) => {
@@ -131,13 +120,10 @@ test.describe('CP04 — Rechazo de credenciales inválidas', () => {
     await page.fill('input[type="password"]', 'ClaveErronea000')
     await page.click('button[type="submit"]')
 
-    // Debe permanecer en /login
     await expect(page).toHaveURL(/login/, { timeout: 3_000 })
   })
 })
 
-// ─── CP09–CP11: Portal de cliente (FEATURE ELIMINADA) ────────────────────────
-// Los tests originales de portal de cliente (/portal/mis-activos, estados
 // VENDIDO/SEPARADO, "Modo de Espera", cliente inactivo) se eliminaron porque
 // esa feature ya no existe: el LoginForm desloguea a los usuarios CLIENTE
 // ("El acceso para clientes ha sido movido a un portal especializado").

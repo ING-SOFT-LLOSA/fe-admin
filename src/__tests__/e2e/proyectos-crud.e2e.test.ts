@@ -1,14 +1,7 @@
-/**
- * Pruebas E2E — Módulo de Proyectos (CP12, CP13, CP14)
- *
- * Todos los tests usan page.route() para mockear Firebase Auth y el backend.
- * No se requiere Firebase Emulator ni backend real (compatible con CI).
- */
 
 import { test, expect, type Page } from '@playwright/test'
 import { injectSession } from './helpers/auth-mock'
 
-// ─── Fixtures ────────────────────────────────────────────────────────────────
 
 const perfilAdmin = {
   id: 1,
@@ -57,7 +50,6 @@ const mockHitos = [
   { id: 3, nombre: 'Acabados', orden: 3, completado: false },
 ]
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
 
 async function mockProyectosEndpoint(page: Page, proyectos = mockProyectos) {
   await page.route(
@@ -68,7 +60,6 @@ async function mockProyectosEndpoint(page: Page, proyectos = mockProyectos) {
   )
 }
 
-// ─── Listar proyectos ─────────────────────────────────────────────────────────
 
 test.describe('Proyectos — Listado', () => {
   test('admin accede a /proyectos y ve la lista desde la API', async ({ page }) => {
@@ -104,7 +95,6 @@ test.describe('Proyectos — Listado', () => {
     await page.goto('/proyectos')
 
     await expect(page.locator('text=Proyectos').first()).toBeVisible({ timeout: 8_000 })
-    // Sin proyectos no deben aparecer tarjetas con nombres de proyectos
     await expect(page.locator('text=Edificio Aurora')).toHaveCount(0, { timeout: 3_000 })
   })
 
@@ -118,7 +108,6 @@ test.describe('Proyectos — Listado', () => {
   })
 })
 
-// ─── Detalle de proyecto ──────────────────────────────────────────────────────
 
 test.describe('Proyectos — Detalle', () => {
   test('click en tarjeta navega al detalle del proyecto', async ({ page }) => {
@@ -182,7 +171,6 @@ test.describe('Proyectos — Detalle', () => {
   })
 })
 
-// ─── CP12: Crear proyecto con jerarquía e hitos ───────────────────────────────
 
 test.describe('CP12 — Crear proyecto con jerarquía (torres/pisos) e hitos de obra', () => {
   test('admin accede a /proyectos/new y ve el formulario de creación', async ({ page }) => {
@@ -202,7 +190,6 @@ test.describe('CP12 — Crear proyecto con jerarquía (torres/pisos) e hitos de 
     const submitBtn = page.locator('button[type="submit"], button:has-text("Crear"), button:has-text("Guardar")')
     if (await submitBtn.count() > 0) {
       await submitBtn.first().click()
-      // Debe haber alguna validación visible
       await expect(
         page.locator('text=/requerido|obligatorio|ingresa/i').first()
       ).toBeVisible({ timeout: 3_000 })
@@ -288,7 +275,6 @@ test.describe('CP12 — Crear proyecto con jerarquía (torres/pisos) e hitos de 
   })
 })
 
-// ─── CP13: Rechazar nombre de proyecto duplicado ──────────────────────────────
 
 test.describe('CP13 — Rechazar proyecto con nombre duplicado', () => {
   test('UI muestra error cuando el backend rechaza nombre duplicado (409)', async ({ page }) => {
@@ -332,7 +318,6 @@ test.describe('CP13 — Rechazar proyecto con nombre duplicado', () => {
         }
       }
 
-      // Debe mostrar error de duplicado
       await expect(
         page.locator('text=/duplicado|ya existe|nombre.*proyecto/i').first()
       ).toBeVisible({ timeout: 5_000 })
@@ -351,7 +336,6 @@ test.describe('CP13 — Rechazar proyecto con nombre duplicado', () => {
     const submitBtn = page.locator('button[type="submit"], button:has-text("Crear"), button:has-text("Guardar")')
     if (await submitBtn.count() > 0) {
       await submitBtn.first().click()
-      // Debe aparecer validación de campo requerido
       await expect(
         page.locator('text=/requerido|obligatorio|ingresa el nombre/i').first()
       ).toBeVisible({ timeout: 3_000 })
@@ -359,7 +343,6 @@ test.describe('CP13 — Rechazar proyecto con nombre duplicado', () => {
   })
 })
 
-// ─── CP14: Estructura de hitos inmutable al editar ───────────────────────────
 // BUG DOCUMENTADO (CP14): Al editar un proyecto existente, los hitos de obra
 // no deben poder modificarse (son parte de la estructura contractual). Si la UI
 // permite editar hitos en el modo edición, esto representa un defecto.
@@ -387,17 +370,14 @@ test.describe('CP14 — La estructura de hitos de obra es inmutable al editar pr
 
     await expect(page.locator('text=Edificio Aurora')).toBeVisible({ timeout: 8_000 })
 
-    // Buscar botón de editar
     const editBtn = page.locator('button:has-text("Editar"), button[aria-label*="editar"]')
     if (await editBtn.count() > 0) {
       await editBtn.first().click()
       await page.waitForTimeout(500)
 
-      // Verificar que no haya campos de edición de hitos habilitados
       // (los hitos deben ser read-only en modo edición)
       const hitosSection = page.locator('[data-testid="hitos-section"], section:has-text("Hitos"), div:has-text("Hitos de obra")')
       if (await hitosSection.count() > 0) {
-        // Los hitos no deben tener inputs editables
         const hitosEditables = hitosSection.locator('input:not([disabled]):not([readonly]), button:has-text("Agregar hito")')
         const count = await hitosEditables.count()
         // Si existen campos editables de hitos, documentar el bug
@@ -407,7 +387,6 @@ test.describe('CP14 — La estructura de hitos de obra es inmutable al editar pr
             description: `CP14: Se encontraron ${count} campo(s) editables en la sección de Hitos al editar el proyecto. Los hitos deberían ser inmutables.`,
           })
         }
-        // El test verifica la condición: hitos deben ser inmutables (count === 0)
         expect(count).toBe(0)
       } else {
         // Si no se muestra la sección de hitos en edición, la condición se cumple por omisión

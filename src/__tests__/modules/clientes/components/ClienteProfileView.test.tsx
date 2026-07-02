@@ -260,7 +260,6 @@ describe("ClienteProfileView", () => {
   it("deriva assignments de los contratos y los pasa a ClientActivity", async () => {
     render(<ClienteProfileView clientId="1" />);
     await screen.findByTestId("client-activos");
-    // Las assignments se derivan de contratos.flatMap(activos) y se pasan a ClientActivity
     expect(screen.getByTestId("client-activity")).toBeDefined();
   });
 

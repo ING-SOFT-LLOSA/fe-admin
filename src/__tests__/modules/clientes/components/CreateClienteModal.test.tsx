@@ -327,7 +327,6 @@ describe("CreateClienteModal", () => {
     const onClose = vi.fn();
     render(<CreateClienteModal open={true} onClose={onClose} onCreated={vi.fn()} />);
 
-    // El botón X tiene solo un icono close, sin texto
     const allButtons = screen.getAllByRole("button");
     const closeBtn = allButtons.find(
       (b) =>
@@ -379,7 +378,6 @@ describe("CreateClienteModal", () => {
       await screen.findByText("El nombre es obligatorio."),
     ).toBeDefined();
 
-    // Escribir en el campo debe limpiar el error
     fireEvent.change(inputs[0], { target: { value: "C" } });
 
     expect(screen.queryByText("El nombre es obligatorio.")).toBeNull();

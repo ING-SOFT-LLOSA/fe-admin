@@ -1,17 +1,7 @@
-/**
- * Pruebas E2E — Módulo Legal extendido (CP27, CP28)
- *
- * CP27: Generación de Signed URL temporal para visualización segura de documento.
- * CP28: Segregación de acceso — cliente no puede acceder a documentos de otras unidades.
- *
- * Todos los tests usan page.route() para mockear Firebase Auth y el backend.
- * No se requiere Firebase Emulator ni backend real (compatible con CI).
- */
 
 import { test, expect, type Page } from '@playwright/test'
 import { injectSession } from './helpers/auth-mock'
 
-// ─── Fixtures ────────────────────────────────────────────────────────────────
 
 const perfilAdmin = {
   id: 1,
@@ -78,7 +68,6 @@ const mockExpedienteB = {
   ],
 }
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
 
 async function mockLegalBase(page: Page) {
   await page.route('**/api/expedientes**', async (route) => {
@@ -102,7 +91,6 @@ async function mockLegalBase(page: Page) {
   })
 }
 
-// ─── CP27: Signed URL temporal para visualización segura ─────────────────────
 
 test.describe('CP27 — Generación de Signed URL temporal para documento', () => {
   test('CP27: botón "Ver documento" existe en expediente con documento adjunto', async ({ page }) => {
@@ -112,7 +100,6 @@ test.describe('CP27 — Generación de Signed URL temporal para documento', () =
 
     await page.waitForTimeout(1_500)
 
-    // Buscar botón para ver el documento
     const verDocBtn = page.locator(
       'button:has-text("Ver"), button:has-text("Ver documento"), a:has-text("Ver"), a:has-text("Abrir")'
     )
@@ -224,7 +211,6 @@ test.describe('CP27 — Generación de Signed URL temporal para documento', () =
   })
 })
 
-// ─── CP28: Segregación de documentos por cliente ─────────────────────────────
 
 test.describe('CP28 — Cliente no puede acceder a documentos de unidades ajenas', () => {
   test('CP28: admin puede acceder a cualquier expediente (sin restricción)', async ({ page }) => {
@@ -271,7 +257,6 @@ test.describe('CP28 — Cliente no puede acceder a documentos de unidades ajenas
       })
     }
 
-    // Debe mostrar error o redirigir
     const errorMsg = page.locator('text=/denegado|no.*autorizado|403|sin.*permiso/i')
     const isRedirected = page.url().includes('login') || page.url().includes('proyectos')
 

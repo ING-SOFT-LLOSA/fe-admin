@@ -1,20 +1,7 @@
-/**
- * Pruebas E2E — Módulo de Agenda y Comunicaciones extendido (CP35, CP37–CP40)
- *
- * CP35: Resguardo local y encolado ante falla de Google Calendar.
- * CP37: Cliente acepta directamente una cita propuesta por la empresa.
- * CP38: Propuesta de disponibilidad del cliente vía When2meet.
- * CP39: Evento "Inamovible" muestra deshabilitado el botón de reprogramar.
- * CP40: Envío de correos transaccionales asíncronos (bienvenida / alertas).
- *
- * Todos los tests usan page.route() para mockear Firebase Auth y el backend.
- * No se requiere Firebase Emulator ni backend real (compatible con CI).
- */
 
 import { test, expect, type Page } from '@playwright/test'
 import { injectSession } from './helpers/auth-mock'
 
-// ─── Fixtures ────────────────────────────────────────────────────────────────
 
 const perfilAdmin = {
   id: 1,
@@ -58,7 +45,6 @@ const mockCitaInamovible = {
 
 const mockCitas = [mockCitaPropuesta, mockCitaInamovible]
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
 
 async function mockAgendaBase(page: Page) {
   await page.route('**/api/agenda**', async (route) => {
@@ -83,7 +69,6 @@ async function mockAgendaBase(page: Page) {
   })
 }
 
-// ─── CP35: Fallback ante falla de Google Calendar ────────────────────────────
 
 test.describe('CP35 — Resguardo local y encolado de reintento ante falla de Google Calendar', () => {
   test('CP35: cuando el POST a cita falla (Calendar caído), el evento se guarda localmente', async ({ page }) => {
@@ -200,7 +185,6 @@ test.describe('CP35 — Resguardo local y encolado de reintento ante falla de Go
 
     await page.waitForTimeout(1_500)
 
-    // Verificar si existe indicador de sincronización pendiente
     const syncIndicator = page.locator('text=/pendiente.*sincroniz|no.*sincroniz|calendar.*error/i')
     if (await syncIndicator.count() > 0) {
       test.info().annotations.push({ type: 'info', description: 'CP35: Indicador de sincronización pendiente visible.' })
@@ -211,7 +195,6 @@ test.describe('CP35 — Resguardo local y encolado de reintento ante falla de Go
   })
 })
 
-// ─── CP37: Cliente acepta cita propuesta ─────────────────────────────────────
 
 test.describe('CP37 — Cliente acepta directamente una cita propuesta por la empresa', () => {
   test('CP37: existe botón "Aceptar" para citas en estado PENDIENTE_CONFIRMACION', async ({ page }) => {
@@ -221,7 +204,6 @@ test.describe('CP37 — Cliente acepta directamente una cita propuesta por la em
 
     await page.waitForTimeout(1_500)
 
-    // Buscar cita propuesta y botón de aceptar
     const aceptarBtn = page.locator(
       'button:has-text("Aceptar"), button:has-text("Confirmar cita"), button:has-text("Aceptar cita")'
     )
@@ -295,7 +277,6 @@ test.describe('CP37 — Cliente acepta directamente una cita propuesta por la em
   })
 })
 
-// ─── CP38: When2meet — disponibilidad del cliente ────────────────────────────
 
 test.describe('CP38 — Propuesta de disponibilidad del cliente vía When2meet', () => {
   test('CP38: existe interfaz de disponibilidad para eventos reprogramables', async ({ page }) => {
@@ -305,7 +286,6 @@ test.describe('CP38 — Propuesta de disponibilidad del cliente vía When2meet',
 
     await page.waitForTimeout(1_500)
 
-    // Buscar componente When2meet o selector de disponibilidad
     const when2meet = page.locator('[data-testid*="when2meet"], [data-testid*="availability"]')
       .or(page.getByText(/when2meet|disponibilidad|proponer.*hora|seleccionar.*horario/i))
     if (await when2meet.count() > 0) {
@@ -377,7 +357,6 @@ test.describe('CP38 — Propuesta de disponibilidad del cliente vía When2meet',
   })
 })
 
-// ─── CP39: Evento Inamovible → botón reprogramar deshabilitado ────────────────
 
 test.describe('CP39 — Evento "Inamovible" muestra botón de reprogramar deshabilitado', () => {
   test('CP39: cita inamovible no muestra botón de reprogramar activo', async ({ page }) => {
@@ -396,7 +375,6 @@ test.describe('CP39 — Evento "Inamovible" muestra botón de reprogramar deshab
 
     await page.waitForTimeout(1_500)
 
-    // Buscar botón de reprogramar
     const reprogramarBtn = page.locator(
       'button:has-text("Reprogramar"), button:has-text("Cambiar fecha"), button:has-text("Mover")'
     )
@@ -453,7 +431,6 @@ test.describe('CP39 — Evento "Inamovible" muestra botón de reprogramar deshab
   })
 })
 
-// ─── CP40: Correos transaccionales asíncronos ─────────────────────────────────
 
 test.describe('CP40 — Correos transaccionales asíncronos (bienvenida / alertas)', () => {
   test('CP40: crear cliente dispara POST a API (que activa el trigger de email asíncrono)', async ({ page }) => {
@@ -501,7 +478,6 @@ test.describe('CP40 — Correos transaccionales asíncronos (bienvenida / alerta
 
     await page.waitForTimeout(1_000)
 
-    // Abrir formulario de creación de cliente
     const crearBtn = page.locator('button:has-text("Crear cliente"), button:has-text("Nuevo cliente"), button:has-text("Crear")')
     if (await crearBtn.count() > 0) {
       await crearBtn.first().click()

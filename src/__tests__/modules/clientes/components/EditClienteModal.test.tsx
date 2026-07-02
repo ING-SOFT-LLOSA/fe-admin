@@ -348,7 +348,6 @@ describe("EditClienteModal", () => {
       <EditClienteModal open={true} cliente={sampleCliente} onClose={vi.fn()} onUpdated={vi.fn()} />,
     );
     await screen.findByText("Editar cliente");
-    // Esperar a que el form se inicialice (Promise.resolve().then(() => setForm(...)))
     await screen.findByDisplayValue("Ana");
 
     // No debe haber problema al hacer submit
@@ -381,7 +380,6 @@ describe("EditClienteModal", () => {
       await screen.findByText("El nombre es obligatorio."),
     ).toBeDefined();
 
-    // Escribir en el campo debe limpiar el error
     fireEvent.change(nombreInput, { target: { value: "C" } });
 
     expect(screen.queryByText("El nombre es obligatorio.")).toBeNull();

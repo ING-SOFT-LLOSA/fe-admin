@@ -211,7 +211,6 @@ describe("ClientsPage", () => {
   });
 
   it("permite navegar entre páginas (Anterior/Siguiente)", async () => {
-    // Crear 15 clientes para llenar 2 páginas
     const manyUsers = Array.from({ length: 15 }, (_, i) => ({
       id: i + 1,
       nombre: `Cliente${i + 1}`,

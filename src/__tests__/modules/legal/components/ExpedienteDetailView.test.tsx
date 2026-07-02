@@ -70,7 +70,6 @@ const mockUpdateRequisito = vi.mocked(updateRequisito);
  
 const mockUseExpediente = vi.mocked(useExpediente);
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
 
 function makeStepper(overrides: Partial<any> = {}): any {
   return {
@@ -257,10 +256,8 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
-// ─── Main describe block ────────────────────────────────────────────────────
 
 describe("ExpedienteDetailView", () => {
-  // ── Loading / Error states ──────────────────────────────────────────────
 
   it("loading spinner mientras carga", () => {
     mockLoaded({ loading: true });
@@ -288,7 +285,6 @@ describe("ExpedienteDetailView", () => {
     expect(links[0].closest("a")?.getAttribute("href")).toBe("/legal");
   });
 
-  // ── Header / Badges ─────────────────────────────────────────────────────
 
   it("breadcrumb con link de vuelta", async () => {
     mockLoaded();
@@ -353,7 +349,6 @@ describe("ExpedienteDetailView", () => {
     expect(screen.getByText("Documentos")).toBeDefined();
   });
 
-  // ── ContextBand: Titulares ───────────────────────────────────────────────
 
   it("context band: seccion Titulares", async () => {
     mockLoaded();
@@ -388,7 +383,6 @@ describe("ExpedienteDetailView", () => {
     expect(await screen.findByText("Maria")).toBeDefined();
   });
 
-  // ── ContextBand: Unidades Vinculadas ─────────────────────────────────────
 
   it("context band: seccion Unidades Vinculadas", async () => {
     mockLoaded();
@@ -432,7 +426,6 @@ describe("ExpedienteDetailView", () => {
     expect(await screen.findByText(/Dpto/)).toBeDefined();
   });
 
-  // ── ContextBand: Asesor ──────────────────────────────────────────────────
 
   it("context band: asesor y boton desvincular", async () => {
     mockLoaded({
@@ -549,7 +542,6 @@ describe("ExpedienteDetailView", () => {
     });
   });
 
-  // ── Tab: Resumen (EtapasResumen) ─────────────────────────────────────────
 
   it("etapas resumen: hitos completados y totales", async () => {
     mockLoaded();
@@ -612,7 +604,6 @@ describe("ExpedienteDetailView", () => {
     expect(pendientes.length).toBeGreaterThanOrEqual(1);
   });
 
-  // ── Tab: Proceso (ProcesoLegalAccordion) ─────────────────────────────────
 
   it("cambia al tab Proceso legal", async () => {
     mockLoaded();
@@ -696,7 +687,6 @@ describe("ExpedienteDetailView", () => {
     expect(screen.getByText("Desc de proforma")).toBeDefined();
   });
 
-  // ── Hito Toggle ──────────────────────────────────────────────────────────
 
   it("hito toggle: PENDIENTE a EN_PROGRESO optimistic", async () => {
     mockLoaded();
@@ -747,7 +737,6 @@ describe("ExpedienteDetailView", () => {
     const firmaRow = screen.getByText("Proforma").closest(".flex.items-start.justify-between");
     const checkbox = firmaRow?.querySelector("button");
     fireEvent.click(checkbox!);
-    // Verify error banner appears
     await waitFor(() => {
       expect(screen.getByText("No se pudo actualizar el hito. Intente nuevamente.")).toBeDefined();
     });
@@ -774,7 +763,6 @@ describe("ExpedienteDetailView", () => {
     });
   });
 
-  // ── Tab: Documentos ──────────────────────────────────────────────────────
 
   it("cambia al tab Documentos", async () => {
     mockLoaded();
@@ -903,7 +891,6 @@ describe("ExpedienteDetailView", () => {
     expect(descs.length).toBeGreaterThanOrEqual(1);
   });
 
-  // ── Documentos Edit Modal ─────────────────────────────────────────────────
 
   it("documentos tab: abre modal de edicion", async () => {
     mockLoaded();
@@ -983,7 +970,6 @@ describe("ExpedienteDetailView", () => {
     expect(await screen.findByText("Update failed")).toBeDefined();
   });
 
-  // ── Documentos Delete ────────────────────────────────────────────────────
 
   it("documentos tab: delete muestra dialog", async () => {
     mockLoaded();
@@ -1032,7 +1018,6 @@ describe("ExpedienteDetailView", () => {
     expect(await screen.findByText("Error al eliminar el archivo.")).toBeDefined();
   });
 
-  // ── Edge cases ──────────────────────────────────────────────────────────
 
   it("no renderiza stepper con uuid vacio", async () => {
     mockLoaded();
@@ -1073,7 +1058,6 @@ describe("ExpedienteDetailView", () => {
     const editBtn = await screen.findByText("Editar Contrato");
     fireEvent.click(editBtn);
 
-    // Verify modal is open
     expect(screen.getByRole("heading", { name: "Editar Contrato" })).toBeDefined();
 
     // Change financing type select

@@ -1,18 +1,7 @@
-/**
- * Pruebas E2E — Módulo de Asignaciones extendido (CP16, CP17, CP18)
- *
- * CP16: Asignación múltiple (en bloque) de varias unidades a un mismo cliente.
- * CP17: Manejo de conflicto de concurrencia al asignar unidad ya tomada.
- * CP18: Autocompletado en lote de hitos previos por compra tardía (sin notificaciones).
- *
- * Todos los tests usan page.route() para mockear Firebase Auth y el backend.
- * No se requiere Firebase Emulator ni backend real (compatible con CI).
- */
 
 import { test, expect, type Page } from '@playwright/test'
 import { injectSession } from './helpers/auth-mock'
 
-// ─── Fixtures ────────────────────────────────────────────────────────────────
 
 const perfilAdmin = {
   id: 1,
@@ -51,7 +40,6 @@ const mockProyecto = {
   fechaFin: '2026-12-31',
 }
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
 
 async function mockAsignacionesBase(page: Page) {
   await page.route('**/api/proyectos**', async (route) => {
@@ -80,7 +68,6 @@ async function mockAsignacionesBase(page: Page) {
   })
 }
 
-// ─── CP16: Asignación múltiple en bloque ─────────────────────────────────────
 
 test.describe('CP16 — Asignación múltiple (en bloque) de varias unidades a un mismo cliente', () => {
   test('CP16: el wizard de asignación permite seleccionar múltiples unidades', async ({ page }) => {
@@ -90,7 +77,6 @@ test.describe('CP16 — Asignación múltiple (en bloque) de varias unidades a u
 
     await page.waitForTimeout(1_500)
 
-    // Buscar wizard de asignación de propiedad o botón para asignar unidades
     const asignarBtn = page.locator(
       'button:has-text("Asignar"), button:has-text("Vincular"), button:has-text("Agregar propiedad")'
     )
@@ -199,7 +185,6 @@ test.describe('CP16 — Asignación múltiple (en bloque) de varias unidades a u
 
     await page.waitForTimeout(1_500)
 
-    // El cliente debe mostrarse una sola vez
     const clienteItems = page.locator('text=Beatriz')
     const count = await clienteItems.count()
     test.info().annotations.push({
@@ -210,7 +195,6 @@ test.describe('CP16 — Asignación múltiple (en bloque) de varias unidades a u
   })
 })
 
-// ─── CP17: Conflicto de concurrencia ─────────────────────────────────────────
 
 test.describe('CP17 — Manejo de conflicto de concurrencia al asignar unidad ya tomada', () => {
   test('CP17: backend devuelve 409 cuando unidad ya fue asignada por otro asesor', async ({ page }) => {
@@ -305,7 +289,6 @@ test.describe('CP17 — Manejo de conflicto de concurrencia al asignar unidad ya
 
     await page.waitForTimeout(1_500)
 
-    // La unidad ya asignada debe aparecer en estado SEPARADO
     const unidadSeparada = page.locator('text=/SEPARADO|separado|Ocupado/i')
     if (await unidadSeparada.count() > 0) {
       test.info().annotations.push({ type: 'info', description: 'CP17: Unidad SEPARADO visible en el inventario.' })
@@ -316,7 +299,6 @@ test.describe('CP17 — Manejo de conflicto de concurrencia al asignar unidad ya
   })
 })
 
-// ─── CP18: Autocompletado en lote por compra tardía ──────────────────────────
 
 test.describe('CP18 — Autocompletado en lote de hitos previos por compra tardía', () => {
   test('CP18: al asignar cliente a unidad avanzada, los hitos previos se marcan COMPLETADO en lote', async ({ page }) => {
@@ -400,7 +382,6 @@ test.describe('CP18 — Autocompletado en lote de hitos previos por compra tard�
 
     await page.waitForTimeout(1_500)
 
-    // Los hitos previos deben aparecer como COMPLETADO (batch autocompletado)
     const hitosCompletados = page.locator('text=/COMPLETADO|completad/i')
     if (await hitosCompletados.count() > 0) {
       test.info().annotations.push({

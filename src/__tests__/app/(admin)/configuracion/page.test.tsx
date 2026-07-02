@@ -243,7 +243,6 @@ describe("EmployeeManagementPage", () => {
     fireEvent.change(inputs[1], { target: { value: "Ramírez" } });
     fireEvent.change(inputs[2], { target: { value: "carlos@empresa.com" } });
 
-    // Buscar el botón submit dentro del modal
     const submitBtn = screen.getAllByRole("button", { name: /Crear usuario/i })
       .find((b) => b.getAttribute("type") === "submit");
     expect(submitBtn).toBeDefined();
@@ -371,7 +370,6 @@ describe("EmployeeManagementPage", () => {
     const openBtn = screen.getByRole("button", { name: /Crear usuario/i });
     fireEvent.click(openBtn);
 
-    // El modal tiene un botón con icono close - buscamos todos los botones y encontramos el X
     const allButtons = screen.getAllByRole("button");
     const closeBtn = allButtons.find(
       (b) =>
@@ -392,8 +390,6 @@ describe("EmployeeManagementPage", () => {
     render(<EmployeeManagementPage />);
     await screen.findAllByText("Ana García");
 
-    // el sidebar muestra el select del usuario seleccionado (Ana=admin por defecto)
-    // hacemos clic en la fila de Luis para seleccionarlo
     const luisRow = getRowByEmployeeName("Luis Pérez");
     fireEvent.click(luisRow);
 
@@ -497,7 +493,6 @@ describe("EmployeeManagementPage", () => {
     render(<EmployeeManagementPage />);
     await screen.findAllByText("Ana García");
 
-    // El botón del usuario actual (Luis, id=11) debe estar deshabilitado y con título específico
     const ownDeactivateBtn = screen.getAllByTitle("No puedes desactivar tu propio usuario");
     expect(ownDeactivateBtn.length).toBeGreaterThanOrEqual(1);
     ownDeactivateBtn.forEach((btn) => {
@@ -571,11 +566,9 @@ describe("EmployeeManagementPage", () => {
     render(<EmployeeManagementPage />);
     await screen.findAllByText("Ana García");
 
-    // Hacer clic en la fila de Luis
     const luisRow = getRowByEmployeeName("Luis Pérez");
     fireEvent.click(luisRow);
 
-    // El sidebar ahora muestra datos de Luis - el título debe ser "Luis Pérez"
     const aside = screen.getByText("Informacion general").closest("aside");
     expect(aside).toBeDefined();
     expect(aside?.textContent).toContain("Luis");

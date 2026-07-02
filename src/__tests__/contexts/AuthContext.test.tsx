@@ -5,7 +5,6 @@ import * as api from "@/lib/auth/api";
 import * as login from "@/lib/auth/login";
 import * as session from "@/lib/auth/session";
 
-// ── Capture the onAuthStateChanged callback so tests can fire it ──────────
 // NOTE: vi.mock is hoisted, so we use a module-level variable + a factory
 // that always updates it when AuthProvider registers a new listener.
 let capturedAuthCb: ((user: unknown) => void) | null = null;
@@ -35,12 +34,10 @@ vi.mock("@/lib/auth/session", () => ({
   saveSession: vi.fn(),
 }));
 
-// ── Stub Firebase user ─────────────────────────────────────────────────────
 function makeFirebaseUser(token = "fresh-firebase-token") {
   return { getIdToken: vi.fn().mockResolvedValue(token) };
 }
 
-// ── Test consumer ──────────────────────────────────────────────────────────
 function TestConsumer() {
   const { perfil, token, isLoading, isAuthenticated, loginEmail, loginGoogle, logout } =
     useAuth();
@@ -57,7 +54,6 @@ function TestConsumer() {
   );
 }
 
-// ── Helper: mount + fire a Firebase auth state change ─────────────────────
 async function renderAndFire(firebaseUser: unknown) {
   await act(async () => {
     render(<AuthProvider><TestConsumer /></AuthProvider>);

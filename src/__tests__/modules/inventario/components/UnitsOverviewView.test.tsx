@@ -198,15 +198,11 @@ describe("UnitsOverviewView", () => {
     render(<UnitsOverviewView projectId="proj-1" />);
 
     await waitFor(() => {
-      // Debería mostrar la primera unidad (101)
       expect(screen.getByText("101")).toBeDefined();
     });
 
-    // Debería mostrar 15 unidades en la primera página (por defecto el tamaño es 15)
-    // El texto "Mostrando 1 a 15 de 20 unidades" debería estar presente
     expect(screen.getByText((_, el) => el?.tagName.toLowerCase() === "p" && /Mostrando 1 a 15 de 20 unidades/.test(el.textContent || ""))).toBeDefined();
 
-    // La unidad número 16 (nro 116) NO debería mostrarse en la primera página
     expect(screen.queryByText("116")).toBeNull();
   });
 
@@ -223,7 +219,6 @@ describe("UnitsOverviewView", () => {
       expect(screen.getByText("101")).toBeDefined();
     });
 
-    // Hacer clic en Siguiente
     const nextBtn = screen.getByTitle("Página siguiente");
     expect(nextBtn).toBeDefined();
     fireEvent.click(nextBtn);
@@ -232,10 +227,8 @@ describe("UnitsOverviewView", () => {
       // Ahora debería mostrar la unidad 116 (que pertenece a la segunda página)
       expect(screen.getByText("116")).toBeDefined();
     });
-    // El texto debería actualizarse a "Mostrando 16 a 20 de 20 unidades"
     expect(screen.getByText((_, el) => el?.tagName.toLowerCase() === "p" && /Mostrando 16 a 20 de 20 unidades/.test(el.textContent || ""))).toBeDefined();
 
-    // Hacer clic en Anterior
     const prevBtn = screen.getByTitle("Página anterior");
     fireEvent.click(prevBtn);
 
@@ -267,7 +260,6 @@ describe("UnitsOverviewView", () => {
       expect(screen.getByText("116")).toBeDefined();
     });
 
-    // Escribir en el buscador para filtrar
     const searchInput = screen.getByPlaceholderText("Ej. 101, departamento, terraza");
     fireEvent.change(searchInput, { target: { value: "116" } });
 
@@ -309,7 +301,6 @@ describe("UnitsOverviewView", () => {
     fireEvent.change(towerSelect, { target: { value: "Torre B" } });
 
     await waitFor(() => {
-      // Debería ocultar 101 (Torre A) y mostrar 201 (Torre B)
       expect(screen.queryByText("101")).toBeNull();
       expect(screen.getByText("201")).toBeDefined();
     });

@@ -1,18 +1,7 @@
-/**
- * Pruebas E2E — Módulo de Finanzas extendido (CP30, CP31, CP33)
- *
- * CP30: Crear cronograma bajo modalidad Crédito Hipotecario.
- * CP31: Validar consistencia financiera y fechas no vencidas.
- * CP33: Transición automática a estado "Mora" (proceso programado diario).
- *
- * Todos los tests usan page.route() para mockear Firebase Auth y el backend.
- * No se requiere Firebase Emulator ni backend real (compatible con CI).
- */
 
 import { test, expect, type Page } from '@playwright/test'
 import { injectSession } from './helpers/auth-mock'
 
-// ─── Fixtures ────────────────────────────────────────────────────────────────
 
 const perfilAdmin = {
   id: 1,
@@ -99,7 +88,6 @@ const mockPagosConMora = [
   },
 ]
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
 
 async function mockFinanzasBase(page: Page) {
   await page.route('**/api/expedientes**', async (route) => {
@@ -138,7 +126,6 @@ async function mockFinanzasBase(page: Page) {
   })
 }
 
-// ─── CP30: Crédito Hipotecario ────────────────────────────────────────────────
 
 test.describe('CP30 — Crear cronograma bajo modalidad Crédito Hipotecario', () => {
   test('admin accede al expediente con financiamiento hipotecario', async ({ page }) => {
@@ -148,7 +135,6 @@ test.describe('CP30 — Crear cronograma bajo modalidad Crédito Hipotecario', (
 
     await page.waitForTimeout(1_500)
 
-    // Debe mostrar sección de crédito hipotecario o hitos de desembolso
     const hipotecarioSection = page.locator(
       'text=/hipotecario|desembolso|banco|carta.*aprobación/i'
     )
@@ -209,13 +195,11 @@ test.describe('CP30 — Crear cronograma bajo modalidad Crédito Hipotecario', (
 
     await page.waitForTimeout(2_000)
 
-    // La página debe renderizar sin error
     await expect(page).not.toHaveURL(/login/, { timeout: 5_000 })
     test.info().annotations.push({ type: 'info', description: 'CP30: Ruta /finanzas/:id cargó sin redirect al login.' })
   })
 })
 
-// ─── CP31: Validación de consistencia financiera ──────────────────────────────
 
 test.describe('CP31 — Validar consistencia financiera y fechas no vencidas', () => {
   test('CP31: formulario de creación de cronograma rechaza suma de cuotas que no coincide con precio', async ({ page }) => {
@@ -239,7 +223,6 @@ test.describe('CP31 — Validar consistencia financiera y fechas no vencidas', (
 
     await page.waitForTimeout(1_000)
 
-    // Buscar wizard de creación de cronograma
     const crearBtn = page.locator('button:has-text("Crear"), button:has-text("Nuevo"), a:has-text("Crear")')
     if (await crearBtn.count() > 0) {
       await crearBtn.first().click()
@@ -280,7 +263,6 @@ test.describe('CP31 — Validar consistencia financiera y fechas no vencidas', (
       if (route.request().method() === 'POST') {
         const body = await route.request().postDataJSON() as Record<string, unknown>
         postCalled = true
-        // Verificar si la fecha de vencimiento es pasada
         const hasPastDate = body.fechaVencimiento && new Date(body.fechaVencimiento as string) < new Date()
         if (hasPastDate) {
           await route.fulfill({
@@ -334,7 +316,6 @@ test.describe('CP31 — Validar consistencia financiera y fechas no vencidas', (
   })
 })
 
-// ─── CP33: Transición automática a estado Mora ────────────────────────────────
 
 test.describe('CP33 — Transición automática a estado "Mora" del proceso diario', () => {
   test('CP33: cuota con fecha vencida aparece en estado MORA en la lista de pagos', async ({ page }) => {
@@ -357,7 +338,6 @@ test.describe('CP33 — Transición automática a estado "Mora" del proceso diar
 
     await page.waitForTimeout(1_500)
 
-    // Debe mostrar cuota en estado MORA
     const moraIndicador = page.locator('text=/mora|MORA|vencida|retraso/i')
     if (await moraIndicador.count() > 0) {
       await expect(moraIndicador.first()).toBeVisible({ timeout: 8_000 })
@@ -405,7 +385,6 @@ test.describe('CP33 — Transición automática a estado "Mora" del proceso diar
 
     await page.waitForTimeout(1_500)
 
-    // Buscar contador de días de retraso
     const diasRetraso = page.locator('text=/días.*retraso|días.*mora|retraso.*días|\\d+.*días/i')
     if (await diasRetraso.count() > 0) {
       test.info().annotations.push({
@@ -441,7 +420,6 @@ test.describe('CP33 — Transición automática a estado "Mora" del proceso diar
 
     await page.waitForTimeout(1_500)
 
-    // Buscar elemento con clase de color rojo/warning (MORA)
     const moreLabel = page.locator('[class*="red"], [class*="orange"], [class*="danger"]')
       .or(page.getByText(/mora/i))
     if (await moreLabel.count() > 0) {

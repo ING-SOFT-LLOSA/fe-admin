@@ -1,14 +1,7 @@
-/**
- * Pruebas E2E — Módulo de Clientes (CP15, CP19, CP20)
- *
- * Todos los tests usan page.route() para mockear Firebase Auth y el backend.
- * No se requiere Firebase Emulator ni backend real (compatible con CI).
- */
 
 import { test, expect, type Page } from '@playwright/test'
 import { injectSession } from './helpers/auth-mock'
 
-// ─── Fixtures ────────────────────────────────────────────────────────────────
 
 const perfilAdmin = {
   id: 1,
@@ -59,7 +52,6 @@ const mockClientes = [
   },
 ]
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
 
 async function mockUsersEndpoint(page: Page, usuarios = mockClientes) {
   await page.route('**/api/users', async (route) => {
@@ -71,7 +63,6 @@ async function mockUsersEndpoint(page: Page, usuarios = mockClientes) {
   })
 }
 
-// ─── Listar clientes ──────────────────────────────────────────────────────────
 
 test.describe('CP — Listar clientes', () => {
   test('admin accede a /clientes y ve los clientes cargados desde la API', async ({ page }) => {
@@ -79,10 +70,8 @@ test.describe('CP — Listar clientes', () => {
     await injectSession(page, perfilAdmin)
     await page.goto('/clientes')
 
-    // Esperar a que desaparezca el indicador de carga
     await expect(page.locator('text=/Cargando/i')).toHaveCount(0, { timeout: 8_000 })
 
-    // Deben aparecer los nombres de los clientes mock
     await expect(page.locator('text=Ana García')).toBeVisible({ timeout: 5_000 })
     await expect(page.locator('text=Carlos López')).toBeVisible()
   })
@@ -94,7 +83,6 @@ test.describe('CP — Listar clientes', () => {
 
     await expect(page.locator('text=/Cargando/i')).toHaveCount(0, { timeout: 8_000 })
 
-    // 3 totales, 2 activos, 1 inactivo en los mocks
     await expect(page.locator('text=3').first()).toBeVisible({ timeout: 5_000 })
   })
 
@@ -105,7 +93,6 @@ test.describe('CP — Listar clientes', () => {
 
     await expect(page.locator('text=/Cargando/i')).toHaveCount(0, { timeout: 8_000 })
 
-    // Sin clientes, la tabla no debe mostrar filas de datos
     const rows = page.locator('tbody tr')
     await expect(rows).toHaveCount(0, { timeout: 5_000 })
   })
@@ -121,7 +108,6 @@ test.describe('CP — Listar clientes', () => {
   })
 })
 
-// ─── Buscar clientes ──────────────────────────────────────────────────────────
 
 test.describe('CP — Buscar clientes (filtro client-side)', () => {
   test('búsqueda por nombre filtra la lista correctamente', async ({ page }) => {
@@ -131,11 +117,9 @@ test.describe('CP — Buscar clientes (filtro client-side)', () => {
 
     await expect(page.locator('text=/Cargando/i')).toHaveCount(0, { timeout: 8_000 })
 
-    // Escribir en el campo de búsqueda y enviar
     await page.fill('input[placeholder*="Buscar"], input[type="search"], input[type="text"]', 'Ana')
     await page.keyboard.press('Enter')
 
-    // Solo Ana debe aparecer
     await expect(page.locator('text=Ana García')).toBeVisible({ timeout: 3_000 })
     await expect(page.locator('text=Carlos López')).toHaveCount(0)
   })
@@ -169,7 +153,6 @@ test.describe('CP — Buscar clientes (filtro client-side)', () => {
   })
 })
 
-// ─── Crear cliente ────────────────────────────────────────────────────────────
 
 test.describe('CP — Crear cliente via modal', () => {
   test('admin abre modal "Crear cliente" y ve el formulario', async ({ page }) => {
@@ -183,7 +166,6 @@ test.describe('CP — Crear cliente via modal', () => {
     await expect(crearBtn.first()).toBeVisible()
     await crearBtn.first().click()
 
-    // Debe aparecer el modal con el título
     await expect(page.locator('text=Crear cliente').nth(1)).toBeVisible({ timeout: 3_000 })
   })
 
@@ -221,10 +203,8 @@ test.describe('CP — Crear cliente via modal', () => {
     await page.fill('input[placeholder*="+51"]', '+51 999 111 222')
     await page.fill('input[placeholder="Opcional"]', '12345678')
 
-    // Enviar — type="submit" distingue el botón del modal del botón de apertura de la página
     await page.locator('button[type="submit"]:has-text("Crear cliente")').click()
 
-    // Debe mostrar mensaje de éxito
     await expect(page.locator('text=/creado correctamente|cliente creado/i')).toBeVisible({ timeout: 5_000 })
   })
 
@@ -254,11 +234,9 @@ test.describe('CP — Crear cliente via modal', () => {
   })
 })
 
-// ─── Desactivar cliente ───────────────────────────────────────────────────────
 
 test.describe('CP — Desactivar cliente', () => {
   test('admin ve el botón de desactivar en la lista de clientes', async ({ page }) => {
-    // El botón de desactivar no está en la lista — está en el detalle del cliente (ClientHeader).
     await page.route('**/api/users/101', async (route) => {
       if (route.request().method() === 'GET') {
         await route.fulfill({ status: 200, json: mockClientes[0] })
@@ -277,7 +255,6 @@ test.describe('CP — Desactivar cliente', () => {
 
     await expect(page.locator('text=Ana García').first()).toBeVisible({ timeout: 8_000 })
 
-    // El botón "Eliminar cliente" está en el panel lateral del detalle
     const deleteBtn = page.locator('button:has-text("Eliminar cliente")')
     await expect(deleteBtn).toBeVisible({ timeout: 5_000 })
   })
@@ -315,7 +292,6 @@ test.describe('CP — Desactivar cliente', () => {
 
     await expect(page.locator('text=Ana García').first()).toBeVisible({ timeout: 8_000 })
 
-    // El botón "Eliminar cliente" está en el detalle del cliente (ClientHeader)
     const deleteBtn = page.locator('button:has-text("Eliminar cliente")')
     await deleteBtn.click()
 
@@ -325,7 +301,6 @@ test.describe('CP — Desactivar cliente', () => {
     // Confirmar desactivación
     await page.locator('button:has-text("Desactivar")').click()
 
-    // La API debe haber sido llamada
     await page.waitForTimeout(1_000)
     expect(deleteCalledId).not.toBeNull()
   })
@@ -347,13 +322,11 @@ test.describe('CP — Desactivar cliente', () => {
 
     await expect(page.locator('text=/Cargando/i')).toHaveCount(0, { timeout: 8_000 })
 
-    // Los botones de eliminar no deben estar visibles para rol sin permisos
     const deleteBtn = page.locator('button[title*="eliminar"], button[aria-label*="eliminar"]')
     await expect(deleteBtn).toHaveCount(0, { timeout: 3_000 })
   })
 })
 
-// ─── Navegación a detalle ─────────────────────────────────────────────────────
 
 test.describe('CP — Navegación al detalle del cliente', () => {
   test('click en fila de cliente navega a /clientes/:id', async ({ page }) => {
@@ -378,7 +351,6 @@ test.describe('CP — Navegación al detalle del cliente', () => {
   })
 })
 
-// ─── CP15: Vincular unidad disponible a cliente ───────────────────────────────
 
 test.describe('CP15 — Vincular nueva unidad disponible a cliente activo', () => {
   const clienteConUnaUnidad = {
@@ -445,11 +417,9 @@ test.describe('CP15 — Vincular nueva unidad disponible a cliente activo', () =
     await injectSession(page, perfilAdmin)
     await page.goto('/clientes/101')
 
-    // Esperar que cargue el detalle del cliente
     // .first() evita strict mode violation: la página renderiza el nombre en <p> y en <h3>
     await expect(page.locator('text=Ana García').first()).toBeVisible({ timeout: 8_000 })
 
-    // Buscar botón para vincular unidad
     const vincularBtn = page.locator(
       'button:has-text("Vincular"), button:has-text("Asignar"), a:has-text("Vincular")'
     )
@@ -510,7 +480,6 @@ test.describe('CP15 — Vincular nueva unidad disponible a cliente activo', () =
       await vincularBtn.first().click()
       await page.waitForTimeout(500)
 
-      // La unidad VENDIDA no debe aparecer como opción seleccionable
       const unidadVendida = page.locator('text=UNIT-502')
       // Si aparece, debería estar deshabilitada
       if (await unidadVendida.count() > 0) {
@@ -521,7 +490,6 @@ test.describe('CP15 — Vincular nueva unidad disponible a cliente activo', () =
   })
 })
 
-// ─── CP19: Desvincular única unidad → cliente pasa a Inactivo ─────────────────
 
 test.describe('CP19 — Desvincular única unidad hace que el cliente quede Inactivo', () => {
   test('al desvincular la única unidad, el cliente queda Inactivo', async ({ page }) => {
@@ -575,7 +543,6 @@ test.describe('CP19 — Desvincular única unidad hace que el cliente quede Inac
         await route.fallback()
       }
     })
-    // Actualizar estado del cliente
     await page.route('**/api/users/101/estado', async (route) => {
       clienteDesactivado = true
       await route.fulfill({ status: 200, json: { ...clienteActivo, activo: false } })
@@ -590,7 +557,6 @@ test.describe('CP19 — Desvincular única unidad hace que el cliente quede Inac
 
     await expect(page.locator('text=Ana García').first()).toBeVisible({ timeout: 8_000 })
 
-    // Buscar y hacer click en el botón de desvincular
     const desvinBtn = page.locator(
       'button:has-text("Desvincular"), button:has-text("Eliminar asignación"), button[aria-label*="desvincular"]'
     )
@@ -614,7 +580,6 @@ test.describe('CP19 — Desvincular única unidad hace que el cliente quede Inac
   })
 })
 
-// ─── CP20: Desvincular una de varias unidades → cliente sigue Activo ──────────
 
 test.describe('CP20 — Desvincular una unidad cuando el cliente tiene varias mantiene estado Activo', () => {
   test('cliente con 2 unidades sigue Activo al desvincular una', async ({ page }) => {
@@ -697,8 +662,6 @@ test.describe('CP20 — Desvincular una unidad cuando el cliente tiene varias ma
         await page.waitForTimeout(1_500)
         expect(desvinculoLlamado).toBe(true)
 
-        // El cliente debe seguir activo (sigue teniendo una unidad)
-        // Verificar que no se llame a ningún endpoint de desactivación
         await expect(page.locator('text=/inactivo/i')).toHaveCount(0, { timeout: 2_000 })
       }
     } else {

@@ -1,19 +1,7 @@
-/**
- * Pruebas E2E — Proyectos Avanzados: Estructura Física y Hitos (CP49, CP50, CP55, CP56)
- *
- * CP49: Creación y modificación independiente de elementos de estructura física (torres, pisos, unidades).
- * CP50: Creación, edición y eliminación de reportes periódicos de avance de obra.
- * CP55: Propagación automática del hito constructivo maestro a todos los pisos existentes.
- * CP56: Generación automática de hitos estándar de construcción al crear un proyecto.
- *
- * Todos los tests usan page.route() para mockear Firebase Auth y el backend.
- * No se requiere Firebase Emulator ni backend real (compatible con CI).
- */
 
 import { test, expect, type Page } from '@playwright/test'
 import { injectSession } from './helpers/auth-mock'
 
-// ─── Fixtures ────────────────────────────────────────────────────────────────
 
 const perfilAdmin = {
   id: 1,
@@ -77,7 +65,6 @@ const mockReportes = [
   },
 ]
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
 
 async function mockProyectosBase(page: Page) {
   await page.route('**/api/proyectos/**', async (route) => {
@@ -169,7 +156,6 @@ async function mockProyectosBase(page: Page) {
   })
 }
 
-// ─── CP49: Estructura física CRUD ────────────────────────────────────────────
 
 test.describe('CP49 — Creación y modificación de estructura física (torres, pisos, unidades)', () => {
   test('CP49: admin accede a la vista de unidades del proyecto', async ({ page }) => {
@@ -273,7 +259,6 @@ test.describe('CP49 — Creación y modificación de estructura física (torres,
   })
 })
 
-// ─── CP50: Reportes periódicos de avance ─────────────────────────────────────
 
 test.describe('CP50 — Creación, edición y eliminación de reportes periódicos de avance', () => {
   test('CP50: el módulo de obra muestra sección de reportes', async ({ page }) => {
@@ -346,7 +331,6 @@ test.describe('CP50 — Creación, edición y eliminación de reportes periódic
   })
 })
 
-// ─── CP55: Propagación automática de hito maestro ────────────────────────────
 
 test.describe('CP55 — Propagación automática del hito maestro a todos los pisos', () => {
   test('CP55: crear hito maestro genera propagación a todos los pisos existentes', async ({ page }) => {
@@ -450,7 +434,6 @@ test.describe('CP55 — Propagación automática del hito maestro a todos los pi
   })
 })
 
-// ─── CP56: Generación automática de hitos estándar al crear proyecto ──────────
 
 test.describe('CP56 — Generación automática de 10 hitos estándar al crear un proyecto', () => {
   test('CP56: al crear proyecto, el backend confirma generación de 10 hitos estándar', async ({ page }) => {
@@ -520,7 +503,6 @@ test.describe('CP56 — Generación automática de 10 hitos estándar al crear u
 
     await page.waitForTimeout(1_500)
 
-    // Verificar que al menos algunos hitos estándar son visibles
     const hitosEstandarEncontrados: string[] = []
     for (const hito of HITOS_ESTANDAR.slice(0, 5)) { // Verificar primeros 5
       const locator = page.locator(`text=/${hito.split(' ')[0]}/i`)

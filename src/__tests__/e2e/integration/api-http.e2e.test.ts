@@ -1,17 +1,7 @@
-/**
- * Pruebas de Integración — apiFetch (src/lib/api/http.ts)
- *
- * Nota: apiFetch es invocado por todos los módulos via páginas React.
- * Probamos su comportamiento observando efectos en la UI y en las peticiones.
- *
- * Todos los tests usan page.route() para mockear Firebase Auth y el backend.
- * No se requiere Firebase Emulator ni backend real (compatible con CI).
- */
 
 import { test, expect, type Page } from '@playwright/test'
 import { mockFirebaseSuccess } from '../helpers/auth-mock'
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
 
 const perfilAdmin = {
   id: 1,
@@ -38,7 +28,6 @@ async function injectSession(page: Page, email = perfilAdmin.email) {
     .catch(() => { /* caso negativo — el test verificará el comportamiento esperado */ })
 }
 
-// ─── apiFetch: autorización ───────────────────────────────────────────────────
 
 test.describe('apiFetch — Manejo de errores de autorización', () => {
   test('respuesta 401 de /api/auth/me limpia sesión y redirige al login', async ({ page }) => {
@@ -85,7 +74,6 @@ test.describe('apiFetch — Manejo de errores de autorización', () => {
     await injectSession(page)
     await page.goto('/clientes')
 
-    // El componente debe mostrar el error de la API
     await expect(
       page.locator('text=/permiso|error|no se pudieron/i').first()
     ).toBeVisible({ timeout: 8_000 })
@@ -108,7 +96,6 @@ test.describe('apiFetch — Manejo de errores de autorización', () => {
   })
 })
 
-// ─── apiFetch: cabecera Authorization ────────────────────────────────────────
 
 test.describe('apiFetch — Token de autenticación en cabeceras', () => {
   test('cada llamada a la API incluye cabecera Authorization: Bearer', async ({ page }) => {
@@ -126,7 +113,6 @@ test.describe('apiFetch — Token de autenticación en cabeceras', () => {
     await injectSession(page)
     await page.goto('/clientes')
 
-    // Esperar a que se completen las peticiones
     await page.waitForTimeout(2_000)
 
     // Todas las peticiones interceptadas deben llevar Bearer token
@@ -147,7 +133,6 @@ test.describe('apiFetch — Token de autenticación en cabeceras', () => {
   })
 })
 
-// ─── apiFetch: formato de cabeceras ──────────────────────────────────────────
 
 test.describe('apiFetch — Formato de peticiones', () => {
   test('las peticiones incluyen Content-Type: application/json y Accept: application/json', async ({ page }) => {
@@ -196,7 +181,6 @@ test.describe('apiFetch — Formato de peticiones', () => {
   })
 })
 
-// ─── apiFetch: parsing de respuestas ─────────────────────────────────────────
 
 test.describe('apiFetch — Parsing de respuestas de la API', () => {
   test('respuesta 204 No Content no causa error en el componente', async ({ page }) => {
@@ -260,7 +244,6 @@ test.describe('apiFetch — Parsing de respuestas de la API', () => {
   })
 })
 
-// ─── apiFetch: URL construction ───────────────────────────────────────────────
 
 test.describe('apiFetch — Construcción de URLs', () => {
   test('no se forman URLs con doble slash (//api/...)', async ({ page }) => {
