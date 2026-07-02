@@ -866,9 +866,10 @@ interface HitosDesembolsoSectionProps {
     readonly creditoHipotecario: CreditoHipotecarioResumen | null;
     readonly expediente: UsuarioActivoResponseDTO;
     readonly onUpdate: () => void;
+    readonly setDialog: React.Dispatch<React.SetStateAction<DialogState>>;
 }
 
-function HitosDesembolsoSection({ creditoHipotecario, expediente, onUpdate }: Readonly<HitosDesembolsoSectionProps>) {
+function HitosDesembolsoSection({ creditoHipotecario, expediente, onUpdate, setDialog }: Readonly<HitosDesembolsoSectionProps>) {
     const [showHitoForm, setShowHitoForm] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
     const [isUpdating, setIsUpdating] = useState<string | null>(null);
@@ -892,7 +893,17 @@ function HitosDesembolsoSection({ creditoHipotecario, expediente, onUpdate }: Re
             onUpdate();
         } catch (e) {
             console.error("Error updating hito status", e);
-            alert("No se pudo actualizar el hito.");
+            const rawMsg = e instanceof Error ? e.message : String(e);
+            let cleanMsg = rawMsg;
+            if (cleanMsg.startsWith("ApiError: ")) {
+                cleanMsg = cleanMsg.replace("ApiError: ", "");
+            }
+            setDialog({
+                isOpen: true,
+                title: "No se pudo actualizar el hito",
+                message: cleanMsg,
+                type: "warning",
+            });
         } finally {
             setIsUpdating(null);
         }
@@ -917,7 +928,17 @@ function HitosDesembolsoSection({ creditoHipotecario, expediente, onUpdate }: Re
             setShowHitoForm(false);
             onUpdate();
         } catch (e) {
-            alert(e instanceof Error ? e.message : "Error al procesar hito");
+            const rawMsg = e instanceof Error ? e.message : String(e);
+            let cleanMsg = rawMsg;
+            if (cleanMsg.startsWith("ApiError: ")) {
+                cleanMsg = cleanMsg.replace("ApiError: ", "");
+            }
+            setDialog({
+                isOpen: true,
+                title: "Error al agregar hito",
+                message: cleanMsg,
+                type: "warning",
+            });
         } finally {
             setIsSaving(false);
         }
@@ -930,7 +951,17 @@ function HitosDesembolsoSection({ creditoHipotecario, expediente, onUpdate }: Re
             await deleteCommercialHito(uuidHito);
             onUpdate();
         } catch (e) {
-            alert(e instanceof Error ? e.message : "Error al eliminar hito");
+            const rawMsg = e instanceof Error ? e.message : String(e);
+            let cleanMsg = rawMsg;
+            if (cleanMsg.startsWith("ApiError: ")) {
+                cleanMsg = cleanMsg.replace("ApiError: ", "");
+            }
+            setDialog({
+                isOpen: true,
+                title: "Error al eliminar hito",
+                message: cleanMsg,
+                type: "warning",
+            });
         } finally {
             setIsSaving(false);
         }
@@ -1092,6 +1123,7 @@ export default function MortgageFinancingView({ expediente, cronograma, pagos, r
                 creditoHipotecario={creditoHipotecario}
                 expediente={expediente}
                 onUpdate={onUpdate}
+                setDialog={setDialog}
             />
         </div>
     );

@@ -1063,26 +1063,22 @@ describe("MortgageFinancingView", () => {
 
   it("shows alert when hito toggle fails", async () => {
     mockUpdateHitoEstado.mockRejectedValue(new Error("Hito fail"));
-    const alertSpy = vi.spyOn(window, "alert").mockImplementation(() => {});
     render(<MortgageFinancingView expediente={sampleExpediente as any} cronograma={null} pagos={[]} resumen={null} creditoHipotecario={sampleCreditoHipotecario as any} onUpdate={vi.fn()} />);
     const buttons = screen.getAllByTitle("Marcar como en curso");
     fireEvent.click(buttons[0]);
     await waitFor(() => {
-      expect(alertSpy).toHaveBeenCalledWith("No se pudo actualizar el hito.");
+      expect(screen.getByTestId("dialog-message").textContent).toBe("Hito fail");
     });
-    alertSpy.mockRestore();
   });
 
   it("shows generic alert when hito toggle throws non-Error", async () => {
     mockUpdateHitoEstado.mockRejectedValue("bad");
-    const alertSpy = vi.spyOn(window, "alert").mockImplementation(() => {});
     render(<MortgageFinancingView expediente={sampleExpediente as any} cronograma={null} pagos={[]} resumen={null} creditoHipotecario={sampleCreditoHipotecario as any} onUpdate={vi.fn()} />);
     const buttons = screen.getAllByTitle("Marcar como en curso");
     fireEvent.click(buttons[0]);
     await waitFor(() => {
-      expect(alertSpy).toHaveBeenCalledWith("No se pudo actualizar el hito.");
+      expect(screen.getByTestId("dialog-message").textContent).toBe("bad");
     });
-    alertSpy.mockRestore();
   });
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -1138,7 +1134,6 @@ describe("MortgageFinancingView", () => {
 
   it("shows alert when hito creation fails", async () => {
     mockCreateHito.mockRejectedValue(new Error("Create fail"));
-    const alertSpy = vi.spyOn(window, "alert").mockImplementation(() => {});
     render(<MortgageFinancingView expediente={sampleExpediente as any} cronograma={null} pagos={[]} resumen={null} creditoHipotecario={null} onUpdate={vi.fn()} />);
     fireEvent.click(screen.getByRole("button", { name: /Agregar Hito/i }));
     await waitFor(() => {
@@ -1147,9 +1142,8 @@ describe("MortgageFinancingView", () => {
     fireEvent.change(screen.getByPlaceholderText("Nombre del hito…"), { target: { value: "Fail" } });
     fireEvent.click(screen.getByText("Agregar"));
     await waitFor(() => {
-      expect(alertSpy).toHaveBeenCalledWith("Create fail");
+      expect(screen.getByTestId("dialog-message").textContent).toBe("Create fail");
     });
-    alertSpy.mockRestore();
   });
 
   it("closes hito form on ✕ click", async () => {
@@ -1193,14 +1187,12 @@ describe("MortgageFinancingView", () => {
   it("shows alert when hito delete fails", async () => {
     mockDeleteHito.mockRejectedValue(new Error("Delete hito fail"));
     vi.spyOn(window, "confirm").mockReturnValue(true);
-    const alertSpy = vi.spyOn(window, "alert").mockImplementation(() => {});
     render(<MortgageFinancingView expediente={sampleExpediente as any} cronograma={null} pagos={[]} resumen={null} creditoHipotecario={sampleCreditoHipotecario as any} onUpdate={vi.fn()} />);
     const deleteButtons = screen.getAllByTitle("Eliminar hito");
     fireEvent.click(deleteButtons[0]);
     await waitFor(() => {
-      expect(alertSpy).toHaveBeenCalledWith("Delete hito fail");
+      expect(screen.getByTestId("dialog-message").textContent).toBe("Delete hito fail");
     });
-    alertSpy.mockRestore();
   });
 
   // ═══════════════════════════════════════════════════════════════════════════
